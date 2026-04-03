@@ -9,8 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
+
 import {
   LineChart,
   Line,
@@ -261,11 +260,11 @@ function SkeletonCard() {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-2">
-        <Skeleton className="h-4 w-24" />
+        <div className="skeleton-shimmer h-4 w-24 rounded-md" />
       </CardHeader>
       <CardContent>
-        <Skeleton className="h-8 w-32 mb-2" />
-        <Skeleton className="h-3 w-20" />
+        <div className="skeleton-shimmer mb-2 h-8 w-32 rounded-md" />
+        <div className="skeleton-shimmer h-3 w-20 rounded-md" />
       </CardContent>
     </Card>
   )
@@ -275,10 +274,10 @@ function SkeletonChart() {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-2">
-        <Skeleton className="h-4 w-36" />
+        <div className="skeleton-shimmer h-4 w-36 rounded-md" />
       </CardHeader>
       <CardContent>
-        <Skeleton className="h-[250px] w-full rounded-lg" />
+        <div className="skeleton-shimmer h-[250px] w-full rounded-lg" />
       </CardContent>
     </Card>
   )
@@ -301,11 +300,17 @@ export function AnalyticsPage() {
     const { from, to } = getDateRange(p)
     const currentMonth = getMonthStr(new Date())
 
+    // Helper: safely parse JSON only when the response is OK
+    const safeJson = async (r: Response) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return r.json()
+    }
+
     const requests = [
-      fetch(`/api/diary?from=${from}&to=${to}`).then((r) => r.json()),
-      fetch(`/api/finance?month=${currentMonth}`).then((r) => r.json()),
-      fetch(`/api/workout?month=${currentMonth}`).then((r) => r.json()),
-      fetch('/api/habits').then((r) => r.json()),
+      fetch(`/api/diary?from=${from}&to=${to}`).then(safeJson),
+      fetch(`/api/finance?month=${currentMonth}`).then(safeJson),
+      fetch(`/api/workout?month=${currentMonth}`).then(safeJson),
+      fetch('/api/habits').then(safeJson),
     ]
 
     // Fetch nutrition stats for each day in range
@@ -319,7 +324,7 @@ export function AnalyticsPage() {
     while (cursor <= toDate && dayCount < maxDays) {
       const dateStr = toDateStr(cursor)
       nutritionRequests.push(
-        fetch(`/api/nutrition/stats?date=${dateStr}`).then((r) => r.json()).catch(() => null)
+        fetch(`/api/nutrition/stats?date=${dateStr}`).then(safeJson).catch(() => null)
       )
       cursor.setDate(cursor.getDate() + 1)
       dayCount++
@@ -714,7 +719,7 @@ export function AnalyticsPage() {
                   <Smile className="h-3 w-3 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">
                     Ср. настроение:{' '}
-                    <span className="font-medium text-emerald-600 dark:text-emerald-400">
+                    <span className="font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
                       {avgMood > 0 ? `${avgMood.toFixed(1)} ${MOOD_EMOJIS[Math.round(avgMood)] || ''}` : '—'}
                     </span>
                   </p>
@@ -743,7 +748,7 @@ export function AnalyticsPage() {
                   <TrendingUp className="h-3 w-3 text-emerald-500" />
                   <p className="text-xs text-muted-foreground">
                     Сбережения:{' '}
-                    <span className={`font-medium ${savingsRate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <span className={`font-medium tabular-nums ${savingsRate >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                       {savingsRate}%
                     </span>
                   </p>
@@ -767,7 +772,7 @@ export function AnalyticsPage() {
                   <Flame className="h-3 w-3 text-muted-foreground" />
                   <p className="text-xs text-muted-foreground">
                     Всего минут:{' '}
-                    <span className="font-medium text-blue-600 dark:text-blue-400">
+                    <span className="font-medium tabular-nums text-blue-600 dark:text-blue-400">
                       {totalMinutes}
                     </span>
                   </p>

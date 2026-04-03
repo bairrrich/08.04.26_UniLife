@@ -226,6 +226,7 @@ export function GoalsPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/goals')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json: GoalsResponse = await res.json()
       if (json.success) {
         setGoals(json.data)
@@ -308,6 +309,7 @@ export function GoalsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const json = await res.json()
         if (json.success) {
           toast.success('Цель обновлена')
@@ -322,6 +324,7 @@ export function GoalsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const json = await res.json()
         if (json.success) {
           toast.success('Цель создана')
@@ -350,6 +353,7 @@ export function GoalsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ progress: newProgress }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success(`Прогресс: ${newProgress}%`)
@@ -368,6 +372,7 @@ export function GoalsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: 'completed', progress: 100 }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Цель завершена! 🎉')
@@ -382,6 +387,7 @@ export function GoalsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Цель удалена')
@@ -714,16 +720,22 @@ export function GoalsPage() {
 
           {/* Goal Cards */}
           {filteredGoals.length === 0 ? (
-            <Card className="py-12 text-center">
-              <CardContent className="flex flex-col items-center">
-                <AlertCircle className="h-8 w-8 text-muted-foreground/40 mb-3" />
-                <p className="text-sm text-muted-foreground">
+            <Card className="animate-slide-up overflow-hidden relative py-12">
+              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-sky-500/5 pointer-events-none" />
+              <CardContent className="relative flex flex-col items-center py-4">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-400/80 to-sky-400/80 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/15">
+                  <AlertCircle className="h-6 w-6 text-white" />
+                </div>
+                <p className="text-sm font-medium text-foreground/80">
                   {filterTab === 'active'
                     ? 'Нет активных целей'
                     : filterTab === 'completed'
                       ? 'Нет завершённых целей'
                       : 'Нет целей в этой категории'
                   }
+                </p>
+                <p className="text-xs text-muted-foreground/60 mt-1 italic">
+                  &ldquo;{getMotivationalPhrase()}&rdquo;
                 </p>
               </CardContent>
             </Card>

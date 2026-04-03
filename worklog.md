@@ -1493,3 +1493,79 @@ The application was failing to load and experiencing constant reloads due to two
 5. **Real-time Updates** — WebSocket/SSE for live features
 6. **Data Import Enhancement** — CSV import support
 7. **Budget Alerts** — In-app budget threshold notifications
+
+---
+## Task ID: bug-fix-json-parse + styling + features
+### Agent: main-agent
+### Task: Fix JSON parse error, improve styling, add new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all modules compile and render correctly
+- **Bug Fix**: JSON parse error "Unexpected token '<'" fixed across all 8 vulnerable components
+- **ESLint**: 0 errors, 0 warnings
+- **Server**: Compiles and serves HTTP 200 (sandbox limitation: Turbopack dies after ~60-90s)
+- **PWA**: Manifest + service worker added for mobile install support
+
+### Completed This Round:
+
+#### Bug Fix (Critical)
+1. **JSON Parse Error Fix**: "Unexpected token '<', "<!DOCTYPE "... is not valid JSON"
+   - **Root Cause**: 8 client components called `.json()` on fetch responses without checking `res.ok` first. When any API returned a non-200 response (HTML error page), JSON parsing failed.
+   - **Fixed Components**: dashboard-page.tsx (10 fetch calls), analytics-page.tsx (5), collections-page.tsx (6), feed-page.tsx (3), goals-page.tsx (6), habit-page.tsx (5), workout-page.tsx (3), search-dialog.tsx (1) — total 39 fetch calls hardened
+   - **Pattern**: Added `safeJson` helper with `if (!r.ok) throw new Error(...)` for `.then()` chains, and `if (!res.ok)` guards for `await` patterns
+
+2. **Cross-Origin Warning Fix**: Added `allowedDevOrigins: ["*.space.z.ai"]` to `next.config.ts`
+
+#### Styling Improvements (Mandatory)
+1. **Analytics Page**: Replaced shadcn Skeleton with `skeleton-shimmer` CSS class; added `tabular-nums` to avgMood, savingsRate, totalMinutes displays
+2. **Goals Page**: Enhanced filtered empty state with gradient icon, violet/sky gradient overlay, motivational phrase
+3. **Weather Widget**: Added `glass-card` glass morphism; `float-animation` on weather icon; multi-layer gradient backgrounds; better typography (tracking-widest, font-extrabold); entry animation; glass detail cards with hover transitions
+
+#### New Features (Mandatory)
+1. **Activity Heatmap**: New GitHub-style contribution graph widget on dashboard showing last 12 weeks of activity (84 days). Color scale: muted → emerald-200 → emerald-300 → emerald-400 → emerald-600. Aggregates diary entries, transactions, workouts, and habit logs per day. Russian day labels, tooltips with date + count, "Меньше → Больше" legend. Loading skeleton with 84 shimmer squares.
+
+2. **Dynamic Notification Badge**: Bell icon in sidebar (desktop + mobile) with red badge showing count of pending actions (missing diary entry + missing meals + uncompleted habits). Badge uses `bg-destructive` theme tokens, shows "9+" for high counts, hidden when 0. Updated via Zustand store `notificationCount` field set by dashboard after data fetch.
+
+3. **PWA Support**: 
+   - `public/manifest.json` — App manifest with emerald theme color, standalone display, portrait orientation
+   - `public/sw.js` — Service worker with stale-while-revalidate caching strategy
+   - `src/components/layout/sw-register.tsx` — Client component for SW registration (production only)
+   - `layout.tsx` — Added PWA meta tags (manifest, theme-color, apple-mobile-web-app-capable, description)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All 39 fetch calls across 8 components now have res.ok checks
+- ✅ PWA manifest and service worker files created
+- ✅ Dynamic notification badge integrated into sidebar (desktop + mobile)
+
+### Files Modified/Created:
+- `next.config.ts` — Added allowedDevOrigins
+- `src/components/dashboard/dashboard-page.tsx` — safeJson + ActivityHeatmap + notificationCount
+- `src/components/dashboard/activity-heatmap.tsx` — NEW: GitHub-style heatmap widget
+- `src/components/dashboard/weather-widget.tsx` — Glass morphism + float animation
+- `src/components/analytics/analytics-page.tsx` — skeleton-shimmer + tabular-nums
+- `src/components/collections/collections-page.tsx` — res.ok checks (6 fetch calls)
+- `src/components/feed/feed-page.tsx` — res.ok checks (3 fetch calls)
+- `src/components/goals/goals-page.tsx` — res.ok checks (6 fetch calls) + filtered empty state
+- `src/components/habits/habit-page.tsx` — res.ok checks (5 fetch calls)
+- `src/components/workout/workout-page.tsx` — res.ok checks (3 fetch calls)
+- `src/components/layout/search-dialog.tsx` — res.ok check (1 fetch call)
+- `src/components/layout/app-sidebar.tsx` — Dynamic notification badge + MobileNotificationBell
+- `src/components/layout/sw-register.tsx` — NEW: Service worker registration component
+- `src/store/use-app-store.ts` — Added notificationCount field + setter
+- `src/app/layout.tsx` — PWA meta tags + ServiceWorkerRegistration
+- `public/manifest.json` — NEW: PWA manifest
+- `public/sw.js` — NEW: Service worker
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **Image Upload** — Photo support for diary entries and collection items
+3. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+4. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+5. **Offline Support** — Enhanced service worker caching strategy
+6. **Push Notifications** — Browser notifications for reminders (water, workout, diary)
+7. **Localization** — i18n support for multiple languages beyond Russian
+8. **Data Import Enhancement** — CSV import support in addition to JSON
+9. **Budget Alerts** — In-app budget threshold notifications
+10. **Keyboard Shortcuts** — Global keyboard shortcuts panel

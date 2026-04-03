@@ -194,6 +194,7 @@ export function CollectionsPage() {
       if (activeType !== 'all') params.set('type', activeType)
       if (activeStatus !== 'all') params.set('status', activeStatus)
       const res = await fetch(`/api/collections?${params.toString()}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) setItems(json.data)
     } catch (err) {
@@ -240,6 +241,7 @@ export function CollectionsPage() {
           tags: tags.length > 0 ? tags : [],
         }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Элемент добавлен в коллекцию')
@@ -263,6 +265,7 @@ export function CollectionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Статус обновлён')
@@ -283,6 +286,7 @@ export function CollectionsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/collections/${item.id}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Элемент удалён')
@@ -305,6 +309,7 @@ export function CollectionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         fetchItems()
@@ -366,6 +371,7 @@ export function CollectionsPage() {
           notes: editNotes.trim() || null,
         }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Элемент обновлён')

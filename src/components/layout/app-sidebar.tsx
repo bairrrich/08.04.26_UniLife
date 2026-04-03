@@ -18,8 +18,27 @@ function getIcon(iconName: string): LucideIcon {
   return icons[iconName as keyof typeof icons] || icons.Circle
 }
 
+function MobileNotificationBell() {
+  const { notificationCount, setActiveModule } = useAppStore()
+
+  return (
+    <button
+      className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      aria-label="Уведомления"
+      onClick={() => setActiveModule('dashboard')}
+    >
+      <Bell className="h-4.5 w-4.5" />
+      {notificationCount > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+          {notificationCount > 9 ? '9+' : notificationCount}
+        </span>
+      )}
+    </button>
+  )
+}
+
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { activeModule, setActiveModule } = useAppStore()
+  const { activeModule, setActiveModule, notificationCount } = useAppStore()
 
   const handleNavClick = (id: AppModule) => {
     setActiveModule(id)
@@ -110,11 +129,13 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления">
+            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления" onClick={() => setActiveModule('dashboard')}>
               <Bell className="h-4 w-4" />
-              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-                3
-              </span>
+              {notificationCount > 0 && (
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
+                  {notificationCount > 9 ? '9+' : notificationCount}
+                </span>
+              )}
             </button>
             <ThemeToggle />
           </div>
@@ -172,6 +193,8 @@ export function AppSidebar() {
           </div>
         </div>
         <div className="ml-auto flex items-center gap-1">
+          {/* Mobile notification bell */}
+          <MobileNotificationBell />
           {/* Mobile search icon trigger */}
           <button
             onClick={() => {

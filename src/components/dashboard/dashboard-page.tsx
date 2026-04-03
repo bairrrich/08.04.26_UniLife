@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import Image from 'next/image'
 import {
   Card,
@@ -36,6 +36,7 @@ import { NotificationCenter } from './notification-center'
 import { QuickNotes } from './quick-notes'
 import { FocusTimer } from './focus-timer'
 import { WeatherWidget } from './weather-widget'
+import { ActivityHeatmap } from './activity-heatmap'
 import {
   BarChart,
   Bar,
@@ -382,17 +383,22 @@ export default function DashboardPage() {
     const today = getTodayStr()
     const { from, to } = getWeekRange()
 
+    const safeJson = async (r: Response) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`)
+      return r.json()
+    }
+
     const requests = [
-      fetch(`/api/diary?month=${currentMonth}`).then((r) => r.json()),
-      fetch(`/api/finance/stats?month=${currentMonth}`).then((r) => r.json()),
-      fetch(`/api/nutrition/stats?date=${today}`).then((r) => r.json()),
-      fetch(`/api/workout?month=${currentMonth}`).then((r) => r.json()),
-      fetch('/api/feed?limit=5').then((r) => r.json()),
-      fetch(`/api/diary?from=${from}&to=${to}`).then((r) => r.json()),
-      fetch(`/api/finance?month=${currentMonth}`).then((r) => r.json()),
-      fetch('/api/habits').then((r) => r.json()),
-      fetch(`/api/budgets?month=${currentMonth}`).then((r) => r.json()),
-      fetch(`/api/nutrition?date=${today}`).then((r) => r.json()),
+      fetch(`/api/diary?month=${currentMonth}`).then(safeJson),
+      fetch(`/api/finance/stats?month=${currentMonth}`).then(safeJson),
+      fetch(`/api/nutrition/stats?date=${today}`).then(safeJson),
+      fetch(`/api/workout?month=${currentMonth}`).then(safeJson),
+      fetch('/api/feed?limit=5').then(safeJson),
+      fetch(`/api/diary?from=${from}&to=${to}`).then(safeJson),
+      fetch(`/api/finance?month=${currentMonth}`).then(safeJson),
+      fetch('/api/habits').then(safeJson),
+      fetch(`/api/budgets?month=${currentMonth}`).then(safeJson),
+      fetch(`/api/nutrition?date=${today}`).then(safeJson),
     ]
 
     try {
@@ -581,9 +587,41 @@ export default function DashboardPage() {
   const circumference = 251.3
   const dashOffset = circumference * (1 - habitsPercentage / 100)
 
+  // ── Sync notification count to global store ──────────────────────────
+  useEffect(() => {
+    if (loading) return
+    const hasMoodToday = !!todayMood
+    const uncompletedHabitsCount = totalActive - completedToday
+    const notificationCount = (hasMoodToday ? 0 : 1) + (hasMealsToday ? 0 : 1) + uncompletedHabitsCount
+    useAppStore.getState().setNotificationCount(notificationCount)
+  }, [loading, todayMood, hasMealsToday, totalActive, completedToday])
+
   // Nutrition goal (default 2200 kcal)
   const kcalGoal = 2200
   const todayKcal = nutritionStats?.totalKcal ?? 0
+
+  // ── Activity Heatmap Data ──────────────────────────────────────────────
+  const heatmapData = useMemo(() => {
+    const activityMap = new Map<string, number>()
+
+    const addCount = (dateStr: string) => {
+      // Normalize date to YYYY-MM-DD
+      const d = new Date(dateStr)
+      const key = toDateStr(d)
+      activityMap.set(key, (activityMap.get(key) ?? 0) + 1)
+    }
+
+    for (const e of diaryEntries) addCount(e.date)
+    for (const t of transactionsData) addCount(t.date)
+    for (const w of workouts) addCount(w.date)
+    // Use completedToday as today's habit log count
+    if (completedToday > 0) {
+      const todayKey = toDateStr(new Date())
+      activityMap.set(todayKey, (activityMap.get(todayKey) ?? 0) + completedToday)
+    }
+
+    return Array.from(activityMap.entries()).map(([date, count]) => ({ date, count }))
+  }, [diaryEntries, transactionsData, workouts, completedToday])
 
   // ── Streaks ────────────────────────────────────────────────────────────
   const diaryStreak = calculateStreak(diaryEntries.map((e) => e.date))
@@ -1001,6 +1039,9 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Activity Heatmap ────────────────────────────────────────── */}
+      <ActivityHeatmap loading={loading} activityData={heatmapData} />
 
       {/* ── Budget Overview ─────────────────────────────────────────── */}
       <BudgetOverview

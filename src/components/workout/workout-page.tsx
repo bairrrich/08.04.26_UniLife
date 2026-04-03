@@ -254,6 +254,7 @@ export function WorkoutPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/workout?month=${month}`)
+      if (!res.ok) throw new Error(`Failed to fetch workouts: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) setWorkouts(json.data)
     } catch (err) {
@@ -373,6 +374,7 @@ export function WorkoutPage() {
           exercises,
         }),
       })
+      if (!res.ok) throw new Error(`Failed to create workout: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Тренировка добавлена')
@@ -438,6 +440,7 @@ export function WorkoutPage() {
           exercises,
         }),
       })
+      if (!res.ok) throw new Error(`Failed to update workout: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Тренировка обновлена')

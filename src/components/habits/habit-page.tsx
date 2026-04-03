@@ -151,6 +151,7 @@ export function HabitsPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/habits')
+      if (!res.ok) throw new Error(`Failed to fetch habits: HTTP ${res.status}`)
       const json: HabitsResponse = await res.json()
       if (json.success) {
         setHabits(json.data)
@@ -193,6 +194,7 @@ export function HabitsPage() {
           targetCount: parseInt(formTargetCount) || 1,
         }),
       })
+      if (!res.ok) throw new Error(`Failed to create habit: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Привычка создана')
@@ -212,6 +214,7 @@ export function HabitsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/habits/${habitId}`, { method: 'PUT' })
+      if (!res.ok) throw new Error(`Failed to toggle habit: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         fetchHabits()
@@ -248,6 +251,7 @@ export function HabitsPage() {
           targetCount: parseInt(editTargetCount) || 1,
         }),
       })
+      if (!res.ok) throw new Error(`Failed to update habit: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Привычка обновлена')
@@ -288,6 +292,7 @@ export function HabitsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/habits/${habitId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`Failed to delete habit: HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Привычка удалена')

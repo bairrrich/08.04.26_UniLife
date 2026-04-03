@@ -201,6 +201,7 @@ export function FeedPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/feed?limit=20&offset=0')
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         setPosts(json.data)
@@ -318,6 +319,7 @@ export function FeedPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ postId, content: text }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Комментарий добавлен')
@@ -429,6 +431,7 @@ export function FeedPage() {
           caption: formCaption.trim(),
         }),
       })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (json.success) {
         toast.success('Запись опубликована')
