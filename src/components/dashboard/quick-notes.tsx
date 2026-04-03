@@ -81,9 +81,15 @@ function subscribeToNotes(callback: () => void) {
   }
 }
 
+let cachedRaw: string | null | undefined
+let cachedNotes: QuickNote[] = []
+
 function getNotesSnapshot(): QuickNote[] {
   const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
-  return parseNotes(raw)
+  if (raw === cachedRaw) return cachedNotes
+  cachedRaw = raw
+  cachedNotes = parseNotes(raw)
+  return cachedNotes
 }
 
 function getNotesServerSnapshot(): QuickNote[] {
@@ -91,6 +97,10 @@ function getNotesServerSnapshot(): QuickNote[] {
 }
 
 function emitNotesChange() {
+  // Invalidate cache so next getSnapshot call re-reads from localStorage
+  const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
+  cachedRaw = raw
+  cachedNotes = parseNotes(raw)
   for (const listener of listeners) {
     listener()
   }

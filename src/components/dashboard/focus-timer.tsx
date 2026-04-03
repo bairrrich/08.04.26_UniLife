@@ -157,11 +157,10 @@ export function FocusTimer() {
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          const currentMode = modeRef.current
-
+          // Handle completion in the async callback (allowed by React)
           setIsRunning(false)
           playBeep()
-
+          const currentMode = modeRef.current
           if (currentMode === 'work') {
             const newCount = getTodaySessions() + 1
             setSessions(newCount)

@@ -301,7 +301,7 @@ export function HabitsPage() {
     }
   }
 
-  const last7Days = getLast7Days()
+  const last7Days = useMemo(() => getLast7Days(), [])
 
   // ======================== Weekly Completion Rate ========================
 

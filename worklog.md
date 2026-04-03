@@ -1314,3 +1314,67 @@ Deep styling improvements for Finance, Nutrition, and Workout pages including sp
 8. **CSV Import** — In addition to JSON import
 9. **Accessibility Audit** — WCAG 2.1 AA compliance
 10. **Performance** — Lazy loading, code splitting for large modules
+
+---
+
+## Task ID: bugfix-infinite-reload
+### Agent: main-agent
+### Task: Fix app not loading and constantly reloading
+
+### Problem Diagnosis:
+The application was failing to load and experiencing constant reloads due to two critical issues:
+
+1. **🔴 CRITICAL — Infinite Re-render Loop in `quick-notes.tsx`**:
+   - `useSyncExternalStore` was used with a non-cached `getSnapshot()` function
+   - `getNotesSnapshot()` called `parseNotes(raw)` which allocated a **new array on every invocation**
+   - `useSyncExternalStore` compares snapshots with `Object.is` — since new array !== previous, React detected "change" and re-rendered infinitely
+   - This was triggered whenever the component re-rendered for any reason (e.g., typing in the input)
+
+2. **🔵 BUG — Undefined `isVisible` in `welcome-screen.tsx`**:
+   - Line 164: `{isVisible && (...)}` but `isVisible` was never declared
+   - Evaluated to `undefined` (falsy), so the onboarding modal content **never rendered**
+   - Not directly causing reloads but was a functional breakage
+
+3. **🟡 MEDIUM — Broken `useMemo` in `habit-page.tsx`**:
+   - `getLast7Days()` called directly in render body creating new array reference every render
+   - Listed as `useMemo` dependency, causing memoized `weeklyStats` to recompute every render
+
+4. **🟠 Process Stability Issue**:
+   - `bun run dev` script used `tee` pipe (`next dev -p 3000 2>&1 | tee dev.log`)
+   - When the tee pipe or its parent shell process terminated, the Next.js child process was killed
+   - This caused the server to die within 30-60 seconds, making the app appear to constantly reload
+
+### Fixes Applied:
+
+**1. `src/components/dashboard/quick-notes.tsx` (CRITICAL)**:
+- Added module-level cache variables: `cachedRaw` and `cachedNotes`
+- `getNotesSnapshot()` now checks if raw string matches cache before re-parsing
+- `emitNotesChange()` invalidates cache and pre-parses before notifying listeners
+- This ensures `Object.is` comparison succeeds and prevents infinite re-renders
+
+**2. `src/components/onboarding/welcome-screen.tsx` (BUG)**:
+- Replaced `{isVisible && (` with `{true && (` on line 164
+- The `status !== 'show'` guard on line 158 already handles visibility correctly
+
+**3. `src/components/habits/habit-page.tsx` (MEDIUM)**:
+- Changed `const last7Days = getLast7Days()` to `const last7Days = useMemo(() => getLast7Days(), [])`
+- `useMemo` was already imported — just wrapped the call properly
+
+**4. `package.json` (Process Stability)**:
+- Changed `"dev"` script from `"next dev -p 3000 2>&1 | tee dev.log"` to `"next dev -p 3000"`
+- Removed the problematic `tee` pipe that was killing the server process
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles successfully (GET / 200 in ~6-10s via Turbopack)
+- ✅ All API endpoints responding (finance, diary, nutrition, workout, feed, habits)
+- ✅ No more infinite re-render loop in QuickNotes component
+- ✅ Onboarding welcome screen now renders correctly
+- ✅ Habits page useMemo properly memoized
+
+### Stage Summary:
+- 1 critical bug fixed (infinite re-render in quick-notes)
+- 1 functional bug fixed (welcome-screen isVisible)
+- 1 performance issue fixed (habit-page useMemo)
+- 1 dev script stability fix (removed tee pipe)
+- App should now load and run stably
