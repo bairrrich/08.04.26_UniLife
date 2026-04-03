@@ -13,13 +13,12 @@ import {
   Apple,
   Dumbbell,
   Library,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
   Dialog,
@@ -96,6 +95,14 @@ const ENTITY_COLORS: Record<EntityType, string> = {
   collection: 'bg-purple-100 text-purple-700',
 }
 
+const ENTITY_BORDER: Record<EntityType, string> = {
+  diary: 'border-l-blue-500',
+  transaction: 'border-l-emerald-500',
+  meal: 'border-l-rose-500',
+  workout: 'border-l-orange-500',
+  collection: 'border-l-purple-500',
+}
+
 // ======================== Relative Time ========================
 
 function formatRelativeTime(dateStr: string): string {
@@ -147,6 +154,12 @@ function formatRelativeTime(dateStr: string): string {
   })
 }
 
+// ======================== Helper ========================
+
+function generateRandomId(): string {
+  return Math.random().toString(36).substring(2, 15) + Date.now().toString(36)
+}
+
 // ======================== Component ========================
 
 export function FeedPage() {
@@ -155,9 +168,11 @@ export function FeedPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
 
+  // Like animation state: track post IDs that just got liked for the scale pop
+  const [likeAnimating, setLikeAnimating] = useState<Set<string>>(new Set())
+
   // Form state
   const [formEntityType, setFormEntityType] = useState<EntityType>('diary')
-  const [formEntityId, setFormEntityId] = useState('')
   const [formCaption, setFormCaption] = useState('')
 
   const fetchPosts = useCallback(async () => {
@@ -187,6 +202,8 @@ export function FeedPage() {
   }, [fetchPosts])
 
   const handleToggleLike = (postId: string) => {
+    const willLike = !likedPosts.has(postId)
+
     // Optimistic update
     setLikedPosts((prev) => {
       const next = new Set(prev)
@@ -212,26 +229,38 @@ export function FeedPage() {
           : p
       )
     )
+
+    // Trigger like animation if we just liked
+    if (willLike) {
+      setLikeAnimating((prev) => new Set(prev).add(postId))
+      setTimeout(() => {
+        setLikeAnimating((prev) => {
+          const next = new Set(prev)
+          next.delete(postId)
+          return next
+        })
+      }, 300)
+    }
   }
 
   const resetForm = () => {
     setFormEntityType('diary')
-    setFormEntityId('')
     setFormCaption('')
   }
 
   const handleSubmit = async () => {
-    if (!formEntityId.trim()) return
+    if (!formCaption.trim()) return
 
     toast.dismiss()
     try {
+      const entityId = generateRandomId()
       const res = await fetch('/api/feed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           entityType: formEntityType,
-          entityId: formEntityId.trim(),
-          caption: formCaption.trim() || null,
+          entityId,
+          caption: formCaption.trim(),
         }),
       })
       const json = await res.json()
@@ -252,7 +281,7 @@ export function FeedPage() {
   // ======================== Render ========================
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -277,7 +306,18 @@ export function FeedPage() {
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
-                <Label>Тип записи</Label>
+                <Label htmlFor="post-caption">Что у вас нового?</Label>
+                <Textarea
+                  id="post-caption"
+                  placeholder="Поделитесь своими мыслями, достижениями или моментами дня..."
+                  value={formCaption}
+                  onChange={(e) => setFormCaption(e.target.value)}
+                  rows={4}
+                  className="resize-none"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Категория</Label>
                 <Select
                   value={formEntityType}
                   onValueChange={(v) => setFormEntityType(v as EntityType)}
@@ -296,30 +336,10 @@ export function FeedPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label>ID записи</Label>
-                <Input
-                  placeholder="Введите ID связанной записи"
-                  value={formEntityId}
-                  onChange={(e) => setFormEntityId(e.target.value)}
-                />
-                <p className="text-xs text-muted-foreground">
-                  ID записи из соответствующего модуля
-                </p>
-              </div>
-              <div className="space-y-2">
-                <Label>Подпись</Label>
-                <Textarea
-                  placeholder="Чем хотите поделиться?"
-                  value={formCaption}
-                  onChange={(e) => setFormCaption(e.target.value)}
-                  rows={3}
-                />
-              </div>
               <Button
                 className="w-full"
                 onClick={handleSubmit}
-                disabled={!formEntityId.trim()}
+                disabled={!formCaption.trim()}
               >
                 Опубликовать
               </Button>
@@ -329,7 +349,7 @@ export function FeedPage() {
       </div>
 
       {/* Feed */}
-      <div className="max-w-2xl mx-auto space-y-4">
+      <div className="max-w-2xl mx-auto space-y-4 stagger-children">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="animate-pulse">
@@ -346,24 +366,32 @@ export function FeedPage() {
             </Card>
           ))
         ) : posts.length === 0 ? (
-          <Card>
-            <CardContent className="py-16 text-center">
-              <Rss className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-              <p className="text-muted-foreground font-medium">Лента пуста</p>
-              <p className="text-muted-foreground text-sm mt-1">
-                Опубликуйте первую запись
+          <Card className="overflow-hidden">
+            <CardContent className="py-20 text-center">
+              <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20 flex items-center justify-center">
+                <Rss className="h-10 w-10 text-primary/60" />
+              </div>
+              <p className="text-muted-foreground font-medium text-lg">
+                Лента пуста
+              </p>
+              <p className="text-muted-foreground text-sm mt-2 max-w-xs mx-auto">
+                Поделитесь своими достижениями и моментами
               </p>
             </CardContent>
           </Card>
         ) : (
           posts.map((post) => {
             const isLiked = likedPosts.has(post.id)
+            const isAnimating = likeAnimating.has(post.id)
             const likeCount = isLiked
               ? Math.max(post._count.likes, 1)
               : post._count.likes
 
             return (
-              <Card key={post.id} className="hover:shadow-sm transition">
+              <Card
+                key={post.id}
+                className={`card-hover border-l-4 ${ENTITY_BORDER[post.entityType]} transition`}
+              >
                 <CardContent className="p-4 space-y-3">
                   {/* Post header */}
                   <div className="flex items-center gap-3">
@@ -416,6 +444,10 @@ export function FeedPage() {
                         className={`h-4 w-4 ${
                           isLiked ? 'fill-current' : ''
                         }`}
+                        style={{
+                          transition: 'transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                          transform: isAnimating ? 'scale(1.3)' : 'scale(1)',
+                        }}
                       />
                       <span>{likeCount > 0 ? likeCount : ''}</span>
                     </button>

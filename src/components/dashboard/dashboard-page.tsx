@@ -25,6 +25,8 @@ import {
   Heart,
   Flame,
   Utensils,
+  Target,
+  CheckCircle2,
 } from 'lucide-react'
 import {
   BarChart,
@@ -94,6 +96,14 @@ interface Transaction {
   date: string
   amount: number
   type: string
+}
+
+interface HabitItem {
+  id: string
+  name: string
+  emoji: string
+  todayCompleted: boolean
+  streak: number
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -220,6 +230,11 @@ export default function DashboardPage() {
   const [weeklySpendingData, setWeeklySpendingData] = useState<
     { day: string; spending: number }[]
   >([])
+  const [habitsData, setHabitsData] = useState<{
+    data: HabitItem[]
+    stats: { totalActive: number; completedToday: number; bestStreak: number }
+  } | null>(null)
+  const [transactionsData, setTransactionsData] = useState<Transaction[]>([])
 
   // ── Data Fetching ──────────────────────────────────────────────────────
   const fetchAllData = useCallback(async () => {
@@ -236,6 +251,7 @@ export default function DashboardPage() {
       fetch('/api/feed?limit=5').then((r) => r.json()),
       fetch(`/api/diary?from=${from}&to=${to}`).then((r) => r.json()),
       fetch(`/api/finance?month=${currentMonth}`).then((r) => r.json()),
+      fetch('/api/habits').then((r) => r.json()),
     ]
 
     try {
@@ -247,6 +263,7 @@ export default function DashboardPage() {
         feedRes,
         diaryWeekRes,
         financeTransactionsRes,
+        habitsRes,
       ] = await Promise.allSettled(requests)
 
       // Monthly diary entries
@@ -283,13 +300,14 @@ export default function DashboardPage() {
         setFinanceStats(financeRes.value.data)
       }
 
-      // Finance transactions for weekly spending
+      // Finance transactions for weekly spending & weekly summary
       if (
         financeTransactionsRes.status === 'fulfilled' &&
         financeTransactionsRes.value.success &&
         financeTransactionsRes.value.data
       ) {
         const transactions = financeTransactionsRes.value.data as Transaction[]
+        setTransactionsData(transactions)
         const { from: week7From } = getLast7DaysRange()
         const now = new Date()
 
@@ -345,6 +363,14 @@ export default function DashboardPage() {
       if (feedRes.status === 'fulfilled' && feedRes.value.success && feedRes.value.data) {
         setFeedPosts(feedRes.value.data)
       }
+
+      // Habits data
+      if (habitsRes.status === 'fulfilled' && habitsRes.value.success && habitsRes.value.data) {
+        setHabitsData({
+          data: habitsRes.value.data,
+          stats: habitsRes.value.stats,
+        })
+      }
     } catch (err) {
       console.error('Dashboard fetch error:', err)
     } finally {
@@ -376,6 +402,33 @@ export default function DashboardPage() {
     const d = new Date(e.date).getTime()
     return d >= new Date(weekFrom).getTime() && d <= new Date(weekTo).getTime()
   }).length
+
+  // Workouts this week
+  const weekWorkoutCount = workouts.filter((w) => {
+    const d = new Date(w.date).getTime()
+    return d >= new Date(weekFrom).getTime() && d <= new Date(weekTo).getTime()
+  }).length
+
+  // Weekly expenses sum
+  const weekExpenseSum = transactionsData
+    .filter((t) => {
+      const d = new Date(t.date).getTime()
+      return (
+        t.type === 'EXPENSE' &&
+        d >= new Date(weekFrom).getTime() &&
+        d <= new Date(weekTo).getTime()
+      )
+    })
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  // Habits progress
+  const totalActive = habitsData?.stats.totalActive ?? 0
+  const completedToday = habitsData?.stats.completedToday ?? 0
+  const habitsPercentage = totalActive > 0 ? Math.round((completedToday / totalActive) * 100) : 0
+  const uncompletedHabits = (habitsData?.data ?? []).filter((h) => !h.todayCompleted).slice(0, 3)
+  const allHabitsCompleted = totalActive > 0 && completedToday === totalActive
+  const circumference = 251.3
+  const dashOffset = circumference * (1 - habitsPercentage / 100)
 
   // Nutrition goal (default 2200 kcal)
   const kcalGoal = 2200
@@ -645,6 +698,108 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* ── Today's Habits Progress ──────────────────────────────────── */}
+      <Card className="rounded-xl border">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Target className="h-4 w-4 text-emerald-500" />
+            Привычки сегодня
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="flex items-center justify-center gap-8 py-4">
+              <Skeleton className="h-24 w-24 rounded-full" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-24" />
+              </div>
+            </div>
+          ) : totalActive === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <Target className="mb-2 h-10 w-10 text-muted-foreground/50" />
+              <p className="text-sm text-muted-foreground">Нет активных привычек</p>
+              <Button
+                variant="link"
+                className="mt-1 h-auto p-0 text-xs text-emerald-500"
+                onClick={() => setActiveModule('habits')}
+              >
+                Добавить привычку →
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+              {/* Circular Progress */}
+              <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
+                <svg className="h-28 w-28 -rotate-90" viewBox="0 0 100 100">
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    strokeWidth="8"
+                    className="stroke-muted"
+                  />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="40"
+                    fill="none"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                    className="stroke-emerald-500 transition-all duration-700 ease-out"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={dashOffset}
+                  />
+                </svg>
+                <div className="absolute flex flex-col items-center">
+                  <span className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {habitsPercentage}%
+                  </span>
+                </div>
+              </div>
+
+              {/* Stats & Uncompleted List */}
+              <div className="flex-1 space-y-3 text-center sm:text-left">
+                <p className="text-sm font-medium text-muted-foreground">
+                  <span className="tabular-nums text-base font-semibold text-foreground">
+                    {completedToday}
+                  </span>{' '}
+                  из{' '}
+                  <span className="tabular-nums text-base font-semibold text-foreground">
+                    {totalActive}
+                  </span>{' '}
+                  выполнено
+                </p>
+
+                {allHabitsCompleted ? (
+                  <div className="flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 dark:bg-emerald-950/30">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                      Все привычки выполнены! 🎉
+                    </p>
+                  </div>
+                ) : uncompletedHabits.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {uncompletedHabits.map((habit) => (
+                      <button
+                        key={habit.id}
+                        onClick={() => setActiveModule('habits')}
+                        className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/60"
+                      >
+                        <span className="text-base">{habit.emoji}</span>
+                        <span className="flex-1">{habit.name}</span>
+                        <span className="text-xs text-muted-foreground">→</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* ── Charts Section ─────────────────────────────────────────────── */}
       <div className="space-y-4">
         {/* Weekly Spending Trend — Full Width */}
@@ -886,6 +1041,79 @@ export default function DashboardPage() {
             <div className="flex flex-col items-center justify-center py-8 text-center">
               <Heart className="mb-2 h-8 w-8 text-muted-foreground/50" />
               <p className="text-sm text-muted-foreground">Пока нет записей в ленте</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Weekly Summary ────────────────────────────────────────────── */}
+      <Card className="rounded-xl border">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-4 w-4 text-blue-500" />
+            Итоги недели
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {/* Diary entries */}
+              <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3 transition-colors hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
+                  <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Записи в дневнике</p>
+                  <p className="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                    {weekEntryCount}
+                  </p>
+                </div>
+              </div>
+
+              {/* Workouts */}
+              <div className="flex items-center gap-3 rounded-xl bg-blue-50 p-3 transition-colors hover:bg-blue-100/80 dark:bg-blue-950/30 dark:hover:bg-blue-950/50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                  <Dumbbell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Тренировки</p>
+                  <p className="text-lg font-semibold tabular-nums text-blue-700 dark:text-blue-300">
+                    {weekWorkoutCount}
+                  </p>
+                </div>
+              </div>
+
+              {/* Expenses */}
+              <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-3 transition-colors hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
+                  <TrendingDown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Расходы</p>
+                  <p className="text-lg font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+                    {formatCurrency(weekExpenseSum)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Habits */}
+              <div className="flex items-center gap-3 rounded-xl bg-violet-50 p-3 transition-colors hover:bg-violet-100/80 dark:bg-violet-950/30 dark:hover:bg-violet-950/50">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/50">
+                  <CheckCircle2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Привычки</p>
+                  <p className="text-lg font-semibold tabular-nums text-violet-700 dark:text-violet-300">
+                    {completedToday}<span className="text-sm font-normal text-muted-foreground"> / {totalActive}</span>
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </CardContent>

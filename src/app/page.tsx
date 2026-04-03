@@ -41,6 +41,9 @@ export default function Home() {
             </motion.div>
           </AnimatePresence>
         </div>
+        <footer className="mt-auto border-t bg-muted/30 py-3 text-center text-xs text-muted-foreground">
+          Сделано с 💚 © 2026 UniLife · Все права защищены
+        </footer>
       </main>
     </div>
   )

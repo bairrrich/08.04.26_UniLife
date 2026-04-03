@@ -419,3 +419,216 @@ Stage Summary:
 - New API endpoint: POST `/api/settings/import` for JSON data import across all modules
 - New API method: DELETE `/api/nutrition?id={mealId}` for meal deletion
 - ESLint: 0 errors, 0 warnings
+
+---
+## Task ID: 7+8
+### Agent: feed-enhance+footer-agent
+### Task: Enhance Feed Page with animations, better card design, simplified post creation, like animation, and add footer to main layout
+
+### Work Log:
+
+**Feed Page Enhancements (`/src/components/feed/feed-page.tsx`):**
+- Added `animate-slide-up` to main container div for page entrance animation
+- Added `stagger-children` class to feed container div for staggered post card entrance
+- Added `card-hover` class to post cards for lift effect on hover (translateY -2px + shadow)
+- Added `border-l-4` with entity-type-specific color per card: diary → blue-500, transaction → emerald-500, meal → rose-500, workout → orange-500, collection → purple-500 (via `ENTITY_BORDER` constant)
+- **Simplified Post Creation Dialog**: Removed confusing `entityId` input field and `formEntityId` state. Made Textarea the primary field (label: "Что у вас нового?", 4 rows). Renamed entity type selector label to "Категория". Submit button disabled when caption is empty. entityId is auto-generated via `generateRandomId()` helper (random alphanumeric + timestamp).
+- **Better Empty State**: Replaced simple icon + text with a gradient circle background (`bg-gradient-to-br from-emerald-400/20 to-primary/20`) containing a larger Rss icon (`h-10 w-10 text-primary/60`). Added subtitle: "Поделитесь своими достижениями и моментами" with `max-w-xs mx-auto` for proper centering.
+- **Like Animation**: Added `likeAnimating` state (Set<string>) tracking posts currently in animation. On like click, post ID added to set, removed after 300ms timeout. Heart icon uses inline `style` with `transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)` — scales to 1.3 when animating, back to 1 otherwise (spring-like bounce effect).
+- Removed unused imports: `Input`, `ScrollArea`
+
+**Footer Addition (`/src/app/page.tsx`):**
+- Added `<footer>` element after the `<div className="flex-1 ...">` content wrapper, inside `<main>`
+- Footer uses `mt-auto` pattern to stick to viewport bottom when content is short, without overlaying tall content
+- Content: "Сделано с 💚 © 2026 UniLife · Все права защищены"
+- Styling: `border-t bg-muted/30 py-3 text-center text-xs text-muted-foreground`
+- Footer is outside the `AnimatePresence`/`motion.div` wrapper — no animation interference
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles without errors
+- ✅ All existing functionality preserved (like toggle, post creation, comments, share)
+
+---
+## Task ID: 8
+### Agent: dashboard-habits-summary-agent
+### Task: Add "Today's Habits Progress" and "Weekly Summary" widgets to dashboard
+
+### Work Log:
+- **Habits Data Integration**: Added `fetch('/api/habits')` to the existing `Promise.allSettled` in `fetchAllData`, added `habitsData` state variable and `HabitItem` interface, added `transactionsData` state for weekly expense calculation
+- **Today's Habits Progress Widget**: New card placed between Quick Actions and Charts Section showing:
+  - Title "Привычки сегодня" with Target icon (emerald-500)
+  - SVG circular progress indicator (radius=40, circumference=251.3, emerald-500 stroke) with animated dashoffset transition
+  - Percentage display in center of circle with tabular-nums class
+  - "X из Y выполнено" stats below
+  - Up to 3 uncompleted habits listed with emoji, name, and clickable area navigating to habits module
+  - Celebration message "Все привычки выполнены! 🎉" when all habits are done
+  - Empty state with "Нет активных привычек" and link to add habit
+  - Loading skeleton with circle + text placeholders
+- **Weekly Summary Widget**: New card placed below Recent Activity Feed showing:
+  - Title "Итоги недели" with TrendingUp icon (blue-500)
+  - 2x2 grid with 4 mini stat items: Записи в дневнике (emerald), Тренировки (blue), Расходы (amber), Привычки (violet)
+  - Each stat has colored icon in rounded-lg container, label, and value
+  - Weekly diary count from `weekEntryCount` (already computed)
+  - Weekly workout count filtered by `weekFrom`/`weekTo` from workouts array
+  - Weekly expense sum filtered by week and type=EXPENSE from transactions, formatted as RUB
+  - Habits completed today count from habits API stats
+  - Subtle hover effects on each stat card
+  - All values use `tabular-nums` class
+  - Loading skeleton with 4 shimmer cards
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All existing dashboard functionality preserved
+- ✅ New icons imported: Target, CheckCircle2 from lucide-react
+- ✅ Habits API integrated without modifying API code
+
+### Stage Summary:
+- 2 new dashboard widgets added (habits progress + weekly summary)
+- Habits module data now fetched in parallel with other dashboard data
+- Weekly summary provides at-a-glance stats across 4 modules
+- Dark mode support for all new elements
+
+---
+## Task ID: habits-enhance
+### Agent: habits-enhance-agent
+### Task: Enhance habits page with skeleton loaders, weekly completion rate, better empty state, and styling polish
+
+### Work Log:
+
+**Skeleton Loaders:**
+- Replaced "Загрузка..." text with proper skeleton loaders using `skeleton-shimmer` CSS class
+- 3 skeleton stat cards (`h-[100px] rounded-xl`) matching the real stats grid layout
+- 3 skeleton habit cards (`h-20 rounded-xl`) matching the real habit card layout
+- Loading state now wraps entire content area (stats + habits), shown when `loading === true`
+
+**Weekly Completion Rate Section:**
+- Added new card above habit list with title "Прогресс за неделю" and BarChart3 icon
+- Calculates average completion rate from all habits' `last7Days` data using `useMemo`
+- Displays percentage with colored shadcn `Progress` component
+- Color coding: emerald for >=70%, amber for >=40%, red for <40%
+- Shows text "В среднем X% привычек выполнено" with colored emphasis
+- Large percentage number displayed on the right side of the card
+
+**Better Empty State:**
+- Added subtle gradient background to empty state card (`from-emerald-500/5 via-transparent to-amber-500/5`)
+- Replaced plain icon container with gradient icon (`from-emerald-400 to-teal-500`) with shadow
+- Added motivational subtitle randomly picked from 3 Russian phrases based on day of month
+- Made CTA button more prominent with gradient background (`from-emerald-500 to-teal-500`) and shadow
+
+**Styling Polish:**
+- Added `animate-slide-up` class to main container div
+- Added `stagger-children` class to stats cards grid and habit list container
+- Added decorative gradient blobs behind header section (emerald/teal + amber/orange, blurred)
+- Added today's date badge next to header title (day name + date in Russian format with Calendar icon)
+- Improved habit card styling: removed `border-l-4` from Card, added subtle left colored border accent as an absolute-positioned `w-1` div with `rounded-l-xl`
+- Added `card-hover` class to all habit cards for lift + shadow effect on hover
+- Weekly progress card uses `card-hover` for consistent interaction
+
+**New Imports:**
+- `BarChart3` from lucide-react (for weekly progress icon)
+- `Progress` from `@/components/ui/progress` (for weekly progress bar)
+- `useMemo` from React (for weekly stats calculation)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly
+- ✅ All existing habits functionality preserved (create, toggle, edit, delete)
+- ✅ Dark mode support for all new elements
+
+---
+## Task ID: css-polish+collections-enhance
+### Agent: css-collections-agent
+### Task: Global CSS polish and Collections page enhancement
+
+### Work Log:
+
+**Task 1 — Global CSS Polish (`globals.css`):**
+- Added 7 new utility classes after `.tabular-nums`:
+  - `.animate-count-fade-in` — number counter fade-in animation (translateY + opacity, 0.4s)
+  - `.pulse-ring` — notification pulse ring effect with `::before` pseudo-element (scale + opacity, infinite loop)
+  - `.text-gradient-emerald` — emerald gradient text helper with `-webkit-background-clip`
+  - `.glass-card` — glass morphism card with blur backdrop, border, and dark mode variant
+  - `.hover-lift` — subtle hover lift with translateY(-1px) and shadow, dark mode shadow variant
+  - `.active-press` — active press feedback with scale(0.97)
+  - `.dot-pattern` — dot grid pattern background using radial-gradient, dark mode variant
+- Improved existing styles:
+  - `.card-hover`: added `will-change: transform` for smoother GPU-accelerated transitions
+  - `.glass`: added subtle inset box-shadow (`inset 0 1px 0`) for depth, dark mode variant
+  - `.skeleton-shimmer`: reduced animation speed from 1.5s to 1.2s for snappier shimmer effect
+
+**Task 2 — Collections Page Enhancement (`collections-page.tsx`):**
+- **Header**: Added decorative gradient blobs (emerald/teal + amber/orange, blurred) behind the header area, similar to dashboard. Wrapped header in relative container. Added `animate-slide-up` to main container.
+- **Card Hover Effects**: Added `hover-lift` and `active-press` classes to collection item cards. Added `group-hover:scale-[1.03]` on cover gradient area and `group-hover:scale-110` on the type icon for subtle zoom on hover. Added `stagger-children` class to the items grid.
+- **Stats Summary Bar**: Added a row of Badge components between header/tabs and status filter showing:
+  - Total items count with `ListChecks` icon (outline variant)
+  - Completed count with `CheckCircle` icon (emerald secondary variant)
+  - In Progress count with `Loader2` icon (amber secondary variant)
+  - Only shown when items exist and not loading
+- **Detail Dialog**: 
+  - Replaced small h-12 icon box with a full-width h-24 gradient cover area (extends to dialog edges with `-mx-6 -mt-6`)
+  - Added `TYPE_ICONS_LARGE` constant (h-8 w-8) displayed prominently in the cover
+  - Added "Создано" date badge using `createdAt` field formatted in Russian (e.g., "15 марта 2026") with `CalendarDays` icon and `formatDateRussian()` helper function
+  - Improved status transition button with colored styles per status using `STATUS_BUTTON_STYLES` map (blue for WANT, amber for IN_PROGRESS, emerald for COMPLETED) with dark mode variants
+  - Added dark mode support to `STATUS_COLORS` map
+  - Added new imports: `ListChecks`, `Loader2`, `CalendarDays` from lucide-react
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, no console errors
+- ✅ All existing collections functionality preserved (CRUD, filtering, rating, status cycling)
+- ✅ New CSS classes available for use across all modules
+
+---
+## Task ID: qa-round-3
+### Agent: cron-review-coordinator
+### Task: QA testing, styling improvements, new features, worklog update
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 9 modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Settings) render correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data available via `/api/seed`
+- **Lint**: 0 errors, 0 warnings
+- **Build**: All routes compile successfully via Turbopack
+- **Responsive**: Mobile (375×667) and desktop viewports verified via agent-browser
+- **Dark Mode**: Fully supported across all components
+- **APIs**: 15+ REST endpoints, all returning correct data
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ Full agent-browser QA across all 9 modules — all pass
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles and serves HTTP 200
+
+#### Styling Improvements (Mandatory)
+1. **Dashboard**: Added habits progress circular widget (SVG ring) + weekly summary 2×2 stat grid
+2. **Habits Page**: Replaced "Загрузка..." with skeleton loaders; added weekly completion rate progress bar; gradient blobs + date badge; improved empty state with motivational phrases
+3. **Feed Page**: Better card design with entity-type colored left borders; like animation (scale bounce); simplified post creation (removed confusing entityId field)
+4. **Collections Page**: Gradient blobs in header; hover-lift + active-press on cards; stats summary bar; enhanced detail dialog with full-width cover + Russian creation date
+5. **Global CSS**: 7 new utility classes (animate-count-fade-in, pulse-ring, text-gradient-emerald, glass-card, hover-lift, active-press, dot-pattern); improved card-hover, glass, skeleton-shimmer
+6. **Footer**: Added sticky footer to main layout ("Сделано с 💚 © 2026 UniLife · Все права защищены")
+
+#### New Features (Mandatory)
+1. **Dashboard Habits Widget**: Circular SVG progress ring showing today's habits completion, lists up to 3 uncompleted habits, celebration state when all done
+2. **Dashboard Weekly Summary**: 2×2 grid showing weekly diary entries, workouts, expenses, and habits progress
+3. **Habits Weekly Progress**: Average completion rate across last 7 days with color-coded progress bar (emerald ≥70%, amber ≥40%, red <40%)
+4. **Simplified Feed Posting**: Removed entityId requirement, auto-generated IDs, made caption the primary field
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All 9 modules verified working after changes
+- ✅ No breaking changes to existing functionality
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+5. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+6. **Offline Support** — Service worker caching for offline usage
+7. **Notifications** — Push notifications for reminders (water, workout, diary)
+8. **Localization** — i18n support for multiple languages beyond Russian
+9. **Data Import Enhancement** — CSV import support in addition to JSON
+10. **Budget Alerts** — In-app budget threshold notifications

@@ -13,13 +13,15 @@ import {
   CheckCircle,
   Clock,
   Package,
+  ListChecks,
+  Loader2,
+  CalendarDays,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Dialog,
@@ -76,9 +78,15 @@ const STATUS_LABELS: Record<CollectionStatus, string> = {
 }
 
 const STATUS_COLORS: Record<CollectionStatus, string> = {
-  WANT: 'bg-blue-100 text-blue-700',
-  IN_PROGRESS: 'bg-amber-100 text-amber-700',
-  COMPLETED: 'bg-emerald-100 text-emerald-700',
+  WANT: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  IN_PROGRESS: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  COMPLETED: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+}
+
+const STATUS_BUTTON_STYLES: Record<CollectionStatus, string> = {
+  WANT: 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800 dark:hover:bg-blue-900/50',
+  IN_PROGRESS: 'bg-amber-50 text-amber-700 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800 dark:hover:bg-amber-900/50',
+  COMPLETED: 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/50',
 }
 
 const TYPE_ICONS: Record<CollectionType, React.ReactNode> = {
@@ -87,6 +95,14 @@ const TYPE_ICONS: Record<CollectionType, React.ReactNode> = {
   RECIPE: <ChefHat className="h-5 w-5" />,
   SUPPLEMENT: <Pill className="h-5 w-5" />,
   PRODUCT: <Package className="h-5 w-5" />,
+}
+
+const TYPE_ICONS_LARGE: Record<CollectionType, React.ReactNode> = {
+  BOOK: <BookOpen className="h-8 w-8" />,
+  MOVIE: <Film className="h-8 w-8" />,
+  RECIPE: <ChefHat className="h-8 w-8" />,
+  SUPPLEMENT: <Pill className="h-8 w-8" />,
+  PRODUCT: <Package className="h-8 w-8" />,
 }
 
 const TYPE_COLORS: Record<CollectionType, string> = {
@@ -122,6 +138,18 @@ function parseTags(tagsStr: string): string[] {
   } catch {
     return []
   }
+}
+
+function formatDateRussian(dateStr: string): string {
+  const date = new Date(dateStr)
+  const day = date.getDate()
+  const months = [
+    'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+    'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря',
+  ]
+  const month = months[date.getMonth()]
+  const year = date.getFullYear()
+  return `${day} ${month} ${year}`
 }
 
 // ======================== Component ========================
@@ -285,139 +313,150 @@ export function CollectionsPage() {
     COMPLETED: 'WANT',
   }
 
+  // Stats
+  const totalCount = items.length
+  const completedCount = items.filter((i) => i.status === 'COMPLETED').length
+  const inProgressCount = items.filter((i) => i.status === 'IN_PROGRESS').length
+
   // ======================== Render ========================
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Library className="h-6 w-6" />
-            Коллекции
-          </h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Книги, фильмы, рецепты и полезные находки
-          </p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Добавить
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Новый элемент</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <Label>Тип</Label>
-                <Select
-                  value={formType}
-                  onValueChange={(v) => setFormType(v as CollectionType)}
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(
-                      ([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Название *</Label>
-                <Input
-                  placeholder="Название"
-                  value={formTitle}
-                  onChange={(e) => setFormTitle(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Автор / Создатель</Label>
-                <Input
-                  placeholder="Автор"
-                  value={formAuthor}
-                  onChange={(e) => setFormAuthor(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Описание</Label>
-                <Textarea
-                  placeholder="Краткое описание..."
-                  value={formDescription}
-                  onChange={(e) => setFormDescription(e.target.value)}
-                  rows={3}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+    <div className="animate-slide-up space-y-6">
+      {/* Header with decorative gradient blob */}
+      <div className="relative">
+        {/* Decorative gradient blob */}
+        <div className="absolute -top-16 -right-8 w-56 h-56 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/15 blur-3xl pointer-events-none" />
+        <div className="absolute -top-8 -left-4 w-40 h-40 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-400/10 blur-3xl pointer-events-none" />
+
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Library className="h-6 w-6" />
+              Коллекции
+            </h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Книги, фильмы, рецепты и полезные находки
+            </p>
+          </div>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Добавить
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Новый элемент</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-2">
                 <div className="space-y-2">
-                  <Label>Статус</Label>
+                  <Label>Тип</Label>
                   <Select
-                    value={formStatus}
-                    onValueChange={(v) => setFormStatus(v as CollectionStatus)}
+                    value={formType}
+                    onValueChange={(v) => setFormType(v as CollectionType)}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {(
-                        Object.entries(STATUS_LABELS) as [CollectionStatus, string][]
-                      ).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>
-                          {label}
-                        </SelectItem>
-                      ))}
+                      {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(
+                        ([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        )
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Рейтинг</Label>
-                  <div className="flex gap-1 h-9 items-center">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setFormRating(formRating === star ? 0 : star)}
-                        className="p-0.5"
-                      >
-                        <Star
-                          className={`h-5 w-5 transition ${
-                            star <= formRating
-                              ? 'fill-amber-400 text-amber-400'
-                              : 'text-muted-foreground/30'
-                          }`}
-                        />
-                      </button>
-                    ))}
+                  <Label>Название *</Label>
+                  <Input
+                    placeholder="Название"
+                    value={formTitle}
+                    onChange={(e) => setFormTitle(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Автор / Создатель</Label>
+                  <Input
+                    placeholder="Автор"
+                    value={formAuthor}
+                    onChange={(e) => setFormAuthor(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Описание</Label>
+                  <Textarea
+                    placeholder="Краткое описание..."
+                    value={formDescription}
+                    onChange={(e) => setFormDescription(e.target.value)}
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Статус</Label>
+                    <Select
+                      value={formStatus}
+                      onValueChange={(v) => setFormStatus(v as CollectionStatus)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(
+                          Object.entries(STATUS_LABELS) as [CollectionStatus, string][]
+                        ).map(([key, label]) => (
+                          <SelectItem key={key} value={key}>
+                            {label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Рейтинг</Label>
+                    <div className="flex gap-1 h-9 items-center">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => setFormRating(formRating === star ? 0 : star)}
+                          className="p-0.5"
+                        >
+                          <Star
+                            className={`h-5 w-5 transition ${
+                              star <= formRating
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'text-muted-foreground/30'
+                            }`}
+                          />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label>Теги (через запятую)</Label>
+                  <Input
+                    placeholder="фантастика, фаворит"
+                    value={formTags}
+                    onChange={(e) => setFormTags(e.target.value)}
+                  />
+                </div>
+                <Button
+                  className="w-full"
+                  onClick={handleSubmit}
+                  disabled={!formTitle.trim()}
+                >
+                  Добавить в коллекцию
+                </Button>
               </div>
-              <div className="space-y-2">
-                <Label>Теги (через запятую)</Label>
-                <Input
-                  placeholder="фантастика, фаворит"
-                  value={formTags}
-                  onChange={(e) => setFormTags(e.target.value)}
-                />
-              </div>
-              <Button
-                className="w-full"
-                onClick={handleSubmit}
-                disabled={!formTitle.trim()}
-              >
-                Добавить в коллекцию
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Type Tabs */}
@@ -432,6 +471,24 @@ export function CollectionsPage() {
             </TabsTrigger>
           ))}
         </TabsList>
+
+        {/* Stats Summary Bar */}
+        {!loading && totalCount > 0 && (
+          <div className="flex items-center gap-3 mt-4 flex-wrap">
+            <Badge variant="outline" className="gap-1.5 font-normal text-xs">
+              <ListChecks className="h-3 w-3" />
+              Всего: {totalCount}
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 font-normal text-xs bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">
+              <CheckCircle className="h-3 w-3" />
+              Завершено: {completedCount}
+            </Badge>
+            <Badge variant="secondary" className="gap-1.5 font-normal text-xs bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              <Loader2 className="h-3 w-3" />
+              В процессе: {inProgressCount}
+            </Badge>
+          </div>
+        )}
 
         {/* Status filter */}
         <div className="flex gap-2 mt-4 flex-wrap">
@@ -483,20 +540,20 @@ export function CollectionsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 stagger-children">
               {items.map((item) => (
                 <Card
                   key={item.id}
-                  className="overflow-hidden hover:shadow-sm transition cursor-pointer group"
+                  className="overflow-hidden hover-lift active-press transition cursor-pointer group"
                   onClick={() => openDetail(item)}
                 >
                   {/* Cover placeholder */}
                   <div
                     className={`h-32 bg-gradient-to-br ${getCoverGradient(
                       item.id
-                    )} flex items-center justify-center relative`}
+                    )} flex items-center justify-center relative overflow-hidden transition-transform duration-300 group-hover:scale-[1.03]`}
                   >
-                    <div className="text-white/80">
+                    <div className="text-white/80 transition-transform duration-300 group-hover:scale-110">
                       {TYPE_ICONS[item.type as CollectionType]}
                     </div>
                     {/* Status badge */}
@@ -564,30 +621,49 @@ export function CollectionsPage() {
         <DialogContent className="max-w-md">
           {detailItem && (
             <>
-              <DialogHeader>
-                <div className="flex items-start gap-3">
-                  <div
-                    className={`h-12 w-12 rounded-lg bg-gradient-to-br ${getCoverGradient(
-                      detailItem.id
-                    )} flex items-center justify-center text-white shrink-0`}
+              {/* Large cover gradient area */}
+              <div
+                className={`-mx-6 -mt-6 h-24 bg-gradient-to-br ${getCoverGradient(
+                  detailItem.id
+                )} flex items-center justify-center relative`}
+              >
+                <div className="text-white/90">
+                  {TYPE_ICONS_LARGE[detailItem.type as CollectionType]}
+                </div>
+                {/* Status badge on cover */}
+                <div className="absolute top-3 right-4">
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[detailItem.status]}`}
                   >
-                    {TYPE_ICONS[detailItem.type as CollectionType]}
-                  </div>
-                  <div className="min-w-0">
-                    <DialogTitle className="text-lg leading-snug">
-                      {detailItem.title}
-                    </DialogTitle>
-                    {detailItem.author && (
-                      <p className="text-sm text-muted-foreground mt-0.5">
-                        {detailItem.author}
-                      </p>
+                    {detailItem.status === 'WANT' && (
+                      <Heart className="h-2.5 w-2.5" />
                     )}
-                  </div>
+                    {detailItem.status === 'IN_PROGRESS' && (
+                      <Clock className="h-2.5 w-2.5" />
+                    )}
+                    {detailItem.status === 'COMPLETED' && (
+                      <CheckCircle className="h-2.5 w-2.5" />
+                    )}
+                    {STATUS_LABELS[detailItem.status]}
+                  </span>
+                </div>
+              </div>
+
+              <DialogHeader>
+                <div className="min-w-0">
+                  <DialogTitle className="text-lg leading-snug">
+                    {detailItem.title}
+                  </DialogTitle>
+                  {detailItem.author && (
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                      {detailItem.author}
+                    </p>
+                  )}
                 </div>
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* Type and Status */}
+                {/* Type, Status, and Created Date */}
                 <div className="flex items-center gap-2 flex-wrap">
                   <Badge variant="outline">
                     {TYPE_LABELS[detailItem.type as CollectionType]}
@@ -597,6 +673,10 @@ export function CollectionsPage() {
                   >
                     {STATUS_LABELS[detailItem.status]}
                   </span>
+                  <Badge variant="secondary" className="gap-1 font-normal text-[11px]">
+                    <CalendarDays className="h-3 w-3" />
+                    Создано {formatDateRussian(detailItem.createdAt)}
+                  </Badge>
                 </div>
 
                 {/* Rating */}
@@ -660,7 +740,7 @@ export function CollectionsPage() {
                 <div className="flex gap-2">
                   <Button
                     variant="outline"
-                    className="flex-1"
+                    className={`flex-1 border ${STATUS_BUTTON_STYLES[detailItem.status]}`}
                     onClick={() =>
                       handleStatusUpdate(detailItem, statusTransitions[detailItem.status])
                     }
