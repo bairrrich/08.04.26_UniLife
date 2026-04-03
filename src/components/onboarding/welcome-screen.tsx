@@ -155,20 +155,19 @@ export function WelcomeScreen() {
     )
   }, [])
 
-  if (status !== 'show') return null
+  // Don't render anything until we know the status (avoid flash)
+  if (status === 'unknown') return null
+  if (status === 'dismissed') return null
 
   const progressPercent = ((currentStep + 1) / TOTAL_STEPS) * 100
 
   return (
-    <AnimatePresence>
-      {true && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center"
-        >
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+    >
           {/* Backdrop */}
           <div className="absolute inset-0 bg-black/50 backdrop-blur-md dark:bg-black/70" />
 
@@ -584,7 +583,5 @@ export function WelcomeScreen() {
             </Card>
           </div>
         </motion.div>
-      )}
-    </AnimatePresence>
   )
 }

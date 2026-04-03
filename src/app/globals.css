@@ -234,38 +234,7 @@
   background: oklch(0.18 0.01 240 / 0.85);
 }
 
-/* Custom scrollbar — Webkit */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: oklch(0.75 0.01 240 / 0.2);
-  border-radius: 3px;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: oklch(0.65 0.01 240 / 0.2);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.60 0.01 240 / 0.35);
-}
-
-/* Firefox scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: oklch(0.75 0.01 240 / 0.2) transparent;
-}
-
-.dark * {
-  scrollbar-color: oklch(0.65 0.01 240 / 0.2) transparent;
-}
+/* Custom Scrollbar — handled at end of file */
 
 /* ── Focus-visible polish ──────────────────────────────────────────── */
 
@@ -597,4 +566,81 @@
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ── Custom Scrollbar ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 0.4);
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: hsl(var(--border) / 0.5);
+}
+
+/* ── Ripple Effect ────────────────────────────────────────── */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), hsl(var(--primary) / 0.15) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
+}
+.ripple:active::after {
+  opacity: 1;
+  transition: opacity 0s;
+}
+
+/* ── Gradient border card ─────────────────────────────────── */
+.gradient-border {
+  position: relative;
+  background: hsl(var(--card));
+  border-radius: 1rem;
+}
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, hsl(var(--primary) / 0.3), transparent 50%, hsl(var(--primary) / 0.1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* ── Text balance ─────────────────────────────────────────── */
+.text-balance {
+  text-wrap: balance;
+}
+
+/* ── Smooth number transitions ────────────────────────────── */
+.number-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  text-align: center;
 }

@@ -35,6 +35,7 @@ import { BudgetOverview } from './budget-overview'
 import { NotificationCenter } from './notification-center'
 import { QuickNotes } from './quick-notes'
 import { FocusTimer } from './focus-timer'
+import { WeatherWidget } from './weather-widget'
 import {
   BarChart,
   Bar,
@@ -1017,8 +1018,12 @@ export default function DashboardPage() {
         onNavigate={(module) => setActiveModule(module as AppModule)}
       />
 
-      {/* ── Quick Notes ─────────────────────────────────────────────────── */}
-      <QuickNotes />
+      {/* ── Quick Notes, Weather & Focus Timer ────────────────────────── */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <QuickNotes />
+        <WeatherWidget />
+        <FocusTimer />
+      </div>
 
       {/* ── Charts Section ─────────────────────────────────────────────── */}
       <div className="space-y-4">
@@ -1192,8 +1197,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* ── Focus Timer ────────────────────────────────────────────────── */}
-      <FocusTimer />
+      {/* Focus Timer moved to grid above with QuickNotes & WeatherWidget */}
 
       {/* ── Recent Activity Feed ───────────────────────────────────────── */}
       <Card className="rounded-xl border">

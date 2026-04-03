@@ -17,7 +17,7 @@ import {
   Zap,
   Trophy,
 } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -400,9 +400,9 @@ export function GoalsPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header with decorative gradient blobs */}
-      <div className="relative">
-        <div className="absolute -top-12 -left-12 h-48 w-48 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -top-8 -right-8 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl pointer-events-none" />
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
 
         <div className="relative flex items-center justify-between">
           <div>
@@ -596,6 +596,50 @@ export function GoalsPage() {
       ) : (
         /* ======================== Content ======================== */
         <>
+          {/* Overall Progress Summary */}
+          {!loading && goals.length > 0 && (
+            <Card className="card-hover rounded-xl border">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Target className="h-4 w-4 text-violet-500" />
+                  Общий прогресс
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
+                  <div className="relative flex h-24 w-24 shrink-0 items-center justify-center">
+                    <svg className="h-24 w-24 -rotate-90" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r="40" fill="none" strokeWidth="8" className="stroke-muted" />
+                      <circle
+                        cx="50" cy="50" r="40" fill="none" strokeWidth="8" strokeLinecap="round"
+                        className="stroke-violet-500 transition-all duration-700 ease-out"
+                        strokeDasharray={251.3}
+                        strokeDashoffset={251.3 * (1 - stats.avgProgress / 100)}
+                      />
+                    </svg>
+                    <div className="absolute flex flex-col items-center">
+                      <span className="text-xl font-bold tabular-nums text-violet-600 dark:text-violet-400">
+                        {stats.avgProgress}%
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex-1 grid grid-cols-2 gap-3 text-center sm:text-left">
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-2xl font-bold tabular-nums">{goals.length}</p>
+                      <p className="text-xs text-muted-foreground">Всего целей</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/50 p-3">
+                      <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
+                        {stats.completedGoals}
+                      </p>
+                      <p className="text-xs text-muted-foreground">Достигнуто</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Stats Row */}
           <div className="grid grid-cols-3 gap-4 stagger-children">
             <Card className="card-hover overflow-hidden relative">

@@ -48,10 +48,10 @@ export default function Home() {
           </AnimatePresence>
         </div>
         <footer className="mt-auto border-t bg-muted/30">
-          {/* Desktop: Three-column footer */}
-          <div className="hidden md:grid md:grid-cols-3 gap-6 p-6 pt-5">
+          {/* Desktop: Four-column footer */}
+          <div className="hidden md:grid md:grid-cols-4 divide-x divide-border">
             {/* Column 1: Logo + Tagline */}
-            <div>
+            <div className="px-6 py-5">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                   <span className="text-sm font-bold">U</span>
@@ -64,12 +64,12 @@ export default function Home() {
             </div>
 
             {/* Column 2: Quick Links */}
-            <div>
+            <div className="px-6 py-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Быстрые ссылки</h3>
               <ul className="space-y-1">
                 {['Дневник', 'Финансы', 'Питание', 'Тренировки'].map((link) => (
                   <li key={link}>
-                    <span className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-default">
+                    <span className="text-xs text-muted-foreground hover:text-foreground transition cursor-pointer">
                       {link}
                     </span>
                   </li>
@@ -77,8 +77,22 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* Column 3: Version */}
-            <div className="text-right">
+            {/* Column 3: Modules */}
+            <div className="px-6 py-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Модули</h3>
+              <ul className="space-y-1">
+                {['Дневник', 'Финансы', 'Питание', 'Тренировки', 'Привычки', 'Коллекции'].map((link) => (
+                  <li key={link}>
+                    <span className="text-xs text-muted-foreground">
+                      {link}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 4: Version */}
+            <div className="px-6 py-5 text-right">
               <p className="text-xs text-muted-foreground">
                 UniLife v1.0
               </p>
@@ -89,7 +103,10 @@ export default function Home() {
           </div>
 
           {/* Copyright bar */}
-          <div className="border-t px-6 py-2.5 text-center">
+          <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-primary text-primary-foreground">
+              <span className="text-[9px] font-bold leading-none">U</span>
+            </div>
             <p className="text-[11px] text-muted-foreground/70">
               © 2026 UniLife · Все права защищены
             </p>
