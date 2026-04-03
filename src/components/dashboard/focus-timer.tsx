@@ -215,7 +215,7 @@ export function FocusTimer() {
   const modeKeys: TimerMode[] = ['work', 'shortBreak', 'longBreak']
 
   return (
-    <Card className="card-hover rounded-xl border">
+    <Card className="animate-slide-up card-hover rounded-xl border">
       <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <Timer className="h-4 w-4 text-emerald-500" />

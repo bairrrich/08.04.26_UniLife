@@ -1569,3 +1569,97 @@ The application was failing to load and experiencing constant reloads due to two
 8. **Data Import Enhancement** — CSV import support in addition to JSON
 9. **Budget Alerts** — In-app budget threshold notifications
 10. **Keyboard Shortcuts** — Global keyboard shortcuts panel
+
+---
+## Task ID: cron-review-round-6
+### Agent: cron-review-main
+### Task: QA, styling improvements, new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all modules compile and render correctly
+- **ESLint**: 0 errors, 0 warnings
+- **Server**: Compiles and serves HTTP 200
+- **APIs**: All 8+ endpoints return valid JSON data (21 diary, 19 finance, 21 habits, 69 collections, 20 feed, 3 workouts)
+- **Browser QA**: Dashboard, Diary, Finance, Habits modules render correctly. "Failed to fetch" errors are from HMR restarts (sandbox limitation), not code bugs.
+- **PWA**: Manifest + service worker already in place from previous round
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All API endpoints return valid JSON with correct data counts
+- ✅ Browser QA: Dashboard, Diary, Finance, Habits modules render correctly
+- ✅ No new bugs found — all fetch calls have res.ok checks from previous round
+
+#### Styling Improvements (Mandatory)
+1. **Dashboard Subcomponents Consistency** — Added missing CSS utility classes to 4 files:
+   - `quick-notes.tsx`: Added `animate-slide-up` + `card-hover` on Card, `stagger-children` on notes list
+   - `notification-center.tsx`: Added `animate-slide-up` + `card-hover` on all 3 card states (loading, empty, active), `stagger-children` on reminders list
+   - `budget-overview.tsx`: Added `animate-slide-up` on main Card, `card-hover` on loading/empty skeleton Cards, `stagger-children` on category breakdown
+   - `focus-timer.tsx`: Added `animate-slide-up` on main Card
+
+#### New Features (Mandatory)
+1. **Mood Streak Widget** (`src/components/dashboard/mood-streak.tsx`):
+   - Shows last 7 days as emoji circles (filled = mood recorded, outline = no entry)
+   - Color-coded backgrounds per mood level (red→emerald for 1→5)
+   - Current streak counter with "дней подряд" label + 🔥 fire emoji for streaks ≥ 3
+   - "Начни серию!" motivational message when streak is 0
+   - Loading skeleton with 7 shimmer circles
+   - Responsive: horizontal on desktop, stacked on mobile
+
+2. **Finance Quick View** (`src/components/dashboard/finance-quick-view.tsx`):
+   - Compact card showing top 5 expense categories as colored horizontal progress bars
+   - Dynamic colors from category data with fallback to emerald
+   - Income/expense summary at bottom
+   - Staggered animation on category list
+   - Loading skeleton with 5 shimmer rows
+
+3. **Keyboard Shortcuts Dialog** (`src/components/layout/keyboard-shortcuts-dialog.tsx`):
+   - Global `?` key shortcut to open help dialog
+   - Input guard: doesn't activate when typing in inputs/textareas
+   - 8 shortcuts: ⌘K (search), D/F/N/W/H/G (navigation), ? (help)
+   - Grouped into "Навигация" and "Действия" sections
+   - Kbd-styled key badges with monospace font
+   - Integrated into sidebar alongside SearchDialog
+
+4. **Weekly Mood Chart** (`src/components/dashboard/weekly-mood-chart.tsx`):
+   - Self-contained SVG line chart (no Recharts dependency)
+   - 7-day mood trend with color-coded line (red→emerald for mood 1→5)
+   - Gradient area fill under each line segment
+   - Y-axis emoji labels (😢😕😐🙂😄), X-axis day labels
+   - Handles null/missing mood values (breaks line at gaps)
+   - Loading skeleton, empty state with "Нет данных о настроении"
+   - Placed near MoodStreak widget for mood-related grouping
+
+### Files Created:
+- `src/components/dashboard/mood-streak.tsx`
+- `src/components/dashboard/finance-quick-view.tsx`
+- `src/components/dashboard/weekly-mood-chart.tsx`
+- `src/components/layout/keyboard-shortcuts-dialog.tsx`
+
+### Files Modified:
+- `src/components/dashboard/quick-notes.tsx`
+- `src/components/dashboard/notification-center.tsx`
+- `src/components/dashboard/budget-overview.tsx`
+- `src/components/dashboard/focus-timer.tsx`
+- `src/components/dashboard/dashboard-page.tsx` (integrated all 4 new widgets)
+- `src/components/layout/app-sidebar.tsx` (added KeyboardShortcutsDialog)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All existing functionality preserved
+- ✅ No breaking changes
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **Image Upload** — Photo support for diary entries and collection items
+3. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+4. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+5. **Push Notifications** — Browser notifications for reminders (water, workout, diary)
+6. **Localization** — i18n support for multiple languages beyond Russian
+7. **Data Import Enhancement** — CSV import support in addition to JSON
+8. **Budget Alerts** — In-app budget threshold notifications
+9. **Offline Support** — Enhanced service worker caching strategy
+10. **Settings Polish** — Advanced settings like data retention, account export formatting

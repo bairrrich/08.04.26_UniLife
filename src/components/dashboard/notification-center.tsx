@@ -111,7 +111,7 @@ export function NotificationCenter(props: NotificationCenterProps) {
 
   if (props.loading) {
     return (
-      <Card className="rounded-xl border">
+      <Card className="animate-slide-up card-hover rounded-xl border">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4 rounded" />
@@ -136,7 +136,7 @@ export function NotificationCenter(props: NotificationCenterProps) {
   // No reminders
   if (reminders.length === 0) {
     return (
-      <Card className="rounded-xl border">
+      <Card className="animate-slide-up card-hover rounded-xl border">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
@@ -158,7 +158,7 @@ export function NotificationCenter(props: NotificationCenterProps) {
   }
 
   return (
-    <Card className="rounded-xl border">
+    <Card className="animate-slide-up card-hover rounded-xl border">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
@@ -179,7 +179,7 @@ export function NotificationCenter(props: NotificationCenterProps) {
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="space-y-1.5">
+        <div className="stagger-children space-y-1.5">
           {reminders.map((reminder) => (
             <button
               key={reminder.id}

@@ -71,7 +71,7 @@ function getProgressTextColor(pct: number): string {
 export function BudgetOverview({ loading, budgetData, onNavigateToFinance }: BudgetOverviewProps) {
   if (loading) {
     return (
-      <Card className="rounded-xl border">
+      <Card className="card-hover rounded-xl border">
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4 rounded" />
@@ -97,7 +97,7 @@ export function BudgetOverview({ loading, budgetData, onNavigateToFinance }: Bud
   // No budgets state
   if (!budgetData || budgetData.budgets.length === 0) {
     return (
-      <Card className="rounded-xl border">
+      <Card className="card-hover rounded-xl border">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
@@ -136,7 +136,7 @@ export function BudgetOverview({ loading, budgetData, onNavigateToFinance }: Bud
   const { totalBudget, totalSpent, totalRemaining, totalPercentage } = budgetData
 
   return (
-    <Card className="card-hover rounded-xl border">
+    <Card className="animate-slide-up card-hover rounded-xl border">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
@@ -180,7 +180,7 @@ export function BudgetOverview({ loading, budgetData, onNavigateToFinance }: Bud
         </div>
 
         {/* Category breakdowns */}
-        <div className="space-y-3">
+        <div className="stagger-children space-y-3">
           {topBudgets.map((budget) => (
             <div key={budget.id} className="space-y-1.5">
               <div className="flex items-center justify-between">

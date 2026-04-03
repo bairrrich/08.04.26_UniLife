@@ -187,7 +187,7 @@ export function QuickNotes() {
   }
 
   return (
-    <Card className="rounded-xl border">
+    <Card className="animate-slide-up card-hover rounded-xl border">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
@@ -215,7 +215,7 @@ export function QuickNotes() {
           </div>
         ) : (
           /* Notes list */
-          <div className="space-y-2">
+          <div className="stagger-children space-y-2">
             <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
               {notes.map((note) => (
                 <div

@@ -11,6 +11,7 @@ import { ThemeToggle } from './theme-toggle'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SearchTrigger } from './search-dialog'
 import { SearchDialog } from './search-dialog'
+import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { Menu } from 'lucide-react'
 import { motion } from 'framer-motion'
 
@@ -160,6 +161,9 @@ export function AppSidebar() {
     <>
       {/* Global Search Dialog */}
       <SearchDialog />
+
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog />
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">

@@ -37,6 +37,9 @@ import { QuickNotes } from './quick-notes'
 import { FocusTimer } from './focus-timer'
 import { WeatherWidget } from './weather-widget'
 import { ActivityHeatmap } from './activity-heatmap'
+import { FinanceQuickView } from './finance-quick-view'
+import { MoodStreak } from './mood-streak'
+import { WeeklyMoodChart } from './weekly-mood-chart'
 import {
   BarChart,
   Bar,
@@ -635,6 +638,25 @@ export default function DashboardPage() {
     { icon: <Target className="h-4 w-4 text-violet-500" />, name: 'Привычки', streak: habitsStreak },
   ]
 
+  // ── Recent Moods (last 7 days) ───────────────────────────────────────
+  const recentMoods = useMemo(() => {
+    const moodMap = new Map<string, number | null>()
+    for (const entry of diaryEntries) {
+      const key = toDateStr(new Date(entry.date))
+      if (!moodMap.has(key)) {
+        moodMap.set(key, entry.mood)
+      }
+    }
+    const result: { date: string; mood: number | null }[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      const key = toDateStr(d)
+      result.push({ date: key, mood: moodMap.get(key) ?? null })
+    }
+    return result
+  }, [diaryEntries, now])
+
   // ── Animated Counters ──────────────────────────────────────────────────
   const animWeekEntries = useAnimatedCounter(weekEntryCount, 600, !loading)
   const animIncome = useAnimatedCounter(financeStats?.totalIncome ?? 0, 600, !loading)
@@ -938,6 +960,24 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
+      {/* ── Mood Streak Tracker ──────────────────────────────────────── */}
+      <MoodStreak
+        loading={loading}
+        recentMoods={recentMoods}
+        streak={diaryStreak}
+        todayMood={todayMood}
+      />
+
+      {/* ── Weekly Mood Trend Line Chart ──────────────────────────── */}
+      <WeeklyMoodChart
+        loading={loading}
+        moodData={weeklyMoodData.map((d) => ({
+          day: d.day,
+          mood: d.mood > 0 ? d.mood : null,
+          date: d.label,
+        }))}
+      />
+
       {/* ── Today's Habits Progress ──────────────────────────────────── */}
       <Card className="rounded-xl border">
         <CardHeader className="pb-3">
@@ -1065,6 +1105,25 @@ export default function DashboardPage() {
         <WeatherWidget />
         <FocusTimer />
       </div>
+
+      {/* ── Finance Quick View ────────────────────────────────────────── */}
+      {!loading && financeStats && (
+        <FinanceQuickView
+          loading={loading}
+          categories={
+            [...financeStats.byCategory]
+              .sort((a, b) => b.total - a.total)
+              .slice(0, 5)
+              .map((cat) => ({
+                name: cat.categoryName,
+                amount: cat.total,
+                color: cat.categoryColor,
+              }))
+          }
+          totalExpense={financeStats.totalExpense}
+          totalIncome={financeStats.totalIncome}
+        />
+      )}
 
       {/* ── Charts Section ─────────────────────────────────────────────── */}
       <div className="space-y-4">
