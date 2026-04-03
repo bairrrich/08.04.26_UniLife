@@ -30,6 +30,7 @@ model User {
   comments      Comment[]
   followers     Follow[] @relation("FollowedBy")
   following     Follow[] @relation("Following")
+  goals         Goal[]
 }
 
 // ============ DIARY ============
@@ -311,4 +312,27 @@ model Follow {
   following   User @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
+}
+
+// ============ GOALS ============
+
+model Goal {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  category      String   @default("personal") // personal, health, finance, career, learning
+  targetValue   Int?
+  currentValue  Int      @default(0)
+  unit          String?  // e.g. "кг", "раз", "час", "₽"
+  deadline      DateTime?
+  status        String   @default("active") // active, completed, abandoned
+  progress      Int      @default(0) // 0-100 percentage
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([category])
 }

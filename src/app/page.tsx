@@ -10,6 +10,7 @@ import { WorkoutPage } from '@/components/workout/workout-page'
 import { CollectionsPage } from '@/components/collections/collections-page'
 import { FeedPage } from '@/components/feed/feed-page'
 import { HabitsPage } from '@/components/habits/habit-page'
+import { GoalsPage } from '@/components/goals/goals-page'
 import { AnalyticsPage } from '@/components/analytics/analytics-page'
 import { SettingsPage } from '@/components/layout/settings-page'
 import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
@@ -40,6 +41,7 @@ export default function Home() {
               {activeModule === 'collections' && <CollectionsPage />}
               {activeModule === 'feed' && <FeedPage />}
               {activeModule === 'habits' && <HabitsPage />}
+              {activeModule === 'goals' && <GoalsPage />}
               {activeModule === 'analytics' && <AnalyticsPage />}
               {activeModule === 'settings' && <SettingsPage />}
             </motion.div>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Check,
   Plus,
@@ -134,6 +134,19 @@ export function HabitsPage() {
   const [editFrequency, setEditFrequency] = useState('daily')
   const [editTargetCount, setEditTargetCount] = useState('1')
 
+  // Delete confirmation state (inline)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const deleteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Cleanup delete timer on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current)
+      }
+    }
+  }, [])
+
   const fetchHabits = useCallback(async () => {
     setLoading(true)
     try {
@@ -246,6 +259,28 @@ export function HabitsPage() {
     } catch (err) {
       console.error('Failed to update habit:', err)
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    }
+  }
+
+  const handleDeleteClick = (habitId: string) => {
+    if (deleteConfirmId === habitId) {
+      // Second click — confirm delete
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current)
+        deleteTimerRef.current = null
+      }
+      setDeleteConfirmId(null)
+      handleDelete(habitId)
+    } else {
+      // First click — show confirmation
+      if (deleteTimerRef.current) {
+        clearTimeout(deleteTimerRef.current)
+      }
+      setDeleteConfirmId(habitId)
+      deleteTimerRef.current = setTimeout(() => {
+        setDeleteConfirmId(null)
+        deleteTimerRef.current = null
+      }, 3000)
     }
   }
 
@@ -633,6 +668,9 @@ export function HabitsPage() {
                       <div className="flex items-center gap-1 text-orange-500 shrink-0">
                         <Flame className="h-4 w-4" />
                         <span className="text-sm font-bold tabular-nums">{habit.streak}</span>
+                        {habit.streak >= 3 && (
+                          <span className="text-sm" role="img" aria-label="fire">🔥</span>
+                        )}
                       </div>
                     )}
 
@@ -646,14 +684,23 @@ export function HabitsPage() {
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => handleDelete(habit.id)}
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {deleteConfirmId === habit.id ? (
+                        <button
+                          onClick={() => handleDeleteClick(habit.id)}
+                          className="flex h-8 items-center rounded-lg bg-destructive/10 px-2.5 text-xs font-medium text-destructive transition-all hover:bg-destructive/20"
+                        >
+                          Удалить?
+                        </button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleDeleteClick(habit.id)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>

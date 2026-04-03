@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Card,
   CardContent,
@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -41,6 +42,7 @@ import {
   RotateCcw,
   ChevronDown,
   ChevronUp,
+  Pencil,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -224,7 +226,17 @@ export default function NutritionPage() {
   })
   const [showNewMealDialog, setShowNewMealDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
   const [expandedMealId, setExpandedMealId] = useState<string | null>(null)
+
+  // Edit form state
+  const [editingMealId, setEditingMealId] = useState<string | null>(null)
+  const [editMealType, setEditMealType] = useState<string>('')
+  const [editNote, setEditNote] = useState<string>('')
+  const [editMealItems, setEditMealItems] = useState<
+    { name: string; kcal: string; protein: string; fat: string; carbs: string }[]
+  >([{ name: '', kcal: '', protein: '', fat: '', carbs: '' }])
 
   // Form state
   const [mealType, setMealType] = useState<string>('')
@@ -329,6 +341,85 @@ export default function NutritionPage() {
     }
   }
 
+  // ─── Edit meal handler ────────────────────────────────────────
+  const openEditDialog = (meal: MealWithItems) => {
+    setEditingMealId(meal.id)
+    setEditMealType(meal.type)
+    setEditNote(meal.note || '')
+    setEditMealItems(
+      meal.items.map((item) => ({
+        name: item.name,
+        kcal: String(item.kcal),
+        protein: String(item.protein),
+        fat: String(item.fat),
+        carbs: String(item.carbs),
+      }))
+    )
+    setShowEditDialog(true)
+  }
+
+  const updateEditMealItem = (
+    index: number,
+    field: keyof (typeof editMealItems)[number],
+    value: string
+  ) => {
+    const updated = [...editMealItems]
+    updated[index] = { ...updated[index], [field]: value }
+    setEditMealItems(updated)
+  }
+
+  const addEditMealItem = () => {
+    setEditMealItems([...editMealItems, { name: '', kcal: '', protein: '', fat: '', carbs: '' }])
+  }
+
+  const removeEditMealItem = (index: number) => {
+    if (editMealItems.length <= 1) return
+    setEditMealItems(editMealItems.filter((_, i) => i !== index))
+  }
+
+  const handleEditMeal = async () => {
+    if (!editingMealId || !editMealType) return
+    const validItems = editMealItems.filter((item) => item.name.trim() !== '')
+    if (validItems.length === 0) return
+
+    setIsEditSubmitting(true)
+    toast.dismiss()
+    try {
+      const body = {
+        mealType: editMealType,
+        date: today,
+        note: editNote,
+        items: validItems.map((item) => ({
+          name: item.name,
+          calories: parseFloat(item.kcal) || 0,
+          protein: parseFloat(item.protein) || 0,
+          fat: parseFloat(item.fat) || 0,
+          carbs: parseFloat(item.carbs) || 0,
+        })),
+      }
+
+      const res = await fetch(`/api/nutrition/${editingMealId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+
+      if (res.ok) {
+        toast.success('Приём пищи обновлён')
+        setShowEditDialog(false)
+        setEditingMealId(null)
+        fetchData()
+      } else {
+        toast.error('Ошибка при обновлении приёма пищи')
+      }
+    } catch (err) {
+      console.error('Failed to update meal:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    } finally {
+      setIsEditSubmitting(false)
+    }
+  }
+
   // ─── Water handler ────────────────────────────────────────────
   const handleAddWater = async () => {
     try {
@@ -360,6 +451,79 @@ export default function NutritionPage() {
       percentage: 0,
     })
   }
+
+  // ─── Water history (localStorage) ─────────────────────────────
+  const WATER_HISTORY_KEY = 'unilife-water-history'
+  const WATER_GOAL = 2000
+
+  const getWaterHistory = useCallback((): { date: string; ml: number }[] => {
+    if (typeof window === 'undefined') return []
+    try {
+      const raw = localStorage.getItem(WATER_HISTORY_KEY)
+      return raw ? JSON.parse(raw) : []
+    } catch {
+      return []
+    }
+  }, [])
+
+  const saveWaterHistory = useCallback((history: { date: string; ml: number }[]) => {
+    if (typeof window === 'undefined') return
+    try {
+      localStorage.setItem(WATER_HISTORY_KEY, JSON.stringify(history))
+    } catch {
+      // ignore quota errors
+    }
+  }, [])
+
+  const waterHistory = useMemo(() => {
+    const history = getWaterHistory()
+    // Keep last 7 days
+    const todayStr = getTodayStr()
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
+    const sevenDaysAgoStr = `${sevenDaysAgo.getFullYear()}-${String(sevenDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(sevenDaysAgo.getDate()).padStart(2, '0')}`
+    return history.filter((h) => h.date >= sevenDaysAgoStr && h.date <= todayStr)
+  }, [getWaterHistory])
+
+  // Update localStorage when water changes
+  useEffect(() => {
+    const history = getWaterHistory()
+    const todayStr = getTodayStr()
+    const existingIdx = history.findIndex((h) => h.date === todayStr)
+    if (existingIdx >= 0) {
+      history[existingIdx].ml = waterStats.totalMl
+    } else {
+      history.push({ date: todayStr, ml: waterStats.totalMl })
+    }
+    // Keep only last 30 days
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const cutoff = `${thirtyDaysAgo.getFullYear()}-${String(thirtyDaysAgo.getMonth() + 1).padStart(2, '0')}-${String(thirtyDaysAgo.getDate()).padStart(2, '0')}`
+    const filtered = history.filter((h) => h.date >= cutoff)
+    saveWaterHistory(filtered)
+  }, [waterStats.totalMl, getWaterHistory, saveWaterHistory])
+
+  // Build last 7 days array for chart
+  const waterChartDays = useMemo(() => {
+    const days: { date: string; dayLabel: string; ml: number; isToday: boolean }[] = []
+    const todayStr = getTodayStr()
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const dayOfWeek = d.getDay()
+      // Russian day abbreviations: Пн, Вт, Ср, Чт, Пт, Сб, Вс
+      const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб']
+      const entry = waterHistory.find((h) => h.date === dateStr)
+      days.push({
+        date: dateStr,
+        dayLabel: dayNames[dayOfWeek],
+        ml: entry?.ml || 0,
+        isToday: dateStr === todayStr,
+      })
+    }
+    return days
+  }, [waterHistory])
 
   // ─── Helpers ──────────────────────────────────────────────────
   const getMealTotalKcal = (meal: MealWithItems) =>
@@ -570,6 +734,57 @@ export default function NutritionPage() {
                 +250 мл
               </Button>
             </div>
+
+            {/* Water history mini chart — last 7 days */}
+            {waterChartDays.length > 0 && (
+              <div className="mt-5">
+                <p className="mb-2.5 text-xs font-medium text-muted-foreground">
+                  За последние 7 дней
+                </p>
+                <div className="flex items-end justify-between gap-1.5">
+                  {waterChartDays.map((day) => {
+                    const heightPct = Math.min((day.ml / WATER_GOAL) * 100, 100)
+                    const reachedGoal = day.ml >= WATER_GOAL
+                    return (
+                      <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
+                        {/* ml label */}
+                        <span className={`text-[9px] font-medium tabular-nums ${day.ml > 0 ? 'text-foreground' : 'text-muted-foreground/50'}`}>
+                          {day.ml > 0 ? `${Math.round(day.ml / 100) * 100}` : ''}
+                        </span>
+                        {/* Bar */}
+                        <div
+                          className="relative w-full max-w-[32px] rounded-t-md transition-all duration-500"
+                          style={{ height: '64px' }}
+                        >
+                          <div
+                            className={`absolute bottom-0 left-1/2 w-[70%] -translate-x-1/2 rounded-t-md transition-all duration-700 ${
+                              day.isToday
+                                ? reachedGoal
+                                  ? 'bg-emerald-500'
+                                  : 'bg-blue-400'
+                                : reachedGoal
+                                  ? 'bg-emerald-400/80'
+                                  : 'bg-muted-foreground/25'
+                            }`}
+                            style={{
+                              height: `${Math.max(heightPct, day.ml > 0 ? 8 : 0)}%`,
+                            }}
+                          />
+                        </div>
+                        {/* Day label */}
+                        <span
+                          className={`text-[10px] font-medium ${
+                            day.isToday ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                          }`}
+                        >
+                          {day.dayLabel}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -617,6 +832,13 @@ export default function NutritionPage() {
                           <Flame className="mr-1 size-3 text-orange-500" />
                           {Math.round(totalKcal)} ккал
                         </Badge>
+                        <button
+                          onClick={() => openEditDialog(meal)}
+                          className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                          title="Редактировать"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
                         <button
                           onClick={() => handleDeleteMeal(meal.id)}
                           className={`flex size-7 items-center justify-center rounded-md transition-colors ${
@@ -826,6 +1048,166 @@ export default function NutritionPage() {
                 <>
                   <Plus className="size-4" />
                   Добавить приём пищи
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Edit Meal Dialog ─────────────────────────────────────── */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => { if (!open) setShowEditDialog(false) }}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="size-5 text-orange-500" />
+              Редактировать приём пищи
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            {/* Meal type selector */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Тип приёма</label>
+              <Select value={editMealType} onValueChange={setEditMealType}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Выбери тип приёма пищи" />
+                </SelectTrigger>
+                <SelectContent>
+                  {MEAL_TYPE_ORDER.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      <span className="flex items-center gap-2">
+                        <span>{MEAL_TYPE_CONFIG[type].emoji}</span>
+                        <span>{MEAL_TYPE_CONFIG[type].label}</span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Note */}
+            <div>
+              <label className="mb-1.5 block text-sm font-medium">Заметка</label>
+              <Textarea
+                placeholder="Необязательная заметка..."
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                className="min-h-[60px] resize-none"
+                rows={2}
+              />
+            </div>
+
+            {/* Meal items */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-sm font-medium">Блюда / Продукты</label>
+              </div>
+              <div className="space-y-3">
+                {editMealItems.map((item, index) => (
+                  <div
+                    key={index}
+                    className="relative rounded-xl border bg-muted/30 p-3"
+                  >
+                    {editMealItems.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeEditMealItem(index)}
+                        className="absolute top-2 right-2 flex size-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    )}
+
+                    <div className="mb-2">
+                      <Input
+                        placeholder="Название блюда"
+                        value={item.name}
+                        onChange={(e) => updateEditMealItem(index, 'name', e.target.value)}
+                        className="h-9 border-0 bg-transparent shadow-none focus-visible:ring-0"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-4 gap-2">
+                      <div>
+                        <label className="mb-0.5 block text-[10px] font-medium text-orange-600 uppercase tracking-wider">
+                          Ккал
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={item.kcal}
+                          onChange={(e) => updateEditMealItem(index, 'kcal', e.target.value)}
+                          className="h-8 text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-0.5 block text-[10px] font-medium text-blue-600 uppercase tracking-wider">
+                          Белки
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={item.protein}
+                          onChange={(e) => updateEditMealItem(index, 'protein', e.target.value)}
+                          className="h-8 text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-0.5 block text-[10px] font-medium text-amber-600 uppercase tracking-wider">
+                          Жиры
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={item.fat}
+                          onChange={(e) => updateEditMealItem(index, 'fat', e.target.value)}
+                          className="h-8 text-center"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-0.5 block text-[10px] font-medium text-green-600 uppercase tracking-wider">
+                          Углев.
+                        </label>
+                        <Input
+                          type="number"
+                          placeholder="0"
+                          value={item.carbs}
+                          onChange={(e) => updateEditMealItem(index, 'carbs', e.target.value)}
+                          className="h-8 text-center"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={addEditMealItem}
+                className="mt-2 w-full gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <Plus className="size-4" />
+                Добавить блюдо
+              </Button>
+            </div>
+
+            {/* Submit */}
+            <Button
+              onClick={handleEditMeal}
+              disabled={!editMealType || isEditSubmitting}
+              className="w-full gap-2 bg-orange-500 text-white hover:bg-orange-600"
+            >
+              {isEditSubmitting ? (
+                <>
+                  <span className="inline-block size-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Сохранение...
+                </>
+              ) : (
+                <>
+                  <Pencil className="size-4" />
+                  Сохранить
                 </>
               )}
             </Button>

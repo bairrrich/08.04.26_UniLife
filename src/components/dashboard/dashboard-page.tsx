@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { BudgetOverview } from './budget-overview'
 import { NotificationCenter } from './notification-center'
+import { QuickNotes } from './quick-notes'
 import { FocusTimer } from './focus-timer'
 import {
   BarChart,
@@ -1015,6 +1016,9 @@ export default function DashboardPage() {
         uncompletedHabitsCount={totalActive - completedToday}
         onNavigate={(module) => setActiveModule(module as AppModule)}
       />
+
+      {/* ── Quick Notes ─────────────────────────────────────────────────── */}
+      <QuickNotes />
 
       {/* ── Charts Section ─────────────────────────────────────────────── */}
       <div className="space-y-4">
