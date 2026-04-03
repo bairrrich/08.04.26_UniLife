@@ -888,3 +888,53 @@ Deep styling improvements for Finance, Nutrition, and Workout pages including sp
 
 ### Files Modified:
 - `/src/components/dashboard/dashboard-page.tsx`
+
+---
+## Task ID: focus-timer+styling
+### Agent: focus-timer-styling-agent
+### Task: Integrate Focus Timer, enhance sidebar/footer, add CSS micro-interactions
+
+### Work Log:
+
+**Part 1 — Focus Timer Integration:**
+- Imported `FocusTimer` from `./focus-timer` in `dashboard-page.tsx`
+- Placed `<FocusTimer />` as a full-width card between Charts Section and Recent Activity Feed
+- FocusTimer is self-contained with Pomodoro modes (Работа 25min, Перерыв 5min, Длинный перерыв 15min), circular progress ring, play/pause/reset controls, and daily session counter
+
+**Part 2 — Sidebar Notification Badge:**
+- Added `Bell` icon import from lucide-react to `app-sidebar.tsx`
+- Added notification bell button next to user profile section (before ThemeToggle)
+- Button has `aria-label="Уведомления"`, hover states (`hover:bg-accent hover:text-accent-foreground`)
+- Red badge with static count "3" displayed as absolute-positioned rounded-full element (`bg-red-500 text-[9px] font-bold text-white`)
+- ThemeToggle and Bell wrapped in a flex container with gap-1
+
+**Part 3 — Footer Enhancement:**
+- Replaced simple single-line footer with enhanced three-column layout on desktop
+- Column 1: Logo (U icon + "UniLife" text) + tagline description
+- Column 2: Quick links (Дневник, Финансы, Питание, Тренировки) with hover color transition
+- Column 3: Version info ("UniLife v1.0" + "Сделано с 💚") right-aligned
+- Copyright bar below columns with separator border-t
+- Mobile: Single centered column with compact copyright text (hidden on md+)
+- Subtle background styling preserved (`bg-muted/30`)
+
+**Part 4 — Global CSS Micro-interactions:**
+- `.hover-glow` — Subtle emerald-tinted glow on hover using box-shadow transition; dark mode variant with increased spread
+- `.shimmer-text` — Animated gradient text with emerald tones, infinite 3s loop, background-clip text
+- `.fade-in-bottom` — Fade-in from translateY(10px) with 0.3s ease-out
+- `.scale-in` — Scale from 0.95 to 1 with 0.2s ease-out (reuses existing keyframe)
+
+**Part 5 — Apply hover-glow to Dashboard Quick Actions:**
+- Added `hover-glow` class to quick action buttons in dashboard-page.tsx
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All existing functionality preserved — no breaking changes
+- ✅ Dark mode support for all new elements
+
+### Stage Summary:
+- Focus Timer integrated into dashboard layout as a self-contained Pomodoro widget
+- Sidebar enhanced with notification bell badge (static count "3")
+- Footer upgraded to responsive 3-column layout on desktop, compact on mobile
+- 4 new CSS micro-interaction utility classes added (hover-glow, shimmer-text, fade-in-bottom, scale-in)
+- hover-glow applied to dashboard quick action buttons

@@ -407,6 +407,7 @@ export default function DiaryPage() {
   const handleSubmitEdit = async () => {
     if (!selectedEntry || !form.content.trim()) return
     setIsSubmitting(true)
+    toast.dismiss()
     try {
       const res = await fetch(`/api/diary/${selectedEntry.id}`, {
         method: 'PUT',
@@ -420,11 +421,20 @@ export default function DiaryPage() {
         }),
       })
       if (res.ok) {
+        const json = await res.json()
+        const updated = json.data
+        if (updated) {
+          setSelectedEntry(updated)
+        }
+        toast.success('Запись обновлена')
         setShowEditDialog(false)
         fetchEntries()
+      } else {
+        toast.error('Ошибка при обновлении записи')
       }
     } catch (err) {
       console.error('Failed to update entry:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     } finally {
       setIsSubmitting(false)
     }

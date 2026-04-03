@@ -16,6 +16,7 @@ import {
   Zap,
   Heart,
   StretchHorizontal,
+  Pencil,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -43,6 +44,7 @@ interface SetData {
 }
 
 interface ExerciseData {
+  id?: string
   name: string
   sets: SetData[]
   order: number
@@ -238,6 +240,8 @@ export function WorkoutPage() {
   const [month, setMonth] = useState(getCurrentMonth())
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null)
 
   // Form state
   const [formName, setFormName] = useState('')
@@ -380,6 +384,72 @@ export function WorkoutPage() {
       }
     } catch (err) {
       console.error('Failed to create workout:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    }
+  }
+
+  // Edit handlers
+  const openEditDialog = (workout: Workout) => {
+    setEditingWorkout(workout)
+    setFormName(workout.name)
+    setFormDate(workout.date.split('T')[0])
+    setFormDuration(workout.durationMin?.toString() ?? '')
+    setFormNote(workout.note ?? '')
+    setFormExercises(
+      workout.exercises.length > 0
+        ? workout.exercises.map((ex, idx) => {
+            const sets = parseSets(ex.sets)
+            return {
+              id: ex.id,
+              name: ex.name,
+              sets: sets.length > 0
+                ? sets
+                : [{ weight: 0, reps: 10, completed: false }],
+              order: idx,
+            }
+          })
+        : [emptyExercise(0)]
+    )
+    setEditDialogOpen(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editingWorkout || !formName.trim() || !formDate) return
+
+    toast.dismiss()
+    const exercises = formExercises
+      .filter((ex) => ex.name.trim())
+      .map((ex, idx) => ({
+        ...(ex.id ? { id: ex.id } : {}),
+        name: ex.name.trim(),
+        sets: ex.sets,
+        order: idx,
+      }))
+
+    try {
+      const res = await fetch(`/api/workout/${editingWorkout.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formName.trim(),
+          date: formDate,
+          durationMin: formDuration ? parseInt(formDuration) : null,
+          note: formNote.trim() || null,
+          exercises,
+        }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('Тренировка обновлена')
+        setEditDialogOpen(false)
+        setEditingWorkout(null)
+        resetForm()
+        fetchWorkouts()
+      } else {
+        toast.error('Ошибка при обновлении тренировки')
+      }
+    } catch (err) {
+      console.error('Failed to update workout:', err)
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
@@ -580,6 +650,146 @@ export function WorkoutPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Workout Dialog */}
+        <Dialog open={editDialogOpen} onOpenChange={(open) => {
+          setEditDialogOpen(open)
+          if (!open) {
+            setEditingWorkout(null)
+            resetForm()
+          }
+        }}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Редактирование тренировки</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Название</Label>
+                  <Input
+                    placeholder="Тренировка груди"
+                    value={formName}
+                    onChange={(e) => setFormName(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Дата</Label>
+                  <Input
+                    type="date"
+                    value={formDate}
+                    onChange={(e) => setFormDate(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Длительность (мин)</Label>
+                <Input
+                  type="number"
+                  placeholder="60"
+                  value={formDuration}
+                  onChange={(e) => setFormDuration(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Заметки</Label>
+                <Textarea
+                  placeholder="Как прошла тренировка..."
+                  value={formNote}
+                  onChange={(e) => setFormNote(e.target.value)}
+                  rows={2}
+                />
+              </div>
+
+              <Separator />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium">Упражнения</Label>
+                  <Button variant="outline" size="sm" onClick={handleAddExercise}>
+                    <Plus className="h-3.5 w-3.5 mr-1" />
+                    Добавить
+                  </Button>
+                </div>
+
+                {formExercises.map((exercise, exIdx) => (
+                  <Card key={exIdx} className="border-dashed">
+                    <CardContent className="pt-4 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground w-5">
+                          {exIdx + 1}.
+                        </span>
+                        <Input
+                          placeholder="Название упражнения"
+                          value={exercise.name}
+                          onChange={(e) =>
+                            handleExerciseNameChange(exIdx, e.target.value)
+                          }
+                          className="flex-1"
+                        />
+                        {formExercises.length > 1 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
+                            onClick={() => handleRemoveExercise(exIdx)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 pl-7">
+                        <div className="text-xs text-muted-foreground font-medium">Подход</div>
+                        <div className="text-xs text-muted-foreground font-medium">Вес (кг)</div>
+                        <div className="text-xs text-muted-foreground font-medium">Повторения</div>
+                        {exercise.sets.map((set, setIdx) => (
+                          <div key={setIdx} className="contents">
+                            <span className="text-xs text-muted-foreground flex items-center">
+                              {setIdx + 1}
+                            </span>
+                            <Input
+                              type="number"
+                              value={set.weight || ''}
+                              onChange={(e) =>
+                                handleSetChange(
+                                  exIdx,
+                                  setIdx,
+                                  'weight',
+                                  Number(e.target.value)
+                                )
+                              }
+                              placeholder="0"
+                              className="h-8 text-sm"
+                            />
+                            <Input
+                              type="number"
+                              value={set.reps || ''}
+                              onChange={(e) =>
+                                handleSetChange(
+                                  exIdx,
+                                  setIdx,
+                                  'reps',
+                                  Number(e.target.value)
+                                )
+                              }
+                              placeholder="10"
+                              className="h-8 text-sm"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              <Button className="w-full" onClick={handleEditSubmit} disabled={!formName.trim() || !formDate}>
+                Сохранить изменения
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Summary Cards */}
@@ -734,6 +944,17 @@ export function WorkoutPage() {
                           </span>
                         )}
                         <span>{formatDate(workout.date)}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEditDialog(workout)
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
                         {isExpanded ? (
                           <ChevronUp className="h-4 w-4" />
                         ) : (

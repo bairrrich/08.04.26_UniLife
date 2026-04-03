@@ -33,6 +33,7 @@ import {
 } from 'lucide-react'
 import { BudgetOverview } from './budget-overview'
 import { NotificationCenter } from './notification-center'
+import { FocusTimer } from './focus-timer'
 import {
   BarChart,
   Bar,
@@ -845,7 +846,7 @@ export default function DashboardPage() {
               <button
                 key={action.module}
                 onClick={() => setActiveModule(action.module)}
-                className="group flex items-center gap-2.5 rounded-xl border bg-accent px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.03] hover:bg-accent/80 hover:shadow-md active:scale-[0.98]"
+                className="group flex items-center gap-2.5 rounded-xl border bg-accent px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.03] hover:bg-accent/80 hover:shadow-md active:scale-[0.98] hover-glow"
               >
                 <div
                   className={`flex h-7 w-7 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 ${action.iconBg}`}
@@ -1186,6 +1187,9 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
+
+      {/* ── Focus Timer ────────────────────────────────────────────────── */}
+      <FocusTimer />
 
       {/* ── Recent Activity Feed ───────────────────────────────────────── */}
       <Card className="rounded-xl border">

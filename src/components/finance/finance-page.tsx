@@ -12,6 +12,7 @@ import {
   PiggyBank,
   Filter,
   Coffee,
+  Pencil,
   UtensilsCrossed,
   Car,
   TrainFront,
@@ -232,6 +233,17 @@ export default function FinancePage() {
   const [newNote, setNewNote] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  // Edit transaction
+  const [showEditDialog, setShowEditDialog] = useState(false)
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null)
+  const [editType, setEditType] = useState<'INCOME' | 'EXPENSE'>('EXPENSE')
+  const [editAmount, setEditAmount] = useState('')
+  const [editCategoryId, setEditCategoryId] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editNote, setEditNote] = useState('')
+  const [isEditSubmitting, setIsEditSubmitting] = useState(false)
+
   // ============ Data Fetching ============
 
   const fetchData = useCallback(async () => {
@@ -419,6 +431,58 @@ export default function FinancePage() {
   const chartConfig = {
     expense: { label: 'Расходы', color: '#ef4444' },
     income: { label: 'Доходы', color: '#10b981' },
+  }
+
+  // Edit filtered categories (for edit dialog)
+  const editFilteredCategories = useMemo(() => {
+    return categories.filter((c) => c.type === editType)
+  }, [categories, editType])
+
+  // Edit handlers
+  const openEditDialog = (tx: Transaction) => {
+    setEditingTx(tx)
+    setEditType(tx.type as 'INCOME' | 'EXPENSE')
+    setEditAmount(tx.amount.toString())
+    setEditCategoryId(tx.categoryId)
+    setEditDescription(tx.description ?? '')
+    setEditDate(tx.date.split('T')[0])
+    setEditNote(tx.note ?? '')
+    setShowEditDialog(true)
+  }
+
+  const handleEditSubmit = async () => {
+    if (!editingTx || !editAmount || !editCategoryId || !editDate) return
+
+    setIsEditSubmitting(true)
+    toast.dismiss()
+    try {
+      const res = await fetch(`/api/finance/${editingTx.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: editType,
+          amount: parseFloat(editAmount),
+          categoryId: editCategoryId,
+          description: editDescription || undefined,
+          date: editDate,
+          note: editNote || undefined,
+        }),
+      })
+
+      if (res.ok) {
+        toast.success('Транзакция обновлена')
+        setShowEditDialog(false)
+        setEditingTx(null)
+        fetchData()
+      } else {
+        toast.error('Ошибка при обновлении транзакции')
+      }
+    } catch (err) {
+      console.error('Failed to update transaction:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    } finally {
+      setIsEditSubmitting(false)
+    }
   }
 
   // ============ Render ============
@@ -899,16 +963,29 @@ export default function FinancePage() {
                             </div>
                           </div>
 
-                          {/* Amount */}
-                          <div className="shrink-0 text-right">
-                            <p
-                              className={`text-sm font-semibold tabular-nums ${
-                                isIncome ? 'text-emerald-600' : 'text-red-500'
-                              }`}
+                          {/* Edit Button & Amount */}
+                          <div className="shrink-0 flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                openEditDialog(tx)
+                              }}
                             >
-                              {isIncome ? '+' : '-'}
-                              {formatMoney(tx.amount)}
-                            </p>
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <div className="text-right">
+                              <p
+                                className={`text-sm font-semibold tabular-nums ${
+                                  isIncome ? 'text-emerald-600' : 'text-red-500'
+                                }`}
+                              >
+                                {isIncome ? '+' : '-'}
+                                {formatMoney(tx.amount)}
+                              </p>
+                            </div>
                           </div>
                         </div>
                       )
@@ -920,6 +997,136 @@ export default function FinancePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Edit Transaction Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={(open) => {
+        setShowEditDialog(open)
+        if (!open) setEditingTx(null)
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Редактирование транзакции</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            {/* Type Toggle */}
+            <div className="space-y-2">
+              <Label>Тип</Label>
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={editType === 'EXPENSE' ? 'default' : 'outline'}
+                  className={
+                    editType === 'EXPENSE'
+                      ? 'bg-red-500 hover:bg-red-600 text-white'
+                      : ''
+                  }
+                  onClick={() => {
+                    setEditType('EXPENSE')
+                    setEditCategoryId('')
+                  }}
+                >
+                  <ArrowDownRight className="mr-1 h-4 w-4" />
+                  Расход
+                </Button>
+                <Button
+                  type="button"
+                  variant={editType === 'INCOME' ? 'default' : 'outline'}
+                  className={
+                    editType === 'INCOME'
+                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                      : ''
+                  }
+                  onClick={() => {
+                    setEditType('INCOME')
+                    setEditCategoryId('')
+                  }}
+                >
+                  <ArrowUpRight className="mr-1 h-4 w-4" />
+                  Доход
+                </Button>
+              </div>
+            </div>
+
+            {/* Amount */}
+            <div className="space-y-2">
+              <Label>Сумма</Label>
+              <Input
+                type="number"
+                placeholder="0"
+                min="0"
+                step="0.01"
+                value={editAmount}
+                onChange={(e) => setEditAmount(e.target.value)}
+              />
+            </div>
+
+            {/* Category */}
+            <div className="space-y-2">
+              <Label>Категория</Label>
+              <Select value={editCategoryId} onValueChange={setEditCategoryId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Выберите категорию" />
+                </SelectTrigger>
+                <SelectContent>
+                  {editFilteredCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      <span className="flex items-center gap-2">
+                        <span
+                          className="inline-block h-2.5 w-2.5 rounded-full"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        {cat.name}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label>Описание</Label>
+              <Input
+                placeholder="Например: обед в кафе"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+              />
+            </div>
+
+            {/* Date */}
+            <div className="space-y-2">
+              <Label>Дата</Label>
+              <Input
+                type="date"
+                value={editDate}
+                onChange={(e) => setEditDate(e.target.value)}
+              />
+            </div>
+
+            {/* Note */}
+            <div className="space-y-2">
+              <Label>Заметка</Label>
+              <Textarea
+                placeholder="Необязательная заметка..."
+                value={editNote}
+                onChange={(e) => setEditNote(e.target.value)}
+                rows={2}
+              />
+            </div>
+
+            {/* Submit */}
+            <Button
+              className="w-full"
+              onClick={handleEditSubmit}
+              disabled={
+                isEditSubmitting || !editAmount || !editCategoryId || !editDate
+              }
+            >
+              {isEditSubmitting ? 'Сохранение...' : 'Сохранить изменения'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

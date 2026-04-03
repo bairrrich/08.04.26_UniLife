@@ -1,6 +1,6 @@
 'use client'
 
-import { LucideIcon, icons } from 'lucide-react'
+import { LucideIcon, icons, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { navItems } from '@/lib/nav-items'
@@ -109,7 +109,15 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               В сети
             </p>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления">
+              <Bell className="h-4 w-4" />
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
+                3
+              </span>
+            </button>
+            <ThemeToggle />
+          </div>
         </div>
       </div>
 
