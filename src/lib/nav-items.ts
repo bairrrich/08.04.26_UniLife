@@ -15,5 +15,6 @@ export const navItems: NavItem[] = [
   { id: 'workout', label: 'Тренировки', icon: 'Dumbbell', description: 'Журнал упражнений' },
   { id: 'collections', label: 'Коллекции', icon: 'Library', description: 'Книги, фильмы, рецепты' },
   { id: 'feed', label: 'Лента', icon: 'Rss', description: 'Социальная лента' },
+  { id: 'habits' as AppModule, label: 'Привычки', icon: 'Target', description: 'Трекер привычек и привычек' },
   { id: 'settings', label: 'Настройки', icon: 'Settings', description: 'Профиль и параметры' },
 ]

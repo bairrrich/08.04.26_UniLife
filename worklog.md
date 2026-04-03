@@ -352,3 +352,70 @@
 - Sonner Toaster configured in layout with rich colors and top-right position
 - ESLint: 0 errors, 0 warnings
 - Dev server compiles without errors
+
+---
+Task ID: 5
+Agent: styling-finance-workout-agent
+Task: Enhance Finance, Workout, Diary modules with skeleton loaders and styling
+
+Work Log:
+- **Finance Module** (`finance-page.tsx`):
+  - Replaced "Загрузка..." text with proper skeleton loaders: 4 shimmer cards (`h-[100px] rounded-xl`) for summary area, shimmer skeleton (`h-[300px]`) for chart area, shimmer skeleton (`h-[300px]`) for category breakdown, 6 shimmer rows (`h-14 rounded-lg`) for transaction list — all using `skeleton-shimmer` CSS class
+  - Added `animate-slide-up` class to main container div
+  - Added `stagger-children` class to summary cards grid
+  - Added `card-hover` class to each of the 4 summary cards (income, expense, balance, savings)
+  - Added `tabular-nums` class to all currency amount displays: summary cards, category breakdown amounts, transaction amounts
+  - Added `transition-all duration-200` to tab buttons (TabsList and TabsTrigger) for smooth tab switching
+  - All skeleton loaders shown conditionally when `isLoading === true`, real content shown otherwise
+- **Workout Module** (`workout-page.tsx`):
+  - Replaced "Загрузка..." text with proper skeleton loaders: 4 shimmer stat cards (`h-[100px] rounded-xl`) and 3 shimmer workout cards (`h-24 rounded-xl`) using `skeleton-shimmer` CSS class
+  - Added `animate-slide-up` class to main container div
+  - Added `stagger-children` class to stat cards grid
+  - Added `card-hover` class to each of the 4 stat cards and to workout list cards
+  - Fixed month navigation arrows: replaced `ChevronUp`/`ChevronDown` with `ChevronLeft`/`ChevronRight` for month navigation (kept ChevronUp/ChevronDown imports for workout expand/collapse functionality)
+- **Diary Module** (`diary-page.tsx`):
+  - Added `animate-slide-up` class to main container div
+  - Added `stagger-children` class to main content grid
+  - Added `card-hover` class to diary entry cards in both list view and detail panel
+  - Added `tabular-nums` class to date displays in list view entries and detail panel entries
+
+Stage Summary:
+- All 3 modules enhanced with consistent animation and skeleton loader patterns
+- Skeleton loaders provide smooth loading UX with shimmer effect (already defined in globals.css)
+- Card hover effects, stagger animations, and tabular-nums improve visual polish
+- Workout month navigation now uses correct left/right directional arrows
+- ESLint: 0 errors, 0 warnings
+- Dev server compiles without errors
+
+---
+## Task ID: 6+7
+### Agent: settings-nutrition-agent
+### Task: Enhance Settings and Nutrition modules
+
+### Work Log:
+
+**Settings Page Enhancements:**
+- Replaced raw `<textarea>` with shadcn `Textarea` component (import from `@/components/ui/textarea`)
+- Made notification toggles interactive: replaced static `Badge` display with shadcn `Switch` toggles using `useState` for each notification key. Each toggle shows toast.info on change. Added description text under each label.
+- Added dark mode toggle section ("Тема"): imported `useTheme` from `next-themes`, added 3-button group (Светлая/Тёмная/Системная) with active state highlighted via `variant="default"`. Icons: Sun, Moon, Monitor from lucide-react.
+- Implemented actual data import: added hidden file input (`accept=".json"`), `handleImportClick` opens file dialog, `handleFileChange` reads JSON and POSTs to `/api/settings/import`. Shows success/error toast with imported counts. Loading state with disabled button.
+- Created `/src/app/api/settings/import/route.ts` — POST handler that parses JSON body and inserts into appropriate Prisma tables: DiaryEntry, Category, Transaction, Meal (with MealItems), WaterLog, Workout (with WorkoutExercises), CollectionItem, Post. Returns `{ success: true, imported: { diary: N, ... } }`.
+- Added "Delete account" confirmation: wrapped delete button in shadcn `AlertDialog` with confirmation/cancel. On confirm, shows `toast.info('Функция будет доступна после подключения аутентификации')`.
+- Added new imports: Textarea, Switch, AlertDialog components, useTheme, Sun/Moon/Monitor icons, useRef.
+
+**Nutrition Page Enhancements:**
+- Replaced all 4 custom hand-built progress bars (Ккал, Белки, Жиры, Углеводы) with shadcn `Progress` component. Used CSS child selector `[&>div]:bg-{color}` to override indicator color per macro type, plus `bg-{color}-100` for track.
+- Added DELETE handler to `/src/app/api/nutrition/route.ts`: validates meal ID, checks user ownership, deletes meal (cascade removes meal items), returns success/error.
+- Added meal delete functionality: `Trash2` icon button on each meal card header. Inline double-click confirmation pattern — first click highlights button and shows toast.info, second click within 3s confirms deletion. Button turns red (destructive) on first click. Optimistic UI removal + `fetchData()` refresh.
+- Improved meal cards styling: added `card-hover` class to meal cards for hover lift effect, `stagger-children` to meal timeline container for animated entrance, `animate-slide-up` to main container.
+- Added subtle time display (Clock icon + HH:MM) on each meal card.
+- Improved macro item display: colored text per macro type (orange for kcal, blue for protein, amber for fat, green for carbs), `font-semibold` on kcal, better spacing with `gap-2.5`.
+- Removed unused imports: Coffee, Sandwich. Added Clock import.
+- Fixed pre-existing ESLint parsing error in finance-page.tsx (multi-line template literal in className causing parse failure).
+
+### Stage Summary:
+- Settings page fully enhanced: shadcn Textarea, interactive Switch toggles, theme selector, data import with API, AlertDialog delete confirmation
+- Nutrition page enhanced: shadcn Progress bars, meal delete with inline confirmation, card-hover/stagger-children animations, improved typography
+- New API endpoint: POST `/api/settings/import` for JSON data import across all modules
+- New API method: DELETE `/api/nutrition?id={mealId}` for meal deletion
+- ESLint: 0 errors, 0 warnings

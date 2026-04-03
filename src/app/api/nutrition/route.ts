@@ -136,3 +136,43 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// DELETE /api/nutrition?id=mealId
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const mealId = searchParams.get('id')
+
+    if (!mealId) {
+      return NextResponse.json(
+        { success: false, error: 'Meal ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify the meal belongs to the user
+    const meal = await db.meal.findFirst({
+      where: { id: mealId, userId: USER_ID },
+    })
+
+    if (!meal) {
+      return NextResponse.json(
+        { success: false, error: 'Meal not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the meal (cascade will delete meal items)
+    await db.meal.delete({
+      where: { id: mealId },
+    })
+
+    return NextResponse.json({ success: true, message: 'Meal deleted' })
+  } catch (error) {
+    console.error('DELETE /api/nutrition error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete meal' },
+      { status: 500 }
+    )
+  }
+}

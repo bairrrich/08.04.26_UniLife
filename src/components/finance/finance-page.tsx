@@ -327,7 +327,7 @@ export default function FinancePage() {
   // ============ Render ============
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -497,58 +497,61 @@ export default function FinancePage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {isLoading ? (
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-shimmer h-[100px] rounded-xl" />
+          ))}
+        </div>
+      ) : (
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 stagger-children">
         {/* Income */}
-        <Card className="border-l-4 border-l-emerald-500 py-4">
+        <Card className="card-hover border-l-4 border-l-emerald-500 py-4">
           <CardContent className="px-4 py-0">
             <div className="flex items-center gap-2 text-muted-foreground">
               <TrendingUp className="h-4 w-4 text-emerald-500" />
               <span className="text-xs font-medium">Доходы</span>
             </div>
-            <p className="mt-1 text-lg font-bold text-emerald-600">
+            <p className="mt-1 text-lg font-bold text-emerald-600 tabular-nums">
               {formatMoney(stats?.totalIncome ?? 0)}
             </p>
           </CardContent>
         </Card>
 
         {/* Expense */}
-        <Card className="border-l-4 border-l-red-500 py-4">
+        <Card className="card-hover border-l-4 border-l-red-500 py-4">
           <CardContent className="px-4 py-0">
             <div className="flex items-center gap-2 text-muted-foreground">
               <TrendingDown className="h-4 w-4 text-red-500" />
               <span className="text-xs font-medium">Расходы</span>
             </div>
-            <p className="mt-1 text-lg font-bold text-red-500">
+            <p className="mt-1 text-lg font-bold text-red-500 tabular-nums">
               {formatMoney(stats?.totalExpense ?? 0)}
             </p>
           </CardContent>
         </Card>
 
         {/* Balance */}
-        <Card className="border-l-4 border-l-blue-500 py-4">
+        <Card className="card-hover border-l-4 border-l-blue-500 py-4">
           <CardContent className="px-4 py-0">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Wallet className="h-4 w-4 text-blue-500" />
               <span className="text-xs font-medium">Баланс</span>
             </div>
-            <p
-              className={`mt-1 text-lg font-bold ${
-                (stats?.balance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-500'
-              }`}
-            >
+            <p className={`mt-1 text-lg font-bold tabular-nums ${(stats?.balance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
               {formatMoney(stats?.balance ?? 0)}
             </p>
           </CardContent>
         </Card>
 
         {/* Savings Rate */}
-        <Card className="border-l-4 border-l-amber-500 py-4">
+        <Card className="card-hover border-l-4 border-l-amber-500 py-4">
           <CardContent className="px-4 py-0">
             <div className="flex items-center gap-2 text-muted-foreground">
               <PiggyBank className="h-4 w-4 text-amber-500" />
               <span className="text-xs font-medium">Сбережения</span>
             </div>
-            <p className="mt-1 text-lg font-bold text-amber-600">
+            <p className="mt-1 text-lg font-bold text-amber-600 tabular-nums">
               {stats?.savingsRate != null
                 ? `${Math.round(stats.savingsRate)}%`
                 : '0%'}
@@ -556,10 +559,14 @@ export default function FinancePage() {
           </CardContent>
         </Card>
       </div>
+      )}
 
       {/* Chart + Category Breakdown */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Monthly Expense Chart */}
+        {isLoading ? (
+          <div className="skeleton-shimmer h-[300px] rounded-xl w-full lg:col-span-2" />
+        ) : (
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -601,8 +608,12 @@ export default function FinancePage() {
             </ChartContainer>
           </CardContent>
         </Card>
+        )}
 
         {/* Category Breakdown */}
+        {isLoading ? (
+          <div className="skeleton-shimmer h-[300px] rounded-xl w-full" />
+        ) : (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">По категориям</CardTitle>
@@ -627,7 +638,7 @@ export default function FinancePage() {
                             </span>
                           </div>
                           <div className="text-right">
-                            <span className="font-semibold">{formatMoney(cat.total)}</span>
+                            <span className="font-semibold tabular-nums">{formatMoney(cat.total)}</span>
                             <span className="ml-1.5 text-xs text-muted-foreground">
                               {pct}%
                             </span>
@@ -654,6 +665,7 @@ export default function FinancePage() {
             </ScrollArea>
           </CardContent>
         </Card>
+        )}
       </div>
 
       {/* Transaction List */}
@@ -665,14 +677,14 @@ export default function FinancePage() {
               Транзакции
             </CardTitle>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="h-8">
-                <TabsTrigger value="all" className="text-xs px-2.5 h-7">
+              <TabsList className="h-8 transition-all duration-200">
+                <TabsTrigger value="all" className="text-xs px-2.5 h-7 transition-all duration-200">
                   Все
                 </TabsTrigger>
-                <TabsTrigger value="income" className="text-xs px-2.5 h-7">
+                <TabsTrigger value="income" className="text-xs px-2.5 h-7 transition-all duration-200">
                   Доходы
                 </TabsTrigger>
-                <TabsTrigger value="expense" className="text-xs px-2.5 h-7">
+                <TabsTrigger value="expense" className="text-xs px-2.5 h-7 transition-all duration-200">
                   Расходы
                 </TabsTrigger>
               </TabsList>
@@ -681,8 +693,10 @@ export default function FinancePage() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
-              Загрузка...
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="skeleton-shimmer h-14 rounded-lg" />
+              ))}
             </div>
           ) : groupedTransactions.length === 0 ? (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-muted-foreground">
@@ -745,7 +759,7 @@ export default function FinancePage() {
                           {/* Amount */}
                           <div className="shrink-0 text-right">
                             <p
-                              className={`text-sm font-semibold ${
+                              className={`text-sm font-semibold tabular-nums ${
                                 isIncome ? 'text-emerald-600' : 'text-red-500'
                               }`}
                             >

@@ -508,7 +508,7 @@ export default function DiaryPage() {
             <Card
               key={entry.id}
               className={cn(
-                'rounded-xl border bg-card hover:shadow-sm transition cursor-pointer',
+                'card-hover rounded-xl border bg-card hover:shadow-sm transition cursor-pointer',
                 selectedEntry?.id === entry.id && 'ring-2 ring-primary/40'
               )}
               onClick={() => {
@@ -521,7 +521,7 @@ export default function DiaryPage() {
                   <div className="flex-1 min-w-0">
                     {/* Date & mood */}
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs font-medium text-muted-foreground">
+                      <span className="text-xs font-medium text-muted-foreground tabular-nums">
                         {format(entryDate, 'd MMMM, EEEE', { locale: ru })}
                       </span>
                       {entry.mood && (
@@ -629,7 +629,7 @@ export default function DiaryPage() {
             <Card
               key={entry.id}
               className={cn(
-                'rounded-xl border bg-card transition',
+                'card-hover rounded-xl border bg-card transition',
                 isSelected && 'ring-2 ring-primary/40'
               )}
               onClick={() => setSelectedEntry(entry)}
@@ -640,7 +640,7 @@ export default function DiaryPage() {
                     <CardTitle className="text-base">
                       {entry.title || 'Без заголовка'}
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
                       {format(parseEntryDate(entry.date), 'd MMMM yyyy, HH:mm', { locale: ru })}
                     </p>
                   </div>
@@ -932,7 +932,7 @@ export default function DiaryPage() {
   // ─── Main Render ────────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6">
+    <div className="w-full max-w-5xl mx-auto space-y-6 animate-slide-up">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -1023,7 +1023,7 @@ export default function DiaryPage() {
 
       {/* Main content */}
       {!isLoading && (
-        <div className="grid gap-6 lg:grid-cols-[1fr,1fr]">
+        <div className="grid gap-6 lg:grid-cols-[1fr,1fr] stagger-children">
           {/* Left: Calendar or List */}
           <div className="space-y-4">
             {viewMode === 'calendar' ? renderCalendarView() : renderListView()}

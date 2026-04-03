@@ -4,10 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import { toast } from 'sonner'
+import { useTheme } from 'next-themes'
 import {
   User,
   Bell,
@@ -23,8 +36,11 @@ import {
   Dumbbell,
   Library,
   Newspaper,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 
 const EXPORT_MODULES = [
   { key: 'diary', label: 'Дневник', icon: BookOpen, emoji: '📝' },
@@ -36,10 +52,19 @@ const EXPORT_MODULES = [
 ] as const
 
 export function SettingsPage() {
+  const { theme, setTheme } = useTheme()
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('Алексей')
   const [email, setEmail] = useState('demo@unilife.app')
   const [bio, setBio] = useState('Люблю отслеживать всё в жизни 🚀')
   const [saving, setSaving] = useState(false)
+  const [notifications, setNotifications] = useState({
+    diaryReminder: true,
+    waterReminder: true,
+    budgetWarning: true,
+    workoutReminder: false,
+  })
+  const [importing, setImporting] = useState(false)
 
   const handleSave = async () => {
     setSaving(true)
@@ -84,8 +109,57 @@ export function SettingsPage() {
     }
   }
 
-  const handleImport = () => {
-    toast.info('Импорт будет доступен в следующей версии')
+  const handleNotificationChange = (key: string, checked: boolean) => {
+    setNotifications((prev) => ({ ...prev, [key]: checked }))
+    toast.info(checked ? 'Уведомление включено' : 'Уведомление отключено')
+  }
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    if (!file.name.endsWith('.json')) {
+      toast.error('Пожалуйста, выберите JSON-файл')
+      return
+    }
+
+    setImporting(true)
+    toast.dismiss()
+    try {
+      const text = await file.text()
+      const data = JSON.parse(text)
+
+      const res = await fetch('/api/settings/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+
+      if (res.ok) {
+        const result = await res.json()
+        const counts = Object.entries(result.imported || {})
+          .filter(([, v]: [string, unknown]) => (v as number) > 0)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(', ')
+        toast.success(`Импорт выполнен! ${counts || 'нет данных'}`)
+      } else {
+        const err = await res.json()
+        toast.error(err.error || 'Ошибка при импорте')
+      }
+    } catch (err) {
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    } finally {
+      setImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+  }
+
+  const handleDeleteAccount = () => {
+    toast.info('Функция будет доступна после подключения аутентификации')
   }
 
   return (
@@ -145,12 +219,12 @@ export function SettingsPage() {
 
           <div className="space-y-2">
             <Label htmlFor="bio">О себе</Label>
-            <textarea
+            <Textarea
               id="bio"
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
               placeholder="Расскажите о себе..."
+              className="min-h-[80px] resize-none"
             />
           </div>
 
@@ -171,18 +245,61 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {[
-            { label: 'Ежедневное напоминание о дневнике', enabled: true },
-            { label: 'Напоминание о воде', enabled: true },
-            { label: 'Бюджет: предупреждение о превышении', enabled: true },
-            { label: 'Тренировка: напоминание', enabled: false },
-          ].map((item, idx) => (
-            <div key={idx} className="flex items-center justify-between py-2">
-              <span className="text-sm">{item.label}</span>
-              <Badge variant={item.enabled ? 'default' : 'secondary'}>
-                {item.enabled ? 'Вкл' : 'Выкл'}
-              </Badge>
+            { key: 'diaryReminder', label: 'Ежедневное напоминание о дневнике', description: 'Напоминание написать дневник каждый день' },
+            { key: 'waterReminder', label: 'Напоминание о воде', description: 'Не забудьте выпить стакан воды' },
+            { key: 'budgetWarning', label: 'Бюджет: предупреждение о превышении', description: 'Уведомление при превышении лимита расходов' },
+            { key: 'workoutReminder', label: 'Тренировка: напоминание', description: 'Напоминание о запланированной тренировке' },
+          ].map((item) => (
+            <div key={item.key} className="flex items-center justify-between py-2">
+              <div className="space-y-0.5">
+                <p className="text-sm font-medium">{item.label}</p>
+                <p className="text-xs text-muted-foreground">{item.description}</p>
+              </div>
+              <Switch
+                checked={notifications[item.key as keyof typeof notifications]}
+                onCheckedChange={(checked) => handleNotificationChange(item.key, checked)}
+              />
             </div>
           ))}
+        </CardContent>
+      </Card>
+
+      {/* Theme */}
+      <Card className="rounded-xl">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Sun className="h-5 w-5" />
+            Тема
+          </CardTitle>
+          <CardDescription>Выберите оформление приложения</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-3">
+            <Button
+              variant={theme === 'light' ? 'default' : 'outline'}
+              className="gap-2"
+              onClick={() => setTheme('light')}
+            >
+              <Sun className="h-4 w-4" />
+              Светлая
+            </Button>
+            <Button
+              variant={theme === 'dark' ? 'default' : 'outline'}
+              className="gap-2"
+              onClick={() => setTheme('dark')}
+            >
+              <Moon className="h-4 w-4" />
+              Тёмная
+            </Button>
+            <Button
+              variant={theme === 'system' ? 'default' : 'outline'}
+              className="gap-2"
+              onClick={() => setTheme('system')}
+            >
+              <Monitor className="h-4 w-4" />
+              Системная
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -226,10 +343,22 @@ export function SettingsPage() {
           <Separator />
 
           {/* Import & Reset */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleFileChange}
+            className="hidden"
+          />
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="gap-2" onClick={handleImport}>
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={handleImportClick}
+              disabled={importing}
+            >
               <Upload className="h-4 w-4" />
-              Импорт данных
+              {importing ? 'Импорт...' : 'Импорт данных'}
             </Button>
             <Button variant="outline" className="gap-2" onClick={handleSeed}>
               <Settings className="h-4 w-4" />
@@ -244,10 +373,32 @@ export function SettingsPage() {
             <p className="text-sm text-muted-foreground mb-3">
               Удаление аккаунта приведёт к безвозвратной потере всех данных.
             </p>
-            <Button variant="destructive" size="sm" className="gap-2">
-              <Trash2 className="h-4 w-4" />
-              Удалить аккаунт
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Удалить аккаунт
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Вы уверены?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Это действие приведёт к безвозвратному удалению вашего аккаунта и всех связанных данных.
+                    Эта операция не может быть отменена.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Отмена</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Удалить
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardContent>
       </Card>

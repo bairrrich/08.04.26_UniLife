@@ -6,8 +6,10 @@ import {
   Plus,
   Clock,
   Flame,
-  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
+  ChevronDown,
   Trash2,
   Trophy,
 } from 'lucide-react'
@@ -257,7 +259,7 @@ export function WorkoutPage() {
   // ======================== Render ========================
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -410,8 +412,8 @@ export function WorkoutPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="py-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-children">
+        <Card className="card-hover py-4">
           <CardContent className="flex items-center gap-3 px-4 py-0">
             <div className="h-10 w-10 rounded-lg bg-rose-100 flex items-center justify-center">
               <Dumbbell className="h-5 w-5 text-rose-600" />
@@ -422,7 +424,7 @@ export function WorkoutPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="py-4">
+        <Card className="card-hover py-4">
           <CardContent className="flex items-center gap-3 px-4 py-0">
             <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
               <Clock className="h-5 w-5 text-blue-600" />
@@ -433,7 +435,7 @@ export function WorkoutPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="py-4">
+        <Card className="card-hover py-4">
           <CardContent className="flex items-center gap-3 px-4 py-0">
             <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center">
               <Flame className="h-5 w-5 text-amber-600" />
@@ -444,7 +446,7 @@ export function WorkoutPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="py-4">
+        <Card className="card-hover py-4">
           <CardContent className="flex items-center gap-3 px-4 py-0">
             <div className="h-10 w-10 rounded-lg bg-emerald-100 flex items-center justify-center">
               <Trophy className="h-5 w-5 text-emerald-600" />
@@ -460,23 +462,28 @@ export function WorkoutPage() {
       {/* Month Selector */}
       <div className="flex items-center gap-3">
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => changeMonth(-1)}>
-          <ChevronUp className="h-4 w-4" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-sm font-medium min-w-[160px] text-center">
           {formatMonth(month)}
         </span>
         <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => changeMonth(1)}>
-          <ChevronDown className="h-4 w-4" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Workout List */}
       {loading ? (
-        <Card>
-          <CardContent className="py-8 text-center text-muted-foreground text-sm">
-            Загрузка...
-          </CardContent>
-        </Card>
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-shimmer h-[100px] rounded-xl" />
+          ))}
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="skeleton-shimmer h-24 rounded-xl" />
+            ))}
+          </div>
+        </div>
       ) : workouts.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
@@ -497,7 +504,7 @@ export function WorkoutPage() {
               return (
                 <Card
                   key={workout.id}
-                  className={`border-l-4 ${borderColor} hover:shadow-sm transition cursor-pointer`}
+                  className={`card-hover border-l-4 ${borderColor} hover:shadow-sm transition cursor-pointer`}
                   onClick={() => toggleExpand(workout.id)}
                 >
                   <CardHeader className="pb-0">

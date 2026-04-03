@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server'
-import { seed } from '@/lib/seed'
+import { seed, seedHabits } from '@/lib/seed'
 
 export async function POST() {
   try {
     await seed()
+    await seedHabits()
     return NextResponse.json({ success: true, message: 'Database seeded successfully' })
   } catch (error) {
     console.error('Seed error:', error)

@@ -121,6 +121,117 @@
   }
 }
 
+/* ── Custom Animations ─────────────────────────────────────────────── */
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s ease-out;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.25s ease-out;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.2s ease-out;
+}
+
+.animate-shimmer {
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2s ease-in-out infinite;
+}
+
+.animate-count-up {
+  animation: count-up 0.4s ease-out;
+}
+
+/* Staggered children animations */
+.stagger-children > * {
+  animation: slide-up 0.3s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+
+/* ── Transition defaults ───────────────────────────────────────────── */
+
+.transition-default {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-bounce {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Glass morphism utility ────────────────────────────────────────── */
+
+.glass {
+  background: oklch(1 0 0 / 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass {
+  background: oklch(0.18 0.01 240 / 0.7);
+}
+
+.glass-strong {
+  background: oklch(1 0 0 / 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.dark .glass-strong {
+  background: oklch(0.18 0.01 240 / 0.85);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -142,4 +253,82 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.60 0.01 240);
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.75 0.01 240) transparent;
+}
+
+.dark * {
+  scrollbar-color: oklch(0.35 0.01 240) transparent;
+}
+
+/* ── Focus-visible polish ──────────────────────────────────────────── */
+
+:focus-visible {
+  outline: 2px solid oklch(0.55 0.17 155);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Selection color ───────────────────────────────────────────────── */
+
+::selection {
+  background: oklch(0.55 0.17 155 / 0.25);
+}
+
+/* ── Card hover effects ────────────────────────────────────────────── */
+
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px oklch(0 0 0 / 0.1), 0 4px 10px -6px oklch(0 0 0 / 0.05);
+}
+
+.dark .card-hover:hover {
+  box-shadow: 0 8px 25px -5px oklch(0 0 0 / 0.3), 0 4px 10px -6px oklch(0 0 0 / 0.2);
+}
+
+/* ── Gradient text utility ─────────────────────────────────────────── */
+
+.text-gradient {
+  background: linear-gradient(135deg, oklch(0.55 0.17 155), oklch(0.65 0.15 145));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Skeleton shimmer effect ───────────────────────────────────────── */
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.94 0.01 155) 25%,
+    oklch(0.97 0.005 155) 50%,
+    oklch(0.94 0.01 155) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    oklch(0.22 0.01 240) 25%,
+    oklch(0.26 0.01 240) 50%,
+    oklch(0.22 0.01 240) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ── Smooth number transitions ─────────────────────────────────────── */
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }

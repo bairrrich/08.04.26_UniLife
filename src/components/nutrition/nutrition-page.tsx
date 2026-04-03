@@ -33,12 +33,11 @@ import {
   Droplets,
   Plus,
   UtensilsCrossed,
-  Coffee,
   Sun,
   Moon,
-  Sandwich,
   Apple,
   Trash2,
+  Clock,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -88,10 +87,10 @@ interface WaterStats {
 
 // ─── Constants ──────────────────────────────────────────────────
 const MACRO_GOALS = {
-  kcal: { value: 2500, unit: '', label: 'Ккал', color: 'bg-orange-500', bgTrack: 'bg-orange-100' },
-  protein: { value: 150, unit: 'г', label: 'Белки', color: 'bg-blue-500', bgTrack: 'bg-blue-100' },
-  fat: { value: 80, unit: 'г', label: 'Жиры', color: 'bg-amber-500', bgTrack: 'bg-amber-100' },
-  carbs: { value: 300, unit: 'г', label: 'Углеводы', color: 'bg-green-500', bgTrack: 'bg-green-100' },
+  kcal: { value: 2500, unit: '', label: 'Ккал', trackColor: 'bg-orange-100', indicatorColor: '[&>div]:bg-orange-500' },
+  protein: { value: 150, unit: 'г', label: 'Белки', trackColor: 'bg-blue-100', indicatorColor: '[&>div]:bg-blue-500' },
+  fat: { value: 80, unit: 'г', label: 'Жиры', trackColor: 'bg-amber-100', indicatorColor: '[&>div]:bg-amber-500' },
+  carbs: { value: 300, unit: 'г', label: 'Углеводы', trackColor: 'bg-green-100', indicatorColor: '[&>div]:bg-green-500' },
 } as const
 
 const MEAL_TYPE_CONFIG: Record<
@@ -266,10 +265,39 @@ export default function NutritionPage() {
     )
   }
 
+  // ─── Delete meal handler ────────────────────────────────────────
+  const [deletingMealId, setDeletingMealId] = useState<string | null>(null)
+
+  const handleDeleteMeal = async (mealId: string) => {
+    if (deletingMealId === mealId) {
+      // Second click = confirm delete
+      toast.dismiss()
+      try {
+        const res = await fetch(`/api/nutrition?id=${mealId}`, { method: 'DELETE' })
+        if (res.ok) {
+          toast.success('Приём пищи удалён')
+          setMeals((prev) => prev.filter((m) => m.id !== mealId))
+          fetchData()
+        } else {
+          toast.error('Ошибка при удалении')
+        }
+      } catch (err) {
+        toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+      } finally {
+        setDeletingMealId(null)
+      }
+    } else {
+      // First click = show inline confirmation
+      setDeletingMealId(mealId)
+      toast.info('Нажмите ещё раз для подтверждения удаления')
+      setTimeout(() => setDeletingMealId(null), 3000)
+    }
+  }
+
   const totalGlasses = 8
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-orange-50/40 to-white">
+    <div className="animate-slide-up min-h-screen bg-gradient-to-b from-orange-50/40 to-white">
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
@@ -301,14 +329,10 @@ export default function NutritionPage() {
                 </p>
               </div>
             </div>
-            <div className={`h-2 w-full overflow-hidden rounded-full ${MACRO_GOALS.kcal.bgTrack}`}>
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${MACRO_GOALS.kcal.color}`}
-                style={{
-                  width: `${Math.min(((stats?.totalKcal ?? 0) / MACRO_GOALS.kcal.value) * 100, 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={Math.min(((stats?.totalKcal ?? 0) / MACRO_GOALS.kcal.value) * 100, 100)}
+              className={`h-2.5 ${MACRO_GOALS.kcal.trackColor} ${MACRO_GOALS.kcal.indicatorColor}`}
+            />
           </Card>
 
           {/* Белки */}
@@ -325,14 +349,10 @@ export default function NutritionPage() {
                 </p>
               </div>
             </div>
-            <div className={`h-2 w-full overflow-hidden rounded-full ${MACRO_GOALS.protein.bgTrack}`}>
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${MACRO_GOALS.protein.color}`}
-                style={{
-                  width: `${Math.min(((stats?.totalProtein ?? 0) / MACRO_GOALS.protein.value) * 100, 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={Math.min(((stats?.totalProtein ?? 0) / MACRO_GOALS.protein.value) * 100, 100)}
+              className={`h-2.5 ${MACRO_GOALS.protein.trackColor} ${MACRO_GOALS.protein.indicatorColor}`}
+            />
           </Card>
 
           {/* Жиры */}
@@ -349,14 +369,10 @@ export default function NutritionPage() {
                 </p>
               </div>
             </div>
-            <div className={`h-2 w-full overflow-hidden rounded-full ${MACRO_GOALS.fat.bgTrack}`}>
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${MACRO_GOALS.fat.color}`}
-                style={{
-                  width: `${Math.min(((stats?.totalFat ?? 0) / MACRO_GOALS.fat.value) * 100, 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={Math.min(((stats?.totalFat ?? 0) / MACRO_GOALS.fat.value) * 100, 100)}
+              className={`h-2.5 ${MACRO_GOALS.fat.trackColor} ${MACRO_GOALS.fat.indicatorColor}`}
+            />
           </Card>
 
           {/* Углеводы */}
@@ -373,14 +389,10 @@ export default function NutritionPage() {
                 </p>
               </div>
             </div>
-            <div className={`h-2 w-full overflow-hidden rounded-full ${MACRO_GOALS.carbs.bgTrack}`}>
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${MACRO_GOALS.carbs.color}`}
-                style={{
-                  width: `${Math.min(((stats?.totalCarbs ?? 0) / MACRO_GOALS.carbs.value) * 100, 100)}%`,
-                }}
-              />
-            </div>
+            <Progress
+              value={Math.min(((stats?.totalCarbs ?? 0) / MACRO_GOALS.carbs.value) * 100, 100)}
+              className={`h-2.5 ${MACRO_GOALS.carbs.trackColor} ${MACRO_GOALS.carbs.indicatorColor}`}
+            />
           </Card>
         </div>
 
@@ -489,23 +501,40 @@ export default function NutritionPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
+          <div className="stagger-children space-y-4">
             {sortMealsByType(meals).map((meal) => {
               const config = MEAL_TYPE_CONFIG[meal.type] || MEAL_TYPE_CONFIG.LUNCH
               const totalKcal = getMealTotalKcal(meal)
 
               return (
-                <Card key={meal.id}>
+                <Card key={meal.id} className="card-hover">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2 text-base">
                         <span>{config.emoji}</span>
                         <span>{config.label}</span>
                       </CardTitle>
-                      <Badge variant="secondary" className="font-mono text-xs">
-                        <Flame className="mr-1 size-3 text-orange-500" />
-                        {Math.round(totalKcal)} ккал
-                      </Badge>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="size-3" />
+                          {meal.date ? new Date(meal.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        </span>
+                        <Badge variant="secondary" className="font-mono text-xs">
+                          <Flame className="mr-1 size-3 text-orange-500" />
+                          {Math.round(totalKcal)} ккал
+                        </Badge>
+                        <button
+                          onClick={() => handleDeleteMeal(meal.id)}
+                          className={`flex size-7 items-center justify-center rounded-md transition-colors ${
+                            deletingMealId === meal.id
+                              ? 'bg-destructive text-destructive-foreground'
+                              : 'text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+                          }`}
+                          title={deletingMealId === meal.id ? 'Нажмите для подтверждения' : 'Удалить'}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -516,11 +545,11 @@ export default function NutritionPage() {
                           className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"
                         >
                           <span className="text-sm font-medium">{item.name}</span>
-                          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                            <span className="text-orange-600 font-medium">{Math.round(item.kcal)}кк</span>
-                            <span>Б {Math.round(item.protein)}</span>
-                            <span>Ж {Math.round(item.fat)}</span>
-                            <span>У {Math.round(item.carbs)}</span>
+                          <div className="flex items-center gap-2.5 text-xs">
+                            <span className="font-semibold text-orange-600">{Math.round(item.kcal)} ккал</span>
+                            <span className="text-blue-600">Б {Math.round(item.protein)}г</span>
+                            <span className="text-amber-600">Ж {Math.round(item.fat)}г</span>
+                            <span className="text-green-600">У {Math.round(item.carbs)}г</span>
                           </div>
                         </div>
                       ))}

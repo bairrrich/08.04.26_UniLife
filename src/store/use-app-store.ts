@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type AppModule = 'dashboard' | 'diary' | 'finance' | 'nutrition' | 'workout' | 'collections' | 'feed' | 'settings'
+export type AppModule = 'dashboard' | 'diary' | 'finance' | 'nutrition' | 'workout' | 'collections' | 'feed' | 'habits' | 'settings'
 
 interface AppState {
   activeModule: AppModule

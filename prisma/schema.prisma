@@ -269,6 +269,37 @@ model Comment {
   @@index([userId])
 }
 
+// ============ HABITS ============
+
+model Habit {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  emoji       String   @default("✅")
+  color       String   @default("#10b981")
+  frequency   String   @default("daily")  // daily, weekly
+  targetCount Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  logs        HabitLog[]
+
+  @@index([userId])
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  habitId   String
+  date      DateTime @default(now())
+  count     Int      @default(1)
+  note      String?
+
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([habitId, date])
+}
+
 // ============ SOCIAL ============
 
 model Follow {

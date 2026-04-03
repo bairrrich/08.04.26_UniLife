@@ -395,7 +395,6 @@ export default function DashboardPage() {
     icon: React.ReactNode
     module: AppModule
     iconBg: string
-    iconColor: string
   }[] = [
     {
       label: 'Новая запись',

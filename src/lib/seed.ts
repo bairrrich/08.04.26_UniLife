@@ -74,15 +74,15 @@ export async function seed() {
     })
   }
 
-  // Seed transactions (last 30 days)
+  // Seed transactions (last 10 days, fewer per day)
   const now = new Date()
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 10; i++) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
     date.setHours(Math.floor(Math.random() * 12) + 8, Math.floor(Math.random() * 60))
 
-    // 2-5 transactions per day
-    const numTransactions = Math.floor(Math.random() * 4) + 2
+    // 1-3 transactions per day
+    const numTransactions = Math.floor(Math.random() * 3) + 1
     for (let j = 0; j < numTransactions; j++) {
       const isExpense = Math.random() > 0.15
       const expCats = expenseCategories.slice(0, 6)
@@ -122,8 +122,8 @@ export async function seed() {
     }
   }
 
-  // Seed diary entries (last 14 days)
-  for (let i = 0; i < 14; i++) {
+  // Seed diary entries (last 7 days)
+  for (let i = 0; i < 7; i++) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
 
@@ -179,7 +179,7 @@ export async function seed() {
     })
   }
 
-  // Seed meals (last 7 days)
+  // Seed meals (last 4 days)
   const mealTypes = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']
   const mealNames: Record<string, string[][]> = {
     BREAKFAST: [
@@ -218,7 +218,7 @@ export async function seed() {
     ],
   }
 
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 4; i++) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
 
@@ -248,7 +248,7 @@ export async function seed() {
   }
 
   // Seed water logs (last 7 days)
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < 4; i++) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)
     const numGlasses = Math.floor(Math.random() * 5) + 4
@@ -420,4 +420,58 @@ export async function seed() {
   }
 
   console.log('✅ Database seeded successfully!')
+}
+
+export async function seedHabits() {
+  console.log('🌱 Seeding habits...')
+
+  const habitData = [
+    { name: 'Утренняя зарядка', emoji: '✅', color: '#10b981', frequency: 'daily', targetCount: 1 },
+    { name: 'Чтение 30 минут', emoji: '📚', color: '#3b82f6', frequency: 'daily', targetCount: 1 },
+    { name: '8 стаканов воды', emoji: '💧', color: '#06b6d4', frequency: 'daily', targetCount: 1 },
+    { name: 'Медитация', emoji: '🧘‍♂️', color: '#8b5cf6', frequency: 'daily', targetCount: 1 },
+    { name: 'Бег 5 км', emoji: '🏃‍♂️', color: '#f97316', frequency: 'weekly', targetCount: 1 },
+  ]
+
+  const now = new Date()
+
+  for (const h of habitData) {
+    // Create habit
+    const habit = await db.habit.create({
+      data: {
+        userId: USER_ID,
+        name: h.name,
+        emoji: h.emoji,
+        color: h.color,
+        frequency: h.frequency,
+        targetCount: h.targetCount,
+      },
+    })
+
+    // Generate 14 days of logs with ~80% completion rate
+    for (let i = 0; i < 14; i++) {
+      // Skip today for weekly habits randomly
+      if (h.frequency === 'weekly' && Math.random() > 0.3) continue
+      // 80% completion
+      if (Math.random() > 0.8) continue
+
+      const date = new Date(now)
+      date.setDate(date.getDate() - i)
+      date.setHours(8, 0, 0, 0)
+
+      try {
+        await db.habitLog.create({
+          data: {
+            habitId: habit.id,
+            date,
+            count: 1,
+          },
+        })
+      } catch {
+        // Unique constraint violation — skip duplicate dates
+      }
+    }
+  }
+
+  console.log('✅ Habits seeded successfully!')
 }
