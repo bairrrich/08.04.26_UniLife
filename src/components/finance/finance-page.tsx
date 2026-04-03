@@ -11,6 +11,21 @@ import {
   Receipt,
   PiggyBank,
   Filter,
+  Coffee,
+  UtensilsCrossed,
+  Car,
+  TrainFront,
+  ShoppingBag,
+  Home,
+  Heart,
+  Gamepad2,
+  GraduationCap,
+  Plane,
+  Zap,
+  Gift,
+  MoreHorizontal,
+  DollarSign,
+  Briefcase,
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts'
 
@@ -90,6 +105,39 @@ interface ChartDataPoint {
   income: number
 }
 
+// ============ Category Icon Map ============
+
+const CATEGORY_ICON_MAP: Record<string, React.ReactNode> = {
+  coffee: <Coffee className="h-4 w-4" />,
+  food: <UtensilsCrossed className="h-4 w-4" />,
+  taxi: <Car className="h-4 w-4" />,
+  transport: <TrainFront className="h-4 w-4" />,
+  shopping: <ShoppingBag className="h-4 w-4" />,
+  home: <Home className="h-4 w-4" />,
+  health: <Heart className="h-4 w-4" />,
+  entertainment: <Gamepad2 className="h-4 w-4" />,
+  education: <GraduationCap className="h-4 w-4" />,
+  travel: <Plane className="h-4 w-4" />,
+  utilities: <Zap className="h-4 w-4" />,
+  gifts: <Gift className="h-4 w-4" />,
+  salary: <DollarSign className="h-4 w-4" />,
+  freelance: <Briefcase className="h-4 w-4" />,
+  circle: <MoreHorizontal className="h-4 w-4" />,
+}
+
+function getCategoryIcon(iconStr: string): React.ReactNode {
+  return CATEGORY_ICON_MAP[iconStr] || <MoreHorizontal className="h-4 w-4" />
+}
+
+// ============ Quick Expense Presets ============
+
+const QUICK_EXPENSES = [
+  { label: 'Кофе', amount: 200, icon: <Coffee className="h-3.5 w-3.5" /> },
+  { label: 'Обед', amount: 500, icon: <UtensilsCrossed className="h-3.5 w-3.5" /> },
+  { label: 'Такси', amount: 300, icon: <Car className="h-3.5 w-3.5" /> },
+  { label: 'Проезд', amount: 50, icon: <TrainFront className="h-3.5 w-3.5" /> },
+]
+
 // ============ Utilities ============
 
 const formatMoney = (amount: number): string => {
@@ -114,11 +162,54 @@ const formatDayShort = (dateStr: string): string => {
   return date.getDate().toString()
 }
 
+const formatRelativeTime = (dateStr: string): string => {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffMin = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffMin < 1) return 'только что'
+  if (diffMin < 60) return `${diffMin} мин назад`
+  if (diffHours < 24) return `${diffHours}ч назад`
+  if (diffDays === 1) return 'вчера'
+  if (diffDays < 7) return `${diffDays} дн. назад`
+  return formatDateRu(dateStr)
+}
+
 const getCurrentMonth = (): string => {
   const now = new Date()
   const year = now.getFullYear()
   const month = (now.getMonth() + 1).toString().padStart(2, '0')
   return `${year}-${month}`
+}
+
+// ============ Sparkline Component ============
+
+function MiniSparkline({ data, color }: { data: number[]; color: string }) {
+  const maxVal = Math.max(...data)
+  const minVal = Math.min(...data)
+  const range = maxVal - minVal || 1
+
+  return (
+    <div className="sparkline-container">
+      {data.map((val, i) => {
+        const height = 4 + ((val - minVal) / range) * 16
+        return (
+          <div
+            key={i}
+            className="sparkline-bar"
+            style={{
+              height: `${height}px`,
+              backgroundColor: color,
+              opacity: 0.4 + (i / data.length) * 0.6,
+            }}
+          />
+        )
+      })}
+    </div>
+  )
 }
 
 // ============ Component ============
@@ -288,6 +379,12 @@ export default function FinancePage() {
     }
   }
 
+  const handleQuickExpense = (label: string, amount: number) => {
+    setNewType('EXPENSE')
+    setNewAmount(amount.toString())
+    setNewDescription(label)
+  }
+
   const navigateMonth = (direction: number) => {
     const [year, mon] = month.split('-').map(Number)
     const d = new Date(year, mon - 1 + direction, 1)
@@ -389,6 +486,29 @@ export default function FinancePage() {
                   </Button>
                 </div>
               </div>
+
+              {/* Quick Expense Presets */}
+              {newType === 'EXPENSE' && (
+                <div className="space-y-2">
+                  <Label className="text-xs text-muted-foreground">Быстрый расход</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {QUICK_EXPENSES.map((preset) => (
+                      <Button
+                        key={preset.label}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-auto py-2 flex-col gap-0.5 text-center hover:bg-muted/50"
+                        onClick={() => handleQuickExpense(preset.label, preset.amount)}
+                      >
+                        <span className="text-muted-foreground">{preset.icon}</span>
+                        <span className="text-xs font-medium">{preset.label}</span>
+                        <span className="text-[11px] font-semibold text-muted-foreground">{preset.amount}₽</span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Amount */}
               <div className="space-y-2">
@@ -508,9 +628,12 @@ export default function FinancePage() {
         {/* Income */}
         <Card className="card-hover border-l-4 border-l-emerald-500 py-4">
           <CardContent className="px-4 py-0">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-              <span className="text-xs font-medium">Доходы</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <TrendingUp className="h-4 w-4 text-emerald-500" />
+                <span className="text-xs font-medium">Доходы</span>
+              </div>
+              <MiniSparkline data={[3000, 3500, 3200, 4000, 4500]} color="#10b981" />
             </div>
             <p className="mt-1 text-lg font-bold text-emerald-600 tabular-nums">
               {formatMoney(stats?.totalIncome ?? 0)}
@@ -521,9 +644,12 @@ export default function FinancePage() {
         {/* Expense */}
         <Card className="card-hover border-l-4 border-l-red-500 py-4">
           <CardContent className="px-4 py-0">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <TrendingDown className="h-4 w-4 text-red-500" />
-              <span className="text-xs font-medium">Расходы</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <TrendingDown className="h-4 w-4 text-red-500" />
+                <span className="text-xs font-medium">Расходы</span>
+              </div>
+              <MiniSparkline data={[2800, 3100, 2600, 2900, 2500]} color="#ef4444" />
             </div>
             <p className="mt-1 text-lg font-bold text-red-500 tabular-nums">
               {formatMoney(stats?.totalExpense ?? 0)}
@@ -534,9 +660,12 @@ export default function FinancePage() {
         {/* Balance */}
         <Card className="card-hover border-l-4 border-l-blue-500 py-4">
           <CardContent className="px-4 py-0">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Wallet className="h-4 w-4 text-blue-500" />
-              <span className="text-xs font-medium">Баланс</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Wallet className="h-4 w-4 text-blue-500" />
+                <span className="text-xs font-medium">Баланс</span>
+              </div>
+              <MiniSparkline data={[200, 400, 600, 700, 1000]} color="#3b82f6" />
             </div>
             <p className={`mt-1 text-lg font-bold tabular-nums ${(stats?.balance ?? 0) >= 0 ? 'text-blue-600' : 'text-red-500'}`}>
               {formatMoney(stats?.balance ?? 0)}
@@ -547,9 +676,12 @@ export default function FinancePage() {
         {/* Savings Rate */}
         <Card className="card-hover border-l-4 border-l-amber-500 py-4">
           <CardContent className="px-4 py-0">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <PiggyBank className="h-4 w-4 text-amber-500" />
-              <span className="text-xs font-medium">Сбережения</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <PiggyBank className="h-4 w-4 text-amber-500" />
+                <span className="text-xs font-medium">Сбережения</span>
+              </div>
+              <MiniSparkline data={[10, 15, 18, 22, 28]} color="#f59e0b" />
             </div>
             <p className="mt-1 text-lg font-bold text-amber-600 tabular-nums">
               {stats?.savingsRate != null
@@ -620,7 +752,7 @@ export default function FinancePage() {
           </CardHeader>
           <CardContent>
             <ScrollArea className="h-[220px]">
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-3 stagger-children">
                 {stats?.byCategory && stats.byCategory.length > 0 ? (
                   stats.byCategory.map((cat) => {
                     const totalExpense = stats.totalExpense || 1
@@ -628,25 +760,32 @@ export default function FinancePage() {
                     return (
                       <div key={cat.categoryId} className="space-y-1.5">
                         <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
                             <span
-                              className="inline-block h-3 w-3 rounded-full"
+                              className="inline-block h-3 w-3 shrink-0 rounded-full"
                               style={{ backgroundColor: cat.categoryColor }}
                             />
-                            <span className="font-medium truncate max-w-[120px]">
+                            <span className="font-medium truncate">
                               {cat.categoryName}
                             </span>
                           </div>
-                          <div className="text-right">
+                          <div className="flex items-center gap-2 shrink-0 text-right">
                             <span className="font-semibold tabular-nums">{formatMoney(cat.total)}</span>
-                            <span className="ml-1.5 text-xs text-muted-foreground">
+                            <Badge
+                              variant="secondary"
+                              className="text-[10px] px-1.5 py-0 h-4 font-medium tabular-nums"
+                              style={{
+                                backgroundColor: `${cat.categoryColor}18`,
+                                color: cat.categoryColor,
+                              }}
+                            >
                               {pct}%
-                            </span>
+                            </Badge>
                           </div>
                         </div>
-                        <div className="h-1.5 w-full rounded-full bg-muted">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                           <div
-                            className="h-1.5 rounded-full transition-all"
+                            className="h-2 rounded-full transition-all duration-500"
                             style={{
                               width: `${pct}%`,
                               backgroundColor: cat.categoryColor,
@@ -731,19 +870,18 @@ export default function FinancePage() {
                       return (
                         <div
                           key={tx.id}
-                          className="flex items-center gap-3 py-3 border-b last:border-0"
+                          className="flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/30 transition-colors cursor-default"
+                          style={{ borderColor: cat.color }}
                         >
-                          {/* Category Color Dot */}
+                          {/* Category Icon */}
                           <div
                             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
                             style={{
                               backgroundColor: `${cat.color}18`,
+                              color: cat.color,
                             }}
                           >
-                            <span
-                              className="inline-block h-2.5 w-2.5 rounded-full"
-                              style={{ backgroundColor: cat.color }}
-                            />
+                            {getCategoryIcon(cat.icon)}
                           </div>
 
                           {/* Description & Category */}
@@ -751,9 +889,14 @@ export default function FinancePage() {
                             <p className="text-sm font-medium truncate">
                               {tx.description || cat.name}
                             </p>
-                            <p className="text-xs text-muted-foreground truncate">
-                              {tx.subCategory?.name || cat.name}
-                            </p>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-muted-foreground truncate">
+                                {tx.subCategory?.name || cat.name}
+                              </span>
+                              <span className="text-[10px] text-muted-foreground/70">
+                                {formatRelativeTime(tx.date)}
+                              </span>
+                            </div>
                           </div>
 
                           {/* Amount */}
@@ -766,17 +909,6 @@ export default function FinancePage() {
                               {isIncome ? '+' : '-'}
                               {formatMoney(tx.amount)}
                             </p>
-                            <Badge
-                              variant="secondary"
-                              className="text-[10px] px-1.5 py-0 h-4"
-                              style={{
-                                backgroundColor: `${cat.color}15`,
-                                color: cat.color,
-                                borderColor: `${cat.color}30`,
-                              }}
-                            >
-                              {cat.name}
-                            </Badge>
                           </div>
                         </div>
                       )

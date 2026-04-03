@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   Dumbbell,
   Plus,
@@ -12,6 +12,10 @@ import {
   ChevronDown,
   Trash2,
   Trophy,
+  Weight,
+  Zap,
+  Heart,
+  StretchHorizontal,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -59,6 +63,82 @@ interface Workout {
   }[]
   createdAt: string
 }
+
+// ======================== Workout Type Detection ========================
+
+type WorkoutType = 'strength' | 'cardio' | 'hiit' | 'stretch'
+
+function detectWorkoutType(name: string): WorkoutType {
+  const lower = name.toLowerCase()
+  if (lower.includes('кардио') || lower.includes('cardio') || lower.includes('бег') || lower.includes('ходьба')) return 'cardio'
+  if (lower.includes('hiit') || lower.includes('интервал') || lower.includes('табата')) return 'hiit'
+  if (lower.includes('растяж') || lower.includes('йога') || lower.includes('stretch')) return 'stretch'
+  return 'strength'
+}
+
+const WORKOUT_TYPE_CONFIG: Record<WorkoutType, {
+  icon: React.ReactNode
+  topBorderColor: string
+  label: string
+}> = {
+  strength: { icon: <Dumbbell className="h-4 w-4" />, topBorderColor: 'border-t-rose-400', label: 'Силовая' },
+  cardio: { icon: <Clock className="h-4 w-4" />, topBorderColor: 'border-t-purple-400', label: 'Кардио' },
+  hiit: { icon: <Flame className="h-4 w-4" />, topBorderColor: 'border-t-orange-400', label: 'HIIT' },
+  stretch: { icon: <StretchHorizontal className="h-4 w-4" />, topBorderColor: 'border-t-emerald-400', label: 'Растяжка' },
+}
+
+// ======================== Preset Templates ========================
+
+const WORKOUT_PRESETS: {
+  label: string
+  name: string
+  duration: number
+  exercises: ExerciseData[]
+}[] = [
+  {
+    label: 'Кардио 30 мин',
+    name: 'Кардио тренировка',
+    duration: 30,
+    exercises: [
+      { name: 'Бег', sets: [{ weight: 0, reps: 1, completed: false }], order: 0 },
+      { name: 'Прыжки со скакалкой', sets: [{ weight: 0, reps: 3, completed: false }], order: 1 },
+      { name: 'Велотренажёр', sets: [{ weight: 0, reps: 1, completed: false }], order: 2 },
+    ],
+  },
+  {
+    label: 'Силовая 45 мин',
+    name: 'Силовая тренировка',
+    duration: 45,
+    exercises: [
+      { name: 'Жим штанги', sets: [{ weight: 60, reps: 10, completed: false }, { weight: 60, reps: 10, completed: false }, { weight: 60, reps: 8, completed: false }], order: 0 },
+      { name: 'Приседания', sets: [{ weight: 80, reps: 10, completed: false }, { weight: 80, reps: 10, completed: false }, { weight: 80, reps: 8, completed: false }], order: 1 },
+      { name: 'Подтягивания', sets: [{ weight: 0, reps: 8, completed: false }, { weight: 0, reps: 8, completed: false }, { weight: 0, reps: 6, completed: false }], order: 2 },
+      { name: 'Тяга верхнего блока', sets: [{ weight: 50, reps: 12, completed: false }, { weight: 50, reps: 12, completed: false }], order: 3 },
+    ],
+  },
+  {
+    label: 'HIIT 20 мин',
+    name: 'HIIT тренировка',
+    duration: 20,
+    exercises: [
+      { name: 'Бёрпи', sets: [{ weight: 0, reps: 15, completed: false }, { weight: 0, reps: 15, completed: false }, { weight: 0, reps: 15, completed: false }], order: 0 },
+      { name: 'Выпады с прыжком', sets: [{ weight: 0, reps: 20, completed: false }, { weight: 0, reps: 20, completed: false }], order: 1 },
+      { name: 'Отжимания', sets: [{ weight: 0, reps: 20, completed: false }, { weight: 0, reps: 20, completed: false }], order: 2 },
+      { name: 'Планка', sets: [{ weight: 0, reps: 1, completed: false }], order: 3 },
+    ],
+  },
+  {
+    label: 'Растяжка 15 мин',
+    name: 'Растяжка',
+    duration: 15,
+    exercises: [
+      { name: 'Наклоны к ногам', sets: [{ weight: 0, reps: 1, completed: false }], order: 0 },
+      { name: 'Растяжка бёдер', sets: [{ weight: 0, reps: 1, completed: false }], order: 1 },
+      { name: 'Поза ребёнка', sets: [{ weight: 0, reps: 1, completed: false }], order: 2 },
+      { name: 'Поза кобры', sets: [{ weight: 0, reps: 1, completed: false }], order: 3 },
+    ],
+  },
+]
 
 // ======================== Helpers ========================
 
@@ -108,6 +188,18 @@ function formatSetSummary(sets: SetData[]): string {
   return `${sets.length}×${avgReps} @ ${avgWeight}кг`
 }
 
+function calculateVolume(sets: SetData[]): number {
+  if (!sets || sets.length === 0) return 0
+  return sets
+    .filter((s) => s.completed)
+    .reduce((sum, s) => sum + (s.weight * s.reps), 0)
+}
+
+function formatVolume(volume: number): string {
+  if (volume >= 1000) return `${(volume / 1000).toFixed(1)}т`
+  return `${volume}кг`
+}
+
 function getCurrentMonth(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -123,6 +215,19 @@ function emptyExercise(index: number): ExerciseData {
     ],
     order: index,
   }
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffDays === 0) return 'сегодня'
+  if (diffDays === 1) return 'вчера'
+  if (diffDays < 7) return `${diffDays} дн. назад`
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} нед. назад`
+  return formatDate(dateStr)
 }
 
 // ======================== Component ========================
@@ -168,6 +273,30 @@ export function WorkoutPage() {
     0
   )
 
+  // Total volume calculation (sets × reps × weight for all strength exercises)
+  const totalVolume = useMemo(() => {
+    let volume = 0
+    workouts.forEach((w) => {
+      const wType = detectWorkoutType(w.name)
+      if (wType === 'strength') {
+        w.exercises.forEach((ex) => {
+          const sets = parseSets(ex.sets)
+          volume += calculateVolume(sets)
+        })
+      }
+    })
+    return volume
+  }, [workouts])
+
+  // Last workout relative time
+  const lastWorkoutTime = useMemo(() => {
+    if (workouts.length === 0) return null
+    const sorted = [...workouts].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    return formatRelativeTime(sorted[0].date)
+  }, [workouts])
+
   // Form handlers
   const resetForm = () => {
     setFormName('')
@@ -175,6 +304,17 @@ export function WorkoutPage() {
     setFormDuration('')
     setFormNote('')
     setFormExercises([emptyExercise(0)])
+  }
+
+  const handleApplyPreset = (preset: typeof WORKOUT_PRESETS[0]) => {
+    setFormName(preset.name)
+    setFormDuration(preset.duration.toString())
+    setFormExercises(
+      preset.exercises.map((ex, idx) => ({
+        ...ex,
+        order: idx,
+      }))
+    )
   }
 
   const handleAddExercise = () => {
@@ -269,6 +409,11 @@ export function WorkoutPage() {
           </h2>
           <p className="text-muted-foreground text-sm mt-1">
             Журнал упражнений и тренировок
+            {lastWorkoutTime && (
+              <span className="ml-2 inline-flex items-center gap-1 text-xs">
+                · Последняя: <span className="font-medium text-foreground">{lastWorkoutTime}</span>
+              </span>
+            )}
           </p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -283,6 +428,32 @@ export function WorkoutPage() {
               <DialogTitle>Новая тренировка</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 pt-2">
+              {/* Preset Templates */}
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Шаблоны</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {WORKOUT_PRESETS.map((preset) => {
+                    const pType = detectWorkoutType(preset.name)
+                    const pConfig = WORKOUT_TYPE_CONFIG[pType]
+                    return (
+                      <Button
+                        key={preset.label}
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-auto py-2.5 flex-col gap-1 text-center hover:bg-muted/50"
+                        onClick={() => handleApplyPreset(preset)}
+                      >
+                        <span className="text-muted-foreground">{pConfig.icon}</span>
+                        <span className="text-xs font-medium">{preset.label}</span>
+                      </Button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <Separator />
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Название</Label>
@@ -412,7 +583,7 @@ export function WorkoutPage() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 stagger-children">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 stagger-children">
         <Card className="card-hover py-4">
           <CardContent className="flex items-center gap-3 px-4 py-0">
             <div className="h-10 w-10 rounded-lg bg-rose-100 flex items-center justify-center">
@@ -454,6 +625,18 @@ export function WorkoutPage() {
             <div>
               <p className="text-2xl font-bold">{totalExercises}</p>
               <p className="text-xs text-muted-foreground">Упражнений</p>
+            </div>
+          </CardContent>
+        </Card>
+        {/* Total Volume Card */}
+        <Card className="card-hover py-4 border-t-4 border-t-violet-500">
+          <CardContent className="flex items-center gap-3 px-4 py-0">
+            <div className="h-10 w-10 rounded-lg bg-violet-100 flex items-center justify-center">
+              <Weight className="h-5 w-5 text-violet-600" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold tabular-nums">{formatVolume(totalVolume)}</p>
+              <p className="text-xs text-muted-foreground">Объём (сила)</p>
             </div>
           </CardContent>
         </Card>
@@ -500,26 +683,54 @@ export function WorkoutPage() {
             {workouts.map((workout) => {
               const isExpanded = expandedId === workout.id
               const borderColor = getWorkoutBorderColor(workout.name)
+              const workoutType = detectWorkoutType(workout.name)
+              const typeConfig = WORKOUT_TYPE_CONFIG[workoutType]
+
+              // Calculate per-workout volume
+              const workoutVolume = workout.exercises.reduce((sum, ex) => {
+                if (workoutType === 'strength') {
+                  const sets = parseSets(ex.sets)
+                  return sum + calculateVolume(sets)
+                }
+                return sum
+              }, 0)
 
               return (
                 <Card
                   key={workout.id}
-                  className={`card-hover border-l-4 ${borderColor} hover:shadow-sm transition cursor-pointer`}
+                  className={`card-hover border-l-4 ${borderColor} ${typeConfig.topBorderColor} hover:shadow-sm transition cursor-pointer`}
                   onClick={() => toggleExpand(workout.id)}
                 >
                   <CardHeader className="pb-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
+                        {/* Workout Type Icon */}
+                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                          workoutType === 'strength' ? 'bg-rose-100 text-rose-600' :
+                          workoutType === 'cardio' ? 'bg-purple-100 text-purple-600' :
+                          workoutType === 'hiit' ? 'bg-orange-100 text-orange-600' :
+                          'bg-emerald-100 text-emerald-600'
+                        }`}>
+                          {typeConfig.icon}
+                        </div>
                         <CardTitle className="text-base">{workout.name}</CardTitle>
                         <Badge variant="secondary" className="text-xs">
                           {workout.exercises.length} упр.
                         </Badge>
                       </div>
                       <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                        {/* Duration */}
                         {workout.durationMin && (
                           <span className="flex items-center gap-1">
                             <Clock className="h-3.5 w-3.5" />
                             {workout.durationMin} мин
+                          </span>
+                        )}
+                        {/* Volume for strength */}
+                        {workoutType === 'strength' && workoutVolume > 0 && (
+                          <span className="flex items-center gap-1 text-xs font-medium text-violet-600">
+                            <Weight className="h-3 w-3" />
+                            {formatVolume(workoutVolume)}
                           </span>
                         )}
                         <span>{formatDate(workout.date)}</span>

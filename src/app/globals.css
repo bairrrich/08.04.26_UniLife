@@ -446,3 +446,32 @@
   outline: none;
   box-shadow: 0 0 0 2px oklch(0.55 0.17 155 / 0.3), 0 0 12px oklch(0.55 0.17 155 / 0.15);
 }
+
+/* ── Water wave animation ─────────────────────────── */
+@keyframes water-wave {
+  0% { transform: translateX(-100%) translateY(0); }
+  50% { transform: translateX(50%) translateY(-3px); }
+  100% { transform: translateX(-100%) translateY(0); }
+}
+.water-wave {
+  animation: water-wave 3s ease-in-out infinite;
+}
+
+/* ── Ring chart animation ──────────────────────────── */
+@keyframes ring-fill {
+  from { stroke-dashoffset: var(--ring-circumference); }
+  to { stroke-dashoffset: var(--ring-offset); }
+}
+
+/* ── Mini sparkline ─────────────────────────────────── */
+.sparkline-container {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 20px;
+}
+.sparkline-bar {
+  width: 3px;
+  border-radius: 1px;
+  transition: height 0.3s ease;
+}

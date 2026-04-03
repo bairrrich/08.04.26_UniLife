@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -39,6 +38,9 @@ import {
   Trash2,
   Clock,
   X,
+  RotateCcw,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -87,11 +89,13 @@ interface WaterStats {
 
 // ─── Constants ──────────────────────────────────────────────────
 const MACRO_GOALS = {
-  kcal: { value: 2500, unit: '', label: 'Ккал', trackColor: 'bg-orange-100', indicatorColor: '[&>div]:bg-orange-500' },
-  protein: { value: 150, unit: 'г', label: 'Белки', trackColor: 'bg-blue-100', indicatorColor: '[&>div]:bg-blue-500' },
-  fat: { value: 80, unit: 'г', label: 'Жиры', trackColor: 'bg-amber-100', indicatorColor: '[&>div]:bg-amber-500' },
-  carbs: { value: 300, unit: 'г', label: 'Углеводы', trackColor: 'bg-green-100', indicatorColor: '[&>div]:bg-green-500' },
+  kcal: { value: 2500, unit: '', label: 'Ккал', color: '#f97316', bgColor: '#fff7ed', darkBgColor: '#431407' },
+  protein: { value: 150, unit: 'г', label: 'Белки', color: '#3b82f6', bgColor: '#eff6ff', darkBgColor: '#172554' },
+  fat: { value: 80, unit: 'г', label: 'Жиры', color: '#f59e0b', bgColor: '#fffbeb', darkBgColor: '#451a03' },
+  carbs: { value: 300, unit: 'г', label: 'Углеводы', color: '#22c55e', bgColor: '#f0fdf4', darkBgColor: '#052e16' },
 } as const
+
+type MacroKey = keyof typeof MACRO_GOALS
 
 const MEAL_TYPE_CONFIG: Record<
   string,
@@ -115,6 +119,96 @@ function getTodayStr() {
   return `${yyyy}-${mm}-${dd}`
 }
 
+// ─── Macro Ring Component ───────────────────────────────────────
+function MacroRing({
+  value,
+  goal,
+  color,
+  label,
+  unit,
+  bgColor,
+  darkBgColor,
+  icon,
+}: {
+  value: number
+  goal: number
+  color: string
+  label: string
+  unit: string
+  bgColor: string
+  darkBgColor: string
+  icon: React.ReactNode
+}) {
+  const pct = Math.min((value / goal) * 100, 100)
+  const radius = 18
+  const circumference = 2 * Math.PI * radius
+  const offset = circumference - (pct / 100) * circumference
+  const size = 48
+
+  return (
+    <Card className="rounded-xl border p-4" style={{ padding: '1rem' }}>
+      <div className="flex items-center gap-3">
+        {/* Ring */}
+        <div className="relative shrink-0" style={{ width: size, height: size }}>
+          <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            className="-rotate-90"
+          >
+            {/* Background ring */}
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="4"
+              className="text-muted/40"
+            />
+            {/* Progress ring */}
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={color}
+              strokeWidth="4"
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              style={{
+                transition: 'stroke-dashoffset 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              }}
+            />
+          </svg>
+          {/* Icon in center */}
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ color }}
+          >
+            {icon}
+          </div>
+        </div>
+
+        {/* Label + Value */}
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-muted-foreground">{label}</p>
+          <p className="text-sm font-bold leading-tight">
+            {formatMacro(value, unit)}
+            <span className="ml-1 text-xs font-normal text-muted-foreground">
+              / {goal}{unit}
+            </span>
+          </p>
+          <p className="text-xs font-semibold mt-0.5 tabular-nums" style={{ color }}>
+            {Math.round(pct)}%
+          </p>
+        </div>
+      </div>
+    </Card>
+  )
+}
+
 // ─── Component ──────────────────────────────────────────────────
 export default function NutritionPage() {
   const today = getTodayStr()
@@ -130,6 +224,7 @@ export default function NutritionPage() {
   })
   const [showNewMealDialog, setShowNewMealDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [expandedMealId, setExpandedMealId] = useState<string | null>(null)
 
   // Form state
   const [mealType, setMealType] = useState<string>('')
@@ -255,6 +350,17 @@ export default function NutritionPage() {
     }
   }
 
+  const handleResetWater = async () => {
+    toast.dismiss()
+    toast.info('Водный баланс сброшен')
+    setWaterStats({
+      totalMl: 0,
+      glasses: 0,
+      goalMl: 2000,
+      percentage: 0,
+    })
+  }
+
   // ─── Helpers ──────────────────────────────────────────────────
   const getMealTotalKcal = (meal: MealWithItems) =>
     meal.items.reduce((sum, item) => sum + item.kcal, 0)
@@ -270,7 +376,6 @@ export default function NutritionPage() {
 
   const handleDeleteMeal = async (mealId: string) => {
     if (deletingMealId === mealId) {
-      // Second click = confirm delete
       toast.dismiss()
       try {
         const res = await fetch(`/api/nutrition?id=${mealId}`, { method: 'DELETE' })
@@ -287,11 +392,14 @@ export default function NutritionPage() {
         setDeletingMealId(null)
       }
     } else {
-      // First click = show inline confirmation
       setDeletingMealId(mealId)
       toast.info('Нажмите ещё раз для подтверждения удаления')
       setTimeout(() => setDeletingMealId(null), 3000)
     }
+  }
+
+  const toggleMealExpand = (id: string) => {
+    setExpandedMealId(expandedMealId === id ? null : id)
   }
 
   const totalGlasses = 8
@@ -313,105 +421,85 @@ export default function NutritionPage() {
           </Badge>
         </div>
 
-        {/* ── Macro Summary ────────────────────────────────────── */}
-        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {/* Ккал */}
-          <Card className="rounded-xl border p-4" style={{ padding: '1rem' }}>
-            <div className="mb-2 flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-orange-100">
-                <Flame className="size-4 text-orange-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Ккал</p>
-                <p className="text-sm font-bold">
-                  {formatMacro(stats?.totalKcal ?? 0, '')}{' '}
-                  <span className="font-normal text-muted-foreground">/ {MACRO_GOALS.kcal.value}</span>
-                </p>
-              </div>
-            </div>
-            <Progress
-              value={Math.min(((stats?.totalKcal ?? 0) / MACRO_GOALS.kcal.value) * 100, 100)}
-              className={`h-2.5 ${MACRO_GOALS.kcal.trackColor} ${MACRO_GOALS.kcal.indicatorColor}`}
-            />
-          </Card>
-
-          {/* Белки */}
-          <Card className="rounded-xl border p-4" style={{ padding: '1rem' }}>
-            <div className="mb-2 flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-blue-100">
-                <Beef className="size-4 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Белки</p>
-                <p className="text-sm font-bold">
-                  {formatMacro(stats?.totalProtein ?? 0, 'г')}{' '}
-                  <span className="font-normal text-muted-foreground">/ {MACRO_GOALS.protein.value}г</span>
-                </p>
-              </div>
-            </div>
-            <Progress
-              value={Math.min(((stats?.totalProtein ?? 0) / MACRO_GOALS.protein.value) * 100, 100)}
-              className={`h-2.5 ${MACRO_GOALS.protein.trackColor} ${MACRO_GOALS.protein.indicatorColor}`}
-            />
-          </Card>
-
-          {/* Жиры */}
-          <Card className="rounded-xl border p-4" style={{ padding: '1rem' }}>
-            <div className="mb-2 flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-amber-100">
-                <Milk className="size-4 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Жиры</p>
-                <p className="text-sm font-bold">
-                  {formatMacro(stats?.totalFat ?? 0, 'г')}{' '}
-                  <span className="font-normal text-muted-foreground">/ {MACRO_GOALS.fat.value}г</span>
-                </p>
-              </div>
-            </div>
-            <Progress
-              value={Math.min(((stats?.totalFat ?? 0) / MACRO_GOALS.fat.value) * 100, 100)}
-              className={`h-2.5 ${MACRO_GOALS.fat.trackColor} ${MACRO_GOALS.fat.indicatorColor}`}
-            />
-          </Card>
-
-          {/* Углеводы */}
-          <Card className="rounded-xl border p-4" style={{ padding: '1rem' }}>
-            <div className="mb-2 flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-green-100">
-                <Wheat className="size-4 text-green-600" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Углеводы</p>
-                <p className="text-sm font-bold">
-                  {formatMacro(stats?.totalCarbs ?? 0, 'г')}{' '}
-                  <span className="font-normal text-muted-foreground">/ {MACRO_GOALS.carbs.value}г</span>
-                </p>
-              </div>
-            </div>
-            <Progress
-              value={Math.min(((stats?.totalCarbs ?? 0) / MACRO_GOALS.carbs.value) * 100, 100)}
-              className={`h-2.5 ${MACRO_GOALS.carbs.trackColor} ${MACRO_GOALS.carbs.indicatorColor}`}
-            />
-          </Card>
+        {/* ── Macro Summary with Ring Indicators ────────────────── */}
+        <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4 stagger-children">
+          <MacroRing
+            value={stats?.totalKcal ?? 0}
+            goal={MACRO_GOALS.kcal.value}
+            color={MACRO_GOALS.kcal.color}
+            label={MACRO_GOALS.kcal.label}
+            unit={MACRO_GOALS.kcal.unit}
+            bgColor={MACRO_GOALS.kcal.bgColor}
+            darkBgColor={MACRO_GOALS.kcal.darkBgColor}
+            icon={<Flame className="size-4" />}
+          />
+          <MacroRing
+            value={stats?.totalProtein ?? 0}
+            goal={MACRO_GOALS.protein.value}
+            color={MACRO_GOALS.protein.color}
+            label={MACRO_GOALS.protein.label}
+            unit={MACRO_GOALS.protein.unit}
+            bgColor={MACRO_GOALS.protein.bgColor}
+            darkBgColor={MACRO_GOALS.protein.darkBgColor}
+            icon={<Beef className="size-4" />}
+          />
+          <MacroRing
+            value={stats?.totalFat ?? 0}
+            goal={MACRO_GOALS.fat.value}
+            color={MACRO_GOALS.fat.color}
+            label={MACRO_GOALS.fat.label}
+            unit={MACRO_GOALS.fat.unit}
+            bgColor={MACRO_GOALS.fat.bgColor}
+            darkBgColor={MACRO_GOALS.fat.darkBgColor}
+            icon={<Milk className="size-4" />}
+          />
+          <MacroRing
+            value={stats?.totalCarbs ?? 0}
+            goal={MACRO_GOALS.carbs.value}
+            color={MACRO_GOALS.carbs.color}
+            label={MACRO_GOALS.carbs.label}
+            unit={MACRO_GOALS.carbs.unit}
+            bgColor={MACRO_GOALS.carbs.bgColor}
+            darkBgColor={MACRO_GOALS.carbs.darkBgColor}
+            icon={<Wheat className="size-4" />}
+          />
         </div>
 
         {/* ── Water Tracker ─────────────────────────────────────── */}
         <Card className="mb-6">
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Droplets className="size-5 text-blue-500" />
-              Вода
-            </CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Droplets className="size-5 text-blue-500" />
+                Вода
+              </CardTitle>
+              {waterStats.totalMl > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs text-muted-foreground hover:text-destructive"
+                  onClick={handleResetWater}
+                >
+                  <RotateCcw className="size-3 mr-1" />
+                  Сбросить
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
+            {/* Prominent total ml display */}
             <div className="mb-3 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {waterStats.totalMl} из {waterStats.goalMl} мл
+              <p className="text-lg font-bold tabular-nums">
+                <span className={waterStats.percentage >= 100 ? 'text-blue-600' : 'text-foreground'}>
+                  {waterStats.totalMl}
+                </span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {' '} / {waterStats.goalMl} мл
+                </span>
               </p>
               <Badge
                 variant={waterStats.percentage >= 100 ? 'default' : 'secondary'}
-                className={waterStats.percentage >= 100 ? 'bg-blue-500' : ''}
+                className={waterStats.percentage >= 100 ? 'bg-blue-500 tabular-nums' : 'tabular-nums'}
               >
                 {waterStats.percentage}%
               </Badge>
@@ -428,7 +516,7 @@ export default function NutritionPage() {
                     className="group flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
                   >
                     <div
-                      className={`flex size-10 items-center justify-center rounded-xl border-2 transition-colors ${
+                      className={`relative flex size-10 items-center justify-center overflow-hidden rounded-xl border-2 transition-colors ${
                         isFilled
                           ? 'border-blue-400 bg-blue-50 text-blue-500'
                           : 'border-gray-200 bg-gray-50 text-gray-300 group-hover:border-blue-200 group-hover:text-blue-300'
@@ -450,6 +538,9 @@ export default function NutritionPage() {
                           fill={isFilled ? 'currentColor' : 'none'}
                         />
                       </svg>
+                      {isFilled && (
+                        <div className="water-wave absolute bottom-0 left-0 right-0 h-3 bg-blue-400/30 rounded-b-lg" />
+                      )}
                     </div>
                     <span className="text-[10px] text-muted-foreground">
                       {(i + 1) * 250}
@@ -505,6 +596,7 @@ export default function NutritionPage() {
             {sortMealsByType(meals).map((meal) => {
               const config = MEAL_TYPE_CONFIG[meal.type] || MEAL_TYPE_CONFIG.LUNCH
               const totalKcal = getMealTotalKcal(meal)
+              const isExpanded = expandedMealId === meal.id
 
               return (
                 <Card key={meal.id} className="card-hover">
@@ -513,13 +605,15 @@ export default function NutritionPage() {
                       <CardTitle className="flex items-center gap-2 text-base">
                         <span>{config.emoji}</span>
                         <span>{config.label}</span>
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        {/* Prominent time display */}
+                        <span className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-xs font-semibold text-muted-foreground">
                           <Clock className="size-3" />
                           {meal.date ? new Date(meal.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
                         </span>
-                        <Badge variant="secondary" className="font-mono text-xs">
+                      </CardTitle>
+                      <div className="flex items-center gap-2">
+                        {/* Calorie badge */}
+                        <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 font-mono text-xs border-0">
                           <Flame className="mr-1 size-3 text-orange-500" />
                           {Math.round(totalKcal)} ккал
                         </Badge>
@@ -538,7 +632,28 @@ export default function NutritionPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
+                    {/* Expand/Collapse toggle for meal items */}
+                    <button
+                      onClick={() => toggleMealExpand(meal.id)}
+                      className="flex w-full items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        <UtensilsCrossed className="size-3.5" />
+                        {meal.items.length} {meal.items.length === 1 ? 'блюдо' : meal.items.length < 5 ? 'блюда' : 'блюд'}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="size-4" />
+                      ) : (
+                        <ChevronDown className="size-4" />
+                      )}
+                    </button>
+
+                    {/* Meal items (always visible, but expandable) */}
+                    <div
+                      className={`mt-2 space-y-2 overflow-hidden transition-all duration-300 ${
+                        isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
+                      }`}
+                    >
                       {meal.items.map((item) => (
                         <div
                           key={item.id}

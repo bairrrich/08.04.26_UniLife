@@ -781,3 +781,110 @@ Implement 6 enhancements to the dashboard page (`/src/components/dashboard/dashb
 - ✅ Dev server: compiles cleanly, all API endpoints returning HTTP 200
 - ✅ All existing dashboard functionality preserved (stats, charts, habits, feed, weekly summary)
 - ✅ No breaking changes to any module
+
+---
+## Task ID: 11
+### Agent: deep-styling-agent
+### Work Task
+Deep styling improvements for Finance, Nutrition, and Workout pages including sparkline indicators, circular ring macros, water wave animations, workout volume tracking, preset templates, and enhanced transaction/meal/workout card designs.
+
+### Work Summary
+
+**File 1 — Global CSS (`/src/app/globals.css`):**
+- Added `@keyframes water-wave` animation for filled water glass wave effect (translateX + translateY oscillation)
+- Added `.water-wave` class applying the wave animation (3s ease-in-out infinite)
+- Added `@keyframes ring-fill` animation for SVG circular ring chart fill (stroke-dashoffset transition using CSS variables `--ring-circumference` and `--ring-offset`)
+- Added `.sparkline-container` and `.sparkline-bar` utility classes for mini bar chart sparklines (inline-flex, 20px height, 3px width bars with rounded corners)
+
+**File 2 — Finance Page (`/src/components/finance/finance-page.tsx`):**
+- **Summary Cards Enhancement**: Added `MiniSparkline` component using inline div bars (5 hardcoded data points each) positioned in top-right of each summary card. Income shows upward trend (green), expense shows varying trend (red), balance shows upward (blue), savings shows upward (amber). Each sparkline uses the `.sparkline-container` / `.sparkline-bar` CSS classes.
+- **Transaction List Enhancement**: 
+  - Added colored left border per transaction using `border-l-2` with `borderColor: cat.color`
+  - Added category icon display (mapped from `CATEGORY_ICON_MAP` with 14 icon string → lucide-react icon mappings: coffee→Coffee, food→UtensilsCrossed, taxi→Car, transport→TrainFront, shopping→ShoppingBag, home→Home, health→Heart, entertainment→Gamepad2, education→GraduationCap, travel→Plane, utilities→Zap, gifts→Gift, salary→DollarSign, freelance→Briefcase)
+  - Added relative time display ("2ч назад", "вчера", "3 дн. назад") using `formatRelativeTime()` helper function that converts date to Russian relative strings
+  - Added `hover:bg-muted/30 transition-colors rounded-lg` hover effect to each transaction row
+- **Category Breakdown Enhancement**: 
+  - Increased progress bar height from h-1.5 to h-2 with `overflow-hidden rounded-full`
+  - Added `Badge` component showing percentage alongside amount (using category color for background)
+  - Added `stagger-children` class to the breakdown container for animated entrance
+- **Quick Expense Presets**: Added "Быстрый расход" section in add transaction dialog with 4 preset buttons: "Кофе 200₽", "Обед 500₽", "Такси 300₽", "Проезд 50₽". Each button fills in the amount and description. Only shown when `newType === 'EXPENSE'`.
+
+**File 3 — Nutrition Page (`/src/components/nutrition/nutrition-page.tsx`):**
+- **Macro Ring Indicators**: Replaced 4 Progress bars with `MacroRing` SVG circular ring component (48px diameter, 18px radius). Each ring shows: colored SVG circle with animated stroke-dashoffset transition, macro icon in center (Flame, Beef, Milk, Wheat), numeric value with goal, and colored percentage text. Rings use distinct colors per macro type (orange/blue/amber/green).
+- **Water Tracker Enhancement**:
+  - Added CSS `water-wave` animation to filled glasses (a blue translucent div with `water-wave` class positioned at bottom)
+  - Added "Сбросить" (Reset) button next to water card title using `RotateCcw` icon, appears only when `totalMl > 0`. Resets water state locally with toast notification.
+  - Made total ml display prominent: large font weight for consumed amount, smaller muted text for goal, using `tabular-nums`
+- **Meal Cards Enhancement**:
+  - Made time display prominent: wrapped in `bg-muted/60 rounded-md px-2 py-0.5` badge with `font-semibold`
+  - Added calorie badge with orange background (`bg-orange-100 text-orange-700`) and `font-mono`
+  - Added expand/collapse toggle for meal items list using `expandedMealId` state. Toggle button shows item count + ChevronUp/ChevronDown icons. Items use `max-h-[500px]` with opacity transition for smooth expand/collapse.
+  - Calorie breakdown per meal item preserved (already showed in the existing design)
+
+**File 4 — Workout Page (`/src/components/workout/workout-page.tsx`):**
+- **Total Volume Metric**: Added 5th summary card "Объём (сила)" with violet border-top accent, `Weight` icon, and `formatVolume()` helper that shows "1.5т" for values ≥1000kg or "500кг" otherwise. Volume calculated as sum of (sets × reps × weight) for all completed strength workout sets using `useMemo`.
+- **Workout Type Detection**: Added `detectWorkoutType()` function parsing workout name to classify as strength/cardio/hiit/stretch. Each type has `WORKOUT_TYPE_CONFIG` with icon, top border color, and label.
+- **Workout Cards Enhancement**:
+  - Added exercise type icon in a colored rounded-lg container (rose for strength, purple for cardio, orange for HIIT, emerald for stretch)
+  - Added colored top border per workout type (`border-t-{color}-400`)
+  - Added total volume display per workout card (violet text with Weight icon, only for strength type)
+  - Added "Последняя тренировка: X дн. назад" in header subtitle using `formatRelativeTime()` helper
+- **Preset Templates**: Added 4 preset workout templates in add dialog: "Кардио 30 мин" (3 exercises), "Силовая 45 мин" (4 exercises with weights), "HIIT 20 мин" (4 exercises with reps), "Растяжка 15 мин" (4 stretching exercises). Each template button shows type icon and label. Clicking fills in name, duration, and exercises automatically.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles without errors, all API endpoints returning HTTP 200
+- ✅ All existing Finance, Nutrition, Workout functionality preserved
+- ✅ No breaking changes to any module
+
+---
+## Task ID: 12
+### Agent: dashboard-widgets-agent
+### Task: Add Budget Overview and Notification Center widgets to dashboard
+
+### Work Summary:
+
+**Task 1 — Budget Overview Widget:**
+- Created `/src/app/api/budgets/route.ts` — new API endpoint:
+  - `GET /api/budgets?month=YYYY-MM` — Fetches budgets for the month, calculates spent amounts per category by aggregating EXPENSE transactions, returns totalBudget/totalSpent/totalRemaining/totalPercentage plus per-category breakdown
+  - `POST /api/budgets` — Creates a new budget with categoryId, amount, month; validates category existence and prevents duplicate budgets per category per month
+  - Uses existing Budget model from Prisma schema (no schema changes needed)
+- Created `/src/components/dashboard/budget-overview.tsx` — Budget Overview card component:
+  - Title "Бюджет на месяц" with PiggyBank icon in amber-100 badge
+  - Total progress bar (spent vs budget) with color coding: green <70%, amber 70-90%, red >90%
+  - "Осталось X ₽" remaining text with matching color
+  - Up to 3 category breakdowns with colored dots, category names, and individual progress bars
+  - Warning alert when budget ≥90% (amber) or exceeded (red)
+  - Empty state with "Создать бюджет" CTA button when no budgets exist
+  - Loading skeleton with progress bar and category placeholders
+
+**Task 2 — Notification Center Widget:**
+- Created `/src/components/dashboard/notification-center.tsx` — smart reminder card:
+  - Title "Напоминания" with Bell icon, amber badge showing reminder count
+  - Time-aware reminders based on current hour:
+    - Morning (5-12): "Записать утреннее настроение" (if no diary today), "Записать приём пищи" (if no meals today)
+    - Afternoon (12-17): "Записать приём пищи" (if no meals today)
+    - Evening (17-22): "Как прошёл день?" (if no diary today)
+    - Always: "X привычек ещё не выполнено" (correct Russian plural forms)
+  - Each reminder has: colored icon, text, time label (Утро/Обед/Вечер/Привычки), clickable navigation
+  - Empty state: "Всё в порядке! У вас нет активных напоминаний" with emerald styling
+
+**Task 3 — Dashboard Integration (`/src/components/dashboard/dashboard-page.tsx`):**
+- Added imports for `BudgetOverview` and `NotificationCenter` components
+- Added `BudgetCategory` and `BudgetData` interfaces, `budgetData` and `hasMealsToday` state
+- Extended `fetchAllData` with 2 new parallel fetch requests (budgets + meals today)
+- Placed both widgets between Habits Progress and Charts Section
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles without errors
+- ✅ No breaking changes to existing functionality
+- ✅ Prisma schema unchanged (Budget model already existed)
+
+### Files Created:
+- `/src/app/api/budgets/route.ts`
+- `/src/components/dashboard/budget-overview.tsx`
+- `/src/components/dashboard/notification-center.tsx`
+
+### Files Modified:
+- `/src/components/dashboard/dashboard-page.tsx`

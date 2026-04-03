@@ -31,6 +31,8 @@ import {
   RefreshCw,
   Trophy,
 } from 'lucide-react'
+import { BudgetOverview } from './budget-overview'
+import { NotificationCenter } from './notification-center'
 import {
   BarChart,
   Bar,
@@ -105,6 +107,25 @@ interface HabitItem {
   emoji: string
   todayCompleted: boolean
   streak: number
+}
+
+interface BudgetCategory {
+  id: string
+  categoryId: string
+  categoryName: string
+  categoryIcon: string
+  categoryColor: string
+  amount: number
+  spent: number
+  percentage: number
+}
+
+interface BudgetData {
+  budgets: BudgetCategory[]
+  totalBudget: number
+  totalSpent: number
+  totalRemaining: number
+  totalPercentage: number
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -346,6 +367,8 @@ export default function DashboardPage() {
     stats: { totalActive: number; completedToday: number; bestStreak: number }
   } | null>(null)
   const [transactionsData, setTransactionsData] = useState<Transaction[]>([])
+  const [budgetData, setBudgetData] = useState<BudgetData | null>(null)
+  const [hasMealsToday, setHasMealsToday] = useState(false)
   const [quoteIndex, setQuoteIndex] = useState(() => getDayOfYear() % MOTIVATIONAL_QUOTES.length)
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
 
@@ -365,6 +388,8 @@ export default function DashboardPage() {
       fetch(`/api/diary?from=${from}&to=${to}`).then((r) => r.json()),
       fetch(`/api/finance?month=${currentMonth}`).then((r) => r.json()),
       fetch('/api/habits').then((r) => r.json()),
+      fetch(`/api/budgets?month=${currentMonth}`).then((r) => r.json()),
+      fetch(`/api/nutrition?date=${today}`).then((r) => r.json()),
     ]
 
     try {
@@ -377,6 +402,8 @@ export default function DashboardPage() {
         diaryWeekRes,
         financeTransactionsRes,
         habitsRes,
+        budgetRes,
+        mealsTodayRes,
       ] = await Promise.allSettled(requests)
 
       // Monthly diary entries
@@ -481,6 +508,16 @@ export default function DashboardPage() {
           data: habitsRes.value.data,
           stats: habitsRes.value.stats,
         })
+      }
+
+      // Budget data
+      if (budgetRes.status === 'fulfilled' && budgetRes.value.success && budgetRes.value.data) {
+        setBudgetData(budgetRes.value.data)
+      }
+
+      // Meals today (for notification center)
+      if (mealsTodayRes.status === 'fulfilled' && mealsTodayRes.value.success && mealsTodayRes.value.data) {
+        setHasMealsToday(mealsTodayRes.value.data.length > 0)
       }
     } catch (err) {
       console.error('Dashboard fetch error:', err)
@@ -961,6 +998,22 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ── Budget Overview ─────────────────────────────────────────── */}
+      <BudgetOverview
+        loading={loading}
+        budgetData={budgetData}
+        onNavigateToFinance={() => setActiveModule('finance')}
+      />
+
+      {/* ── Notification Center ────────────────────────────────────────── */}
+      <NotificationCenter
+        loading={loading}
+        hasDiaryToday={!!todayMood}
+        hasMealsToday={hasMealsToday}
+        uncompletedHabitsCount={totalActive - completedToday}
+        onNavigate={(module) => setActiveModule(module as AppModule)}
+      />
 
       {/* ── Charts Section ─────────────────────────────────────────────── */}
       <div className="space-y-4">
