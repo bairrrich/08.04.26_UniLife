@@ -16,6 +16,9 @@ import {
   ListChecks,
   Loader2,
   CalendarDays,
+  Pencil,
+  X,
+  Save,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -162,6 +165,18 @@ export function CollectionsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [detailItem, setDetailItem] = useState<CollectionItem | null>(null)
   const [detailOpen, setDetailOpen] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editSaving, setEditSaving] = useState(false)
+
+  // Edit form state
+  const [editTitle, setEditTitle] = useState('')
+  const [editAuthor, setEditAuthor] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editType, setEditType] = useState<CollectionType>('BOOK')
+  const [editStatus, setEditStatus] = useState<CollectionStatus>('WANT')
+  const [editTags, setEditTags] = useState('')
+  const [editNotes, setEditNotes] = useState('')
+  const [editRating, setEditRating] = useState(0)
 
   // Form state
   const [formType, setFormType] = useState<CollectionType>('BOOK')
@@ -305,6 +320,79 @@ export function CollectionsPage() {
   const openDetail = (item: CollectionItem) => {
     setDetailItem(item)
     setDetailOpen(true)
+    setIsEditing(false)
+  }
+
+  const startEditing = () => {
+    if (!detailItem) return
+    setEditTitle(detailItem.title)
+    setEditAuthor(detailItem.author || '')
+    setEditDescription(detailItem.description || '')
+    setEditType(detailItem.type as CollectionType)
+    setEditStatus(detailItem.status as CollectionStatus)
+    setEditTags(parseTags(detailItem.tags).join(', '))
+    setEditNotes(detailItem.notes || '')
+    setEditRating(detailItem.rating || 0)
+    setIsEditing(true)
+  }
+
+  const cancelEditing = () => {
+    setIsEditing(false)
+  }
+
+  const handleEditSave = async () => {
+    if (!detailItem || !editTitle.trim()) return
+
+    toast.dismiss()
+    setEditSaving(true)
+
+    const tags = editTags
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+
+    try {
+      const res = await fetch(`/api/collections/${detailItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: editType,
+          title: editTitle.trim(),
+          author: editAuthor.trim() || null,
+          description: editDescription.trim() || null,
+          rating: editRating > 0 ? editRating : null,
+          status: editStatus,
+          tags: tags.length > 0 ? tags : [],
+          notes: editNotes.trim() || null,
+        }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('Элемент обновлён')
+        const updatedItem: CollectionItem = {
+          ...detailItem,
+          type: editType,
+          title: editTitle.trim(),
+          author: editAuthor.trim() || null,
+          description: editDescription.trim() || null,
+          rating: editRating > 0 ? editRating : null,
+          status: editStatus,
+          tags: tags.length > 0 ? JSON.stringify(tags) : '[]',
+          notes: editNotes.trim() || null,
+          updatedAt: new Date().toISOString(),
+        }
+        setDetailItem(updatedItem)
+        setIsEditing(false)
+        fetchItems()
+      } else {
+        toast.error('Ошибка при обновлении элемента')
+      }
+    } catch (err) {
+      console.error('Failed to update item:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    } finally {
+      setEditSaving(false)
+    }
   }
 
   const statusTransitions: Record<CollectionStatus, CollectionStatus> = {
@@ -617,7 +705,10 @@ export function CollectionsPage() {
       </Tabs>
 
       {/* Detail Dialog */}
-      <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
+      <Dialog open={detailOpen} onOpenChange={(open) => {
+        if (!open) setIsEditing(false)
+        setDetailOpen(open)
+      }}>
         <DialogContent className="max-w-md">
           {detailItem && (
             <>
@@ -628,23 +719,23 @@ export function CollectionsPage() {
                 )} flex items-center justify-center relative`}
               >
                 <div className="text-white/90">
-                  {TYPE_ICONS_LARGE[detailItem.type as CollectionType]}
+                  {TYPE_ICONS_LARGE[isEditing ? editType : (detailItem.type as CollectionType)]}
                 </div>
                 {/* Status badge on cover */}
                 <div className="absolute top-3 right-4">
                   <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[detailItem.status]}`}
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[isEditing ? editStatus : detailItem.status]}`}
                   >
-                    {detailItem.status === 'WANT' && (
+                    {(isEditing ? editStatus : detailItem.status) === 'WANT' && (
                       <Heart className="h-2.5 w-2.5" />
                     )}
-                    {detailItem.status === 'IN_PROGRESS' && (
+                    {(isEditing ? editStatus : detailItem.status) === 'IN_PROGRESS' && (
                       <Clock className="h-2.5 w-2.5" />
                     )}
-                    {detailItem.status === 'COMPLETED' && (
+                    {(isEditing ? editStatus : detailItem.status) === 'COMPLETED' && (
                       <CheckCircle className="h-2.5 w-2.5" />
                     )}
-                    {STATUS_LABELS[detailItem.status]}
+                    {STATUS_LABELS[(isEditing ? editStatus : detailItem.status) as CollectionStatus]}
                   </span>
                 </div>
               </div>
@@ -652,9 +743,9 @@ export function CollectionsPage() {
               <DialogHeader>
                 <div className="min-w-0">
                   <DialogTitle className="text-lg leading-snug">
-                    {detailItem.title}
+                    {isEditing ? 'Редактирование' : detailItem.title}
                   </DialogTitle>
-                  {detailItem.author && (
+                  {!isEditing && detailItem.author && (
                     <p className="text-sm text-muted-foreground mt-0.5">
                       {detailItem.author}
                     </p>
@@ -663,103 +754,246 @@ export function CollectionsPage() {
               </DialogHeader>
 
               <div className="space-y-4">
-                {/* Type, Status, and Created Date */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge variant="outline">
-                    {TYPE_LABELS[detailItem.type as CollectionType]}
-                  </Badge>
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[detailItem.status]}`}
-                  >
-                    {STATUS_LABELS[detailItem.status]}
-                  </span>
-                  <Badge variant="secondary" className="gap-1 font-normal text-[11px]">
-                    <CalendarDays className="h-3 w-3" />
-                    Создано {formatDateRussian(detailItem.createdAt)}
-                  </Badge>
-                </div>
+                {isEditing ? (
+                  /* ========== EDIT MODE ========== */
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Название *</Label>
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Название"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Автор / Создатель</Label>
+                      <Input
+                        value={editAuthor}
+                        onChange={(e) => setEditAuthor(e.target.value)}
+                        placeholder="Автор"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Описание</Label>
+                      <Textarea
+                        value={editDescription}
+                        onChange={(e) => setEditDescription(e.target.value)}
+                        placeholder="Краткое описание..."
+                        rows={3}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Тип</Label>
+                        <Select
+                          value={editType}
+                          onValueChange={(v) => setEditType(v as CollectionType)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(
+                              ([key, label]) => (
+                                <SelectItem key={key} value={key}>
+                                  {label}
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Статус</Label>
+                        <Select
+                          value={editStatus}
+                          onValueChange={(v) => setEditStatus(v as CollectionStatus)}
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(
+                              ([key, label]) => (
+                                <SelectItem key={key} value={key}>
+                                  {label}
+                                </SelectItem>
+                              )
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Рейтинг</Label>
+                      <div className="flex gap-1 h-9 items-center">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setEditRating(editRating === star ? 0 : star)}
+                            className="p-0.5"
+                          >
+                            <Star
+                              className={`h-5 w-5 transition ${
+                                star <= editRating
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-muted-foreground/30'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Теги (через запятую)</Label>
+                      <Input
+                        value={editTags}
+                        onChange={(e) => setEditTags(e.target.value)}
+                        placeholder="фантастика, фаворит"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Заметки</Label>
+                      <Textarea
+                        value={editNotes}
+                        onChange={(e) => setEditNotes(e.target.value)}
+                        placeholder="Ваши заметки..."
+                        rows={3}
+                      />
+                    </div>
 
-                {/* Rating */}
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm">Рейтинг:</Label>
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() =>
-                          handleRatingUpdate(
-                            detailItem,
-                            detailItem.rating === star ? 0 : star
-                          )
-                        }
-                        className="p-0.5"
+                    <Separator />
+
+                    {/* Edit actions */}
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={handleEditSave}
+                        disabled={!editTitle.trim() || editSaving}
                       >
-                        <Star
-                          className={`h-5 w-5 transition ${
-                            star <= (detailItem.rating || 0)
-                              ? 'fill-amber-400 text-amber-400'
-                              : 'text-muted-foreground/30'
-                          }`}
-                        />
-                      </button>
-                    ))}
+                        <Save className="h-4 w-4 mr-2" />
+                        {editSaving ? 'Сохранение...' : 'Сохранить'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={cancelEditing}
+                        disabled={editSaving}
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Отмена
+                      </Button>
+                    </div>
                   </div>
-                </div>
-
-                {/* Description */}
-                {detailItem.description && (
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Описание</Label>
-                    <p className="text-sm mt-1">{detailItem.description}</p>
-                  </div>
-                )}
-
-                {/* Tags */}
-                {parseTags(detailItem.tags).length > 0 && (
-                  <div className="flex gap-1 flex-wrap">
-                    {parseTags(detailItem.tags).map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        {tag}
+                ) : (
+                  /* ========== VIEW MODE ========== */
+                  <>
+                    {/* Type, Status, and Created Date */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge variant="outline">
+                        {TYPE_LABELS[detailItem.type as CollectionType]}
                       </Badge>
-                    ))}
-                  </div>
-                )}
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[detailItem.status]}`}
+                      >
+                        {STATUS_LABELS[detailItem.status]}
+                      </span>
+                      <Badge variant="secondary" className="gap-1 font-normal text-[11px]">
+                        <CalendarDays className="h-3 w-3" />
+                        Создано {formatDateRussian(detailItem.createdAt)}
+                      </Badge>
+                    </div>
 
-                {/* Notes */}
-                {detailItem.notes && (
-                  <div>
-                    <Label className="text-sm text-muted-foreground">Заметки</Label>
-                    <p className="text-sm mt-1">{detailItem.notes}</p>
-                  </div>
-                )}
+                    {/* Rating */}
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Рейтинг:</Label>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() =>
+                              handleRatingUpdate(
+                                detailItem,
+                                detailItem.rating === star ? 0 : star
+                              )
+                            }
+                            className="p-0.5"
+                          >
+                            <Star
+                              className={`h-5 w-5 transition ${
+                                star <= (detailItem.rating || 0)
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-muted-foreground/30'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <Separator />
-
-                {/* Actions */}
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className={`flex-1 border ${STATUS_BUTTON_STYLES[detailItem.status]}`}
-                    onClick={() =>
-                      handleStatusUpdate(detailItem, statusTransitions[detailItem.status])
-                    }
-                  >
-                    {detailItem.status === 'WANT' && <Clock className="h-4 w-4 mr-2" />}
-                    {detailItem.status === 'IN_PROGRESS' && (
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                    {/* Description */}
+                    {detailItem.description && (
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Описание</Label>
+                        <p className="text-sm mt-1">{detailItem.description}</p>
+                      </div>
                     )}
-                    {detailItem.status === 'COMPLETED' && <Heart className="h-4 w-4 mr-2" />}
-                    {STATUS_LABELS[statusTransitions[detailItem.status]]}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDelete(detailItem)}
-                  >
-                    Удалить
-                  </Button>
-                </div>
+
+                    {/* Tags */}
+                    {parseTags(detailItem.tags).length > 0 && (
+                      <div className="flex gap-1 flex-wrap">
+                        {parseTags(detailItem.tags).map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Notes */}
+                    {detailItem.notes && (
+                      <div>
+                        <Label className="text-sm text-muted-foreground">Заметки</Label>
+                        <p className="text-sm mt-1">{detailItem.notes}</p>
+                      </div>
+                    )}
+
+                    <Separator />
+
+                    {/* Actions */}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className={`flex-1 border ${STATUS_BUTTON_STYLES[detailItem.status]}`}
+                        onClick={() =>
+                          handleStatusUpdate(detailItem, statusTransitions[detailItem.status])
+                        }
+                      >
+                        {detailItem.status === 'WANT' && <Clock className="h-4 w-4 mr-2" />}
+                        {detailItem.status === 'IN_PROGRESS' && (
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                        )}
+                        {detailItem.status === 'COMPLETED' && <Heart className="h-4 w-4 mr-2" />}
+                        {STATUS_LABELS[statusTransitions[detailItem.status]]}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={startEditing}
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Редактировать
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => handleDelete(detailItem)}
+                      >
+                        Удалить
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}

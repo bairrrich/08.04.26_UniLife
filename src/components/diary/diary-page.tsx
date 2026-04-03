@@ -1170,43 +1170,57 @@ export default function DiaryPage() {
   return (
     <div className="w-full max-w-5xl mx-auto space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <BookOpen className="h-6 w-6" />
-            Дневник
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Записывайте мысли, отслеживайте настроение
-          </p>
-        </div>
+      <div className="relative overflow-hidden">
+        {/* Decorative gradient blobs */}
+        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
 
-        <div className="flex items-center gap-2">
-          {/* View toggle */}
-          <div className="flex items-center border rounded-lg overflow-hidden">
-            <Button
-              variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('calendar')}
-              className="rounded-none px-3"
-            >
-              <CalendarDays className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-              className="rounded-none px-3"
-            >
-              <List className="h-4 w-4" />
-            </Button>
+        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-2xl font-bold flex items-center gap-2">
+                <BookOpen className="h-6 w-6" />
+                Дневник
+              </h1>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-muted-foreground">
+                  Записывайте мысли, отслеживайте настроение
+                </p>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  <CalendarDays className="h-3 w-3" />
+                  {format(today, 'd MMMM, EEEE', { locale: ru })}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* New entry button */}
-          <Button onClick={openNewEntryDialog} size="sm">
-            <Plus className="h-4 w-4 mr-1.5" />
-            Запись
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center border rounded-lg overflow-hidden">
+              <Button
+                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('calendar')}
+                className="rounded-none px-3"
+              >
+                <CalendarDays className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="rounded-none px-3"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {/* New entry button */}
+            <Button onClick={openNewEntryDialog} size="sm">
+              <Plus className="h-4 w-4 mr-1.5" />
+              Запись
+            </Button>
+          </div>
         </div>
       </div>
 

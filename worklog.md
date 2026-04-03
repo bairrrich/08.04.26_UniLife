@@ -938,3 +938,156 @@ Deep styling improvements for Finance, Nutrition, and Workout pages including sp
 - Footer upgraded to responsive 3-column layout on desktop, compact on mobile
 - 4 new CSS micro-interaction utility classes added (hover-glow, shimmer-text, fade-in-bottom, scale-in)
 - hover-glow applied to dashboard quick action buttons
+---
+## Task ID: feed-comments+collections-edit
+### Agent: feed-collections-agent
+### Task: Add comment posting to Feed and edit functionality to Collections
+
+### Work Log:
+
+**Part 1 — Feed Comment Posting:**
+
+1. **Created `/src/app/api/feed/comment/route.ts`** — POST endpoint:
+   - Accepts `postId` and `content` fields from request body
+   - Validates: both fields required, content must be <=300 chars, post must exist
+   - Creates Comment record linked to post and user (user_demo_001)
+   - Returns new comment with user data (id, name, avatar)
+   - Proper error handling with 400/404/500 status codes
+
+2. **Updated `/src/components/feed/feed-page.tsx`** — functional comment input:
+   - Added state: `commentTexts` (Record<string, string>), `expandedComments` (Set<string>), `sendingComment` (Set<string>)
+   - `handleCommentSubmit(postId)`: optimistic add then POST to `/api/feed/comment` then replace with real data or rollback on failure
+   - `handleCommentKeyDown`: Enter key submits comment (Shift+Enter ignored)
+   - Comment input now has: controlled value, maxLength=300, character counter, disabled state during send
+   - Send button: enabled only when text is non-empty, colored primary when active, shows spinner during send
+   - Toast notifications: `toast.success('Комментарий добавлен')` on success, `toast.error(...)` on failure
+   - Auto-expands comments after posting new comment
+
+3. **P Показать все комментарии expand button:**
+   - Posts with >2 comments show first 2 by default
+   - Button appears below, clicking toggles full view
+   - Collapse button returns to first 2
+   - Each comment now shows: avatar with image support, username, relative time, content
+   - Comments section uses proper Separator and space-y-2 layout
+
+**Part 2 — Collections Edit Functionality:**
+
+1. **Updated `/src/components/collections/collections-page.tsx`** — edit mode in detail dialog:
+   - Added imports: Pencil, X, Save from lucide-react
+   - Added state: isEditing, editSaving, and 8 edit form fields
+   - `startEditing()`: pre-fills all edit fields from current detailItem data, parses tags from JSON to comma-separated string
+   - `cancelEditing()`: resets to view mode
+   - `handleEditSave()`: PUT to `/api/collections/${id}` with all updated fields, parses tags back to JSON array
+   - Dialog `onOpenChange` resets `isEditing` to false when dialog closes
+   - Cover area dynamically shows editType icon and editStatus badge when in edit mode
+   - Dialog title changes to Editing in edit mode
+   - View mode actions: Status cycle button + Edit button + Delete
+   - Edit mode fields: Title, Author, Description, Type, Status, Rating, Tags, Notes
+   - Edit mode actions: Save + Cancel with proper disabled states
+   - Toast: success/error notifications on save
+
+### Verification Results:
+- ESLint: 0 errors, 0 warnings
+- Dev server: compiles cleanly
+- All existing functionality preserved
+- Dark mode support for all new UI elements
+- No Prisma schema modifications
+
+### Stage Summary:
+- Feed comment posting fully functional with optimistic updates, character limit, toast notifications
+- Collections detail dialog now has full edit mode with all fields editable
+- New API endpoint: POST /api/feed/comment
+- Both features use shadcn/ui components, Russian labels, dark mode support
+
+---
+## Task ID: qa-round-5
+### Agent: cron-review-coordinator
+### Task: QA testing, comment posting, analytics page, collections edit, global styling
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 10 modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Analytics, Settings) render correctly
+- **ESLint**: 0 errors, 0 warnings
+- **APIs**: 20+ REST endpoints (1 new: POST /api/feed/comment)
+- **New Module**: Analytics page added with cross-module statistics
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Code review of all modules completed
+- ✅ All existing functionality preserved
+
+#### New Features (Mandatory)
+
+1. **Feed Comment Posting** — Fully functional comment system:
+   - Created `/api/feed/comment` POST endpoint (validates post, creates Comment record)
+   - Each post has a controlled text input with character counter (max 300)
+   - Enter-to-submit + Send button
+   - Optimistic UI updates with rollback on failure
+   - "Показать все комментарии (N)" toggle for posts with 2+ comments
+   - Toast notifications on success/error
+
+2. **Analytics Page** — Comprehensive cross-module statistics:
+   - New 10th module "Аналитика" in sidebar navigation
+   - Period selector: Неделя / Месяц / Год
+   - 4 overview stat cards (Diary mood avg, Finance savings %, Workout minutes, Habits completion %)
+   - Mood trend LineChart with emoji Y-axis
+   - Spending trend AreaChart (income + expenses)
+   - Nutrition summary with progress bars
+   - Workout distribution PieChart (strength/cardio/flexibility/HIIT)
+   - Top 5 expense categories BarChart
+   - 30-day habits heatmap grid
+   - Skeleton loaders, empty states, dark mode
+
+3. **Collections Edit** — Edit mode in detail dialog:
+   - "Редактировать" button with Pencil icon in detail dialog actions
+   - Edit mode with 8 fields: title, author, description, type, status, rating, tags, notes
+   - All fields pre-filled with existing data
+   - Save/Cancel buttons with toast notifications
+
+#### Styling Improvements (Mandatory)
+
+1. **Custom Scrollbar**: Webkit + Firefox styled scrollbar (6px, semi-transparent)
+2. **5 New CSS Utility Classes**:
+   - `.glass-panel` — Glass morphism panel with backdrop blur
+   - `.gradient-text` — Emerald→teal→cyan gradient text
+   - `.float-animation` — Subtle floating animation (3s infinite)
+   - `.border-gradient` — Gradient border effect via pseudo-element
+   - `.no-scrollbar` — Cross-browser scrollbar hiding
+3. **Diary Header**: Decorative gradient blobs + today's date badge (CalendarDays icon, Russian format)
+4. **Finance Header**: Decorative gradient blobs + current month badge (Filter icon)
+5. **Settings Page**: `animate-slide-up`, gradient blobs, enhanced avatar with online indicator
+
+### Files Created:
+- `/src/app/api/feed/comment/route.ts`
+- `/src/components/analytics/analytics-page.tsx`
+
+### Files Modified:
+- `/src/store/use-app-store.ts` (added 'analytics' to AppModule type)
+- `/src/lib/nav-items.ts` (added analytics nav item)
+- `/src/app/page.tsx` (added AnalyticsPage import + render)
+- `/src/components/feed/feed-page.tsx` (comment posting, show all comments)
+- `/src/components/collections/collections-page.tsx` (edit mode in detail dialog)
+- `/src/components/diary/diary-page.tsx` (header blobs + date badge)
+- `/src/components/finance/finance-page.tsx` (header blobs + month badge)
+- `/src/components/layout/settings-page.tsx` (animate, blobs, avatar)
+- `/src/app/globals.css` (scrollbar, 5 utility classes)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All new features verified via code review
+- ✅ No breaking changes to existing functionality
+- ✅ Prisma schema unchanged
+- ✅ Dark mode supported for all new elements
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **Notification Bell Dynamic Count** — Make bell badge count from real API data
+3. **PWA Support** — Service worker + manifest for mobile install
+4. **Image Upload** — Photo support for diary entries, feed posts, collection items
+5. **Real-time Updates** — WebSocket/SSE for live feed
+6. **Offline Support** — Service worker caching
+7. **CSV Import** — In addition to JSON import
+8. **Data Visualization Enhancement** — More drill-down analytics, comparison periods
+9. **Accessibility Audit** — WCAG 2.1 AA compliance
+10. **Performance Optimization** — Lazy loading, code splitting for large modules

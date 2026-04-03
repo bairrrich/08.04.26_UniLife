@@ -113,6 +113,7 @@ const ENTITY_BORDER: Record<EntityType, string> = {
 const QUICK_EMOJIS = ['😊', '🔥', '💪', '🎉', '❤️', '🌟', '📚', '🏃']
 
 const MAX_CAPTION_LENGTH = 500
+const MAX_COMMENT_LENGTH = 300
 
 // ======================== Relative Time ========================
 
@@ -184,6 +185,13 @@ export function FeedPage() {
 
   // Bookmarked posts
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set())
+
+  // Comment state: text input per post
+  const [commentTexts, setCommentTexts] = useState<Record<string, string>>({})
+  // Expanded comments state: which posts show all comments
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
+  // Comment sending state per post
+  const [sendingComment, setSendingComment] = useState<Set<string>>(new Set())
 
   // Form state
   const [formEntityType, setFormEntityType] = useState<EntityType>('diary')
@@ -266,6 +274,117 @@ export function FeedPage() {
       } else {
         next.add(postId)
         toast.success('Запись сохранена')
+      }
+      return next
+    })
+  }
+
+  const handleCommentSubmit = async (postId: string) => {
+    const text = (commentTexts[postId] || '').trim()
+    if (!text || sendingComment.has(postId)) return
+
+    toast.dismiss()
+    setSendingComment((prev) => new Set(prev).add(postId))
+
+    // Build optimistic comment
+    const optimisticComment: FeedComment = {
+      id: 'opt_' + Date.now(),
+      content: text,
+      createdAt: new Date().toISOString(),
+      user: {
+        id: 'user_demo_001',
+        name: 'Алексей',
+        avatar: null,
+      },
+    }
+
+    // Optimistically add the comment
+    setPosts((prev) =>
+      prev.map((p) =>
+        p.id === postId
+          ? { ...p, comments: [...p.comments, optimisticComment] }
+          : p
+      )
+    )
+
+    // Clear input
+    setCommentTexts((prev) => ({ ...prev, [postId]: '' }))
+    // Auto-expand to show the new comment
+    setExpandedComments((prev) => new Set(prev).add(postId))
+
+    try {
+      const res = await fetch('/api/feed/comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId, content: text }),
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('Комментарий добавлен')
+        // Replace optimistic comment with real one
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  comments: p.comments.map((c) =>
+                    c.id === optimisticComment.id ? json.data : c
+                  ),
+                }
+              : p
+          )
+        )
+      } else {
+        toast.error('Ошибка при добавлении комментария')
+        // Remove optimistic comment on failure
+        setPosts((prev) =>
+          prev.map((p) =>
+            p.id === postId
+              ? {
+                  ...p,
+                  comments: p.comments.filter((c) => c.id !== optimisticComment.id),
+                }
+              : p
+          )
+        )
+      }
+    } catch (err) {
+      console.error('Failed to post comment:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+      // Remove optimistic comment on failure
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId
+            ? {
+                ...p,
+                comments: p.comments.filter((c) => c.id !== optimisticComment.id),
+              }
+            : p
+        )
+      )
+    } finally {
+      setSendingComment((prev) => {
+        const next = new Set(prev)
+        next.delete(postId)
+        return next
+      })
+    }
+  }
+
+  const handleCommentKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, postId: string) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleCommentSubmit(postId)
+    }
+  }
+
+  const toggleExpandComments = (postId: string) => {
+    setExpandedComments((prev) => {
+      const next = new Set(prev)
+      if (next.has(postId)) {
+        next.delete(postId)
+      } else {
+        next.add(postId)
       }
       return next
     })
@@ -593,7 +712,7 @@ export function FeedPage() {
                   </div>
 
                   {/* Comments section */}
-                  {post.comments.length === 0 ? (
+                  {post.comments.length === 0 && !expandedComments.has(post.id) ? (
                     <div className="text-center py-2">
                       <p className="text-xs text-muted-foreground/60 italic">
                         Будьте первым, кто прокомментирует!
@@ -602,34 +721,52 @@ export function FeedPage() {
                   ) : (
                     <>
                       <Separator />
-                      {/* First comment preview */}
-                      <div className="flex gap-2.5">
-                        <Avatar className="h-7 w-7 shrink-0">
-                          <AvatarFallback className="text-[10px]">
-                            {(post.comments[0].user.name || 'U')
-                              .charAt(0)
-                              .toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="rounded-lg bg-muted/60 px-3 py-2 flex-1">
-                          <p className="text-xs font-medium">
-                            {post.comments[0].user.name || 'Пользователь'}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {post.comments[0].content}
-                          </p>
-                        </div>
+                      <div className="space-y-2">
+                        {/* Show comments — first 2 when collapsed, all when expanded */}
+                        {(expandedComments.has(post.id)
+                          ? post.comments
+                          : post.comments.slice(0, 2)
+                        ).map((comment) => (
+                          <div key={comment.id} className="flex gap-2.5">
+                            <Avatar className="h-7 w-7 shrink-0">
+                              <AvatarImage
+                                src={comment.user.avatar || undefined}
+                                alt={comment.user.name || 'User'}
+                              />
+                              <AvatarFallback className="text-[10px]">
+                                {(comment.user.name || 'U')
+                                  .charAt(0)
+                                  .toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="rounded-lg bg-muted/60 px-3 py-2 flex-1">
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="text-xs font-medium">
+                                  {comment.user.name || 'Пользователь'}
+                                </p>
+                                <span className="text-[10px] text-muted-foreground/60">
+                                  {formatRelativeTime(comment.createdAt)}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {comment.content}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                        {/* Show all / collapse button */}
+                        {post.comments.length > 2 && (
+                          <button
+                            type="button"
+                            onClick={() => toggleExpandComments(post.id)}
+                            className="text-xs text-muted-foreground hover:text-foreground pl-9 transition-colors"
+                          >
+                            {expandedComments.has(post.id)
+                              ? 'Свернуть комментарии'
+                              : `Показать все комментарии (${post.comments.length})`}
+                          </button>
+                        )}
                       </div>
-                      {post.comments.length > 1 && (
-                        <p className="text-xs text-muted-foreground pl-9 -mt-1">
-                          Ещё {post.comments.length - 1}{' '}
-                          {post.comments.length - 1 === 1
-                            ? 'комментарий'
-                            : post.comments.length - 1 < 5
-                            ? 'комментария'
-                            : 'комментариев'}
-                        </p>
-                      )}
                     </>
                   )}
 
@@ -642,13 +779,38 @@ export function FeedPage() {
                       <input
                         type="text"
                         placeholder="Написать комментарий..."
-                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                        maxLength={MAX_COMMENT_LENGTH}
+                        value={commentTexts[post.id] || ''}
+                        onChange={(e) =>
+                          setCommentTexts((prev) => ({
+                            ...prev,
+                            [post.id]: e.target.value,
+                          }))
+                        }
+                        onKeyDown={(e) => handleCommentKeyDown(e, post.id)}
+                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 disabled:opacity-50"
+                        disabled={sendingComment.has(post.id)}
                       />
+                      {(commentTexts[post.id] || '').length > 0 && (
+                        <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                          {(commentTexts[post.id] || '').length}/{MAX_COMMENT_LENGTH}
+                        </span>
+                      )}
                       <button
                         type="button"
-                        className="text-muted-foreground/40 hover:text-primary transition-colors"
+                        onClick={() => handleCommentSubmit(post.id)}
+                        disabled={sendingComment.has(post.id) || !(commentTexts[post.id] || '').trim()}
+                        className={cn(
+                          'transition-colors shrink-0',
+                          (commentTexts[post.id] || '').trim() && !sendingComment.has(post.id)
+                            ? 'text-primary hover:text-primary/80'
+                            : 'text-muted-foreground/30'
+                        )}
                       >
-                        <Send className="h-3.5 w-3.5" />
+                        <Send className={cn(
+                          'h-3.5 w-3.5',
+                          sendingComment.has(post.id) && 'animate-spin'
+                        )} />
                       </button>
                     </div>
                   </div>

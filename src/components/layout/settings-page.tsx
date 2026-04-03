@@ -163,10 +163,15 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold tracking-tight">Настройки</h2>
-        <p className="text-muted-foreground">Управление профилем и параметрами приложения</p>
+    <div className="space-y-6 animate-slide-up">
+      {/* Header with decorative gradient blobs */}
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
+        <div className="relative">
+          <h2 className="text-2xl font-bold tracking-tight">Настройки</h2>
+          <p className="text-muted-foreground">Управление профилем и параметрами приложения</p>
+        </div>
       </div>
 
       {/* Profile */}
@@ -180,12 +185,22 @@ export function SettingsPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src="/unilife-logo.png" alt="Avatar" />
-              <AvatarFallback className="text-xl">А</AvatarFallback>
-            </Avatar>
+            <div className="relative">
+              <Avatar className="h-16 w-16 ring-2 ring-primary/20">
+                <AvatarImage src="/unilife-logo.png" alt="Avatar" />
+                <AvatarFallback className="text-xl">А</AvatarFallback>
+              </Avatar>
+              {/* Online indicator */}
+              <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-background bg-emerald-500" />
+            </div>
             <div>
-              <h3 className="font-medium">{name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-medium">{name}</h3>
+                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-500">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                  В сети
+                </span>
+              </div>
               <p className="text-sm text-muted-foreground">{email}</p>
               <Button variant="outline" size="sm" className="mt-2">
                 Изменить фото
