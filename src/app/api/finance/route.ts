@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ transactions })
+    return NextResponse.json({ success: true, data: transactions })
   } catch (error) {
     console.error('GET /api/finance error:', error)
     return NextResponse.json(

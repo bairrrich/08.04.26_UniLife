@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ categories })
+    return NextResponse.json({ success: true, data: categories })
   } catch (error) {
     console.error('GET /api/finance/categories error:', error)
     return NextResponse.json(

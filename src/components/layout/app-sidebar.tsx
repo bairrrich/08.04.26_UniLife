@@ -1,7 +1,5 @@
 'use client'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
 import { LucideIcon, icons } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
@@ -11,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
 import { ThemeToggle } from './theme-toggle'
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import { SearchTrigger } from './search-dialog'
+import { SearchDialog } from './search-dialog'
 import { Menu } from 'lucide-react'
 import { useState } from 'react'
 
@@ -37,6 +37,11 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <h1 className="text-lg font-bold tracking-tight">UniLife</h1>
           <p className="text-[11px] text-muted-foreground">Трекер жизни</p>
         </div>
+      </div>
+
+      {/* Search Trigger */}
+      <div className="px-3 pb-2">
+        <SearchTrigger className="w-full justify-start" />
       </div>
 
       <Separator />
@@ -88,6 +93,9 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 export function AppSidebar() {
   return (
     <>
+      {/* Global Search Dialog */}
+      <SearchDialog />
+
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">
         <SidebarContent />
@@ -111,7 +119,23 @@ export function AppSidebar() {
           </div>
           <span className="font-semibold text-sm">UniLife</span>
         </div>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {/* Mobile search icon trigger */}
+          <button
+            onClick={() => {
+              document.dispatchEvent(
+                new KeyboardEvent('keydown', {
+                  key: 'k',
+                  metaKey: true,
+                  ctrlKey: true,
+                  bubbles: true,
+                })
+              )
+            }}
+            className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent transition-colors"
+          >
+            <icons.Search className="h-4 w-4 text-muted-foreground" />
+          </button>
           <ThemeToggle />
         </div>
       </header>

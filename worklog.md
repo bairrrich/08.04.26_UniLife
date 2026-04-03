@@ -136,14 +136,102 @@
 
 ## Risks & Recommendations
 
+### Completed This Round
+1. ~~**Search Module** — Global search across all entities~~ ✅ DONE
+2. ~~**Charts Enhancement** — Weekly spending trend chart~~ ✅ DONE
+
 ### Next Phase Priorities
 1. **User Authentication** — Add NextAuth.js for multi-user support
 2. **Data Persistence** — Migration from SQLite to PostgreSQL for production
 3. **Real-time Updates** — WebSocket/SSE for live feed updates
 4. **PWA Support** — Service worker and manifest for mobile install
-5. **Search Module** — Global search across all entities
-6. **Export/Import** — JSON/CSV data export functionality
-7. **Charts Enhancement** — More detailed analytics (weekly/monthly trends)
-8. **Image Upload** — Photo support for diary entries and collection items
-9. **Notifications** — Push notifications for reminders
-10. **Localization** — i18n support for multiple languages
+5. **Export/Import** — JSON/CSV data export functionality
+6. **Image Upload** — Photo support for diary entries and collection items
+7. **Notifications** — Push notifications for reminders
+8. **Localization** — i18n support for multiple languages
+9. **Toast Notifications** — Add sonner toast feedback on all CRUD operations
+10. **Offline Support** — Service worker caching for offline usage
+
+---
+
+## Task ID: qa-round-1
+### Agent: cron-review-agent
+### Task: QA testing, bug fixes, styling enhancements, and new features
+
+### Work Log:
+- **QA Testing**: Ran ESLint (0 errors), tested all 12+ API endpoints, browser-tested all 8 modules via agent-browser
+- **Bug Fix 1**: Fixed finance API response format inconsistency — `/api/finance` returned `{transactions}` but frontend expected `{success, data}`. Fixed all 3 finance routes (finance, categories, stats)
+- **Bug Fix 2**: Fixed dashboard finance data access — `financeRes.value.totalIncome` changed to `financeRes.value.data.totalIncome` after API format fix
+- **Bug Fix 3**: Fixed dashboard greeting — changed "Пользователь" to "Алексей"
+- **Bug Fix 4**: Fixed search API — replaced raw SQL `$queryRaw` with Prisma `findMany` + `contains` for reliable cross-module search
+- **Styling Enhancement**: Enhanced dashboard stat cards with gradient backgrounds, colored icon circles, hover effects (scale + shadow)
+- **New Feature 1**: Added weekly spending trend AreaChart to dashboard (full-width, gradient fill, Russian day labels)
+- **New Feature 2**: Built Global Search (Cmd+K) with cross-module search API, search dialog with keyboard shortcut, debounced input, grouped results
+- **Quick Actions**: Enhanced with colored icon badges and hover animations
+- **Recent Activity**: Added user avatars, entity-type colored left borders, improved typography
+- **Decorative**: Added gradient blobs in dashboard header area
+- Browser-tested: Dashboard, Finance, Diary, Nutrition, Workout, Collections, Feed, Search — all render correctly
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Build: successful (all 15 routes compile)
+- ✅ All 13 API endpoints return correct data (101 transactions, 13 categories, 14 diary entries, 22 meals, 5 workouts, 23 collections, 8 posts)
+- ✅ Browser QA: All 8 modules render without console errors
+- ✅ Search API: Cross-module search working (tested with Russian queries)
+- ✅ Dark mode: Supported across all enhanced components
+
+### Stage Summary:
+- 4 bugs fixed (API format, data access, greeting, search API)
+- 2 new features added (global search, weekly spending chart)
+- Dashboard styling significantly enhanced
+- All modules verified working correctly
+
+## Task ID: style-1+feat-3
+### Agent: dashboard-style-agent
+### Task: Enhance dashboard styling and add weekly spending trend chart
+
+### Work Log:
+- Enhanced stat cards with gradient backgrounds (emerald for Дневник, amber for Финансы, orange for Питание, blue for Тренировки) and colored icon circles
+- Added hover scale-up and shadow effects on all stat cards (`hover:scale-[1.02] hover:shadow-lg`)
+- Added weekly spending trend AreaChart (full-width, above the 2-column chart grid) using `/api/finance?month=YYYY-MM` data aggregated by day for last 7 days
+- AreaChart features: gradient fill (chart-1 color fading to transparent), data point dots with background stroke, CartesianGrid, Russian day names on X axis, RUB currency on Y axis
+- Enhanced quick actions with colored icon backgrounds (rounded-lg badges per action), hover scale animation, and styled button cards
+- Enhanced recent activity feed with user avatar (using `/unilife-logo.png` via next/image), colored left border per entity type, improved typography and spacing
+- Added decorative gradient blobs in header area (emerald/teal and amber/orange, blurred, low opacity)
+- Increased section spacing from `space-y-6` to `space-y-8`
+- All cards consistently use `rounded-xl` border radius
+- Dark mode support for all gradient backgrounds and icon colors
+
+### Stage Summary:
+- Dashboard visually enhanced with better cards, new spending trend chart, improved layout
+- All existing features preserved — no breaking changes
+- ESLint passes with zero errors
+
+---
+
+## Task ID: feat-1
+### Agent: search-feature-agent
+### Task: Build Global Search (Cmd+K) feature
+
+### Work Log:
+- Created `/src/app/api/search/route.ts` — cross-module search endpoint using Prisma raw SQL with LIKE queries
+- Searches 6 modules: DiaryEntry (title, content), Transaction (description, note), Meal (note, MealItem.name), Workout (name, WorkoutExercise.name), CollectionItem (title, author), Post (caption)
+- Returns grouped results (max 5 per module) with proper type annotations
+- Fixed SQLite reserved keyword issue by double-quoting table names in raw SQL
+- Created `/src/components/layout/search-dialog.tsx` — global search dialog component
+  - `SearchDialog` — dialog with keyboard shortcut (Cmd+K / Ctrl+K), debounced search (300ms), loading skeleton, empty state, grouped results by module
+  - `SearchTrigger` — button component with search icon and ⌘K hint (hidden on mobile)
+  - Results show icon, title, subtitle, and module badge per item
+  - Click on result navigates to module via `useAppStore setActiveModule` and closes dialog
+  - Quick search suggestions on initial empty state
+  - Footer with keyboard navigation hints
+- Updated `/src/components/layout/app-sidebar.tsx`:
+  - Added `SearchTrigger` in desktop sidebar (below logo, before nav items)
+  - Added mobile search icon button in mobile header (before theme toggle)
+  - Added `SearchDialog` component at root level of sidebar
+- All lint checks pass, dev server compiles without errors
+
+### Stage Summary:
+- Global search Cmd+K dialog with cross-module search across all 6 modules
+- Search API endpoint at `/api/search?q=query` returning grouped results
+- Integrated search trigger into both desktop sidebar and mobile header
