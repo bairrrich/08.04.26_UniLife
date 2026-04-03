@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
 // ======================== Types ========================
 
@@ -181,6 +182,7 @@ export function CollectionsPage() {
       .map((t) => t.trim())
       .filter(Boolean)
 
+    toast.dismiss()
     try {
       const res = await fetch('/api/collections', {
         method: 'POST',
@@ -197,16 +199,21 @@ export function CollectionsPage() {
       })
       const json = await res.json()
       if (json.success) {
+        toast.success('Элемент добавлен в коллекцию')
         setDialogOpen(false)
         resetForm()
         fetchItems()
+      } else {
+        toast.error('Ошибка при добавлении элемента')
       }
     } catch (err) {
       console.error('Failed to create collection item:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
 
   const handleStatusUpdate = async (item: CollectionItem, newStatus: CollectionStatus) => {
+    toast.dismiss()
     try {
       const res = await fetch(`/api/collections/${item.id}`, {
         method: 'PUT',
@@ -215,27 +222,36 @@ export function CollectionsPage() {
       })
       const json = await res.json()
       if (json.success) {
+        toast.success('Статус обновлён')
         fetchItems()
         if (detailItem && detailItem.id === item.id) {
           setDetailItem({ ...item, status: newStatus })
         }
+      } else {
+        toast.error('Ошибка при обновлении статуса')
       }
     } catch (err) {
       console.error('Failed to update status:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
 
   const handleDelete = async (item: CollectionItem) => {
+    toast.dismiss()
     try {
       const res = await fetch(`/api/collections/${item.id}`, { method: 'DELETE' })
       const json = await res.json()
       if (json.success) {
+        toast.success('Элемент удалён')
         setDetailOpen(false)
         setDetailItem(null)
         fetchItems()
+      } else {
+        toast.error('Ошибка при удалении элемента')
       }
     } catch (err) {
       console.error('Failed to delete item:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
 

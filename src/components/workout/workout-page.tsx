@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
 // ======================== Types ========================
 
@@ -205,6 +206,7 @@ export function WorkoutPage() {
   const handleSubmit = async () => {
     if (!formName.trim() || !formDate) return
 
+    toast.dismiss()
     const exercises = formExercises
       .filter((ex) => ex.name.trim())
       .map((ex, idx) => ({
@@ -227,12 +229,16 @@ export function WorkoutPage() {
       })
       const json = await res.json()
       if (json.success) {
+        toast.success('Тренировка добавлена')
         setDialogOpen(false)
         resetForm()
         fetchWorkouts()
+      } else {
+        toast.error('Ошибка при добавлении тренировки')
       }
     } catch (err) {
       console.error('Failed to create workout:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
 

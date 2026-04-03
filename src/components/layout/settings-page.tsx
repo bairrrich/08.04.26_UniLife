@@ -8,8 +8,32 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { User, Bell, Shield, Database, Trash2, Download, Upload, Settings } from 'lucide-react'
+import {
+  User,
+  Bell,
+  Shield,
+  Database,
+  Trash2,
+  Download,
+  Upload,
+  Settings,
+  BookOpen,
+  Wallet,
+  Apple,
+  Dumbbell,
+  Library,
+  Newspaper,
+} from 'lucide-react'
 import { useState } from 'react'
+
+const EXPORT_MODULES = [
+  { key: 'diary', label: 'Дневник', icon: BookOpen, emoji: '📝' },
+  { key: 'finance', label: 'Финансы', icon: Wallet, emoji: '💰' },
+  { key: 'nutrition', label: 'Питание', icon: Apple, emoji: '🍎' },
+  { key: 'workout', label: 'Тренировки', icon: Dumbbell, emoji: '💪' },
+  { key: 'collections', label: 'Коллекции', icon: Library, emoji: '📚' },
+  { key: 'feed', label: 'Лента', icon: Newspaper, emoji: '📰' },
+] as const
 
 export function SettingsPage() {
   const [name, setName] = useState('Алексей')
@@ -35,6 +59,33 @@ export function SettingsPage() {
     } catch {
       toast.error('Ошибка сети')
     }
+  }
+
+  const exportData = async (module: string) => {
+    try {
+      toast.loading('Подготовка экспорта...')
+      const res = await fetch(`/api/settings/export?module=${module}`)
+      if (!res.ok) throw new Error('Export failed')
+      const { data } = await res.json()
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `unilife-${module}-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      toast.success('Данные экспортированы!')
+    } catch {
+      toast.error('Ошибка экспорта')
+    } finally {
+      toast.dismiss()
+    }
+  }
+
+  const handleImport = () => {
+    toast.info('Импорт будет доступен в следующей версии')
   }
 
   return (
@@ -144,13 +195,39 @@ export function SettingsPage() {
           </CardTitle>
           <CardDescription>Экспорт, импорт и управление вашими данными</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6">
+          {/* Export All */}
+          <Button
+            className="w-full gap-2"
+            onClick={() => exportData('all')}
+          >
+            <Download className="h-4 w-4" />
+            Экспорт всех данных
+          </Button>
+
+          {/* Module-specific export */}
+          <div>
+            <p className="text-sm font-medium mb-3">Экспорт по модулям</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {EXPORT_MODULES.map((mod) => (
+                <Button
+                  key={mod.key}
+                  variant="outline"
+                  className="gap-2 justify-start"
+                  onClick={() => exportData(mod.key)}
+                >
+                  <span className="text-base">{mod.emoji}</span>
+                  <span className="text-sm">{mod.label}</span>
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <Separator />
+
+          {/* Import & Reset */}
           <div className="flex flex-wrap gap-3">
-            <Button variant="outline" className="gap-2">
-              <Download className="h-4 w-4" />
-              Экспорт данных
-            </Button>
-            <Button variant="outline" className="gap-2">
+            <Button variant="outline" className="gap-2" onClick={handleImport}>
               <Upload className="h-4 w-4" />
               Импорт данных
             </Button>

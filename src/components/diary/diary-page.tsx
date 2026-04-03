@@ -34,6 +34,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Calendar } from '@/components/ui/calendar'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
@@ -295,6 +296,7 @@ export default function DiaryPage() {
   const handleSubmitNew = async () => {
     if (!form.content.trim()) return
     setIsSubmitting(true)
+    toast.dismiss()
     try {
       const res = await fetch('/api/diary', {
         method: 'POST',
@@ -308,11 +310,15 @@ export default function DiaryPage() {
         }),
       })
       if (res.ok) {
+        toast.success('Запись добавлена в дневник')
         setShowNewDialog(false)
         fetchEntries()
+      } else {
+        toast.error('Ошибка при создании записи')
       }
     } catch (err) {
       console.error('Failed to create entry:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     } finally {
       setIsSubmitting(false)
     }
@@ -347,17 +353,22 @@ export default function DiaryPage() {
   const handleDelete = async () => {
     if (!selectedEntry) return
     setIsSubmitting(true)
+    toast.dismiss()
     try {
       const res = await fetch(`/api/diary/${selectedEntry.id}`, {
         method: 'DELETE',
       })
       if (res.ok) {
+        toast.success('Запись удалена')
         setShowDeleteDialog(false)
         setSelectedEntry(null)
         fetchEntries()
+      } else {
+        toast.error('Ошибка при удалении записи')
       }
     } catch (err) {
       console.error('Failed to delete entry:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     } finally {
       setIsSubmitting(false)
     }

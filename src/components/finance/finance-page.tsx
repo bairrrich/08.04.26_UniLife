@@ -37,6 +37,7 @@ import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 import {
   ChartContainer,
   ChartTooltip,
@@ -256,6 +257,7 @@ export default function FinancePage() {
     if (!newAmount || !newCategoryId || !newDate) return
 
     setIsSubmitting(true)
+    toast.dismiss()
     try {
       const res = await fetch('/api/finance', {
         method: 'POST',
@@ -271,12 +273,16 @@ export default function FinancePage() {
       })
 
       if (res.ok) {
+        toast.success('Транзакция добавлена')
         setShowNewDialog(false)
         resetForm()
         fetchData()
+      } else {
+        toast.error('Ошибка при добавлении транзакции')
       }
     } catch (err) {
       console.error('Failed to create transaction:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     } finally {
       setIsSubmitting(false)
     }

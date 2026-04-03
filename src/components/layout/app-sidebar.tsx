@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SearchTrigger } from './search-dialog'
 import { SearchDialog } from './search-dialog'
 import { Menu } from 'lucide-react'
-import { useState } from 'react'
+import { motion } from 'framer-motion'
 
 function getIcon(iconName: string): LucideIcon {
   return icons[iconName as keyof typeof icons] || icons.Circle
@@ -30,12 +30,18 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col">
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <span className="text-lg font-bold">U</span>
+        <div className="relative flex h-9 w-9 items-center justify-center">
+          {/* Decorative gradient behind the "U" */}
+          <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-emerald-400/60 to-primary/40 blur-sm" />
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <span className="text-lg font-bold">U</span>
+          </div>
         </div>
         <div>
           <h1 className="text-lg font-bold tracking-tight">UniLife</h1>
-          <p className="text-[11px] text-muted-foreground">Трекер жизни</p>
+          <p className="text-[10px] tracking-wide uppercase text-muted-foreground">
+            Вся жизнь в одном месте
+          </p>
         </div>
       </div>
 
@@ -57,12 +63,24 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
                   : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
+              {/* Animated active indicator */}
+              {isActive && (
+                <motion.div
+                  layoutId="active-indicator"
+                  className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-full bg-accent-foreground/80"
+                  transition={{
+                    type: 'spring',
+                    stiffness: 500,
+                    damping: 30,
+                  }}
+                />
+              )}
               <Icon className="h-4.5 w-4.5 shrink-0" />
               <span>{item.label}</span>
             </button>
@@ -72,19 +90,37 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
       <Separator />
 
-      {/* Footer */}
+      {/* User Profile */}
       <div className="p-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
-          <Avatar className="h-8 w-8">
-            <AvatarImage src="/unilife-logo.png" alt="Avatar" />
-            <AvatarFallback>А</AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src="/unilife-logo.png" alt="Avatar" />
+              <AvatarFallback>А</AvatarFallback>
+            </Avatar>
+            {/* Online indicator dot */}
+            <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center">
+              <span className="h-2.5 w-2.5 rounded-full border-2 border-sidebar bg-emerald-500" />
+            </span>
+          </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium truncate">Алексей</p>
-            <p className="text-[11px] text-muted-foreground truncate">demo@unilife.app</p>
+            <p className="text-[10px] text-emerald-500 font-medium truncate">
+              В сети
+            </p>
           </div>
           <ThemeToggle />
         </div>
+      </div>
+
+      {/* Version Footer */}
+      <div className="mt-auto px-4 pb-4 pt-1">
+        <p className="text-[10px] text-muted-foreground/60">
+          UniLife v1.0
+        </p>
+        <p className="text-[10px] text-muted-foreground/40">
+          © 2026
+        </p>
       </div>
     </div>
   )
@@ -102,24 +138,32 @@ export function AppSidebar() {
       </aside>
 
       {/* Mobile Header + Sheet */}
-      <header className="md:hidden sticky top-0 z-40 flex items-center gap-3 border-b bg-background/95 backdrop-blur-sm px-4 py-3">
+      <header className="md:hidden sticky top-0 z-40 flex items-center gap-3 border-b bg-background/80 backdrop-blur-xl shadow-sm px-4 py-3">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="shrink-0">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-60 p-0">
+          <SheetContent side="left" className="w-64 p-0">
             <SidebarContent />
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-bold">
-            U
+          <div className="relative flex h-7 w-7 items-center justify-center">
+            <div className="absolute inset-0 rounded-md bg-gradient-to-br from-emerald-400/60 to-primary/40 blur-[2px]" />
+            <div className="relative flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground text-sm font-bold">
+              U
+            </div>
           </div>
-          <span className="font-semibold text-sm">UniLife</span>
+          <div className="flex flex-col">
+            <span className="font-semibold text-sm leading-none">UniLife</span>
+            <span className="text-[9px] tracking-wide uppercase text-muted-foreground leading-none mt-0.5">
+              Вся жизнь в одном месте
+            </span>
+          </div>
         </div>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1">
           {/* Mobile search icon trigger */}
           <button
             onClick={() => {
@@ -132,9 +176,9 @@ export function AppSidebar() {
                 })
               )
             }}
-            className="flex items-center justify-center h-8 w-8 rounded-md hover:bg-accent transition-colors"
+            className="flex items-center justify-center h-9 w-9 rounded-lg hover:bg-accent transition-colors"
           >
-            <icons.Search className="h-4 w-4 text-muted-foreground" />
+            <icons.Search className="h-4.5 w-4.5 text-muted-foreground" />
           </button>
           <ThemeToggle />
         </div>

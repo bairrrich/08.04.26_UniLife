@@ -37,6 +37,7 @@ import {
 } from '@/components/ui/select'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { toast } from 'sonner'
 
 // ======================== Types ========================
 
@@ -222,6 +223,7 @@ export function FeedPage() {
   const handleSubmit = async () => {
     if (!formEntityId.trim()) return
 
+    toast.dismiss()
     try {
       const res = await fetch('/api/feed', {
         method: 'POST',
@@ -234,12 +236,16 @@ export function FeedPage() {
       })
       const json = await res.json()
       if (json.success) {
+        toast.success('Запись опубликована')
         setDialogOpen(false)
         resetForm()
         fetchPosts()
+      } else {
+        toast.error('Ошибка при публикации записи')
       }
     } catch (err) {
       console.error('Failed to create post:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
 

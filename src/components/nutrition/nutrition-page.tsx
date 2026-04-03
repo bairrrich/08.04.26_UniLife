@@ -41,6 +41,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 // ─── Types ──────────────────────────────────────────────────────
 interface MealItem {
@@ -198,6 +199,7 @@ export default function NutritionPage() {
     if (validItems.length === 0) return
 
     setIsSubmitting(true)
+    toast.dismiss()
     try {
       const body = {
         type: mealType,
@@ -218,12 +220,16 @@ export default function NutritionPage() {
       })
 
       if (res.ok) {
+        toast.success('Приём пищи записан')
         setShowNewMealDialog(false)
         resetForm()
         fetchData()
+      } else {
+        toast.error('Ошибка при записи приёма пищи')
       }
     } catch (err) {
       console.error('Failed to create meal:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     } finally {
       setIsSubmitting(false)
     }
@@ -239,10 +245,14 @@ export default function NutritionPage() {
       })
 
       if (res.ok) {
+        toast.success('+250 мл воды')
         fetchData()
+      } else {
+        toast.error('Ошибка при добавлении воды')
       }
     } catch (err) {
       console.error('Failed to add water:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
   }
 
