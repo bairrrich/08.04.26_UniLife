@@ -13,6 +13,10 @@ import {
   Star,
   Tag,
   X,
+  Clock,
+  Eye,
+  EyeOff,
+  Sparkles,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -54,6 +58,14 @@ const MOOD_EMOJI: Record<number, string> = {
   5: '😄',
 }
 
+const MOOD_LABELS: Record<number, string> = {
+  1: 'Ужасно',
+  2: 'Плохо',
+  3: 'Нормально',
+  4: 'Хорошо',
+  5: 'Отлично',
+}
+
 const MOOD_COLORS: Record<number, string> = {
   1: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300',
   2: 'bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
@@ -69,6 +81,39 @@ const MOOD_DOT_COLORS: Record<number, string> = {
   4: 'bg-lime-400',
   5: 'bg-emerald-400',
 }
+
+const MOOD_BORDER_CLASS: Record<number, string> = {
+  1: 'mood-border-1',
+  2: 'mood-border-2',
+  3: 'mood-border-3',
+  4: 'mood-border-4',
+  5: 'mood-border-5',
+}
+
+const MOOD_GRADIENT: Record<number, string> = {
+  1: 'from-red-50/30 to-transparent dark:from-red-950/20',
+  2: 'from-orange-50/30 to-transparent dark:from-orange-950/20',
+  3: 'from-yellow-50/30 to-transparent dark:from-yellow-950/20',
+  4: 'from-lime-50/30 to-transparent dark:from-lime-950/20',
+  5: 'from-emerald-50/30 to-transparent dark:from-emerald-950/20',
+}
+
+const TAG_COLORS = [
+  'bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300',
+  'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300',
+  'bg-rose-100 text-rose-700 dark:bg-rose-950 dark:text-rose-300',
+  'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300',
+  'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300',
+  'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
+  'bg-pink-100 text-pink-700 dark:bg-pink-950 dark:text-pink-300',
+  'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300',
+]
+
+const QUICK_TEMPLATES = [
+  { label: 'Рабочий день', emoji: '💼', content: 'Сегодняшний рабочий день был насыщенным. ' },
+  { label: 'Выходной', emoji: '🌴', content: 'Отличный выходной день! ' },
+  { label: 'Спорт', emoji: '🏋️', content: 'Сегодня тренировался. ' },
+]
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -113,6 +158,20 @@ function parseEntryDate(dateStr: string): Date {
   return parseISO(dateStr)
 }
 
+function countWords(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length
+}
+
+function readingTimeMinutes(wordCount: number): string {
+  const mins = Math.max(1, Math.ceil(wordCount / 200))
+  const lastDigit = mins % 10
+  const lastTwo = mins % 100
+  if (lastTwo >= 11 && lastTwo <= 19) return `${mins} минут`
+  if (lastDigit === 1) return `${mins} минута`
+  if (lastDigit >= 2 && lastDigit <= 4) return `${mins} минуты`
+  return `${mins} минут`
+}
+
 const emptyForm: EntryFormData = {
   title: '',
   content: '',
@@ -139,6 +198,19 @@ export default function DiaryPage() {
   const [form, setForm] = useState<EntryFormData>(emptyForm)
   const [tagInput, setTagInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
+
+  const toggleExpanded = (entryId: string) => {
+    setExpandedEntries((prev) => {
+      const next = new Set(prev)
+      if (next.has(entryId)) {
+        next.delete(entryId)
+      } else {
+        next.add(entryId)
+      }
+      return next
+    })
+  }
 
   // ─── Data Fetching ───────────────────────────────────────────────────────
 
@@ -291,6 +363,14 @@ export default function DiaryPage() {
 
   const removeTag = (tag: string) => {
     setForm((f) => ({ ...f, tags: f.tags.filter((t) => t !== tag) }))
+  }
+
+  const applyTemplate = (template: typeof QUICK_TEMPLATES[number]) => {
+    setForm((f) => ({
+      ...f,
+      content: f.content ? f.content + template.content : template.content,
+      title: f.title || template.label,
+    }))
   }
 
   const handleSubmitNew = async () => {
@@ -450,18 +530,28 @@ export default function DiaryPage() {
                 type="button"
                 onClick={() => handleDayClick(cell)}
                 className={cn(
-                  'h-10 w-full flex flex-col items-center justify-center rounded-md text-sm relative transition-colors',
+                  'h-12 w-full flex flex-col items-center justify-center rounded-lg text-sm relative transition-all',
                   !isCurrentMonth && 'text-muted-foreground/40',
                   isCurrentMonth && !isSelected && 'hover:bg-accent',
                   isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                  isToday && !isSelected && 'ring-2 ring-primary/30 font-semibold',
-                  hasEntries && !isSelected && 'bg-accent hover:bg-primary/10'
+                  isToday && !isSelected && 'ring-2 ring-primary font-semibold',
+                  hasEntries && !isSelected && 'bg-accent/50 hover:bg-primary/10'
                 )}
               >
-                <span>{cell.day}</span>
+                <span className="text-sm">{cell.day}</span>
                 {primaryMood && (
-                  <span className="absolute bottom-0.5 text-[10px] leading-none">
-                    {MOOD_EMOJI[primaryMood]}
+                  <div className="flex items-center gap-0.5 mt-0.5">
+                    <div className={cn('h-1.5 w-1.5 rounded-full', MOOD_DOT_COLORS[primaryMood])} />
+                  </div>
+                )}
+                {hasEntries && dayEntries!.length > 1 && (
+                  <span className={cn(
+                    'absolute -top-1 -right-1 text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center',
+                    isSelected
+                      ? 'bg-primary-foreground text-primary'
+                      : 'bg-primary text-primary-foreground'
+                  )}>
+                    {dayEntries!.length}
                   </span>
                 )}
               </button>
@@ -487,12 +577,25 @@ export default function DiaryPage() {
   const renderListView = () => {
     if (entries.length === 0) {
       return (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <BookOpen className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
-            <p className="text-muted-foreground text-sm">
+        <Card className="overflow-hidden">
+          <CardContent className="py-16 text-center">
+            <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20 flex items-center justify-center">
+              <BookOpen className="h-10 w-10 text-primary/60" />
+            </div>
+            <p className="text-muted-foreground font-medium text-lg">
               Нет записей за этот месяц
             </p>
+            <p className="text-muted-foreground text-sm mt-1.5 max-w-xs mx-auto">
+              Начните вести дневник — запишите свои мысли и отслеживайте настроение
+            </p>
+            <Button
+              size="sm"
+              className="mt-4"
+              onClick={openNewEntryDialog}
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Создать запись
+            </Button>
           </CardContent>
         </Card>
       )
@@ -503,12 +606,18 @@ export default function DiaryPage() {
         {entries.map((entry) => {
           const entryDate = parseEntryDate(entry.date)
           const moodClass = entry.mood ? MOOD_COLORS[entry.mood] : ''
+          const moodBorder = entry.mood ? MOOD_BORDER_CLASS[entry.mood] : ''
+          const moodGrad = entry.mood ? MOOD_GRADIENT[entry.mood] : ''
+          const wordCount = countWords(entry.content)
+          const isExpanded = expandedEntries.has(entry.id)
+          const isLongContent = entry.content.length > 150
 
           return (
             <Card
               key={entry.id}
               className={cn(
-                'card-hover rounded-xl border bg-card hover:shadow-sm transition cursor-pointer',
+                'card-hover rounded-xl border bg-card hover:shadow-sm transition cursor-pointer overflow-hidden',
+                moodBorder,
                 selectedEntry?.id === entry.id && 'ring-2 ring-primary/40'
               )}
               onClick={() => {
@@ -516,7 +625,11 @@ export default function DiaryPage() {
                 setSelectedEntry(entry)
               }}
             >
-              <CardContent className="p-4">
+              {/* Subtle mood gradient background */}
+              {entry.mood && (
+                <div className={cn('absolute inset-0 bg-gradient-to-r pointer-events-none rounded-xl', moodGrad)} />
+              )}
+              <CardContent className="p-4 relative">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Date & mood */}
@@ -534,6 +647,10 @@ export default function DiaryPage() {
                           {MOOD_EMOJI[entry.mood]} {entry.mood}/5
                         </span>
                       )}
+                      {/* Word count */}
+                      <span className="text-xs text-muted-foreground/60 ml-auto tabular-nums">
+                        {wordCount} слов
+                      </span>
                     </div>
 
                     {/* Title */}
@@ -544,20 +661,49 @@ export default function DiaryPage() {
                     )}
 
                     {/* Content preview */}
-                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
-                      {entry.content}
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {isLongContent && !isExpanded
+                        ? entry.content.slice(0, 150) + '...'
+                        : entry.content
+                      }
                     </p>
+
+                    {/* Show/hide toggle */}
+                    {isLongContent && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleExpanded(entry.id)
+                        }}
+                        className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-1.5 font-medium transition-colors"
+                      >
+                        {isExpanded ? (
+                          <>
+                            <EyeOff className="h-3 w-3" />
+                            Свернуть
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3 w-3" />
+                            Показать полностью
+                          </>
+                        )}
+                      </button>
+                    )}
 
                     {/* Tags */}
                     {entry.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {entry.tags.map((tag) => (
+                        {entry.tags.map((tag, tagIdx) => (
                           <Badge
                             key={tag}
                             variant="secondary"
-                            className="text-xs gap-1"
+                            className={cn(
+                              'text-xs rounded-full px-2.5 py-0 border-0',
+                              TAG_COLORS[tagIdx % TAG_COLORS.length]
+                            )}
                           >
-                            <Tag className="h-3 w-3" />
                             {tag}
                           </Badge>
                         ))}
@@ -624,25 +770,39 @@ export default function DiaryPage() {
         {entriesForSelectedDate.map((entry) => {
           const isSelected = selectedEntry?.id === entry.id
           const moodClass = entry.mood ? MOOD_COLORS[entry.mood] : ''
+          const moodBorder = entry.mood ? MOOD_BORDER_CLASS[entry.mood] : ''
+          const moodGrad = entry.mood ? MOOD_GRADIENT[entry.mood] : ''
+          const wordCount = countWords(entry.content)
 
           return (
             <Card
               key={entry.id}
               className={cn(
-                'card-hover rounded-xl border bg-card transition',
+                'card-hover rounded-xl border bg-card transition overflow-hidden',
+                moodBorder,
                 isSelected && 'ring-2 ring-primary/40'
               )}
               onClick={() => setSelectedEntry(entry)}
             >
-              <CardHeader className="pb-3">
+              {entry.mood && (
+                <div className={cn('absolute inset-0 bg-gradient-to-r pointer-events-none rounded-xl', moodGrad)} />
+              )}
+              <CardHeader className="pb-3 relative">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1">
-                    <CardTitle className="text-base">
+                    <CardTitle className="text-xl font-bold">
                       {entry.title || 'Без заголовка'}
                     </CardTitle>
-                    <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
-                      {format(parseEntryDate(entry.date), 'd MMMM yyyy, HH:mm', { locale: ru })}
-                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-xs text-muted-foreground tabular-nums">
+                        {format(parseEntryDate(entry.date), 'd MMMM yyyy, HH:mm', { locale: ru })}
+                      </p>
+                      <span className="text-xs text-muted-foreground/50">•</span>
+                      <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
+                        <Clock className="h-3 w-3" />
+                        {readingTimeMinutes(wordCount)} чтения
+                      </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {entry.mood && (
@@ -655,14 +815,31 @@ export default function DiaryPage() {
                         {MOOD_EMOJI[entry.mood]}
                       </span>
                     )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setSelectedEntry(entry)
+                        openEditDialog()
+                      }}
+                      className="h-7 px-2"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
-              <CardContent className="pt-0 space-y-3">
+              <CardContent className="pt-0 space-y-3 relative">
                 {/* Mood stars */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">Настроение:</span>
                   {renderMoodStars(entry.mood)}
+                  {entry.mood && (
+                    <span className="text-xs text-muted-foreground ml-1">
+                      {MOOD_LABELS[entry.mood]}
+                    </span>
+                  )}
                 </div>
 
                 <Separator />
@@ -672,16 +849,24 @@ export default function DiaryPage() {
                   {entry.content}
                 </div>
 
+                {/* Word count */}
+                <p className="text-xs text-muted-foreground/50 tabular-nums">
+                  {wordCount} слов
+                </p>
+
                 {/* Tags */}
                 {entry.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {entry.tags.map((tag) => (
+                    {entry.tags.map((tag, tagIdx) => (
                       <Badge
                         key={tag}
                         variant="secondary"
-                        className="text-xs gap-1"
+                        className={cn(
+                          'text-xs rounded-full px-2.5 py-0 border-0 cursor-pointer hover:opacity-80 transition-opacity',
+                          TAG_COLORS[tagIdx % TAG_COLORS.length]
+                        )}
                       >
-                        <Tag className="h-3 w-3" />
+                        <Tag className="h-3 w-3 mr-1" />
                         {tag}
                       </Badge>
                     ))}
@@ -753,6 +938,29 @@ export default function DiaryPage() {
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {/* Quick templates (new entry only) */}
+          {isNew && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                Быстрая запись
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {QUICK_TEMPLATES.map((tmpl) => (
+                  <button
+                    key={tmpl.label}
+                    type="button"
+                    onClick={() => applyTemplate(tmpl)}
+                    className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+                  >
+                    <span>{tmpl.emoji}</span>
+                    {tmpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Date picker */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Дата</label>
@@ -787,34 +995,50 @@ export default function DiaryPage() {
             />
           </div>
 
-          {/* Mood selector */}
+          {/* Mood selector — bigger, more visual */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Настроение</label>
-            <div className="flex items-center gap-2">
-              {renderMoodStars(form.mood, true, handleMoodClick)}
-              <span
-                className={cn(
-                  'ml-2 text-lg',
-                  MOOD_EMOJI[form.mood]
-                )}
-              >
-                {MOOD_EMOJI[form.mood]}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                ({form.mood}/5)
-              </span>
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleMoodClick(m)}
+                  className={cn(
+                    'flex flex-col items-center gap-0.5 rounded-xl p-2.5 transition-all border-2 flex-1',
+                    form.mood === m
+                      ? cn('border-primary bg-primary/5 scale-105', MOOD_COLORS[m])
+                      : 'border-transparent hover:bg-muted/50'
+                  )}
+                >
+                  <span className={cn(
+                    'text-2xl transition-transform',
+                    form.mood === m && 'scale-110'
+                  )}>
+                    {MOOD_EMOJI[m]}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {MOOD_LABELS[m]}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Content */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Содержание *</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Содержание *</label>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {countWords(form.content)} слов · {form.content.length} символов
+              </span>
+            </div>
             <Textarea
               placeholder="Что хотите записать..."
               value={form.content}
               onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
               rows={5}
-              className="resize-none"
+              className="resize-none focus-glow"
             />
           </div>
 
@@ -845,13 +1069,15 @@ export default function DiaryPage() {
             </div>
             {form.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {form.tags.map((tag) => (
+                {form.tags.map((tag, tagIdx) => (
                   <Badge
                     key={tag}
                     variant="secondary"
-                    className="text-xs gap-1 pr-1"
+                    className={cn(
+                      'text-xs rounded-full px-2.5 py-0 border-0 gap-1 pr-1',
+                      TAG_COLORS[tagIdx % TAG_COLORS.length]
+                    )}
                   >
-                    <Tag className="h-3 w-3" />
                     {tag}
                     <button
                       type="button"

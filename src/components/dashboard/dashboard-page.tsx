@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import {
   Card,
@@ -27,14 +27,15 @@ import {
   Utensils,
   Target,
   CheckCircle2,
+  Sparkles,
+  RefreshCw,
+  Trophy,
 } from 'lucide-react'
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
-  Tooltip,
-  ResponsiveContainer,
   PieChart,
   Pie,
   Cell,
@@ -106,7 +107,7 @@ interface HabitItem {
   streak: number
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const moodEmojis: Record<number, string> = {
   1: '😢',
@@ -125,6 +126,55 @@ const moodLabels: Record<number, string> = {
 }
 
 const dayNamesShort = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+const MOTIVATIONAL_QUOTES = [
+  { text: 'Каждый день — это новая возможность стать лучше.', author: 'Неизвестный автор' },
+  { text: 'Маленькие шаги каждый день приводят к большим результатам.', author: 'Неизвестный автор' },
+  { text: 'Дисциплина — это мост между целями и достижениями.', author: 'Джим Рон' },
+  { text: 'Успех — это сумма маленьких усилий, повторяемых день за днём.', author: 'Роберт Кольер' },
+  { text: 'Не бойся идти медленно, бойся стоять на месте.', author: 'Китайская пословица' },
+  { text: 'Лучшее время посадить дерево было 20 лет назад. Следующее лучшее время — сейчас.', author: 'Китайская пословица' },
+  { text: 'Единственный способ сделать отличную работу — любить то, что делаешь.', author: 'Стив Джобс' },
+  { text: 'Трудности — это не препятствия, а указатели на пути.', author: 'Ральф Уолдо Эмерсон' },
+  { text: 'Будь тем изменением, которое хочешь видеть в мире.', author: 'Махатма Ганди' },
+  { text: 'Сила не в том, чтобы не падать, а в том, чтобы каждый раз вставать.', author: 'Конфуций' },
+  { text: 'Ваше будущее создаётся тем, что вы делаете сегодня, а не завтра.', author: 'Роберт Кийосаки' },
+  { text: 'Повседневные привычки — невидимая архитектура счастливой жизни.', author: 'Джеймс Клир' },
+]
+
+const PIE_COLORS = [
+  'hsl(var(--chart-1))',
+  'hsl(var(--chart-2))',
+  'hsl(var(--chart-3))',
+  'hsl(var(--chart-4))',
+  'hsl(var(--chart-5))',
+  'hsl(var(--chart-1) / 0.5)',
+  'hsl(var(--chart-2) / 0.5)',
+  'hsl(var(--chart-3) / 0.5)',
+]
+
+const moodChartConfig: ChartConfig = {
+  mood: {
+    label: 'Настроение',
+    color: 'hsl(var(--chart-1))',
+  },
+}
+
+const expensePieConfig: ChartConfig = {
+  amount: {
+    label: 'Расходы',
+    color: 'hsl(var(--chart-1))',
+  },
+}
+
+const spendingTrendConfig: ChartConfig = {
+  spending: {
+    label: 'Расходы',
+    color: 'hsl(var(--chart-1))',
+  },
+}
+
+// ─── Helper Functions ─────────────────────────────────────────────────────────
 
 const formatDate = (date: Date) => {
   return date.toLocaleDateString('ru-RU', {
@@ -162,7 +212,7 @@ const getCurrentMonthStr = () => {
 const getWeekRange = () => {
   const now = new Date()
   const day = now.getDay()
-  const diff = day === 0 ? 6 : day - 1 // Monday-based week
+  const diff = day === 0 ? 6 : day - 1
   const monday = new Date(now)
   monday.setDate(now.getDate() - diff)
   monday.setHours(0, 0, 0, 0)
@@ -180,36 +230,97 @@ const getLast7DaysRange = () => {
   return { from: sevenDaysAgo.toISOString(), to: now.toISOString() }
 }
 
-const PIE_COLORS = [
-  'hsl(var(--chart-1))',
-  'hsl(var(--chart-2))',
-  'hsl(var(--chart-3))',
-  'hsl(var(--chart-4))',
-  'hsl(var(--chart-5))',
-  'hsl(var(--chart-1) / 0.5)',
-  'hsl(var(--chart-2) / 0.5)',
-  'hsl(var(--chart-3) / 0.5)',
-]
-
-const moodChartConfig: ChartConfig = {
-  mood: {
-    label: 'Настроение',
-    color: 'hsl(var(--chart-1))',
-  },
+const getGreeting = () => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Доброе утро'
+  if (hour >= 12 && hour < 17) return 'Добрый день'
+  if (hour >= 17 && hour < 22) return 'Добрый вечер'
+  return 'Доброй ночи'
 }
 
-const expensePieConfig: ChartConfig = {
-  amount: {
-    label: 'Расходы',
-    color: 'hsl(var(--chart-1))',
-  },
+const getDayOfYear = () => {
+  const now = new Date()
+  const start = new Date(now.getFullYear(), 0, 0)
+  const diff = now.getTime() - start.getTime()
+  return Math.floor(diff / (1000 * 60 * 60 * 24))
 }
 
-const spendingTrendConfig: ChartConfig = {
-  spending: {
-    label: 'Расходы',
-    color: 'hsl(var(--chart-1))',
-  },
+const toDateStr = (d: Date) => {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
+const calculateStreak = (dates: string[]): number => {
+  if (dates.length === 0) return 0
+
+  const uniqueDates = new Set(
+    dates.map((d) => {
+      const date = new Date(d)
+      return toDateStr(date)
+    })
+  )
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = toDateStr(today)
+
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = toDateStr(yesterday)
+
+  if (!uniqueDates.has(todayStr) && !uniqueDates.has(yesterdayStr)) return 0
+
+  let streak = 0
+  const checkDate = uniqueDates.has(todayStr) ? new Date(today) : new Date(yesterday)
+
+  while (true) {
+    const checkStr = toDateStr(checkDate)
+    if (uniqueDates.has(checkStr)) {
+      streak++
+      checkDate.setDate(checkDate.getDate() - 1)
+    } else {
+      break
+    }
+  }
+
+  return streak
+}
+
+// ─── Animated Counter Hook ───────────────────────────────────────────────────
+
+function useAnimatedCounter(target: number, duration = 600, enabled = true): number {
+  const [value, setValue] = useState(0)
+  const rafRef = useRef<number>(0)
+
+  useEffect(() => {
+    let startTime: number | null = null
+
+    const animate = (timestamp: number) => {
+      // All setState calls are inside rAF callbacks (asynchronous), never synchronous in the effect body
+      if (!enabled || target === 0) {
+        setValue(0)
+        return
+      }
+
+      if (startTime === null) startTime = timestamp
+      const elapsed = timestamp - startTime
+      const progress = Math.min(elapsed / duration, 1)
+
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setValue(Math.round(target * eased))
+
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(animate)
+      }
+    }
+
+    rafRef.current = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [target, duration, enabled])
+
+  return value
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -235,6 +346,8 @@ export default function DashboardPage() {
     stats: { totalActive: number; completedToday: number; bestStreak: number }
   } | null>(null)
   const [transactionsData, setTransactionsData] = useState<Transaction[]>([])
+  const [quoteIndex, setQuoteIndex] = useState(() => getDayOfYear() % MOTIVATIONAL_QUOTES.length)
+  const [quoteRefreshing, setQuoteRefreshing] = useState(false)
 
   // ── Data Fetching ──────────────────────────────────────────────────────
   const fetchAllData = useCallback(async () => {
@@ -279,7 +392,7 @@ export default function DashboardPage() {
         for (const entry of weekEntries) {
           if (entry.mood) {
             const d = new Date(entry.date)
-            const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1 // Mon=0
+            const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
             const dayName = dayNamesShort[dayIndex]
             moodByDay.set(dayName, entry.mood)
           }
@@ -308,7 +421,6 @@ export default function DashboardPage() {
       ) {
         const transactions = financeTransactionsRes.value.data as Transaction[]
         setTransactionsData(transactions)
-        const { from: week7From } = getLast7DaysRange()
         const now = new Date()
 
         // Build last 7 days map
@@ -318,7 +430,6 @@ export default function DashboardPage() {
           d.setDate(now.getDate() - i)
           d.setHours(0, 0, 0, 0)
           const dateStr = d.toISOString().split('T')[0]
-          const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
           dailySpending.set(dateStr, 0)
         }
 
@@ -434,6 +545,35 @@ export default function DashboardPage() {
   const kcalGoal = 2200
   const todayKcal = nutritionStats?.totalKcal ?? 0
 
+  // ── Streaks ────────────────────────────────────────────────────────────
+  const diaryStreak = calculateStreak(diaryEntries.map((e) => e.date))
+  const workoutStreak = calculateStreak(workouts.map((w) => w.date))
+  const habitsStreak = habitsData?.stats.bestStreak ?? 0
+  const maxStreak = Math.max(diaryStreak, workoutStreak, habitsStreak)
+
+  const streakItems = [
+    { icon: <BookOpen className="h-4 w-4 text-emerald-500" />, name: 'Дневник', streak: diaryStreak },
+    { icon: <Dumbbell className="h-4 w-4 text-blue-500" />, name: 'Тренировки', streak: workoutStreak },
+    { icon: <Target className="h-4 w-4 text-violet-500" />, name: 'Привычки', streak: habitsStreak },
+  ]
+
+  // ── Animated Counters ──────────────────────────────────────────────────
+  const animWeekEntries = useAnimatedCounter(weekEntryCount, 600, !loading)
+  const animIncome = useAnimatedCounter(financeStats?.totalIncome ?? 0, 600, !loading)
+  const animExpense = useAnimatedCounter(financeStats?.totalExpense ?? 0, 600, !loading)
+  const animKcal = useAnimatedCounter(todayKcal, 600, !loading)
+  const animWorkouts = useAnimatedCounter(workouts.length, 600, !loading)
+  const animHabitsPct = useAnimatedCounter(habitsPercentage, 600, !loading)
+  const animWeekWorkouts = useAnimatedCounter(weekWorkoutCount, 600, !loading)
+
+  // ── Quote Handlers ─────────────────────────────────────────────────────
+  const handleRefreshQuote = () => {
+    setQuoteRefreshing(true)
+    const newIndex = Math.floor(Math.random() * MOTIVATIONAL_QUOTES.length)
+    setQuoteIndex(newIndex)
+    setTimeout(() => setQuoteRefreshing(false), 400)
+  }
+
   // ── Expense Pie Data ───────────────────────────────────────────────────
   const expensePieData =
     financeStats?.byCategory.map((cat, i) => ({
@@ -475,22 +615,7 @@ export default function DashboardPage() {
     },
   ]
 
-  // ── Feed item icon & color by entityType ───────────────────────────────
-  const getEntityIcon = (type: string) => {
-    switch (type) {
-      case 'diary':
-        return <BookOpen className="h-4 w-4 text-blue-500" />
-      case 'workout':
-        return <Dumbbell className="h-4 w-4 text-orange-500" />
-      case 'meal':
-        return <Apple className="h-4 w-4 text-green-500" />
-      case 'transaction':
-        return <Wallet className="h-4 w-4 text-yellow-500" />
-      default:
-        return <Heart className="h-4 w-4 text-pink-500" />
-    }
-  }
-
+  // ── Feed item helpers ──────────────────────────────────────────────────
   const getEntityTypeLabel = (type: string) => {
     switch (type) {
       case 'diary':
@@ -524,17 +649,16 @@ export default function DashboardPage() {
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-8">
+    <div className="animate-slide-up space-y-8">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
-        {/* Decorative gradient blob */}
         <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl" />
         <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Привет, Алексей! 👋
+              {getGreeting()}, Алексей! 👋
             </h1>
             <p className="mt-1 text-sm capitalize text-muted-foreground">
               {formatDate(now)}
@@ -550,12 +674,12 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Stats Cards Grid ───────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="stagger-children grid grid-cols-2 gap-4 lg:grid-cols-4">
         {/* Дневник */}
         {loading ? (
           <Skeleton className="h-[130px] rounded-xl" />
         ) : (
-          <Card className="group rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 to-teal-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-emerald-950/40 dark:to-teal-950/30 dark:border-emerald-800/30">
+          <Card className="card-hover group rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 to-teal-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-emerald-950/40 dark:to-teal-950/30 dark:border-emerald-800/30">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-300">
                 Дневник
@@ -570,8 +694,8 @@ export default function DashboardPage() {
                   {todayMood ? moodEmojis[todayMood] : '📝'}
                 </span>
                 <div>
-                  <p className="text-lg font-semibold">
-                    {weekEntryCount}
+                  <p className="text-lg font-semibold tabular-nums">
+                    {animWeekEntries}
                   </p>
                   <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">записей за неделю</p>
                 </div>
@@ -584,7 +708,7 @@ export default function DashboardPage() {
         {loading ? (
           <Skeleton className="h-[130px] rounded-xl" />
         ) : (
-          <Card className="group rounded-xl border border-transparent bg-gradient-to-br from-amber-50 to-yellow-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-amber-950/40 dark:to-yellow-950/30 dark:border-amber-800/30">
+          <Card className="card-hover group rounded-xl border border-transparent bg-gradient-to-br from-amber-50 to-yellow-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-amber-950/40 dark:to-yellow-950/30 dark:border-amber-800/30">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-amber-700 dark:text-amber-300">
                 Финансы
@@ -597,14 +721,14 @@ export default function DashboardPage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-1">
                   <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                    {financeStats ? formatCurrency(financeStats.totalIncome) : '0 ₽'}
+                  <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(animIncome)}
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <TrendingDown className="h-3 w-3 text-red-500" />
-                  <span className="text-sm font-semibold text-red-600 dark:text-red-400">
-                    {financeStats ? formatCurrency(financeStats.totalExpense) : '0 ₽'}
+                  <span className="text-sm font-semibold tabular-nums text-red-600 dark:text-red-400">
+                    {formatCurrency(animExpense)}
                   </span>
                 </div>
               </div>
@@ -616,7 +740,7 @@ export default function DashboardPage() {
         {loading ? (
           <Skeleton className="h-[130px] rounded-xl" />
         ) : (
-          <Card className="group rounded-xl border border-transparent bg-gradient-to-br from-orange-50 to-amber-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-orange-950/40 dark:to-amber-950/30 dark:border-orange-800/30">
+          <Card className="card-hover group rounded-xl border border-transparent bg-gradient-to-br from-orange-50 to-amber-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-orange-950/40 dark:to-amber-950/30 dark:border-orange-800/30">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-orange-700 dark:text-orange-300">
                 Питание
@@ -627,8 +751,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               <div>
-                <p className="text-lg font-semibold">
-                  {todayKcal.toLocaleString('ru-RU')}
+                <p className="text-lg font-semibold tabular-nums">
+                  {animKcal.toLocaleString('ru-RU')}
                   <span className="text-sm font-normal text-muted-foreground">
                     {' '}/ {kcalGoal.toLocaleString('ru-RU')} ккал
                   </span>
@@ -654,7 +778,7 @@ export default function DashboardPage() {
         {loading ? (
           <Skeleton className="h-[130px] rounded-xl" />
         ) : (
-          <Card className="group rounded-xl border border-transparent bg-gradient-to-br from-blue-50 to-sky-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-blue-950/40 dark:to-sky-950/30 dark:border-blue-800/30">
+          <Card className="card-hover group rounded-xl border border-transparent bg-gradient-to-br from-blue-50 to-sky-50 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg dark:from-blue-950/40 dark:to-sky-950/30 dark:border-blue-800/30">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-300">
                 Тренировки
@@ -665,7 +789,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               <div>
-                <p className="text-lg font-semibold">{workouts.length}</p>
+                <p className="text-lg font-semibold tabular-nums">{animWorkouts}</p>
                 <p className="text-xs text-blue-600/70 dark:text-blue-400/70">тренировок в этом месяце</p>
               </div>
             </CardContent>
@@ -694,6 +818,44 @@ export default function DashboardPage() {
                 {action.label}
               </button>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Daily Motivational Quote ───────────────────────────────────── */}
+      <Card className="overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/20">
+        <CardContent className="relative p-5">
+          <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl dark:bg-emerald-800/20" />
+          <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-teal-200/30 blur-xl dark:bg-teal-800/20" />
+
+          <div className="relative">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
+                  <Sparkles className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <h3 className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  Вдохновение дня
+                </h3>
+              </div>
+              <button
+                onClick={handleRefreshQuote}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/60 hover:text-emerald-600 dark:hover:bg-white/10 dark:hover:text-emerald-400"
+                title="Другая цитата"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 transition-transform duration-300 ${quoteRefreshing ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
+
+            <blockquote className="relative pl-3">
+              <div className="absolute bottom-0 left-0 top-0 w-0.5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-400" />
+              <p className="text-sm leading-relaxed font-medium text-foreground/90">
+                &laquo;{MOTIVATIONAL_QUOTES[quoteIndex].text}&raquo;
+              </p>
+              <footer className="mt-2 text-xs text-muted-foreground">
+                — {MOTIVATIONAL_QUOTES[quoteIndex].author}
+              </footer>
+            </blockquote>
           </div>
         </CardContent>
       </Card>
@@ -754,7 +916,7 @@ export default function DashboardPage() {
                 </svg>
                 <div className="absolute flex flex-col items-center">
                   <span className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {habitsPercentage}%
+                    {animHabitsPct}%
                   </span>
                 </div>
               </div>
@@ -1046,72 +1208,163 @@ export default function DashboardPage() {
         </CardContent>
       </Card>
 
-      {/* ── Weekly Summary ────────────────────────────────────────────── */}
+      {/* ── Streak Tracking Widget ─────────────────────────────────────── */}
       <Card className="rounded-xl border">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <TrendingUp className="h-4 w-4 text-blue-500" />
-            Итоги недели
+            <Flame className="h-4 w-4 text-orange-500" />
+            Рекорды серий
           </CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
-            <div className="grid grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 rounded-xl" />
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-12 rounded-xl" />
               ))}
             </div>
           ) : (
+            <div className="space-y-2">
+              {streakItems.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background shadow-sm">
+                    {item.icon}
+                  </div>
+                  <span className="flex-1 text-sm font-medium">{item.name}</span>
+                  <div className="flex items-center gap-1.5">
+                    {item.streak >= 7 && <span className="text-base">🔥</span>}
+                    {item.streak === maxStreak && maxStreak > 0 && (
+                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400">
+                        <Trophy className="mr-1 h-3 w-3" />
+                        Рекорд
+                      </Badge>
+                    )}
+                    <span className="text-base font-bold tabular-nums text-foreground">
+                      {item.streak}
+                    </span>
+                    <span className="text-xs text-muted-foreground">дней</span>
+                  </div>
+                </div>
+              ))}
+
+              {maxStreak === 0 && (
+                <p className="py-2 text-center text-xs text-muted-foreground">
+                  Начните отслеживать активности, чтобы увидеть серии
+                </p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Weekly Summary (Enhanced) ──────────────────────────────────── */}
+      <Card className="rounded-xl border">
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <TrendingUp className="h-4 w-4 text-blue-500" />
+            Итого за неделю
+          </CardTitle>
+          <div className="mt-1 h-px w-full bg-gradient-to-r from-transparent via-border to-transparent" />
+        </CardHeader>
+        <CardContent>
+          {loading ? (
             <div className="grid grid-cols-2 gap-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-[88px] rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
               {/* Diary entries */}
-              <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3 transition-colors hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50">
+              <div className="flex items-center gap-3 rounded-xl bg-emerald-50 p-3.5 transition-colors hover:bg-emerald-100/80 dark:bg-emerald-950/30 dark:hover:bg-emerald-950/50">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
                   <BookOpen className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Записи в дневнике</p>
-                  <p className="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
-                    {weekEntryCount}
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Записи</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
+                      {animWeekEntries}
+                    </p>
+                    {animWeekEntries > 0 && (
+                      <TrendingUp className="h-3 w-3 text-emerald-500" />
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Workouts */}
-              <div className="flex items-center gap-3 rounded-xl bg-blue-50 p-3 transition-colors hover:bg-blue-100/80 dark:bg-blue-950/30 dark:hover:bg-blue-950/50">
+              <div className="flex items-center gap-3 rounded-xl bg-blue-50 p-3.5 transition-colors hover:bg-blue-100/80 dark:bg-blue-950/30 dark:hover:bg-blue-950/50">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
                   <Dumbbell className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">Тренировки</p>
-                  <p className="text-lg font-semibold tabular-nums text-blue-700 dark:text-blue-300">
-                    {weekWorkoutCount}
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-lg font-semibold tabular-nums text-blue-700 dark:text-blue-300">
+                      {animWeekWorkouts}
+                    </p>
+                    {animWeekWorkouts > 0 && (
+                      <TrendingUp className="h-3 w-3 text-blue-500" />
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Expenses */}
-              <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-3 transition-colors hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50">
+              <div className="flex items-center gap-3 rounded-xl bg-amber-50 p-3.5 transition-colors hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
                   <TrendingDown className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">Расходы</p>
-                  <p className="text-lg font-semibold tabular-nums text-amber-700 dark:text-amber-300">
-                    {formatCurrency(weekExpenseSum)}
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-base font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+                      {formatCurrency(weekExpenseSum)}
+                    </p>
+                    {weekExpenseSum > 0 && (
+                      <TrendingDown className="h-3 w-3 text-amber-500" />
+                    )}
+                  </div>
                 </div>
               </div>
 
               {/* Habits */}
-              <div className="flex items-center gap-3 rounded-xl bg-violet-50 p-3 transition-colors hover:bg-violet-100/80 dark:bg-violet-950/30 dark:hover:bg-violet-950/50">
+              <div className="flex items-center gap-3 rounded-xl bg-violet-50 p-3.5 transition-colors hover:bg-violet-100/80 dark:bg-violet-950/30 dark:hover:bg-violet-950/50">
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/50">
                   <CheckCircle2 className="h-4 w-4 text-violet-600 dark:text-violet-400" />
                 </div>
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground">Привычки</p>
-                  <p className="text-lg font-semibold tabular-nums text-violet-700 dark:text-violet-300">
-                    {completedToday}<span className="text-sm font-normal text-muted-foreground"> / {totalActive}</span>
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-lg font-semibold tabular-nums text-violet-700 dark:text-violet-300">
+                      {completedToday}<span className="text-sm font-normal text-muted-foreground"> / {totalActive}</span>
+                    </p>
+                    {completedToday > 0 && (
+                      <TrendingUp className="h-3 w-3 text-violet-500" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Nutrition */}
+              <div className="flex items-center gap-3 rounded-xl bg-orange-50 p-3.5 transition-colors hover:bg-orange-100/80 dark:bg-orange-950/30 dark:hover:bg-orange-950/50 col-span-2 lg:col-span-1">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/50">
+                  <Apple className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs text-muted-foreground">Калории</p>
+                  <div className="flex items-center gap-1">
+                    <p className="text-lg font-semibold tabular-nums text-orange-700 dark:text-orange-300">
+                      {animKcal.toLocaleString('ru-RU')}
+                    </p>
+                    {animKcal > 0 && (
+                      <TrendingUp className="h-3 w-3 text-orange-500" />
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1127,13 +1380,13 @@ export default function DashboardPage() {
 function getTimeAgo(date: Date): string {
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
-  const diffMinutes = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMinutes / 60)
-  const diffDays = Math.floor(diffHours / 24)
+  const diffMins = Math.floor(diffMs / 60000)
+  const diffHours = Math.floor(diffMs / 3600000)
+  const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffMinutes < 1) return 'только что'
-  if (diffMinutes < 60) return `${diffMinutes} мин. назад`
-  if (diffHours < 24) return `${diffHours} ч. назад`
-  if (diffDays < 7) return `${diffDays} дн. назад`
+  if (diffMins < 1) return 'только что'
+  if (diffMins < 60) return `${diffMins} мин назад`
+  if (diffHours < 24) return `${diffHours} ч назад`
+  if (diffDays < 7) return `${diffDays} д назад`
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }

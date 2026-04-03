@@ -14,6 +14,12 @@ import {
   Dumbbell,
   Library,
   Sparkles,
+  Clock,
+  Camera,
+  Bookmark,
+  BookmarkCheck,
+  Send,
+  SmilePlus,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -37,6 +43,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 // ======================== Types ========================
 
@@ -102,6 +109,10 @@ const ENTITY_BORDER: Record<EntityType, string> = {
   workout: 'border-l-orange-500',
   collection: 'border-l-purple-500',
 }
+
+const QUICK_EMOJIS = ['😊', '🔥', '💪', '🎉', '❤️', '🌟', '📚', '🏃']
+
+const MAX_CAPTION_LENGTH = 500
 
 // ======================== Relative Time ========================
 
@@ -170,6 +181,9 @@ export function FeedPage() {
 
   // Like animation state: track post IDs that just got liked for the scale pop
   const [likeAnimating, setLikeAnimating] = useState<Set<string>>(new Set())
+
+  // Bookmarked posts
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set())
 
   // Form state
   const [formEntityType, setFormEntityType] = useState<EntityType>('diary')
@@ -243,6 +257,39 @@ export function FeedPage() {
     }
   }
 
+  const handleToggleBookmark = (postId: string) => {
+    setBookmarkedPosts((prev) => {
+      const next = new Set(prev)
+      if (next.has(postId)) {
+        next.delete(postId)
+        toast.info('Запись удалена из сохранённых')
+      } else {
+        next.add(postId)
+        toast.success('Запись сохранена')
+      }
+      return next
+    })
+  }
+
+  const handleShare = (post: FeedPost) => {
+    const url = `${window.location.origin}/feed?post=${post.id}`
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(url).then(() => {
+        toast.success('Ссылка скопирована в буфер обмена')
+      }).catch(() => {
+        toast.error('Не удалось скопировать ссылку')
+      })
+    } else {
+      toast.info('Скопируйте ссылку: ' + url)
+    }
+  }
+
+  const handleInsertEmoji = (emoji: string) => {
+    if (formCaption.length < MAX_CAPTION_LENGTH) {
+      setFormCaption((prev) => prev + emoji)
+    }
+  }
+
   const resetForm = () => {
     setFormEntityType('diary')
     setFormCaption('')
@@ -311,11 +358,61 @@ export function FeedPage() {
                   id="post-caption"
                   placeholder="Поделитесь своими мыслями, достижениями или моментами дня..."
                   value={formCaption}
-                  onChange={(e) => setFormCaption(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value.length <= MAX_CAPTION_LENGTH) {
+                      setFormCaption(e.target.value)
+                    }
+                  }}
                   rows={4}
-                  className="resize-none"
+                  className="resize-none focus-glow"
                 />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    Макс. {MAX_CAPTION_LENGTH} символов
+                  </span>
+                  <span className={cn(
+                    'text-xs tabular-nums',
+                    formCaption.length > MAX_CAPTION_LENGTH * 0.9
+                      ? 'text-amber-500'
+                      : 'text-muted-foreground'
+                  )}>
+                    {formCaption.length}/{MAX_CAPTION_LENGTH}
+                  </span>
+                </div>
               </div>
+
+              {/* Emoji quick insert */}
+              <div className="space-y-1.5">
+                <Label className="flex items-center gap-1.5">
+                  <SmilePlus className="h-3.5 w-3.5" />
+                  Быстрые эмодзи
+                </Label>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUICK_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => handleInsertEmoji(emoji)}
+                      className="h-9 w-9 rounded-lg flex items-center justify-center text-lg hover:bg-accent transition-colors active-press"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Image placeholder (non-functional UI) */}
+              <div className="space-y-1.5">
+                <Label>Фото</Label>
+                <button
+                  type="button"
+                  className="w-full h-24 rounded-xl border-2 border-dashed border-muted-foreground/20 hover:border-primary/40 flex flex-col items-center justify-center gap-1.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer"
+                >
+                  <Camera className="h-6 w-6" />
+                  <span className="text-xs font-medium">Добавить фото</span>
+                </button>
+              </div>
+
               <div className="space-y-2">
                 <Label>Категория</Label>
                 <Select
@@ -341,6 +438,7 @@ export function FeedPage() {
                 onClick={handleSubmit}
                 disabled={!formCaption.trim()}
               >
+                <Send className="h-4 w-4 mr-2" />
                 Опубликовать
               </Button>
             </div>
@@ -375,14 +473,23 @@ export function FeedPage() {
                 Лента пуста
               </p>
               <p className="text-muted-foreground text-sm mt-2 max-w-xs mx-auto">
-                Поделитесь своими достижениями и моментами
+                Поделитесь своими мыслями и достижениями
               </p>
+              <Button
+                size="sm"
+                className="mt-4"
+                onClick={() => setDialogOpen(true)}
+              >
+                <Plus className="h-4 w-4 mr-1.5" />
+                Создать первую запись
+              </Button>
             </CardContent>
           </Card>
         ) : (
           posts.map((post) => {
             const isLiked = likedPosts.has(post.id)
             const isAnimating = likeAnimating.has(post.id)
+            const isBookmarked = bookmarkedPosts.has(post.id)
             const likeCount = isLiked
               ? Math.max(post._count.likes, 1)
               : post._count.likes
@@ -390,7 +497,7 @@ export function FeedPage() {
             return (
               <Card
                 key={post.id}
-                className={`card-hover border-l-4 ${ENTITY_BORDER[post.entityType]} transition`}
+                className={`card-hover border-l-4 ${ENTITY_BORDER[post.entityType]} transition hover:bg-muted/50`}
               >
                 <CardContent className="p-4 space-y-3">
                   {/* Post header */}
@@ -415,14 +522,39 @@ export function FeedPage() {
                           {ENTITY_ICONS[post.entityType]}
                           {ENTITY_LABELS[post.entityType]}
                         </span>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
                           {formatRelativeTime(post.createdAt)}
                         </span>
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                      <Share2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleShare(post)}
+                        title="Поделиться"
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={cn(
+                          'h-8 w-8 transition-colors',
+                          isBookmarked && 'text-amber-500'
+                        )}
+                        onClick={() => handleToggleBookmark(post.id)}
+                        title={isBookmarked ? 'Убрать из сохранённых' : 'Сохранить'}
+                      >
+                        {isBookmarked ? (
+                          <BookmarkCheck className="h-4 w-4" />
+                        ) : (
+                          <Bookmark className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Caption */}
@@ -460,10 +592,17 @@ export function FeedPage() {
                     </Button>
                   </div>
 
-                  {/* First comment preview */}
-                  {post.comments.length > 0 && (
+                  {/* Comments section */}
+                  {post.comments.length === 0 ? (
+                    <div className="text-center py-2">
+                      <p className="text-xs text-muted-foreground/60 italic">
+                        Будьте первым, кто прокомментирует!
+                      </p>
+                    </div>
+                  ) : (
                     <>
                       <Separator />
+                      {/* First comment preview */}
                       <div className="flex gap-2.5">
                         <Avatar className="h-7 w-7 shrink-0">
                           <AvatarFallback className="text-[10px]">
@@ -493,6 +632,26 @@ export function FeedPage() {
                       )}
                     </>
                   )}
+
+                  {/* Comment input area */}
+                  <div className="flex items-center gap-2 pt-1">
+                    <Avatar className="h-7 w-7 shrink-0">
+                      <AvatarFallback className="text-[10px]">А</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                      <input
+                        type="text"
+                        placeholder="Написать комментарий..."
+                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50"
+                      />
+                      <button
+                        type="button"
+                        className="text-muted-foreground/40 hover:text-primary transition-colors"
+                      >
+                        <Send className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )

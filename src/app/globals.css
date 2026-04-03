@@ -407,3 +407,42 @@
 .dark .dot-pattern {
   background-image: radial-gradient(oklch(0.3 0.01 240) 1px, transparent 1px);
 }
+
+/* ── Mood-based left borders ──────────────────────────────── */
+.mood-border-1 { border-left: 3px solid oklch(0.577 0.245 27.325); }
+.mood-border-2 { border-left: 3px solid oklch(0.75 0.15 70); }
+.mood-border-3 { border-left: 3px solid oklch(0.80 0.15 85); }
+.mood-border-4 { border-left: 3px solid oklch(0.65 0.17 155); }
+.mood-border-5 { border-left: 3px solid oklch(0.55 0.17 155); }
+
+/* ── Typing indicator animation ──────────────────────────── */
+@keyframes typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-4px); }
+}
+.typing-dots span {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: typing-dot 1.4s ease-in-out infinite;
+}
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+/* ── Shimmer border effect ──────────────────────────────── */
+@keyframes shimmer-border {
+  0% { border-color: oklch(0.55 0.17 155 / 0.3); }
+  50% { border-color: oklch(0.55 0.17 155 / 0.6); }
+  100% { border-color: oklch(0.55 0.17 155 / 0.3); }
+}
+.shimmer-border {
+  animation: shimmer-border 2s ease-in-out infinite;
+}
+
+/* ── Focus ring glow ────────────────────────────────────── */
+.focus-glow:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px oklch(0.55 0.17 155 / 0.3), 0 0 12px oklch(0.55 0.17 155 / 0.15);
+}

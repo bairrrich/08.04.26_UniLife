@@ -632,3 +632,152 @@ Stage Summary:
 8. **Localization** — i18n support for multiple languages beyond Russian
 9. **Data Import Enhancement** — CSV import support in addition to JSON
 10. **Budget Alerts** — In-app budget threshold notifications
+
+---
+## Task ID: 7
+### Agent: diary-feed-styling-agent
+### Task: Enhance Diary and Feed page styling with more visual details
+
+### Work Summary:
+
+**File 1 — CSS Enhancement (`/src/app/globals.css`):**
+- Added 5 mood-based left border utility classes: `.mood-border-1` through `.mood-border-5` using oklch color values (red → orange → yellow → green → emerald)
+- Added `.typing-dots` animation: 3 bouncing dots with staggered delays (0s, 0.2s, 0.4s)
+- Added `.shimmer-border` animation: border-color pulsing between two opacity levels
+- Added `.focus-glow` utility: emerald glow box-shadow on focus-visible
+
+**File 2 — Diary Page (`/src/components/diary/diary-page.tsx`):**
+- **Better Entry Cards**: Added mood-based left border (`mood-border-{1-5}`) and subtle mood gradient background (`from-{color}-50/30 to-transparent`) per card. Tags now displayed as colorful rounded-full badges using 8 rotating color schemes. Word count shown per entry ("128 слов"). Added "Показать полностью"/"Свернуть" toggle for entries with >150 chars using Eye/EyeOff icons.
+- **Calendar View Enhancement**: Calendar cells now show colored mood dots instead of emoji indicators. Today highlighted with `ring-2 ring-primary` (previously `ring-primary/30`). Entry count badge (small number) on cells with >1 entry.
+- **Detail Panel Enhancement**: Larger title (text-xl font-bold). Tags displayed as interactive pills with colored backgrounds and hover opacity transition. "Редактировать" button added to detail panel header (compact h-7 icon button). Reading time estimate based on word count (e.g., "2 минуты чтения") with Clock icon. Mood label shown (Ужасно/Плохо/Нормально/Хорошо/Отлично).
+- **Empty States**: Diary empty state now has gradient icon circle, motivational text, and "Создать запись" CTA button. Calendar month empty state shows "Нет записей за этот месяц" with better styling.
+- **New Entry Dialog Enhancement**: Mood selector completely redesigned — 5 large emoji buttons in a row (text-2xl) with rounded-xl borders, mood labels underneath, active state highlighting with colored background and scale(1.05). Character counter added showing word count + character count. "Быстрая запись" template presets added (Рабочий день💼, Выходной🌴, Спорт🏋️) with Sparkles icon. Tags now use colored rounded-full badges in dialog.
+- New constants: `MOOD_LABELS`, `MOOD_BORDER_CLASS`, `MOOD_GRADIENT`, `TAG_COLORS`, `QUICK_TEMPLATES`
+- New helpers: `countWords()`, `readingTimeMinutes()`
+- New state: `expandedEntries` (Set<string>) for show/hide toggle
+- New imports: Clock, Eye, EyeOff, Sparkles icons
+
+**File 3 — Feed Page (`/src/components/feed/feed-page.tsx`):**
+- **Better Post Cards**: Added `hover:bg-muted/50` hover background transition. Timestamp now displays with small Clock icon. Share button now functional — copies post URL to clipboard with toast feedback ("Ссылка скопирована в буфер обмена"). Bookmark button added (Bookmark/BookmarkCheck icons, amber color when active) with toggle toast notifications.
+- **Post Creation Enhancement**: Character counter added (max 500 chars) with amber warning when >90% used. Emoji quick-insert panel with 8 common emojis (😊🔥💪🎉❤️🌟📚🏃). Image placeholder area — gray dashed border box with Camera icon and "Добавить фото" text (non-functional UI). Submit button now has Send icon.
+- **Comments Section**: Posts with no comments show placeholder text "Будьте первым, кто прокомментирует!" in italic. Comment input area redesigned as rounded-full pill with avatar, placeholder input, and Send button inside a bordered container with focus ring.
+- **Empty State Enhancement**: Gradient icon circle background. Updated subtitle: "Поделитесь своими мыслями и достижениями". Added "Создать первую запись" CTA button.
+- New state: `bookmarkedPosts` (Set<string>)
+- New handlers: `handleToggleBookmark()`, `handleShare()`, `handleInsertEmoji()`
+- New constants: `QUICK_EMOJIS`, `MAX_CAPTION_LENGTH`
+- New imports: Clock, Camera, Bookmark, BookmarkCheck, Send, SmilePlus, cn from utils
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles cleanly, all API endpoints return HTTP 200
+- ✅ All existing diary and feed functionality preserved (CRUD, like, calendar navigation, etc.)
+- ✅ No breaking changes to existing code
+
+---
+## Task ID: 6
+### Agent: focus-timer-agent
+### Task: Add Focus Timer (Pomodoro) Widget to Dashboard
+
+### Work Log:
+
+**Created `/src/components/dashboard/focus-timer.tsx`:**
+- Built a self-contained FocusTimer component with 3 timer modes:
+  - Работа (Work): 25 minutes — emerald-500 color scheme
+  - Перерыв (Short Break): 5 minutes — teal-500 color scheme
+  - Длинный перерыв (Long Break): 15 minutes — blue-500 color scheme
+- **Visual Design:**
+  - SVG circular progress ring (radius=58, circumference=~364.42) with animated `strokeDashoffset` transition (duration-1000, ease-linear)
+  - Large `MM:SS` display in center with `tabular-nums` font feature and mode-specific color
+  - Mode label displayed below the time
+  - Segmented tab control (rounded-lg bg-muted/50 container) with active state indicator
+  - Gradient play/pause button (h-14 w-14 rounded-full with mode-specific gradient)
+  - Outline reset button and invisible spacer for centering
+  - Session counter with Flame icon showing today's completed pomodoros
+- **Functionality:**
+  - Start/Pause toggle via gradient center button
+  - Reset button returns to initial state of current mode
+  - Auto-switch: Work → Short Break (or Long Break after every 4th pomodoro) → Work
+  - Session count persisted to `localStorage` under key `unilife-focus-sessions` with date-based reset
+- **Audio notification:** Web Audio API generates 3 sine wave beeps (680Hz, 0.3s spacing, exponential decay) when timer ends — no external files needed
+- **Animations:** Subtle `animate-pulse` on the ring container when timer is running (2s duration)
+- **Dark mode:** All colors use Tailwind dark mode variants (dark:text-emerald-400, dark:bg-background/40, etc.)
+- **Card styling:** Uses `card-hover` class, `rounded-xl border` consistent with dashboard
+- **React best practices:** Used `useRef` for mode tracking (updated via useEffect), deferred localStorage read via `setTimeout(0)` to avoid cascading renders, proper interval cleanup on unmount
+
+**Modified `/src/components/dashboard/dashboard-page.tsx`:**
+- Added `import { FocusTimer } from './focus-timer'`
+- Placed `<FocusTimer />` component between Quick Actions card and Habits Progress card
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, all API endpoints returning HTTP 200
+- ✅ All existing dashboard functionality preserved
+- ✅ Focus Timer renders with circular SVG ring, mode tabs, controls, and session counter
+
+---
+## Task ID: 5
+### Agent: dashboard-enhance-agent
+### Task: Enhance dashboard with animated counters, motivational quote, streak tracking, weekly summary polish, and visual improvements
+
+### Work Task
+Implement 6 enhancements to the dashboard page (`/src/components/dashboard/dashboard-page.tsx`): animated number counters, daily motivational quote widget, streak tracking widget, weekly summary enhancement, getTimeAgo helper verification, and visual polish.
+
+### Work Summary
+
+**1. Animated Number Counter Hook (`useAnimatedCounter`)**:
+- Created a custom React hook using `useEffect` with `requestAnimationFrame` to smoothly animate numbers from 0 to target over ~600ms
+- Uses cubic ease-out interpolation (`1 - Math.pow(1 - progress, 3)`) for natural-feeling motion
+- All `setState` calls occur inside rAF callbacks (asynchronous), avoiding React's `react-hooks/set-state-in-effect` lint rule
+- Applied to 7 dashboard values: `weekEntryCount`, `totalIncome`, `totalExpense`, `todayKcal`, `workouts.length`, `habitsPercentage`, `weekWorkoutCount`
+- Added `tabular-nums` class to all animated number displays for consistent digit width
+
+**2. Daily Motivational Quote Widget**:
+- New card placed between "Quick Actions" and "Habits Progress" sections
+- Title "Вдохновение дня" with Sparkles icon in emerald gradient container
+- 12 hardcoded Russian motivational quotes from famous authors (Jim Rohn, Steve Jobs, Gandhi, Confucius, James Clear, etc.)
+- Auto-seeds daily quote using day-of-year as index (`getDayOfYear() % quotes.length`)
+- Refresh button (RefreshCw icon) with 180° rotation animation on click, randomizes to a new quote
+- Subtle emerald/teal gradient background with decorative blurred circles
+- Blockquote with left gradient accent bar, Russian guillemet quotes («»), and author attribution
+
+**3. Streak Tracking Widget**:
+- New card placed below "Recent Activity Feed" section
+- Title "Рекорды серий" with Flame icon (orange-500)
+- Calculates 3 streaks from existing data:
+  - **Diary streak**: consecutive days with diary entries ending today/yesterday (via `calculateStreak()` helper)
+  - **Workout streak**: consecutive days with workouts ending today/yesterday
+  - **Habits streak**: from `habitsData.stats.bestStreak`
+- Each streak displayed as a row with: module icon in rounded-lg container, module name, streak count, "дней" suffix
+- Longest streak highlighted with emerald Badge containing Trophy icon ("Рекорд")
+- Fire emoji (🔥) displayed for streaks >= 7 days
+- Empty state message when all streaks are 0
+- Loading skeleton with 3 shimmer rows
+
+**4. Weekly Summary Enhancement**:
+- Changed title from "Итоги недели" to "Итого за неделю" with gradient decorative line (`from-transparent via-border to-transparent`)
+- Each stat card now has a TrendingUp/TrendingDown indicator arrow (green for positive counts, amber for expenses)
+- Added 5th stat: "Калории" (Nutrition) with today's kcal count in orange styling
+- Responsive grid: `grid-cols-2 lg:grid-cols-5` (2 columns on mobile, 5 on large screens)
+- Improved padding (`p-3.5`) and added `min-w-0 flex-1` for text overflow handling
+- Loading skeleton updated to 5 shimmer cards
+- All values use `tabular-nums` class
+
+**5. getTimeAgo Helper**:
+- Verified it already exists at bottom of file (line ~1127)
+- Kept existing implementation using Russian localization ("только что", "мин назад", "ч назад", "д назад")
+
+**6. Visual Polish**:
+- Added `animate-slide-up` class to main container div for page entrance animation
+- Added `stagger-children` class to stats cards grid for staggered card entrance
+- Added `card-hover` class to all 4 main stat cards (Дневник, Финансы, Питание, Тренировки)
+- Dynamic time-based greeting: "Доброе утро" (5-12), "Добрый день" (12-17), "Добрый вечер" (17-22), "Доброй ночи" (22-5)
+- Removed unused `Tooltip` and `ResponsiveContainer` recharts imports (clean lint)
+- Removed unused `getEntityIcon` function (was defined but never called in JSX)
+- Added new icon imports: `Sparkles`, `RefreshCw`, `Trophy` from lucide-react
+- Added `useRef` to React imports for the animated counter hook
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, all API endpoints returning HTTP 200
+- ✅ All existing dashboard functionality preserved (stats, charts, habits, feed, weekly summary)
+- ✅ No breaking changes to any module
