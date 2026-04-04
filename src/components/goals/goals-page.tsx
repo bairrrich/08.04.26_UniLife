@@ -1,8 +1,9 @@
 'use client'
 
-import { Crosshair, Plus, Target, AlertCircle } from 'lucide-react'
+import { Crosshair, Plus, Target, AlertCircle, Calendar } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useGoals } from './hooks'
 import { getMotivationalPhrase } from './constants'
@@ -10,6 +11,25 @@ import { GoalStats } from './goal-stats'
 import { GoalCard } from './goal-card'
 import { GoalDialog } from './goal-dialog'
 import { FilterTabs } from './filter-tabs'
+
+const MOTIVATIONAL_SUBTITLES = [
+  'Каждый шаг приближает вас к мечте',
+  'Начните с чего-нибудь малого сегодня',
+  'Ваши амбиции заслуживают плана',
+  'Будущее начинается с одного решения',
+]
+
+function getMotivationalSubtitle(): string {
+  const idx = new Date().getDate() % MOTIVATIONAL_SUBTITLES.length
+  return MOTIVATIONAL_SUBTITLES[idx]
+}
+
+function getTodayBadge() {
+  const now = new Date()
+  const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+  return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`
+}
 
 export default function GoalsPage() {
   const {
@@ -36,7 +56,13 @@ export default function GoalsPage() {
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
               <Crosshair className="h-6 w-6" />Цели
             </h2>
-            <p className="text-muted-foreground text-sm mt-1">Трекер целей и достижений</p>
+            <div className="flex items-center gap-2 mt-1">
+              <p className="text-muted-foreground text-sm">Трекер целей и достижений</p>
+              <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
+                <Calendar className="h-3 w-3" />
+                {getTodayBadge()}
+              </Badge>
+            </div>
           </div>
           <Button onClick={openAddDialog}>
             <Plus className="h-4 w-4 mr-2" />Новая цель
@@ -80,21 +106,22 @@ export default function GoalsPage() {
         <Card className="animate-slide-up overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
           <CardContent className="relative py-16 text-center">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-4 shadow-lg shadow-emerald-500/20">
-              <Target className="h-8 w-8 text-white" />
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
+              <Target className="h-10 w-10 text-white" />
             </div>
             <h3 className="text-lg font-semibold mb-1">Нет целей</h3>
             <p className="text-muted-foreground text-sm mb-1 max-w-xs mx-auto">
               Поставьте первую цель и начните двигаться к ней.
             </p>
-            <p className="text-sm text-muted-foreground/70 italic mb-5 max-w-sm mx-auto">
-              &ldquo;{getMotivationalPhrase()}&rdquo;
+            <p className="text-sm text-muted-foreground/70 italic mb-6 max-w-sm mx-auto">
+              &ldquo;{getMotivationalSubtitle()}&rdquo;
             </p>
             <Button
               onClick={openAddDialog}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all"
+              size="lg"
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
             >
-              <Plus className="h-4 w-4 mr-2" />Поставить цель
+              <Plus className="h-5 w-5 mr-2" />Поставить цель
             </Button>
           </CardContent>
         </Card>

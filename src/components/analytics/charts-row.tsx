@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Card,
   CardContent,
@@ -5,13 +7,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   AreaChart,
   Area,
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts'
 import {
   ChartContainer,
@@ -37,10 +41,49 @@ interface ChartsRowProps {
   period: Period
 }
 
+// ─── Custom Tooltip for Mood ─────────────────────────────────────────────────
+
+function MoodCustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (active && payload && payload.length && payload[0].value > 0) {
+    const moodVal = Math.round(payload[0].value)
+    return (
+      <div className="rounded-lg border bg-background p-2.5 shadow-md">
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold">
+          {MOOD_EMOJI[moodVal] || ''} {moodVal}/5
+        </p>
+      </div>
+    )
+  }
+  return null
+}
+
+// ─── Custom Tooltip for Spending ─────────────────────────────────────────────
+
+function SpendingCustomTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-background p-2.5 shadow-md">
+        <p className="mb-1 text-xs font-medium text-muted-foreground">{label}</p>
+        {payload.map((entry, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-muted-foreground">{entry.name}:</span>
+            <span className="font-semibold tabular-nums">{formatCurrency(entry.value)}</span>
+          </div>
+        ))}
+      </div>
+    )
+  }
+  return null
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
 export function ChartsRow({ loading, moodChartData, spendingChartData, period }: ChartsRowProps) {
   return (
     <div className="stagger-children grid gap-4 lg:grid-cols-2">
-      {/* Mood Trend */}
+      {/* Mood Trend — AreaChart with gradient fill */}
       {loading ? (
         <SkeletonChart />
       ) : (
@@ -64,7 +107,13 @@ export function ChartsRow({ loading, moodChartData, spendingChartData, period }:
               </div>
             ) : (
               <ChartContainer config={moodChartConfig} className="h-[250px] w-full">
-                <LineChart data={moodChartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                <AreaChart data={moodChartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="label"
@@ -80,24 +129,25 @@ export function ChartsRow({ loading, moodChartData, spendingChartData, period }:
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v) => MOOD_EMOJI[v] || ''}
                   />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
+                  <ChartTooltip content={<MoodCustomTooltip />} />
+                  <Area
                     type="monotone"
                     dataKey="mood"
-                    stroke="var(--color-mood)"
+                    stroke="#10b981"
+                    fill="url(#moodGradient)"
                     strokeWidth={2.5}
-                    dot={{ r: 4, fill: 'var(--color-mood)', strokeWidth: 2, stroke: 'var(--color-background)' }}
-                    activeDot={{ r: 6, strokeWidth: 2 }}
+                    dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: 'hsl(var(--background))' }}
+                    activeDot={{ r: 6, strokeWidth: 2, stroke: '#10b981' }}
                     connectNulls={false}
                   />
-                </LineChart>
+                </AreaChart>
               </ChartContainer>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Spending Trend */}
+      {/* Spending Trend — BarChart with amber/emerald bars */}
       {loading ? (
         <SkeletonChart />
       ) : (
@@ -121,17 +171,7 @@ export function ChartsRow({ loading, moodChartData, spendingChartData, period }:
               </div>
             ) : (
               <ChartContainer config={spendingChartConfig} className="h-[250px] w-full">
-                <AreaChart data={spendingChartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-spending)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--color-spending)" stopOpacity={0} />
-                    </linearGradient>
-                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-income)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--color-income)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
+                <BarChart data={spendingChartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} />
                   <XAxis
                     dataKey="label"
@@ -145,35 +185,23 @@ export function ChartsRow({ loading, moodChartData, spendingChartData, period }:
                     tick={{ fontSize: 11 }}
                     tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}к` : String(v)}
                   />
-                  <ChartTooltip
-                    content={
-                      <ChartTooltipContent
-                        formatter={(value, name) => (
-                          <span className="tabular-nums">
-                            {formatCurrency(value as number)}
-                          </span>
-                        )}
-                      />
-                    }
-                  />
-                  <Area
-                    type="monotone"
+                  <ChartTooltip content={<SpendingCustomTooltip />} />
+                  <Bar
                     dataKey="income"
-                    stroke="var(--color-income)"
-                    fill="url(#incomeGradient)"
-                    strokeWidth={2}
-                    dot={false}
+                    fill="#10b981"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={24}
+                    name="Доходы"
                   />
-                  <Area
-                    type="monotone"
+                  <Bar
                     dataKey="spending"
-                    stroke="var(--color-spending)"
-                    fill="url(#spendingGradient)"
-                    strokeWidth={2}
-                    dot={false}
+                    fill="#f59e0b"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={24}
+                    name="Расходы"
                   />
                   <ChartLegend content={<ChartLegendContent />} />
-                </AreaChart>
+                </BarChart>
               </ChartContainer>
             )}
           </CardContent>

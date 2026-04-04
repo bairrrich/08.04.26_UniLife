@@ -34,6 +34,7 @@ import { ProductivityScore } from './productivity-score'
 import { WeeklyActivityChart } from './weekly-activity-chart'
 import { WeeklyInsights } from './weekly-insights'
 import { QuickAddMenu } from './quick-add-menu'
+import { StreaksWidget } from '@/components/modules/dashboard/streaks-widget'
 import { formatCurrency } from '@/lib/format'
 import {
   toDateStr,
@@ -620,6 +621,9 @@ export default function DashboardPage() {
 
       {/* ── Streak Tracking Widget ─────────────────────────────── */}
       <StreakWidget loading={loading} streakItems={streakItems} maxStreak={maxStreak} />
+
+      {/* ── Habit Streaks Widget ─────────────────────────────── */}
+      <StreaksWidget />
 
       {/* ── Weekly Summary ──────────────────────────────────────── */}
       <WeeklySummary

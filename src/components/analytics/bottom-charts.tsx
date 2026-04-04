@@ -1,3 +1,5 @@
+'use client'
+
 import {
   Card,
   CardContent,
@@ -14,6 +16,8 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
 } from 'recharts'
 import {
   ChartContainer,
@@ -28,9 +32,20 @@ import {
   Wallet,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
-import { workoutPieConfig, categoryBarConfig } from './constants'
+import { nutritionChartConfig, workoutPieConfig, categoryBarConfig } from './constants'
 import { SkeletonChart } from './skeleton-components'
 import type { NutritionSummary, WorkoutDistributionPoint, TopCategoryPoint } from './types'
+
+// ─── Nutrition Chart Data ────────────────────────────────────────────────────
+
+function getNutritionBarData(summary: NutritionSummary) {
+  return [
+    { name: 'Калории', value: summary.avgKcal, target: 2200, fill: '#f97316', unit: 'ккал' },
+    { name: 'Белки', value: summary.avgProtein, target: 150, fill: '#10b981', unit: 'г' },
+    { name: 'Жиры', value: summary.avgFat, target: 80, fill: '#f59e0b', unit: 'г' },
+    { name: 'Углеводы', value: summary.avgCarbs, target: 250, fill: '#3b82f6', unit: 'г' },
+  ]
+}
 
 // ─── Nutrition Chart ──────────────────────────────────────────────────────────
 
@@ -41,6 +56,8 @@ interface NutritionChartProps {
 
 export function NutritionChart({ loading, nutritionSummary }: NutritionChartProps) {
   if (loading) return <SkeletonChart />
+
+  const nutritionData = getNutritionBarData(nutritionSummary)
 
   return (
     <Card className="card-hover rounded-xl border">
@@ -55,88 +72,78 @@ export function NutritionChart({ loading, nutritionSummary }: NutritionChartProp
       </CardHeader>
       <CardContent>
         {nutritionSummary.daysWithData === 0 ? (
-          <div className="flex h-[220px] items-center justify-center rounded-lg bg-muted/30">
+          <div className="flex h-[250px] items-center justify-center rounded-lg bg-muted/30">
             <div className="text-center">
               <Apple className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">Нет данных о питании</p>
             </div>
           </div>
         ) : (
-          <div className="space-y-5 py-2">
-            {/* Calories */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Flame className="h-3.5 w-3.5 text-orange-500" />
-                  <span className="text-sm font-medium">Калории</span>
-                </div>
-                <span className="text-sm font-semibold tabular-nums text-orange-600 dark:text-orange-400">
-                  {nutritionSummary.avgKcal} <span className="text-xs font-normal text-muted-foreground">/ 2200 ккал</span>
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-orange-100 dark:bg-orange-900/30">
-                <div
-                  className="h-full rounded-full bg-orange-500 transition-all duration-500"
-                  style={{ width: `${Math.min((nutritionSummary.avgKcal / 2200) * 100, 100)}%` }}
+          <div className="space-y-4 py-2">
+            {/* Horizontal BarChart */}
+            <ChartContainer config={nutritionChartConfig} className="h-[180px] w-full">
+              <BarChart data={nutritionData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis
+                  type="number"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 10 }}
                 />
-              </div>
-            </div>
+                <YAxis
+                  type="category"
+                  dataKey="name"
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 11 }}
+                  width={80}
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value, _name, item) => {
+                        const payload = item.payload as { unit: string; target: number }
+                        return (
+                          <span className="tabular-nums">
+                            {value as number}{payload.unit} / {payload.target}{payload.unit}
+                          </span>
+                        )
+                      }}
+                    />
+                  }
+                />
+                <Bar dataKey="value" radius={[0, 6, 6, 0]} maxBarSize={20}>
+                  {nutritionData.map((entry, index) => (
+                    <Cell key={index} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
 
-            {/* Protein */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-3.5 w-3.5 rounded-sm bg-emerald-500" />
-                  <span className="text-sm font-medium">Белки</span>
+            {/* Mini progress bars */}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+              {nutritionData.map((item) => (
+                <div key={item.name} className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <div className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: item.fill }} />
+                      <span className="text-[11px] font-medium text-muted-foreground">{item.name}</span>
+                    </div>
+                    <span className="text-[11px] tabular-nums font-medium" style={{ color: item.fill }}>
+                      {item.value}{item.unit}
+                    </span>
+                  </div>
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${Math.min((item.value / item.target) * 100, 100)}%`,
+                        backgroundColor: item.fill,
+                      }}
+                    />
+                  </div>
                 </div>
-                <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {nutritionSummary.avgProtein}г <span className="text-xs font-normal text-muted-foreground">/ 150г</span>
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${Math.min((nutritionSummary.avgProtein / 150) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Fat */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-3.5 w-3.5 rounded-sm bg-amber-500" />
-                  <span className="text-sm font-medium">Жиры</span>
-                </div>
-                <span className="text-sm font-semibold tabular-nums text-amber-600 dark:text-amber-400">
-                  {nutritionSummary.avgFat}г <span className="text-xs font-normal text-muted-foreground">/ 80г</span>
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-amber-100 dark:bg-amber-900/30">
-                <div
-                  className="h-full rounded-full bg-amber-500 transition-all duration-500"
-                  style={{ width: `${Math.min((nutritionSummary.avgFat / 80) * 100, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Carbs */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-3.5 w-3.5 rounded-sm bg-blue-500" />
-                  <span className="text-sm font-medium">Углеводы</span>
-                </div>
-                <span className="text-sm font-semibold tabular-nums text-blue-600 dark:text-blue-400">
-                  {nutritionSummary.avgCarbs}г <span className="text-xs font-normal text-muted-foreground">/ 250г</span>
-                </span>
-              </div>
-              <div className="h-2.5 w-full overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/30">
-                <div
-                  className="h-full rounded-full bg-blue-500 transition-all duration-500"
-                  style={{ width: `${Math.min((nutritionSummary.avgCarbs / 250) * 100, 100)}%` }}
-                />
-              </div>
+              ))}
             </div>
           </div>
         )}
@@ -151,6 +158,27 @@ interface WorkoutDistributionChartProps {
   loading: boolean
   workoutDistribution: WorkoutDistributionPoint[]
   workoutCount: number
+}
+
+// Custom label for pie chart
+const RADIAN = Math.PI / 180
+function renderCustomizedLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }: {
+  cx: number
+  cy: number
+  midAngle: number
+  innerRadius: number
+  outerRadius: number
+  percent: number
+}) {
+  if (percent < 0.08) return null
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
+  const x = cx + radius * Math.cos(-midAngle * RADIAN)
+  const y = cy + radius * Math.sin(-midAngle * RADIAN)
+  return (
+    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={11} fontWeight={600}>
+      {`${(percent * 100).toFixed(0)}%`}
+    </text>
+  )
 }
 
 export function WorkoutDistributionChart({ loading, workoutDistribution, workoutCount }: WorkoutDistributionChartProps) {
@@ -169,7 +197,7 @@ export function WorkoutDistributionChart({ loading, workoutDistribution, workout
       </CardHeader>
       <CardContent>
         {workoutDistribution.length === 0 ? (
-          <div className="flex h-[220px] items-center justify-center rounded-lg bg-muted/30">
+          <div className="flex h-[250px] items-center justify-center rounded-lg bg-muted/30">
             <div className="text-center">
               <Dumbbell className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
               <p className="text-sm text-muted-foreground">Нет данных о тренировках</p>
@@ -189,6 +217,8 @@ export function WorkoutDistributionChart({ loading, workoutDistribution, workout
                   outerRadius={85}
                   paddingAngle={3}
                   strokeWidth={2}
+                  label={renderCustomizedLabel}
+                  labelLine={false}
                 >
                   {workoutDistribution.map((entry, index) => (
                     <Cell key={index} fill={entry.fill} />

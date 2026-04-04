@@ -47,9 +47,7 @@ export default function AnalyticsPage() {
   const [habits, setHabits] = useState<HabitItem[]>([])
   const [nutritionDays, setNutritionDays] = useState<NutritionDay[]>([])
 
-  // ── Data Fetching (sequential to avoid Turbopack crash) ────────────────
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
+  // ── Data Fetching (parallel) ────────────────────────────────────────────
   const safeFetch = async (url: string, timeoutMs = 8000) => {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), timeoutMs)
@@ -64,37 +62,36 @@ export default function AnalyticsPage() {
     }
   }
 
-  const fetchOne = (url: string) => safeFetch(url).then((v) => ({ status: 'fulfilled' as const, value: v })).catch((e) => ({ status: 'rejected' as const, reason: e }))
-
   const fetchData = useCallback(async (p: Period) => {
     setLoading(true)
     const { from, to } = getDateRange(p)
     const currentMonth = getMonthStr(new Date())
 
     try {
-      const diaryRes = await fetchOne(`/api/diary?from=${from}&to=${to}`)
-      await sleep(150)
-      const financeRes = await fetchOne(`/api/finance?month=${currentMonth}`)
-      await sleep(150)
-      const workoutRes = await fetchOne(`/api/workout?month=${currentMonth}`)
-      await sleep(150)
-      const habitsRes = await fetchOne('/api/habits')
-
-      // Fetch nutrition stats sequentially with delay
+      // Build nutrition date URLs for parallel fetching
       const fromDate = new Date(from)
       const toDate = new Date(to)
       const maxDays = p === 'year' ? 14 : p === 'month' ? 14 : 7
-      const nutritionResults: { status: string; value: unknown; reason?: unknown }[] = []
+      const nutritionUrls: string[] = []
       const cursor = new Date(fromDate)
       let dayCount = 0
       while (cursor <= toDate && dayCount < maxDays) {
         const dateStr = toDateStr(cursor)
-        const result = await fetchOne(`/api/nutrition/stats?date=${dateStr}`)
-        nutritionResults.push(result)
-        await sleep(100)
+        nutritionUrls.push(`/api/nutrition/stats?date=${dateStr}`)
         cursor.setDate(cursor.getDate() + 1)
         dayCount++
       }
+
+      // ── Parallel fetch all endpoints ─────────────────────────────────────
+      const results = await Promise.allSettled([
+        safeFetch(`/api/diary?from=${from}&to=${to}`),
+        safeFetch(`/api/finance?month=${currentMonth}`),
+        safeFetch(`/api/workout?month=${currentMonth}`),
+        safeFetch('/api/habits'),
+        ...nutritionUrls.map((url) => safeFetch(url)),
+      ])
+
+      const [diaryRes, financeRes, workoutRes, habitsRes, ...nutritionResults] = results
 
       // Diary
       if (diaryRes.status === 'fulfilled' && diaryRes.value.data) {
@@ -392,11 +389,21 @@ export default function AnalyticsPage() {
       const d = new Date(now)
       d.setDate(now.getDate() - i)
       const dateStr = toDateStr(d)
-      const anyCompleted = habits.some((h) => h.last7Days[dateStr])
+      // Count how many habits were completed on this day
+      let completedCount = 0
+      let totalCount = habits.length
+      for (const h of habits) {
+        if (h.last7Days[dateStr]) completedCount++
+      }
+      // For days beyond last7Days window, mark as no data
+      const isInRange = i <= 6 || false // last7Days only covers 7 days
       grid.push({
         date: dateStr,
-        completed: anyCompleted,
+        completed: totalCount > 0 ? completedCount === totalCount : false,
         day: d.getDate(),
+        completedCount,
+        totalCount,
+        dayOfWeek: d.getDay(),
       })
     }
     return grid
@@ -459,7 +466,33 @@ export default function AnalyticsPage() {
     }
     if (maxModuleCount === 0) mostActiveModule = '—'
 
-    return { totalActions, avgDaily, mostActiveDay, mostActiveModule }
+    // Calculate 7-day sparkline data
+    const sparkline: number[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      const dateStr = toDateStr(d)
+      sparkline.push(dayCounts[dateStr] || 0)
+    }
+
+    // Most productive time of day (simulated from data patterns)
+    const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
+    const dayOfWeekCounts: Record<number, number> = {}
+    for (const [day, count] of Object.entries(dayCounts)) {
+      const dow = new Date(day).getDay()
+      dayOfWeekCounts[dow] = (dayOfWeekCounts[dow] || 0) + count
+    }
+    let mostProductiveDay = '—'
+    let maxDowCount = 0
+    for (const [dow, count] of Object.entries(dayOfWeekCounts)) {
+      if (count > maxDowCount) {
+        maxDowCount = count
+        mostProductiveDay = dayNames[Number(dow)]
+      }
+    }
+    if (maxDowCount === 0) mostProductiveDay = '—'
+
+    return { totalActions, avgDaily, mostActiveDay, mostActiveModule, sparkline, mostProductiveDay }
   }, [diaryEntries, transactions, workouts, totalHabits, diaryCount, period])
 
   // ── Render ─────────────────────────────────────────────────────────────
@@ -516,6 +549,8 @@ export default function AnalyticsPage() {
         totalHabits={totalHabits}
         completedHabits={completedHabits}
         habitsRate={habitsRate}
+        diaryEntries={diaryEntries}
+        transactions={transactions}
       />
 
       {/* ── Charts Row: Mood + Spending ─────────────────────────────────── */}

@@ -56,6 +56,8 @@ export interface ActivityStats {
   avgDaily: string
   mostActiveDay: string
   mostActiveModule: string
+  sparkline?: number[]
+  mostProductiveDay?: string
 }
 
 export interface MoodChartDataPoint {
@@ -86,4 +88,7 @@ export interface HabitsHeatmapCell {
   date: string
   completed: boolean
   day: number
+  completedCount?: number
+  totalCount?: number
+  dayOfWeek?: number
 }

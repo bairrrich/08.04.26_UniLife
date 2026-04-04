@@ -3054,3 +3054,167 @@ Stage Summary:
 - Re-rendering issue was already fixed in previous session (useSyncExternalStore → useState+useEffect)
 - Minor code cleanup in entry-dialog.tsx (consolidated imports)
 - Dev server running stable on port 3000
+
+---
+## Task ID: mobile-nav+dashboard-enhance
+### Agent: mobile-dashboard-agent
+### Task: Enhance mobile nav and add dashboard streaks widget
+
+### Work Log:
+- **Mobile Nav Enhancement (`/src/components/layout/mobile-nav.tsx`):**
+  - **Notification badge on "Привычки" tab**: Added `useState` + `useEffect` to fetch `/api/habits` on mount, filters uncompleted habits (`!todayCompleted`), passes count as `badge` prop to `NavItem`. Badge renders as a small red dot with count (9+ for >9) using `absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive` styling.
+  - **Feed last-seen indicator on "Ещё" button**: Added `getFeedLastSeen` import from `@/lib/module-counts`. Fetches `/api/feed?limit=1` to get latest post timestamp, compares with `getFeedLastSeen()` localStorage value. Shows a pulsing green dot (`.pulse-ring` class) when new posts exist.
+  - **Improved "More" sheet styling**: Added gradient header with decorative blurred circles (emerald + amber). Added section headers ("Модули", "На главной панели") with uppercase tracking. Module grid items now use `glass-card` styling and larger size (h-11 w-11 icon containers, p-4 padding). Added `Separator` between sections. Renamed `MORE_NAV_ITEMS` to `MODULE_NAV_ITEMS`.
+  - **Haptic-like feedback**: Added `active-press` class to all clickable items (NavItem, MoreSheet trigger, sheet grid buttons, main tab buttons). Added `transition-all duration-300` to active tab indicator for smooth movement.
+- **Dashboard Streaks Widget (`/src/components/modules/dashboard/streaks-widget.tsx`):**
+  - Created new standalone `StreaksWidget` component that fetches data directly from `/api/habits`
+  - Calculates top 5 habits with longest active streaks, sorted descending
+  - Each streak displays: emoji, habit name, streak count with 🔥 fire icon, "дней" label
+  - Shows "🔥 Лучшая серия" label on the top-ranked habit
+  - Empty state: motivational message "Начните серию сегодня!" with descriptive subtitle
+  - Loading skeleton with shimmer placeholders
+  - Uses `card-hover` class for hover lift effect
+- **Dashboard Integration (`/src/components/dashboard/dashboard-page.tsx`):**
+  - Imported `StreaksWidget` from `@/components/modules/dashboard/streaks-widget`
+  - Placed between the existing `StreakWidget` and `WeeklySummary` in the dashboard layout
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All existing functionality preserved — no breaking changes
+
+### Stage Summary:
+- Mobile nav enhanced with notification badges, feed indicator, improved sheet UI, and haptic feedback
+- New habit streaks widget added to dashboard showing top 5 active habit streaks
+- All CSS utility classes (`.pulse-ring`, `.active-press`, `.glass-card`, `.card-hover`) properly utilized
+
+---
+## Task ID: goals-enhance
+### Agent: goals-enhance-agent
+### Task: Enhance Goals page with better progress visualization and UX
+
+### Work Log:
+
+**1. Goal Card Enhancement (`goal-card.tsx`):**
+- Added large SVG circular progress ring (radius=32, stroke-width=4) with emerald gradient (`linearGradient` from #10b981 to #059669)
+- Percentage displayed in center of ring with `font-bold text-sm` and `tabular-nums` class
+- Progress ring animates on mount using `useState` + `useEffect` with 100ms delay, transitioning from 0 to actual progress over 1000ms
+- Added glow effect on 100% completion via `drop-shadow` filter
+- Category icon now displayed inside a colored circle (`h-7 w-7 rounded-full` with `iconBgClass`) before the goal title
+- Added subtle gradient background matching category color on hover using `group-hover:opacity-100` transition
+- Deadline urgency coloring: green text for >7 days left, amber for 1-7 days, red for overdue (both text and icon colored)
+- Milestone dots below progress bar at 25%, 50%, 75%, 100% — filled dots for passed milestones, empty for future ones
+- Inline delete confirmation: first click shows "Удалить?" text button (rose-colored), second click within 3 seconds confirms deletion, auto-resets after timeout
+- Added `'use client'` directive, `useState`, `useEffect`, `useRef` imports
+
+**2. Goal Stats Enhancement (`goal-stats.tsx`):**
+- Created `useAnimatedValue` custom hook using `requestAnimationFrame` with ease-out cubic easing for smooth counter animations (800ms duration)
+- Stat numbers (total, completed, avg progress) now animate from 0 to target value on mount
+- Added `MiniTrendBars` component: 3 small vertical bars showing last 3 months' completion rates calculated from goals data
+- Each trend bar colored by rate: emerald ≥70%, amber ≥40%, red <40%
+- Added "deadline approaching" counter in stats header showing count of active goals with deadlines within 7 days (Clock icon + amber text)
+- Updated SVG ring to use gradient stroke (`linearGradient` from violet to indigo)
+- All cards use `card-hover` class for consistent interaction
+- Added `'use client'` directive, `useState`, `useEffect`, `useMemo` imports
+
+**3. Goals Page Enhancement (`goals-page.tsx`):**
+- Confirmed `animate-slide-up` class on main container
+- Confirmed `stagger-children` class on goals grid
+- Added today's date badge next to header subtitle using `Calendar` icon and `Badge` component (shows Russian day name + date, e.g., "Понедельник, 23 июня")
+- Improved empty state: larger gradient icon container (`h-20 w-20`), motivational subtitle picked from 4 Russian phrases, prominent CTA button with `size="lg"`, `active-press` class, and enhanced gradient shadow
+- Added `Calendar` and `Badge` imports
+
+**4. Filter Tabs Enhancement (`filter-tabs.tsx`):**
+- Redesigned as pill-style tabs inside a `bg-muted/60 rounded-xl` container with `p-1` padding
+- Active tab gets `bg-background text-foreground shadow-sm` (white pill on muted background)
+- Inactive tabs have `text-muted-foreground hover:text-foreground`
+- Count badges redesigned as small `rounded-full` pills (min-w-20px, h-5) with `tabular-nums`
+- Active count badge uses `bg-primary text-primary-foreground` style; inactive uses `bg-muted-foreground/15`
+- Smooth `transition-all duration-200` on all state changes
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All existing goals functionality preserved (CRUD, filter, progress update, complete, delete)
+- ✅ No breaking changes to API or hooks
+- ✅ Dark mode support for all new elements
+
+### Stage Summary:
+- Goal cards significantly enhanced with large animated progress ring, milestone dots, urgency-colored deadlines, category icon circles, hover gradients, and inline delete confirmation
+- Stats section upgraded with animated counters, 3-month trend mini-bars, and deadline-approaching counter
+- Goals page improved with today's date badge and better empty state with motivational subtitles
+- Filter tabs redesigned as pill-style with count badges
+- All 4 component files modified: goal-card.tsx, goal-stats.tsx, goals-page.tsx, filter-tabs.tsx
+---
+## Task ID: analytics-fix-enhance
+### Agent: analytics-enhance-agent
+### Task: Fix sequential fetch and enhance Analytics page
+
+### Work Log:
+- **Critical Fix — Parallel Fetch** (`analytics-page.tsx`):
+  - Replaced sequential fetch with `sleep()` delays (150ms × 4 + 100ms × up to 14 nutrition calls = ~2 seconds wasted) with a single `Promise.allSettled()` call
+  - All 4 main API endpoints + all nutrition date endpoints now fetch in parallel
+  - Removed the `sleep()` utility function entirely (was only used for sequential fetch throttling)
+  - Removed the `fetchOne()` wrapper function (no longer needed with Promise.allSettled)
+  - Added new props `diaryEntries` and `transactions` to OverviewStats for sparkline data
+
+- **Overview Stats Enhancement** (`overview-stats.tsx`):
+  - Added `Sparkline` component: inline mini bar chart (4-7 colored bars) showing 7-day trend
+  - Diary card: emerald sparkline bars showing daily entry count
+  - Finance card: amber sparkline bars showing daily expense amounts
+  - Changed icon backgrounds from `rounded-full` to `rounded-lg` for more modern look
+  - Added `card-hover` class to all stat cards
+  - Sparkline bars have opacity proportional to value (0.5–1.0) for visual depth
+
+- **Charts Row Enhancement** (`charts-row.tsx`):
+  - Replaced `LineChart` with `AreaChart` for mood trend chart with emerald gradient fill (`linearGradient` from 30% to 2% opacity)
+  - Replaced `AreaChart` with `BarChart` for spending trend (amber bars for expenses, emerald bars for income)
+  - Added custom tooltip components (`MoodCustomTooltip`, `SpendingCustomTooltip`) with styled popup design
+  - Spending chart now has legend showing "Расходы" and "Доходы"
+  - Added `'use client'` directive
+  - Removed unused imports (Line, ResponsiveContainer, Tooltip)
+  - Updated `moodChartConfig` to use direct hex color `#10b981`
+  - Updated `spendingChartConfig` colors: spending → `#f59e0b`, income → `#10b981`
+
+- **Bottom Charts Enhancement** (`bottom-charts.tsx`):
+  - Nutrition chart: Added Recharts horizontal `BarChart` showing kcal (orange), protein (emerald), fat (amber), carbs (blue) as colored bars
+  - Added mini progress bars below the chart for each macro type
+  - Nutrition tooltip shows value vs target with proper units
+  - Workout pie chart: Added custom percentage labels inside pie slices (using `renderCustomizedLabel` with RADIAN math)
+  - Labels hidden for slices < 8% to avoid clutter
+  - Top categories: Already using Recharts horizontal BarChart, kept as-is
+  - Added `'use client'` directive
+  - Updated `nutritionChartConfig` with direct hex colors for each macro
+  - Removed unused imports
+
+- **Habits Heatmap Enhancement** (`habits-heatmap-section.tsx`):
+  - Added day-of-week labels (Пн Вт Ср Чт Пт Сб Вс) above the heatmap grid
+  - Reorganized grid from 10 columns to 7 columns (one per day of week), organized into week rows
+  - Added hover tooltip showing date, completion count, and status (Все выполнены / Частично / Не выполнено)
+  - Added 3-color legend: green = "Все выполнены", yellow/amber = "Частично", gray = "Не выполнено"
+  - Enhanced heatmap cell styling with `getDayColor()` helper function
+  - Added `useState` for tooltip tracking, hover scale animation (scale-110) and ring highlight
+  - Added `'use client'` directive
+  - Updated `HabitsHeatmapCell` type with `completedCount`, `totalCount`, `dayOfWeek` fields
+
+- **Activity Overview Enhancement** (`activity-overview.tsx`):
+  - Added "Самый продуктивный день" stat (most active day of week) with rose-colored icon (Clock)
+  - Added 7-day activity sparkline at top of card showing daily action counts with day labels
+  - Changed grid from 4-column to 5-column layout to accommodate new stat
+  - New stat uses rose-50/rose-950 gradient background
+  - Added `'use client'` directive
+  - Updated `ActivityStats` type with optional `sparkline` and `mostProductiveDay` fields
+
+- **Types Enhancement** (`types.ts`):
+  - Added `sparkline?: number[]` and `mostProductiveDay?: string` to `ActivityStats`
+  - Added `completedCount?`, `totalCount?`, `dayOfWeek?` to `HabitsHeatmapCell`
+
+- **Constants Enhancement** (`constants.ts`):
+  - Updated `moodChartConfig` to use `#10b981` direct hex color
+  - Updated `spendingChartConfig` colors: spending → `#f59e0b`, income → `#10b981`
+  - Updated `nutritionChartConfig` with direct hex colors for each macro type
+
+### Stage Summary:
+- Sequential fetch with sleep() delays eliminated — all API calls now run in parallel via Promise.allSettled, significantly reducing page load time
+- 6 analytics component files enhanced with better charts, sparklines, tooltips, and visual polish
+- All text remains in Russian, all existing functionality preserved
+- ESLint: 0 errors, 0 warnings
+- TypeScript: 0 errors in analytics component files

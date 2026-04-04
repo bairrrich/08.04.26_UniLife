@@ -52,19 +52,19 @@ export const WORKOUT_TYPE_COLORS: Record<string, string> = {
 // ─── Chart Configs ────────────────────────────────────────────────────────────
 
 export const moodChartConfig: ChartConfig = {
-  mood: { label: 'Настроение', color: 'hsl(var(--chart-1))' },
+  mood: { label: 'Настроение', color: '#10b981' },
 }
 
 export const spendingChartConfig: ChartConfig = {
-  spending: { label: 'Расходы', color: 'hsl(var(--chart-1))' },
-  income: { label: 'Доходы', color: 'hsl(var(--chart-2))' },
+  spending: { label: 'Расходы', color: '#f59e0b' },
+  income: { label: 'Доходы', color: '#10b981' },
 }
 
 export const nutritionChartConfig: ChartConfig = {
-  calories: { label: 'Калории', color: 'hsl(var(--chart-4))' },
-  protein: { label: 'Белки', color: 'hsl(var(--chart-1))' },
-  fat: { label: 'Жиры', color: 'hsl(var(--chart-3))' },
-  carbs: { label: 'Углеводы', color: 'hsl(var(--chart-2))' },
+  calories: { label: 'Калории', color: '#f97316' },
+  protein: { label: 'Белки', color: '#10b981' },
+  fat: { label: 'Жиры', color: '#f59e0b' },
+  carbs: { label: 'Углеводы', color: '#3b82f6' },
 }
 
 export const workoutPieConfig: ChartConfig = {
