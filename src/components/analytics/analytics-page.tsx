@@ -294,50 +294,54 @@ export function AnalyticsPage() {
   const [habits, setHabits] = useState<HabitItem[]>([])
   const [nutritionDays, setNutritionDays] = useState<NutritionDay[]>([])
 
-  // ── Data Fetching ───────────────────────────────────────────────────────
+  // ── Data Fetching (sequential to avoid Turbopack crash) ────────────────
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+  const safeFetch = async (url: string, timeoutMs = 8000) => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const res = await fetch(url, { signal: controller.signal })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const text = await res.text()
+      if (text.trimStart().startsWith('<')) throw new Error('Received HTML instead of JSON')
+      return JSON.parse(text)
+    } finally {
+      clearTimeout(timer)
+    }
+  }
+
+  const fetchOne = (url: string) => safeFetch(url).then((v) => ({ status: 'fulfilled' as const, value: v })).catch((e) => ({ status: 'rejected' as const, reason: e }))
+
   const fetchData = useCallback(async (p: Period) => {
     setLoading(true)
     const { from, to } = getDateRange(p)
     const currentMonth = getMonthStr(new Date())
 
-    // Helper: safely parse JSON only when the response is OK
-    const safeJson = async (r: Response) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      return r.json()
-    }
-
-    const requests = [
-      fetch(`/api/diary?from=${from}&to=${to}`).then(safeJson),
-      fetch(`/api/finance?month=${currentMonth}`).then(safeJson),
-      fetch(`/api/workout?month=${currentMonth}`).then(safeJson),
-      fetch('/api/habits').then(safeJson),
-    ]
-
-    // Fetch nutrition stats for each day in range
-    const fromDate = new Date(from)
-    const toDate = new Date(to)
-    const nutritionRequests: Promise<Response>[] = []
-    const cursor = new Date(fromDate)
-    // Limit nutrition requests to avoid too many API calls
-    const maxDays = p === 'year' ? 30 : p === 'month' ? 31 : 7
-    let dayCount = 0
-    while (cursor <= toDate && dayCount < maxDays) {
-      const dateStr = toDateStr(cursor)
-      nutritionRequests.push(
-        fetch(`/api/nutrition/stats?date=${dateStr}`).then(safeJson).catch(() => null)
-      )
-      cursor.setDate(cursor.getDate() + 1)
-      dayCount++
-    }
-
     try {
-      const [
-        diaryRes,
-        financeRes,
-        workoutRes,
-        habitsRes,
-        ...nutritionResults
-      ] = await Promise.allSettled([...requests, ...nutritionRequests])
+      const diaryRes = await fetchOne(`/api/diary?from=${from}&to=${to}`)
+      await sleep(150)
+      const financeRes = await fetchOne(`/api/finance?month=${currentMonth}`)
+      await sleep(150)
+      const workoutRes = await fetchOne(`/api/workout?month=${currentMonth}`)
+      await sleep(150)
+      const habitsRes = await fetchOne('/api/habits')
+
+      // Fetch nutrition stats sequentially with delay
+      const fromDate = new Date(from)
+      const toDate = new Date(to)
+      const maxDays = p === 'year' ? 14 : p === 'month' ? 14 : 7
+      const nutritionResults: { status: string; value: unknown; reason?: unknown }[] = []
+      const cursor = new Date(fromDate)
+      let dayCount = 0
+      while (cursor <= toDate && dayCount < maxDays) {
+        const dateStr = toDateStr(cursor)
+        const result = await fetchOne(`/api/nutrition/stats?date=${dateStr}`)
+        nutritionResults.push(result)
+        await sleep(100)
+        cursor.setDate(cursor.getDate() + 1)
+        dayCount++
+      }
 
       // Diary
       if (diaryRes.status === 'fulfilled' && diaryRes.value.data) {

@@ -249,24 +249,17 @@ export default function FinancePage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const [txRes, catRes, statsRes] = await Promise.all([
-        fetch(`/api/finance?month=${month}`),
-        fetch('/api/finance/categories'),
-        fetch(`/api/finance/stats?month=${month}`),
-      ])
+      // Sequential fetch to avoid overloading Turbopack
+      const txRes = await fetch(`/api/finance?month=${month}`)
+      if (txRes.ok) { const d = await txRes.json(); setTransactions(d.data || []) }
+      await new Promise(r => setTimeout(r, 100))
 
-      if (txRes.ok) {
-        const txData = await txRes.json()
-        setTransactions(txData.data || [])
-      }
-      if (catRes.ok) {
-        const catData = await catRes.json()
-        setCategories(catData.data || [])
-      }
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
-        setStats(statsData.data || null)
-      }
+      const catRes = await fetch('/api/finance/categories')
+      if (catRes.ok) { const d = await catRes.json(); setCategories(d.data || []) }
+      await new Promise(r => setTimeout(r, 100))
+
+      const statsRes = await fetch(`/api/finance/stats?month=${month}`)
+      if (statsRes.ok) { const d = await statsRes.json(); setStats(d.data || null) }
     } catch (err) {
       console.error('Failed to fetch finance data:', err)
     } finally {

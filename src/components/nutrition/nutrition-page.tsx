@@ -244,27 +244,20 @@ export default function NutritionPage() {
     { name: string; kcal: string; protein: string; fat: string; carbs: string }[]
   >([{ name: '', kcal: '', protein: '', fat: '', carbs: '' }])
 
-  // ─── Data fetching ────────────────────────────────────────────
+  // ─── Data fetching (sequential to avoid Turbopack crash) ─────
   const fetchData = useCallback(async () => {
     try {
-      const [mealsRes, statsRes, waterRes] = await Promise.all([
-        fetch(`/api/nutrition?date=${today}`),
-        fetch(`/api/nutrition/stats?date=${today}`),
-        fetch(`/api/nutrition/water?date=${today}`),
-      ])
+      // Sequential fetch to avoid overloading Turbopack
+      const mealsRes = await fetch(`/api/nutrition?date=${today}`)
+      if (mealsRes.ok) { const d = await mealsRes.json(); if (d.success) setMeals(d.data) }
+      await new Promise(r => setTimeout(r, 100))
 
-      if (mealsRes.ok) {
-        const mealsData = await mealsRes.json()
-        if (mealsData.success) setMeals(mealsData.data)
-      }
-      if (statsRes.ok) {
-        const statsData = await statsRes.json()
-        if (statsData.success) setStats(statsData.data)
-      }
-      if (waterRes.ok) {
-        const waterData = await waterRes.json()
-        if (waterData.success) setWaterStats(waterData.data)
-      }
+      const statsRes = await fetch(`/api/nutrition/stats?date=${today}`)
+      if (statsRes.ok) { const d = await statsRes.json(); if (d.success) setStats(d.data) }
+      await new Promise(r => setTimeout(r, 100))
+
+      const waterRes = await fetch(`/api/nutrition/water?date=${today}`)
+      if (waterRes.ok) { const d = await waterRes.json(); if (d.success) setWaterStats(d.data) }
     } catch (err) {
       console.error('Failed to fetch nutrition data:', err)
     }

@@ -379,44 +379,53 @@ export default function DashboardPage() {
   const [quoteIndex, setQuoteIndex] = useState(() => getDayOfYear() % MOTIVATIONAL_QUOTES.length)
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
 
-  // ── Data Fetching ──────────────────────────────────────────────────────
+  // ── Data Fetching (sequential with delay to avoid Turbopack crash) ────
+  const fetchWithTimeout = useCallback(async (url: string, timeoutMs = 8000) => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      const res = await fetch(url, { signal: controller.signal })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const text = await res.text()
+      // Guard against HTML responses (Next.js 404 page)
+      if (text.trimStart().startsWith('<')) throw new Error('Received HTML instead of JSON')
+      return JSON.parse(text)
+    } finally {
+      clearTimeout(timer)
+    }
+  }, [])
+
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
   const fetchAllData = useCallback(async () => {
     setLoading(true)
     const currentMonth = getCurrentMonthStr()
     const today = getTodayStr()
     const { from, to } = getWeekRange()
 
-    const safeJson = async (r: Response) => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`)
-      return r.json()
-    }
-
-    const requests = [
-      fetch(`/api/diary?month=${currentMonth}`).then(safeJson),
-      fetch(`/api/finance/stats?month=${currentMonth}`).then(safeJson),
-      fetch(`/api/nutrition/stats?date=${today}`).then(safeJson),
-      fetch(`/api/workout?month=${currentMonth}`).then(safeJson),
-      fetch('/api/feed?limit=5').then(safeJson),
-      fetch(`/api/diary?from=${from}&to=${to}`).then(safeJson),
-      fetch(`/api/finance?month=${currentMonth}`).then(safeJson),
-      fetch('/api/habits').then(safeJson),
-      fetch(`/api/budgets?month=${currentMonth}`).then(safeJson),
-      fetch(`/api/nutrition?date=${today}`).then(safeJson),
-    ]
+    // Fetch sequentially with small delays to avoid overloading Turbopack
+    const fetchOne = (url: string) => fetchWithTimeout(url).then((v) => ({ status: 'fulfilled' as const, value: v })).catch((e) => ({ status: 'rejected' as const, reason: e }))
 
     try {
-      const [
-        diaryMonthRes,
-        financeRes,
-        nutritionRes,
-        workoutRes,
-        feedRes,
-        diaryWeekRes,
-        financeTransactionsRes,
-        habitsRes,
-        budgetRes,
-        mealsTodayRes,
-      ] = await Promise.allSettled(requests)
+      const diaryMonthRes = await fetchOne(`/api/diary?month=${currentMonth}`)
+      await sleep(100)
+      const financeRes = await fetchOne(`/api/finance/stats?month=${currentMonth}`)
+      await sleep(100)
+      const nutritionRes = await fetchOne(`/api/nutrition/stats?date=${today}`)
+      await sleep(100)
+      const workoutRes = await fetchOne(`/api/workout?month=${currentMonth}`)
+      await sleep(100)
+      const feedRes = await fetchOne('/api/feed?limit=5')
+      await sleep(100)
+      const diaryWeekRes = await fetchOne(`/api/diary?from=${from}&to=${to}`)
+      await sleep(100)
+      const financeTransactionsRes = await fetchOne(`/api/finance?month=${currentMonth}`)
+      await sleep(100)
+      const habitsRes = await fetchOne('/api/habits')
+      await sleep(100)
+      const budgetRes = await fetchOne(`/api/budgets?month=${currentMonth}`)
+      await sleep(100)
+      const mealsTodayRes = await fetchOne(`/api/nutrition?date=${today}`)
 
       // Monthly diary entries
       if (diaryMonthRes.status === 'fulfilled' && diaryMonthRes.value.data) {
