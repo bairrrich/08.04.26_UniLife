@@ -1,4 +1,6 @@
-import { Heart, MessageCircle, ThumbsUp, Clock, Share2, Bookmark, BookmarkCheck, Send } from 'lucide-react'
+import { Heart, MessageCircle, ThumbsUp, Clock, Share2, Bookmark, BookmarkCheck, Send, Trash2 } from 'lucide-react'
+import { useRef, useState } from 'react'
+import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -16,6 +18,7 @@ interface PostCardProps {
   expandedComments: boolean
   commentText: string
   sendingComment: boolean
+  onDelete?: (postId: string) => void
   onToggleLike: (postId: string) => void
   onToggleBookmark: (postId: string) => void
   onToggleCommentSection: (postId: string) => void
@@ -29,10 +32,30 @@ interface PostCardProps {
 export function PostCard({
   post, isLiked, isAnimating, isBookmarked,
   showCommentSection, expandedComments, commentText, sendingComment,
+  onDelete,
   onToggleLike, onToggleBookmark, onToggleCommentSection,
   onToggleExpandComments, onCommentTextChange, onCommentKeyDown,
   onCommentSubmit, onShare,
 }: PostCardProps) {
+  const deleteConfirmTimer = useRef<NodeJS.Timeout | null>(null)
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
+
+  const handleDeleteClick = () => {
+    if (deleteConfirming) {
+      // Second click — confirmed
+      if (deleteConfirmTimer.current) clearTimeout(deleteConfirmTimer.current)
+      setDeleteConfirming(false)
+      onDelete?.(post.id)
+    } else {
+      // First click — start confirmation window
+      setDeleteConfirming(true)
+      toast.info('Нажмите ещё раз для подтверждения удаления')
+      deleteConfirmTimer.current = setTimeout(() => {
+        setDeleteConfirming(false)
+        deleteConfirmTimer.current = null
+      }, 3000)
+    }
+  }
   const likeCount = isLiked ? Math.max(post._count.likes, 1) : post._count.likes
 
   return (
@@ -58,6 +81,19 @@ export function PostCard({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {onDelete && (
+              <Button
+                variant="ghost" size="icon"
+                className={cn(
+                  'h-8 w-8 transition-colors',
+                  deleteConfirming && 'text-destructive hover:text-destructive bg-destructive/10'
+                )}
+                onClick={handleDeleteClick}
+                title={deleteConfirming ? 'Нажмите ещё раз для удаления' : 'Удалить'}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onShare(post)} title="Поделиться">
               <Share2 className="h-4 w-4" />
             </Button>

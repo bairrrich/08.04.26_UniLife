@@ -95,23 +95,48 @@ export default function CollectionsPage() {
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <Card key={i} className="animate-pulse">
+                <Card key={i} className="overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="h-32 bg-muted rounded-t-xl" />
+                    {/* Cover image placeholder */}
+                    <div className="skeleton-shimmer h-32 w-full rounded-none" />
+                    {/* Card content */}
                     <div className="p-3 space-y-2">
-                      <div className="h-4 bg-muted rounded" />
-                      <div className="h-3 bg-muted rounded w-2/3" />
+                      <div className="skeleton-shimmer h-4 rounded w-full" />
+                      <div className="skeleton-shimmer h-3 rounded w-2/3" />
+                      <div className="flex gap-1">
+                        <div className="skeleton-shimmer h-3.5 w-3.5 rounded-sm" />
+                        <div className="skeleton-shimmer h-3.5 w-3.5 rounded-sm" />
+                        <div className="skeleton-shimmer h-3.5 w-3.5 rounded-sm" />
+                        <div className="skeleton-shimmer h-3.5 w-3.5 rounded-sm" />
+                        <div className="skeleton-shimmer h-3.5 w-3.5 rounded-sm" />
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : items.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Library className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-                <p className="text-muted-foreground font-medium">Пусто</p>
-                <p className="text-muted-foreground text-sm mt-1">Добавьте первый элемент в коллекцию</p>
+            <Card className="overflow-hidden rounded-xl border">
+              <CardContent className="relative p-0">
+                {/* Subtle gradient card background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
+                <div className="relative flex flex-col items-center justify-center py-12 text-center">
+                  {/* Gradient icon circle */}
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 to-violet-500 shadow-lg shadow-purple-500/25">
+                    <Library className="h-10 w-10 text-white" />
+                  </div>
+                  <h3 className="mt-5 text-lg font-semibold">Коллекция пуста</h3>
+                  <p className="mt-1.5 text-sm text-muted-foreground max-w-xs mx-auto">
+                    Добавьте книги, фильмы или рецепты в свою коллекцию
+                  </p>
+                  <Button
+                    onClick={() => setDialogOpen(true)}
+                    className="mt-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-600 transition-all"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Добавить элемент
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ) : (

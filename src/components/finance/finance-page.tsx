@@ -22,7 +22,7 @@ export default function FinancePage() {
     setEditType, setEditAmount, setEditCategoryId, setEditDescription, setEditDate, setEditNote,
     chartData, groupedTransactions, filteredCategories, editFilteredCategories,
     spendingInsights, getCategoryForTx,
-    handleQuickExpense, navigateMonth, openEditDialog, handleSubmit, handleEditSubmit,
+    handleQuickExpense, navigateMonth, openEditDialog, handleSubmit, handleEditSubmit, handleDelete,
   } = useFinance()
 
   return (
@@ -72,6 +72,7 @@ export default function FinancePage() {
         isLoading={isLoading}
         onTabChange={setActiveTab}
         onEdit={openEditDialog}
+        onDelete={handleDelete}
         onAddNew={() => setShowNewDialog(true)}
       />
 

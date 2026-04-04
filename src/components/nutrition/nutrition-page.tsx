@@ -81,6 +81,7 @@ export default function NutritionPage() {
           onToggleExpand={toggleExpandMeal}
           onEdit={openEditDialog}
           onDelete={handleDeleteMeal}
+          onAddNew={() => setShowNewMealDialog(true)}
         />
       </div>
 

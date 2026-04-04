@@ -103,11 +103,24 @@ export function WorkoutPage() {
           </div>
         </div>
       ) : workouts.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <Dumbbell className="h-12 w-12 mx-auto mb-3 text-muted-foreground/40" />
-            <p className="text-muted-foreground font-medium">Нет тренировок</p>
-            <p className="text-muted-foreground text-sm mt-1">Добавьте первую тренировку за этот месяц</p>
+        <Card className="animate-slide-up overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5 pointer-events-none" />
+          <CardContent className="relative flex flex-col items-center justify-center py-12 text-center">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/25">
+              <Dumbbell className="h-10 w-10 text-white" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">Нет тренировок</h3>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Запишите свою первую тренировку и отслеживайте прогресс
+            </p>
+            <Button
+              size="lg"
+              onClick={() => setDialogOpen(true)}
+              className="mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+            >
+              <Plus className="h-5 w-5 mr-2" />
+              Добавить тренировку
+            </Button>
           </CardContent>
         </Card>
       ) : (

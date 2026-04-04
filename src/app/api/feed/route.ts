@@ -114,3 +114,42 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const postId = searchParams.get('id')
+
+    if (!postId) {
+      return NextResponse.json(
+        { success: false, error: 'Post ID is required' },
+        { status: 400 }
+      )
+    }
+
+    // Verify post exists and belongs to the user
+    const existingPost = await db.post.findFirst({
+      where: { id: postId, userId: USER_ID },
+    })
+
+    if (!existingPost) {
+      return NextResponse.json(
+        { success: false, error: 'Post not found' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the post (cascade will remove likes and comments)
+    await db.post.delete({
+      where: { id: postId },
+    })
+
+    return NextResponse.json({ success: true, message: 'Post deleted' })
+  } catch (error) {
+    console.error('Feed DELETE error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete post' },
+      { status: 500 }
+    )
+  }
+}

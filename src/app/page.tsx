@@ -156,23 +156,36 @@ const FOOTER_LINKS = [
   { label: 'Коллекции', module: 'collections' as const },
 ]
 
+const STATS_ITEMS = [
+  { key: 'diary' as const, label: 'записей в дневнике', icon: BookOpen, iconColor: 'text-emerald-500' },
+  { key: 'workout' as const, label: 'тренировок', icon: Activity, iconColor: 'text-blue-500' },
+  { key: 'habits' as const, label: 'привычек', icon: Target, iconColor: 'text-violet-500' },
+  { key: 'finance' as const, label: 'транзакций', icon: Receipt, iconColor: 'text-amber-500' },
+]
+
 const Footer = memo(function Footer() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const counts = useModuleCounts()
+  const isLoading = Object.keys(counts).length === 0
 
   return (
     <footer className="mt-auto border-t bg-muted/30 hidden md:block">
+      {/* Gradient accent bar */}
+      <div className="h-0.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500" />
       <div className="grid grid-cols-4 divide-x divide-border">
         {/* Brand column */}
         <div className="px-6 py-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground shadow-sm">
               <span className="text-sm font-bold">U</span>
             </div>
-            <span className="font-bold text-sm">UniLife</span>
+            <div>
+              <span className="font-bold text-sm">UniLife</span>
+              <p className="text-[10px] text-muted-foreground font-medium -mt-0.5">Отслеживайте жизнь</p>
+            </div>
           </div>
-          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-            Вся жизнь в одном месте. Отслеживайте дневник, финансы, питание и тренировки.
+          <p className="mt-2 text-xs text-muted-foreground leading-relaxed">
+            Вся жизнь в одном месте. Дневник, финансы, питание и тренировки.
           </p>
         </div>
 
@@ -188,10 +201,10 @@ const Footer = memo(function Footer() {
                 <li key={action.label}>
                   <button
                     onClick={() => setActiveModule(action.module)}
-                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 group cursor-pointer"
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 group cursor-pointer w-full"
                   >
                     <Icon className={cn('h-3.5 w-3.5 shrink-0 rounded transition-colors', action.color)} />
-                    <span className="group-hover:translate-x-0.5 transition-transform duration-200">{action.label}</span>
+                    <span className="group-hover:translate-x-1 transition-transform duration-200">{action.label}</span>
                   </button>
                 </li>
               )
@@ -199,7 +212,7 @@ const Footer = memo(function Footer() {
           </ul>
         </div>
 
-        {/* Modules + Stats column */}
+        {/* Modules column */}
         <div className="px-6 py-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
             Модули
@@ -209,7 +222,7 @@ const Footer = memo(function Footer() {
               <li key={link.label}>
                 <button
                   onClick={() => setActiveModule(link.module)}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer hover:translate-x-0.5 inline-block transition-transform"
+                  className="text-xs text-muted-foreground hover:text-foreground transition-all duration-200 cursor-pointer hover:translate-x-1 inline-block"
                 >
                   {link.label}
                 </button>
@@ -223,28 +236,32 @@ const Footer = memo(function Footer() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
             Статистика
           </h3>
-          <ul className="space-y-1.5">
-            <li className="flex items-center gap-2 text-xs text-muted-foreground">
-              <BookOpen className="h-3 w-3 text-emerald-500" />
-              <span>{counts.diary ?? '—'} записей в дневнике</span>
-            </li>
-            <li className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Activity className="h-3 w-3 text-blue-500" />
-              <span>{counts.workout ?? '—'} тренировок</span>
-            </li>
-            <li className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Target className="h-3 w-3 text-violet-500" />
-              <span>{counts.habits ?? '—'} привычек</span>
-            </li>
-            <li className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Receipt className="h-3 w-3 text-amber-500" />
-              <span>{counts.finance ?? '—'} транзакций</span>
-            </li>
-          </ul>
+          {isLoading ? (
+            <ul className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <li key={i} className="flex items-center gap-2">
+                  <Skeleton className="h-3 w-3 rounded-sm shrink-0" />
+                  <Skeleton className="h-3 w-24" />
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <ul className="space-y-1.5">
+              {STATS_ITEMS.map((stat) => {
+                const Icon = stat.icon
+                return (
+                  <li key={stat.key} className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Icon className={cn('h-3 w-3 shrink-0', stat.iconColor)} />
+                    <span className="tabular-nums">{counts[stat.key] ?? 0} {stat.label}</span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
         </div>
       </div>
       <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
-        <div className="flex h-4 w-4 items-center justify-center rounded bg-primary text-primary-foreground">
+        <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
           <span className="text-[9px] font-bold leading-none">U</span>
         </div>
         <p className="text-[11px] text-muted-foreground/70">

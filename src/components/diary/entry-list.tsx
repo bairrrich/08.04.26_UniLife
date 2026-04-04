@@ -71,29 +71,24 @@ export function EntryList({
   // Empty state: no entries at all
   if (entries.length === 0) {
     return (
-      <Card className="card-hover overflow-hidden animate-slide-up">
-        <CardContent className="py-16 px-6 text-center">
-          {/* Gradient icon background */}
-          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full">
-            <div className="absolute h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/25 via-teal-400/15 to-primary/20" />
-            <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400/30 to-teal-500/20 shadow-lg shadow-emerald-500/10 dark:shadow-emerald-500/5">
-              <BookOpen className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
-            </div>
+      <Card className="card-hover overflow-hidden animate-slide-up relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
+        <CardContent className="relative flex flex-col items-center justify-center py-12 text-center">
+          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
+            <BookOpen className="h-10 w-10 text-white" />
           </div>
-          <p className="text-foreground font-semibold text-lg mb-1.5">
-            Начните записывать свои мысли
+          <h3 className="text-lg font-semibold mb-1">Дневник пуст</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Начните записывать свои мысли и настроение каждый день
           </p>
-          <p className="text-muted-foreground/70 text-sm max-w-xs mx-auto leading-relaxed">
-            Дневник поможет вам отслеживать настроение, запоминать важные моменты и лучше понимать себя
-          </p>
-          <div className="flex items-center justify-center gap-3 mt-5">
+          <div className="flex items-center justify-center gap-3 mt-6">
             <Button
-              size="sm"
-              className="gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/20 hover:shadow-emerald-500/30"
+              size="lg"
               onClick={onNewEntryClick}
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
             >
-              <Plus className="h-4 w-4" />
-              Новая запись
+              <Plus className="h-5 w-5 mr-2" />
+              Написать первую запись
             </Button>
             <Button
               size="sm"
@@ -102,7 +97,7 @@ export function EntryList({
               onClick={() => onQuickMood(4)}
             >
               <Sparkles className="h-4 w-4 mr-1" />
-              Записать настроение
+              Настроение
             </Button>
           </div>
         </CardContent>

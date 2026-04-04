@@ -7,7 +7,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Flame, UtensilsCrossed, Trash2, Clock, ChevronDown, ChevronUp, Pencil } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Flame, UtensilsCrossed, Trash2, Clock, ChevronDown, ChevronUp, Pencil, Plus } from 'lucide-react'
 import { MEAL_TYPE_CONFIG } from './constants'
 import type { MealWithItems } from './types'
 
@@ -18,6 +19,7 @@ interface MealTimelineProps {
   onToggleExpand: (id: string) => void
   onEdit: (meal: MealWithItems) => void
   onDelete: (mealId: string) => void
+  onAddNew: () => void
 }
 
 function getMealTotalKcal(meal: MealWithItems) {
@@ -38,20 +40,30 @@ export function MealTimeline({
   onToggleExpand,
   onEdit,
   onDelete,
+  onAddNew,
 }: MealTimelineProps) {
   const sorted = sortMealsByType(meals)
 
   if (sorted.length === 0) {
     return (
-      <Card className="mb-6">
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="mb-3 flex size-14 items-center justify-center rounded-full bg-orange-100">
-            <UtensilsCrossed className="size-7 text-orange-400" />
+      <Card className="mb-6 overflow-hidden relative animate-slide-up">
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+        <CardContent className="relative flex flex-col items-center justify-center py-12 text-center">
+          <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-orange-500/25">
+            <UtensilsCrossed className="h-10 w-10 text-white" />
           </div>
-          <p className="mb-1 font-medium">Пока нет записей</p>
-          <p className="text-sm text-muted-foreground">
-            Добавь первый приём пищи, чтобы начать отслеживание
+          <h3 className="text-lg font-semibold mb-1">Нет записей о питании</h3>
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+            Запишите первый приём пищи для отслеживания калорий
           </p>
+          <Button
+            size="lg"
+            onClick={onAddNew}
+            className="mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+          >
+            <Plus className="h-5 w-5 mr-2" />
+            Добавить приём пищи
+          </Button>
         </CardContent>
       </Card>
     )

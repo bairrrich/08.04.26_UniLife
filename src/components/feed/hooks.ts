@@ -250,6 +250,36 @@ export function useFeed() {
     }
   }
 
+  // ─── Delete Post ─────────────────────────────────────────────────────────
+
+  const handleDeletePost = useCallback(async (postId: string) => {
+    toast.dismiss()
+
+    // Optimistic removal
+    const previousPosts = posts
+    setPosts((prev) => prev.filter((p) => p.id !== postId))
+
+    try {
+      const res = await fetch(`/api/feed?id=${postId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
+        toast.success('Запись удалена')
+      } else {
+        // Re-fetch on failure
+        setPosts(previousPosts)
+        await fetchPosts()
+        toast.error('Ошибка при удалении записи')
+      }
+    } catch (err) {
+      console.error('Failed to delete post:', err)
+      setPosts(previousPosts)
+      await fetchPosts()
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    }
+  }, [posts, fetchPosts])
+
   // ─── Return everything needed by the page ────────────────────────────────
 
   return {
@@ -283,5 +313,6 @@ export function useFeed() {
     toggleCommentSection,
     updateCommentText,
     handleSubmit,
+    handleDeletePost,
   }
 }

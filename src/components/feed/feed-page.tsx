@@ -19,7 +19,7 @@ export default function FeedPage() {
     handleToggleLike, handleToggleBookmark, handleShare,
     handleCommentSubmit, handleCommentKeyDown,
     toggleExpandComments, toggleCommentSection, updateCommentText,
-    handleSubmit,
+    handleSubmit, handleDeletePost,
   } = useFeed()
 
   return (
@@ -48,16 +48,35 @@ export default function FeedPage() {
       <div className="max-w-2xl mx-auto space-y-4 stagger-children">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="animate-pulse">
+            <Card key={i} className="border-l-4 border-l-blue-200 dark:border-l-blue-800">
               <CardContent className="p-4 space-y-3">
+                {/* Header: avatar + name + badge + time */}
                 <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-muted" />
-                  <div className="space-y-1.5">
-                    <div className="h-4 bg-muted rounded w-24" />
-                    <div className="h-3 bg-muted rounded w-16" />
+                  <div className="skeleton-shimmer h-10 w-10 rounded-full shrink-0" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="skeleton-shimmer h-4 rounded w-28" />
+                    <div className="flex items-center gap-2">
+                      <div className="skeleton-shimmer h-4 rounded-full w-16" />
+                      <div className="skeleton-shimmer h-3 rounded w-12" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <div className="skeleton-shimmer h-8 w-8 rounded-md" />
+                    <div className="skeleton-shimmer h-8 w-8 rounded-md" />
                   </div>
                 </div>
-                <div className="h-16 bg-muted rounded-lg" />
+                {/* Caption area */}
+                <div className="space-y-1.5">
+                  <div className="skeleton-shimmer h-4 rounded w-full" />
+                  <div className="skeleton-shimmer h-4 rounded w-4/5" />
+                  <div className="skeleton-shimmer h-4 rounded w-2/3" />
+                </div>
+                {/* Action buttons */}
+                <div className="flex items-center gap-4">
+                  <div className="skeleton-shimmer h-5 rounded w-12" />
+                  <div className="skeleton-shimmer h-5 rounded w-12" />
+                  <div className="skeleton-shimmer h-8 w-8 rounded-md ml-auto" />
+                </div>
               </CardContent>
             </Card>
           ))
@@ -82,6 +101,7 @@ export default function FeedPage() {
               onCommentKeyDown={handleCommentKeyDown}
               onCommentSubmit={handleCommentSubmit}
               onShare={handleShare}
+              onDelete={handleDeletePost}
             />
           ))
         )}

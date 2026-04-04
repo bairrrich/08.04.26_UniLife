@@ -75,3 +75,36 @@ export async function PUT(
     )
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify ownership
+    const existing = await db.transaction.findUnique({
+      where: { id },
+    })
+
+    if (!existing || existing.userId !== DEMO_USER_ID) {
+      return NextResponse.json(
+        { success: false, error: 'Транзакция не найдена' },
+        { status: 404 }
+      )
+    }
+
+    await db.transaction.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true, message: 'Транзакция удалена' })
+  } catch (error) {
+    console.error('Finance DELETE error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete transaction' },
+      { status: 500 }
+    )
+  }
+}

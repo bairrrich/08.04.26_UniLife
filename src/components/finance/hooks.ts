@@ -184,6 +184,15 @@ export function useFinance() {
     finally { setIsEditSubmitting(false) }
   }
 
+  const handleDelete = async (txId: string) => {
+    toast.dismiss()
+    try {
+      const res = await fetch(`/api/finance/${txId}`, { method: 'DELETE' })
+      if (res.ok) { toast.success('Транзакция удалена'); fetchData() }
+      else { toast.error('Ошибка при удалении транзакции') }
+    } catch (err) { console.error('Failed to delete transaction:', err); toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка')) }
+  }
+
   return {
     // State
     transactions,
@@ -218,6 +227,7 @@ export function useFinance() {
     navigateMonth,
     openEditDialog,
     handleEditSubmit,
+    handleDelete,
     resetForm,
   }
 }

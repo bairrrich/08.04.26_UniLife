@@ -131,10 +131,7 @@ const QuickAddMenu = dynamic(() => import('./quick-add-menu').then(m => ({ defau
   loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />,
   ssr: false,
 })
-const StreaksWidget = dynamic(() => import('@/components/modules/dashboard/streaks-widget').then(m => ({ default: m.StreaksWidget })), {
-  loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />,
-  ssr: false,
-})
+
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
 
@@ -684,9 +681,6 @@ export default function DashboardPage() {
 
       {/* ── Streak Tracking Widget ─────────────────────────────── */}
       <StreakWidget loading={loading} streakItems={streakItems} maxStreak={maxStreak} />
-
-      {/* ── Habit Streaks Widget ─────────────────────────────── */}
-      <StreaksWidget />
 
       {/* ── Weekly Summary ──────────────────────────────────────── */}
       <WeeklySummary
