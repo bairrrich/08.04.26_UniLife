@@ -44,6 +44,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { safeJson } from '@/lib/safe-fetch'
 
 // ======================== Types ========================
 
@@ -201,13 +202,12 @@ export function FeedPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/feed?limit=20&offset=0')
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
-        setPosts(json.data)
+      const data: FeedPost[] | null = await safeJson<{ success: boolean; data: FeedPost[] }>(res)
+      if (data) {
+        setPosts(data.data)
         // Track which posts are liked (simulate - all likes are "ours" for demo)
         const liked = new Set<string>(
-          json.data
+          data.data
             .filter((p: FeedPost) => p._count.likes > 0)
             .map((p: FeedPost) => p.id)
         )
@@ -320,8 +320,8 @@ export function FeedPage() {
         body: JSON.stringify({ postId, content: text }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson<{ success: boolean; data: FeedComment }>(res)
+      if (json && json.success) {
         toast.success('Комментарий добавлен')
         // Replace optimistic comment with real one
         setPosts((prev) =>
@@ -432,8 +432,8 @@ export function FeedPage() {
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
         toast.success('Запись опубликована')
         setDialogOpen(false)
         resetForm()

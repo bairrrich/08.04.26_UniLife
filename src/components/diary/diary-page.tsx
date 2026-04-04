@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { safeJson } from '@/lib/safe-fetch'
 import {
   BookOpen,
   Plus,
@@ -219,8 +220,8 @@ export default function DiaryPage() {
     try {
       const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
       const res = await fetch(`/api/diary?month=${monthStr}`)
-      const json = await res.json()
-      if (json.data) {
+      const json = await safeJson(res)
+      if (json && json.data) {
         setEntries(json.data)
       }
     } catch (err) {
@@ -421,8 +422,8 @@ export default function DiaryPage() {
         }),
       })
       if (res.ok) {
-        const json = await res.json()
-        const updated = json.data
+        const json = await safeJson(res)
+        const updated = json?.data
         if (updated) {
           setSelectedEntry(updated)
         }

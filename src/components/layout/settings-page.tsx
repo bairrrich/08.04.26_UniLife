@@ -1,5 +1,6 @@
 'use client'
 
+import { safeJson } from '@/lib/safe-fetch'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -90,9 +91,9 @@ export function SettingsPage() {
     try {
       toast.loading('Подготовка экспорта...')
       const res = await fetch(`/api/settings/export?module=${module}`)
-      if (!res.ok) throw new Error('Export failed')
-      const { data } = await res.json()
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const result = await safeJson(res)
+      if (!result || !result.data) throw new Error('Export failed')
+      const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -140,15 +141,15 @@ export function SettingsPage() {
       })
 
       if (res.ok) {
-        const result = await res.json()
-        const counts = Object.entries(result.imported || {})
+        const result = await safeJson(res)
+        const counts = Object.entries(result?.imported || {})
           .filter(([, v]: [string, unknown]) => (v as number) > 0)
           .map(([k, v]) => `${k}: ${v}`)
           .join(', ')
         toast.success(`Импорт выполнен! ${counts || 'нет данных'}`)
       } else {
-        const err = await res.json()
-        toast.error(err.error || 'Ошибка при импорте')
+        const err = await safeJson(res)
+        toast.error(err?.error || 'Ошибка при импорте')
       }
     } catch (err) {
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))

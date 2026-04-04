@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { safeJson } from '@/lib/safe-fetch'
 import {
   Library,
   BookOpen,
@@ -194,8 +195,7 @@ export function CollectionsPage() {
       if (activeType !== 'all') params.set('type', activeType)
       if (activeStatus !== 'all') params.set('status', activeStatus)
       const res = await fetch(`/api/collections?${params.toString()}`)
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
+      const json = await safeJson(res)
       if (json.success) setItems(json.data)
     } catch (err) {
       console.error('Failed to fetch collections:', err)
@@ -241,9 +241,8 @@ export function CollectionsPage() {
           tags: tags.length > 0 ? tags : [],
         }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         toast.success('Элемент добавлен в коллекцию')
         setDialogOpen(false)
         resetForm()
@@ -265,9 +264,8 @@ export function CollectionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status: newStatus }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         toast.success('Статус обновлён')
         fetchItems()
         if (detailItem && detailItem.id === item.id) {
@@ -286,9 +284,8 @@ export function CollectionsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/collections/${item.id}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         toast.success('Элемент удалён')
         setDetailOpen(false)
         setDetailItem(null)
@@ -309,9 +306,8 @@ export function CollectionsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         fetchItems()
         if (detailItem && detailItem.id === item.id) {
           setDetailItem({ ...item, rating })
@@ -371,9 +367,8 @@ export function CollectionsPage() {
           notes: editNotes.trim() || null,
         }),
       })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         toast.success('Элемент обновлён')
         const updatedItem: CollectionItem = {
           ...detailItem,

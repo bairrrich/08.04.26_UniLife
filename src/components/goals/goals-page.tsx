@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
+import { safeJson } from '@/lib/safe-fetch'
 
 // ======================== Types ========================
 
@@ -226,9 +227,8 @@ export function GoalsPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/goals')
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json: GoalsResponse = await res.json()
-      if (json.success) {
+      const json: GoalsResponse | null = await safeJson<GoalsResponse>(res)
+      if (json && json.success) {
         setGoals(json.data)
         setStats(json.stats)
       }
@@ -310,29 +310,28 @@ export function GoalsPage() {
           body: JSON.stringify(body),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await res.json()
-        if (json.success) {
-          toast.success('Цель обновлена')
-          setDialogOpen(false)
-          fetchGoals()
-        } else {
+        const json = await safeJson(res)
+        if (!json || !json.success) {
           toast.error('Ошибка при обновлении цели')
+          return
         }
+        toast.success('Цель обновлена')
+        setDialogOpen(false)
+        fetchGoals()
       } else {
         const res = await fetch('/api/goals', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
         })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await res.json()
-        if (json.success) {
-          toast.success('Цель создана')
-          setDialogOpen(false)
-          fetchGoals()
-        } else {
+        const json = await safeJson(res)
+        if (!json || !json.success) {
           toast.error('Ошибка при создании цели')
+          return
         }
+        toast.success('Цель создана')
+        setDialogOpen(false)
+        fetchGoals()
       }
     } catch (err) {
       console.error('Failed to save goal:', err)
@@ -354,11 +353,13 @@ export function GoalsPage() {
         body: JSON.stringify({ progress: newProgress }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
-        toast.success(`Прогресс: ${newProgress}%`)
-        fetchGoals()
+      const json = await safeJson(res)
+      if (!json || !json.success) {
+        toast.error('Ошибка обновления прогресса')
+        return
       }
+      toast.success(`Прогресс: ${newProgress}%`)
+      fetchGoals()
     } catch (err) {
       toast.error('Ошибка обновления прогресса')
     }
@@ -373,11 +374,13 @@ export function GoalsPage() {
         body: JSON.stringify({ status: 'completed', progress: 100 }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
-        toast.success('Цель завершена! 🎉')
-        fetchGoals()
+      const json = await safeJson(res)
+      if (!json || !json.success) {
+        toast.error('Ошибка завершения цели')
+        return
       }
+      toast.success('Цель завершена! 🎉')
+      fetchGoals()
     } catch (err) {
       toast.error('Ошибка завершения цели')
     }
@@ -388,13 +391,13 @@ export function GoalsPage() {
     try {
       const res = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
-        toast.success('Цель удалена')
-        fetchGoals()
-      } else {
+      const json = await safeJson(res)
+      if (!json || !json.success) {
         toast.error('Ошибка при удалении цели')
+        return
       }
+      toast.success('Цель удалена')
+      fetchGoals()
     } catch (err) {
       console.error('Failed to delete goal:', err)
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))

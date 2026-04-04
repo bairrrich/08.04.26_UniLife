@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { safeJson } from '@/lib/safe-fetch'
 import {
   Search,
   BookOpen,
@@ -197,8 +198,7 @@ export function SearchDialog() {
     setLoading(true)
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      if (!res.ok) throw new Error(`Search failed: HTTP ${res.status}`)
-      const data: SearchResponse = await res.json()
+      const data = await safeJson(res)
       setResults(data)
     } catch {
       setResults(null)

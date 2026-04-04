@@ -27,6 +27,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog'
 import { toast } from 'sonner'
+import { safeJson } from '@/lib/safe-fetch'
 
 // ======================== Types ========================
 
@@ -151,9 +152,8 @@ export function HabitsPage() {
     setLoading(true)
     try {
       const res = await fetch('/api/habits')
-      if (!res.ok) throw new Error(`Failed to fetch habits: HTTP ${res.status}`)
-      const json: HabitsResponse = await res.json()
-      if (json.success) {
+      const json: HabitsResponse | null = await safeJson<HabitsResponse>(res)
+      if (json && json.success) {
         setHabits(json.data)
         setStats(json.stats)
       }
@@ -194,9 +194,8 @@ export function HabitsPage() {
           targetCount: parseInt(formTargetCount) || 1,
         }),
       })
-      if (!res.ok) throw new Error(`Failed to create habit: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
         toast.success('Привычка создана')
         setAddDialogOpen(false)
         resetAddForm()
@@ -214,9 +213,8 @@ export function HabitsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/habits/${habitId}`, { method: 'PUT' })
-      if (!res.ok) throw new Error(`Failed to toggle habit: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
         fetchHabits()
       }
     } catch (err) {
@@ -251,9 +249,8 @@ export function HabitsPage() {
           targetCount: parseInt(editTargetCount) || 1,
         }),
       })
-      if (!res.ok) throw new Error(`Failed to update habit: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
         toast.success('Привычка обновлена')
         setEditDialogOpen(false)
         fetchHabits()
@@ -292,9 +289,8 @@ export function HabitsPage() {
     toast.dismiss()
     try {
       const res = await fetch(`/api/habits/${habitId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error(`Failed to delete habit: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
         toast.success('Привычка удалена')
         fetchHabits()
       } else {

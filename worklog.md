@@ -1663,3 +1663,42 @@ The application was failing to load and experiencing constant reloads due to two
 8. **Budget Alerts** — In-app budget threshold notifications
 9. **Offline Support** — Enhanced service worker caching strategy
 10. **Settings Polish** — Advanced settings like data retention, account export formatting
+---
+## Task ID: bugfix-round-6
+### Agent: bugfix-agent
+### Task: Fix JSON parsing error and improve fetch robustness across all components
+
+### Work Log:
+
+**Bug Fix 1 — `Unexpected token '<'` JSON Parse Error:**
+- **Root Cause**: During Turbopack compilation, API routes may return Next.js HTML error pages (404/500) instead of JSON. Components using raw `res.json()` would throw SyntaxError when parsing HTML responses.
+- **Solution**: Created `/src/lib/safe-fetch.ts` utility with `safeJson()` function that:
+  - Reads response as text first using `res.text()`
+  - Guards against HTML responses with `text.trimStart().startsWith('<')` check
+  - Returns `null` gracefully instead of throwing SyntaxError
+  - Includes `fetchJson()` convenience wrapper with timeout support
+- **Applied safeJson to ALL components** that make fetch calls:
+  - `collections-page.tsx` — 6 `res.json()` calls replaced (fetch, create, status update, delete, rating update, edit save)
+  - `diary-page.tsx` — 2 calls replaced (fetch entries, update entry)
+  - `workout-page.tsx` — 3 calls replaced (fetch workouts, create workout, update workout)
+  - `search-dialog.tsx` — 1 call replaced (search API)
+  - `settings-page.tsx` — 3 calls replaced (export data, import success, import error)
+  - Previously fixed (in earlier rounds): `goals-page.tsx`, `feed-page.tsx`, `habits-page.tsx`, `nutrition-page.tsx`, `finance-page.tsx`
+- All null checks use pattern: `const json = await safeJson(res); if (json && json.success) { ... }`
+
+**Bug Fix 2 — Brace mismatch in goals-page.tsx:**
+- Fixed parsing error caused by incorrect brace structure after safeJson replacement
+- Corrected `if (editingGoal) { ... } else { ... }` block structure
+- Fixed `handleDelete` extra closing brace
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ Zero raw `res.json()` calls remaining in the codebase
+- ✅ All modules protected against HTML responses from API routes
+
+### Stage Summary:
+- Created `safeJson()` utility in `/src/lib/safe-fetch.ts`
+- Replaced all 15 raw `res.json()` calls with `safeJson()` across 6 component files
+- Fixed brace mismatch parsing error in goals-page.tsx
+- All fetch calls now gracefully handle HTML responses during Turbopack compilation

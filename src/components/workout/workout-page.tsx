@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { safeJson } from '@/lib/safe-fetch'
 import {
   Dumbbell,
   Plus,
@@ -254,9 +255,8 @@ export function WorkoutPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/workout?month=${month}`)
-      if (!res.ok) throw new Error(`Failed to fetch workouts: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) setWorkouts(json.data)
+      const json = await safeJson(res)
+      if (json && json.success) setWorkouts(json.data)
     } catch (err) {
       console.error('Failed to fetch workouts:', err)
     } finally {
@@ -374,9 +374,8 @@ export function WorkoutPage() {
           exercises,
         }),
       })
-      if (!res.ok) throw new Error(`Failed to create workout: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         toast.success('Тренировка добавлена')
         setDialogOpen(false)
         resetForm()
@@ -440,9 +439,8 @@ export function WorkoutPage() {
           exercises,
         }),
       })
-      if (!res.ok) throw new Error(`Failed to update workout: HTTP ${res.status}`)
-      const json = await res.json()
-      if (json.success) {
+      const json = await safeJson(res)
+      if (json && json.success) {
         toast.success('Тренировка обновлена')
         setEditDialogOpen(false)
         setEditingWorkout(null)
