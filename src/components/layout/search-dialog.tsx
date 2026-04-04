@@ -159,7 +159,7 @@ export function SearchDialog() {
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { setActiveModule } = useAppStore()
+  const setActiveModule = useAppStore((s) => s.setActiveModule)
 
   // Keyboard shortcut Cmd+K / Ctrl+K
   useEffect(() => {

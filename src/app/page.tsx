@@ -157,7 +157,7 @@ const FOOTER_LINKS = [
 ]
 
 const Footer = memo(function Footer() {
-  const { setActiveModule } = useAppStore()
+  const setActiveModule = useAppStore((s) => s.setActiveModule)
   const counts = useModuleCounts()
 
   return (
@@ -257,7 +257,7 @@ const Footer = memo(function Footer() {
 
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function Home() {
-  const { activeModule } = useAppStore()
+  const activeModule = useAppStore((s) => s.activeModule)
   const mod = MODULES[activeModule] || MODULES.dashboard
   const PageComponent = mod.component
 

@@ -52,7 +52,8 @@ function NavBadge({ count, isActive }: { count: number; isActive: boolean }) {
 const MemoizedNavBadge = memo(NavBadge)
 
 function MobileNotificationBell() {
-  const { notificationCount, setActiveModule } = useAppStore()
+  const notificationCount = useAppStore((s) => s.notificationCount)
+  const setActiveModule = useAppStore((s) => s.setActiveModule)
 
   return (
     <button
@@ -70,8 +71,10 @@ function MobileNotificationBell() {
   )
 }
 
-function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
-  const { activeModule, setActiveModule, notificationCount } = useAppStore()
+const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const activeModule = useAppStore((s) => s.activeModule)
+  const setActiveModule = useAppStore((s) => s.setActiveModule)
+  const notificationCount = useAppStore((s) => s.notificationCount)
   const moduleCounts = useModuleCounts()
 
   const handleNavClick = (id: AppModule) => {
@@ -193,7 +196,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
       </div>
     </div>
   )
-}
+})
 
 export function AppSidebar() {
   return (
@@ -206,7 +209,7 @@ export function AppSidebar() {
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">
-        <SidebarContent />
+        <MemoizedSidebarContent />
       </aside>
 
       {/* Mobile Header + Sheet */}
@@ -218,7 +221,7 @@ export function AppSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
-            <SidebarContent />
+            <MemoizedSidebarContent />
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">

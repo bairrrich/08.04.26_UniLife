@@ -2984,3 +2984,42 @@ Stage Summary:
 - Critical infinite re-render bug fixed by caching getServerSnapshot return value
 - Root cause: new `{}` object created on every call violated React's useSyncExternalStore contract
 - Clean fix: 1 constant + import cleanup, no behavioral changes
+
+---
+## Task ID: fix-rerender-v2
+### Agent: main
+### Task: Fix persistent infinite re-render loop (deeper fix)
+
+### Work Log:
+- **Root Cause Analysis**: The previous `getServerSnapshot` fix was insufficient. Multiple issues were causing constant re-renders:
+  1. `useSyncExternalStore` with `getSnapshot()` returning `cachedCountsRef` and `getServerSnapshot()` returning `SERVER_SNAPSHOT` — two different object references causing hydration mismatch
+  2. Zustand `useAppStore()` called WITHOUT selectors in SidebarContent, MobileNav, Footer, Home, and SearchDialog — subscribing to ENTIRE store means ANY store change triggers re-render
+  3. Dashboard's `useEffect` calls `setNotificationCount` after data load, which triggers sidebar re-render (since sidebar subscribed to full store)
+
+- **Fix 1 — Replaced `useSyncExternalStore` with simple `useState` + `useEffect`** (`module-counts.ts`):
+  - Completely removed `useSyncExternalStore`, `getSnapshot`, `getServerSnapshot`, `subscribe` functions
+  - Replaced with `useState(cachedCounts)` + `useEffect` that subscribes to a `Set<setter>` pattern
+  - Module-level singleton: single cache, single interval, consumer counter
+  - Deduplicates concurrent fetches with `fetchPromise` singleton
+  - Clean cleanup: interval stopped when last consumer unmounts
+
+- **Fix 2 — Zustand selector optimization** (5 files):
+  - `app-sidebar.tsx`: `SidebarContent` now uses `(s) => s.activeModule`, `(s) => s.setActiveModule`, `(s) => s.notificationCount` selectors; wrapped with `memo()`
+  - `mobile-nav.tsx`: Uses `(s) => s.activeModule`, `(s) => s.setActiveModule` selectors
+  - `page.tsx` (Home): Uses `(s) => s.activeModule` selector
+  - `page.tsx` (Footer): Uses `(s) => s.setActiveModule` selector
+  - `search-dialog.tsx`: Uses `(s) => s.setActiveModule` selector
+
+- **Fix 3 — Memoized SidebarContent**: Wrapped in `memo()` since it receives stable props and uses stable selectors
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ `/api/module-counts` called exactly ONCE, not repeatedly
+- ✅ Zero re-compilations or repeated requests after 15+ seconds of idle
+- ✅ No console errors ("getServerSnapshot should be cached" error gone)
+
+### Stage Summary:
+- Completely rewrote `useModuleCounts` hook — replaced `useSyncExternalStore` with `useState` + `useEffect`
+- Fixed ALL Zustand full-store subscriptions across 5 files to use fine-grained selectors
+- Re-render loop definitively eliminated — verified by 15-second idle log check (0 new lines)
