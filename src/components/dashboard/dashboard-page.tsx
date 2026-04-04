@@ -320,32 +320,48 @@ const calculateStreak = (dates: string[]): number => {
 
 function useAnimatedCounter(target: number, duration = 600, enabled = true): number {
   const [value, setValue] = useState(0)
+  const prevTargetRef = useRef(target)
   const rafRef = useRef<number>(0)
 
   useEffect(() => {
+    prevTargetRef.current = target
+  })
+
+  useEffect(() => {
+    if (!enabled) {
+      // If disabled, sync to target immediately (deferred via rAF to avoid sync setState)
+      rafRef.current = requestAnimationFrame(() => setValue(target))
+      return () => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      }
+    }
+
+    if (target === 0) {
+      rafRef.current = requestAnimationFrame(() => setValue(0))
+      return () => {
+        if (rafRef.current) cancelAnimationFrame(rafRef.current)
+      }
+    }
+
     let startTime: number | null = null
+    let animationId: number
 
     const animate = (timestamp: number) => {
-      // All setState calls are inside rAF callbacks (asynchronous), never synchronous in the effect body
-      if (!enabled || target === 0) {
-        setValue(0)
-        return
-      }
-
       if (startTime === null) startTime = timestamp
       const elapsed = timestamp - startTime
       const progress = Math.min(elapsed / duration, 1)
-
       const eased = 1 - Math.pow(1 - progress, 3)
       setValue(Math.round(target * eased))
 
       if (progress < 1) {
-        rafRef.current = requestAnimationFrame(animate)
+        animationId = requestAnimationFrame(animate)
       }
     }
 
-    rafRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(rafRef.current)
+    animationId = requestAnimationFrame(animate)
+    return () => {
+      if (animationId) cancelAnimationFrame(animationId)
+    }
   }, [target, duration, enabled])
 
   return value
@@ -552,7 +568,9 @@ export default function DashboardPage() {
   }, [fetchAllData])
 
   // ── Derived Data ───────────────────────────────────────────────────────
-  const now = new Date()
+  // Stabilize `now` so it doesn't create a new Date() on every render
+  // (which would invalidate useMemo deps and cause unnecessary recalculations)
+  const now = useMemo(() => new Date(), [])
 
   // Today's mood
   const todayEntry = diaryEntries.find((e) => {

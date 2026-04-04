@@ -2,65 +2,52 @@
 
 import { useAppStore } from '@/store/use-app-store'
 import { AppSidebar } from '@/components/layout/app-sidebar'
-import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
-import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
+import { AnimatePresence, motion } from 'framer-motion'
 
 // ─── Lazy-loaded module pages ──────────────────────────────────────────
 // Using next/dynamic creates separate chunk boundaries so Turbopack
 // only compiles the active module instead of all 11 at once.
 
-const Dashboard = dynamic(() => import('@/components/dashboard/dashboard-page'), {
+const DashboardPage = dynamic(() => import('@/components/dashboard/dashboard-page'), {
   loading: () => <PageSkeleton />,
 })
-const Diary = dynamic(() => import('@/components/diary/diary-page'), {
+const DiaryPage = dynamic(() => import('@/components/diary/diary-page'), {
   loading: () => <PageSkeleton />,
 })
-const Finance = dynamic(() => import('@/components/finance/finance-page'), {
+const FinancePage = dynamic(() => import('@/components/finance/finance-page'), {
   loading: () => <PageSkeleton />,
 })
-const Nutrition = dynamic(() => import('@/components/nutrition/nutrition-page'), {
+const NutritionPage = dynamic(() => import('@/components/nutrition/nutrition-page'), {
   loading: () => <PageSkeleton />,
 })
-const Workout = dynamic(() => import('@/components/workout/workout-page'), {
+const WorkoutPage = dynamic(() => import('@/components/workout/workout-page'), {
   loading: () => <PageSkeleton />,
 })
-const Collections = dynamic(() => import('@/components/collections/collections-page'), {
+const CollectionsPage = dynamic(() => import('@/components/collections/collections-page'), {
   loading: () => <PageSkeleton />,
 })
-const Feed = dynamic(() => import('@/components/feed/feed-page'), {
+const FeedPage = dynamic(() => import('@/components/feed/feed-page'), {
   loading: () => <PageSkeleton />,
 })
-const Habits = dynamic(() => import('@/components/habits/habit-page'), {
+const HabitsPage = dynamic(() => import('@/components/habits/habit-page'), {
   loading: () => <PageSkeleton />,
 })
-const Goals = dynamic(() => import('@/components/goals/goals-page'), {
+const GoalsPage = dynamic(() => import('@/components/goals/goals-page'), {
   loading: () => <PageSkeleton />,
 })
-const Analytics = dynamic(() => import('@/components/analytics/analytics-page'), {
+const AnalyticsPage = dynamic(() => import('@/components/analytics/analytics-page'), {
   loading: () => <PageSkeleton />,
 })
-const Settings = dynamic(() => import('@/components/layout/settings-page'), {
+const SettingsPage = dynamic(() => import('@/components/layout/settings-page'), {
   loading: () => <PageSkeleton />,
 })
 
-// ─── Module map for fast lookup ───────────────────────────────────────
-const MODULES: Record<string, React.LazyExoticComponent<Record<string, never>>> = {
-  dashboard: Dashboard,
-  diary: Diary,
-  finance: Finance,
-  nutrition: Nutrition,
-  workout: Workout,
-  collections: Collections,
-  feed: Feed,
-  habits: Habits,
-  goals: Goals,
-  analytics: Analytics,
-  settings: Settings,
-}
+// ─── Welcome screen (small, keep as static import) ─────────────────────
+import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
 
-// ─── Skeleton for lazy loading ─────────────────────────────────────────
+// ─── Page skeleton for lazy loading ────────────────────────────────────
 function PageSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
@@ -79,10 +66,39 @@ function PageSkeleton() {
   )
 }
 
+// ─── Module renderer ───────────────────────────────────────────────────
+function ModuleContent({ activeModule }: { activeModule: string }) {
+  switch (activeModule) {
+    case 'dashboard':
+      return <DashboardPage />
+    case 'diary':
+      return <DiaryPage />
+    case 'finance':
+      return <FinancePage />
+    case 'nutrition':
+      return <NutritionPage />
+    case 'workout':
+      return <WorkoutPage />
+    case 'collections':
+      return <CollectionsPage />
+    case 'feed':
+      return <FeedPage />
+    case 'habits':
+      return <HabitsPage />
+    case 'goals':
+      return <GoalsPage />
+    case 'analytics':
+      return <AnalyticsPage />
+    case 'settings':
+      return <SettingsPage />
+    default:
+      return <DashboardPage />
+  }
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function Home() {
   const { activeModule } = useAppStore()
-  const PageComponent = MODULES[activeModule] || Dashboard
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,13 +114,14 @@ export default function Home() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
             >
-              <PageComponent />
+              <ModuleContent activeModule={activeModule} />
             </motion.div>
           </AnimatePresence>
         </div>
         <footer className="mt-auto border-t bg-muted/30">
           {/* Desktop: Four-column footer */}
           <div className="hidden md:grid md:grid-cols-4 divide-x divide-border">
+            {/* Column 1: Logo + Tagline */}
             <div className="px-6 py-5">
               <div className="flex items-center gap-2">
                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
@@ -116,31 +133,47 @@ export default function Home() {
                 Вся жизнь в одном месте. Отслеживайте дневник, финансы, питание и тренировки.
               </p>
             </div>
+
+            {/* Column 2: Quick Links */}
             <div className="px-6 py-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Быстрые ссылки</h3>
               <ul className="space-y-1">
                 {['Дневник', 'Финансы', 'Питание', 'Тренировки'].map((link) => (
                   <li key={link}>
-                    <span className="text-xs text-muted-foreground hover:text-foreground transition cursor-pointer">{link}</span>
+                    <span className="text-xs text-muted-foreground hover:text-foreground transition cursor-pointer">
+                      {link}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
+
+            {/* Column 3: Modules */}
             <div className="px-6 py-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Модули</h3>
               <ul className="space-y-1">
                 {['Дневник', 'Финансы', 'Питание', 'Тренировки', 'Привычки', 'Коллекции'].map((link) => (
                   <li key={link}>
-                    <span className="text-xs text-muted-foreground">{link}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {link}
+                    </span>
                   </li>
                 ))}
               </ul>
             </div>
+
+            {/* Column 4: Version */}
             <div className="px-6 py-5 text-right">
-              <p className="text-xs text-muted-foreground">UniLife v1.0</p>
-              <p className="mt-1 text-xs text-muted-foreground/60">Сделано с 💚</p>
+              <p className="text-xs text-muted-foreground">
+                UniLife v1.0
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground/60">
+                Сделано с 💚
+              </p>
             </div>
           </div>
+
+          {/* Copyright bar */}
           <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
             <div className="flex h-4 w-4 items-center justify-center rounded bg-primary text-primary-foreground">
               <span className="text-[9px] font-bold leading-none">U</span>
@@ -149,6 +182,8 @@ export default function Home() {
               © 2026 UniLife · Все права защищены
             </p>
           </div>
+
+          {/* Mobile: Simple centered footer */}
           <div className="md:hidden px-4 py-3 text-center">
             <p className="text-[11px] text-muted-foreground/70">
               Сделано с 💚 · © 2026 UniLife · Все права защищены

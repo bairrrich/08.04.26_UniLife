@@ -82,7 +82,7 @@ function subscribeToNotes(callback: () => void) {
 }
 
 let cachedRaw: string | null | undefined
-let cachedNotes: QuickNote[] = []
+let cachedNotes: QuickNote[] = EMPTY_NOTES  // Start with same reference as server snapshot to avoid hydration mismatch
 
 function getNotesSnapshot(): QuickNote[] {
   const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null

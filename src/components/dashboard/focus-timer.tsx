@@ -138,8 +138,8 @@ export function FocusTimer() {
     const stored = getTodaySessions()
     // Use a timeout to defer setState out of the synchronous effect body
     const id = setTimeout(() => {
-      if (stored > 0) setSessions(stored)
       setMounted(true)
+      if (stored > 0) setSessions(stored)
     }, 0)
     return () => clearTimeout(id)
   }, [])
