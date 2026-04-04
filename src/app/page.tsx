@@ -2,13 +2,16 @@
 
 import { useAppStore } from '@/store/use-app-store'
 import { AppSidebar } from '@/components/layout/app-sidebar'
+import { MobileNav } from '@/components/layout/mobile-nav'
 import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
 import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Component, type ReactNode } from 'react'
+import { Component, type ReactNode, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, RefreshCw } from 'lucide-react'
+import { AlertTriangle, RefreshCw, Plus, Dumbbell, Receipt, Sparkles, BookOpen, Activity, Target } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { fetchModuleCounts } from '@/lib/module-counts'
 
 // ─── Error Boundary with retry for ChunkLoadError ─────────────────────
 interface ErrorBoundaryState {
@@ -136,6 +139,128 @@ function PageSkeleton() {
   )
 }
 
+// ─── Footer ──────────────────────────────────────────────────────────
+const QUICK_ACTIONS = [
+  { label: 'Добавить запись', module: 'diary' as const, icon: Plus, color: 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20' },
+  { label: 'Новая тренировка', module: 'workout' as const, icon: Dumbbell, color: 'text-blue-500 bg-blue-500/10 hover:bg-blue-500/20' },
+  { label: 'Записать расход', module: 'finance' as const, icon: Receipt, color: 'text-amber-500 bg-amber-500/10 hover:bg-amber-500/20' },
+  { label: 'Новая привычка', module: 'habits' as const, icon: Sparkles, color: 'text-violet-500 bg-violet-500/10 hover:bg-violet-500/20' },
+]
+
+const FOOTER_LINKS = [
+  { label: 'Дневник', module: 'diary' as const },
+  { label: 'Финансы', module: 'finance' as const },
+  { label: 'Питание', module: 'nutrition' as const },
+  { label: 'Тренировки', module: 'workout' as const },
+  { label: 'Привычки', module: 'habits' as const },
+  { label: 'Коллекции', module: 'collections' as const },
+]
+
+function Footer() {
+  const { setActiveModule } = useAppStore()
+  const [stats, setStats] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    fetchModuleCounts().then((counts) => {
+      setStats(counts)
+    })
+  }, [])
+
+  return (
+    <footer className="mt-auto border-t bg-muted/30 hidden md:block">
+      <div className="grid grid-cols-4 divide-x divide-border">
+        {/* Brand column */}
+        <div className="px-6 py-5">
+          <div className="flex items-center gap-2">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <span className="text-sm font-bold">U</span>
+            </div>
+            <span className="font-bold text-sm">UniLife</span>
+          </div>
+          <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+            Вся жизнь в одном месте. Отслеживайте дневник, финансы, питание и тренировки.
+          </p>
+        </div>
+
+        {/* Quick actions column */}
+        <div className="px-6 py-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+            Быстрые действия
+          </h3>
+          <ul className="space-y-1">
+            {QUICK_ACTIONS.map((action) => {
+              const Icon = action.icon
+              return (
+                <li key={action.label}>
+                  <button
+                    onClick={() => setActiveModule(action.module)}
+                    className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 group cursor-pointer"
+                  >
+                    <Icon className={cn('h-3.5 w-3.5 shrink-0 rounded transition-colors', action.color)} />
+                    <span className="group-hover:translate-x-0.5 transition-transform duration-200">{action.label}</span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+
+        {/* Modules + Stats column */}
+        <div className="px-6 py-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+            Модули
+          </h3>
+          <ul className="space-y-1">
+            {FOOTER_LINKS.map((link) => (
+              <li key={link.label}>
+                <button
+                  onClick={() => setActiveModule(link.module)}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors duration-200 cursor-pointer hover:translate-x-0.5 inline-block transition-transform"
+                >
+                  {link.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Stats column */}
+        <div className="px-6 py-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+            Статистика
+          </h3>
+          <ul className="space-y-1.5">
+            <li className="flex items-center gap-2 text-xs text-muted-foreground">
+              <BookOpen className="h-3 w-3 text-emerald-500" />
+              <span>{stats.diary ?? '—'} записей в дневнике</span>
+            </li>
+            <li className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Activity className="h-3 w-3 text-blue-500" />
+              <span>{stats.workout ?? '—'} тренировок</span>
+            </li>
+            <li className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Target className="h-3 w-3 text-violet-500" />
+              <span>{stats.habits ?? '—'} привычек</span>
+            </li>
+            <li className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Receipt className="h-3 w-3 text-amber-500" />
+              <span>{stats.finance ?? '—'} транзакций</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
+        <div className="flex h-4 w-4 items-center justify-center rounded bg-primary text-primary-foreground">
+          <span className="text-[9px] font-bold leading-none">U</span>
+        </div>
+        <p className="text-[11px] text-muted-foreground/70">
+          © 2026 UniLife · Все права защищены
+        </p>
+      </div>
+    </footer>
+  )
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function Home() {
   const { activeModule } = useAppStore()
@@ -147,7 +272,7 @@ export default function Home() {
       <WelcomeScreen />
       <AppSidebar />
       <main className="md:ml-60 min-h-screen flex flex-col">
-        <div className="flex-1 p-4 pt-16 md:p-6 md:pt-6 max-w-7xl mx-auto w-full">
+        <div className="flex-1 p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-6 max-w-7xl mx-auto w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeModule}
@@ -162,59 +287,8 @@ export default function Home() {
             </motion.div>
           </AnimatePresence>
         </div>
-        <footer className="mt-auto border-t bg-muted/30">
-          {/* Desktop: Four-column footer */}
-          <div className="hidden md:grid md:grid-cols-4 divide-x divide-border">
-            <div className="px-6 py-5">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                  <span className="text-sm font-bold">U</span>
-                </div>
-                <span className="font-bold text-sm">UniLife</span>
-              </div>
-              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                Вся жизнь в одном месте. Отслеживайте дневник, финансы, питание и тренировки.
-              </p>
-            </div>
-            <div className="px-6 py-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Быстрые ссылки</h3>
-              <ul className="space-y-1">
-                {['Дневник', 'Финансы', 'Питание', 'Тренировки'].map((link) => (
-                  <li key={link}>
-                    <span className="text-xs text-muted-foreground hover:text-foreground transition cursor-pointer">{link}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="px-6 py-5">
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Модули</h3>
-              <ul className="space-y-1">
-                {['Дневник', 'Финансы', 'Питание', 'Тренировки', 'Привычки', 'Коллекции'].map((link) => (
-                  <li key={link}>
-                    <span className="text-xs text-muted-foreground">{link}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div className="px-6 py-5 text-right">
-              <p className="text-xs text-muted-foreground">UniLife v1.0</p>
-              <p className="mt-1 text-xs text-muted-foreground/60">Сделано с 💚</p>
-            </div>
-          </div>
-          <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
-            <div className="flex h-4 w-4 items-center justify-center rounded bg-primary text-primary-foreground">
-              <span className="text-[9px] font-bold leading-none">U</span>
-            </div>
-            <p className="text-[11px] text-muted-foreground/70">
-              © 2026 UniLife · Все права защищены
-            </p>
-          </div>
-          <div className="md:hidden px-4 py-3 text-center">
-            <p className="text-[11px] text-muted-foreground/70">
-              Сделано с 💚 · © 2026 UniLife · Все права защищены
-            </p>
-          </div>
-        </footer>
+        <Footer />
+        <MobileNav />
       </main>
     </div>
   )

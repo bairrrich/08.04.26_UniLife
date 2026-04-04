@@ -4,6 +4,7 @@ import { LucideIcon, icons, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { navItems } from '@/lib/nav-items'
+import { useModuleCounts } from '@/lib/module-counts'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -14,10 +15,41 @@ import { SearchDialog } from './search-dialog'
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { Menu } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { memo } from 'react'
 
 function getIcon(iconName: string): LucideIcon {
   return icons[iconName as keyof typeof icons] || icons.Circle
 }
+
+// Modules that should NOT show activity badges
+const NO_BADGE_MODULES: Set<AppModule> = new Set([
+  'dashboard',
+  'analytics',
+  'settings',
+])
+
+function NavBadge({ count, isActive }: { count: number; isActive: boolean }) {
+  if (count <= 0) return null
+
+  const display = count > 99 ? '99+' : String(count)
+
+  return (
+    <span
+      className={cn(
+        'ml-auto flex h-5 min-w-5 items-center justify-center rounded-full px-1.5',
+        'text-[10px] font-bold leading-none tabular-nums',
+        'animate-count-fade-in',
+        isActive
+          ? 'bg-primary-foreground/20 text-primary-foreground'
+          : 'bg-primary text-primary-foreground'
+      )}
+    >
+      {display}
+    </span>
+  )
+}
+
+const MemoizedNavBadge = memo(NavBadge)
 
 function MobileNotificationBell() {
   const { notificationCount, setActiveModule } = useAppStore()
@@ -40,6 +72,7 @@ function MobileNotificationBell() {
 
 function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const { activeModule, setActiveModule, notificationCount } = useAppStore()
+  const moduleCounts = useModuleCounts()
 
   const handleNavClick = (id: AppModule) => {
     setActiveModule(id)
@@ -103,6 +136,12 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               )}
               <Icon className="h-4.5 w-4.5 shrink-0" />
               <span>{item.label}</span>
+              {!NO_BADGE_MODULES.has(item.id) && (
+                <MemoizedNavBadge
+                  count={moduleCounts[item.id] || 0}
+                  isActive={isActive}
+                />
+              )}
             </button>
           )
         })}

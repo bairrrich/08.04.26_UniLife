@@ -11,7 +11,7 @@ import {
 import { BudgetOverview } from './budget-overview'
 import { NotificationCenter } from './notification-center'
 import { QuickNotes } from './quick-notes'
-import { FocusTimer } from './focus-timer'
+import { FocusTimerWidget } from './focus-timer-widget'
 import { WeatherWidget } from './weather-widget'
 import { ActivityHeatmap } from './activity-heatmap'
 import { FinanceQuickView } from './finance-quick-view'
@@ -30,6 +30,10 @@ import { MoodBarChart } from './mood-bar-chart'
 import { ExpensePieChart } from './expense-pie-chart'
 import { ActivityFeed } from './activity-feed'
 import { StreakWidget } from './streak-widget'
+import { ProductivityScore } from './productivity-score'
+import { WeeklyActivityChart } from './weekly-activity-chart'
+import { WeeklyInsights } from './weekly-insights'
+import { QuickAddMenu } from './quick-add-menu'
 import { formatCurrency } from '@/lib/format'
 import {
   toDateStr,
@@ -88,6 +92,15 @@ export default function DashboardPage() {
   const [transactionsData, setTransactionsData] = useState<Transaction[]>([])
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null)
   const [hasMealsToday, setHasMealsToday] = useState(false)
+  const [waterTodayMl, setWaterTodayMl] = useState(0)
+  const [weeklyActivity, setWeeklyActivity] = useState<{
+    dayName: string
+    dateKey: string
+    diary: number
+    workouts: number
+    habits: number
+    isToday: boolean
+  }[]>([])
   const [quoteIndex, setQuoteIndex] = useState(() => getDayOfYear() % MOTIVATIONAL_QUOTES.length)
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
 
@@ -185,6 +198,7 @@ export default function DashboardPage() {
         stats: data.habitsStats || { totalActive: 0, completedToday: 0, bestStreak: 0 },
       })
       setBudgetData(data.budgetData || null)
+      setWaterTodayMl(data.waterTodayMl || 0)
     } catch (err) {
       console.error('Dashboard fetch error:', err)
     } finally {
@@ -351,6 +365,80 @@ export default function DashboardPage() {
     return pct
   }, [loading, todayMood, hasMealsToday, workouts, now, totalActive, completedToday])
 
+  // ── Weekly Activity Chart Data ──────────────────────────────
+  useMemo(() => {
+    if (loading) {
+      setWeeklyActivity([])
+      return
+    }
+    const todayKey = toDateStr(now)
+    const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+
+    // Count diary entries per day
+    const diaryByDay = new Map<string, number>()
+    for (const e of diaryEntries) {
+      const key = toDateStr(new Date(e.date))
+      diaryByDay.set(key, (diaryByDay.get(key) ?? 0) + 1)
+    }
+
+    // Count workouts per day
+    const workoutByDay = new Map<string, number>()
+    for (const w of workouts) {
+      const key = toDateStr(new Date(w.date))
+      workoutByDay.set(key, (workoutByDay.get(key) ?? 0) + 1)
+    }
+
+    // Count habits completed per day
+    const habitsByDay = new Map<string, number>()
+    for (const h of habitsData?.data ?? []) {
+      for (const [dateStr] of Object.entries(h.last7Days || {})) {
+        habitsByDay.set(dateStr, (habitsByDay.get(dateStr) ?? 0) + 1)
+      }
+    }
+
+    const result: typeof weeklyActivity = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      const key = toDateStr(d)
+      const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
+      result.push({
+        dayName: dayNames[dayIndex],
+        dateKey: key,
+        diary: diaryByDay.get(key) ?? 0,
+        workouts: workoutByDay.get(key) ?? 0,
+        habits: habitsByDay.get(key) ?? 0,
+        isToday: key === todayKey,
+      })
+    }
+    setWeeklyActivity(result)
+  }, [loading, diaryEntries, workouts, habitsData, now])
+
+  // ── Productivity Score ──────────────────────────────────────────
+  const todayWorkout = useMemo(() => {
+    return workouts.some((w) => {
+      const d = new Date(w.date)
+      return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
+      )
+    })
+  }, [workouts, now])
+
+  const productivityScore = useMemo(() => {
+    if (loading) return 0
+    let score = 0
+    if (todayEntry) score += 25
+    if (waterTodayMl >= 1000) score += 20
+    if (todayWorkout) score += 25
+    if (totalActive > 0) score += Math.round((completedToday / totalActive) * 15)
+    if (hasMealsToday) score += 15
+    return score
+  }, [loading, todayEntry, waterTodayMl, todayWorkout, totalActive, completedToday, hasMealsToday])
+
+  const animProductivityScore = useAnimatedCounter(productivityScore, 800, !loading)
+
   // ── Time Ago Helper ───────────────────────────────────────────
   const getTimeAgo = useCallback((dateStr: string): string => {
     return getRelativeTime(dateStr)
@@ -386,6 +474,18 @@ export default function DashboardPage() {
         {!loading && <DailyProgress progress={dailyProgress} />}
       </div>
 
+      {/* ── Productivity Score ────────────────────────────────────── */}
+      <ProductivityScore
+        loading={loading}
+        diaryWritten={!!todayEntry}
+        waterMl={waterTodayMl}
+        workoutDone={todayWorkout}
+        habitsCompleted={completedToday}
+        habitsTotal={totalActive}
+        nutritionLogged={hasMealsToday}
+        animatedScore={animProductivityScore}
+      />
+
       {/* ── Stats Cards ─────────────────────────────────────────────── */}
       <StatCards
         loading={loading}
@@ -399,8 +499,25 @@ export default function DashboardPage() {
         kcalGoal={kcalGoal}
       />
 
+      {/* ── Weekly Insights ──────────────────────────────────────────── */}
+      <WeeklyInsights
+        loading={loading}
+        diaryEntries={diaryEntries}
+        workouts={workouts}
+        transactionsData={transactionsData}
+        habitsData={habitsData}
+        recentMoods={recentMoods}
+        hasMealsToday={hasMealsToday}
+        waterTodayMl={waterTodayMl}
+        dailyProgress={dailyProgress}
+        maxStreak={maxStreak}
+      />
+
       {/* ── Quick Actions ──────────────────────────────────────────────── */}
       <QuickActions onNavigate={setActiveModule} />
+
+      {/* ── Weekly Activity Chart ─────────────────────────────────── */}
+      <WeeklyActivityChart loading={loading} data={weeklyActivity} />
 
       {/* ── Recent Transactions ───────────────────────────────────── */}
       <RecentTransactions
@@ -474,7 +591,7 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <QuickNotes />
         <WeatherWidget />
-        <FocusTimer />
+        <FocusTimerWidget />
       </div>
 
       {/* ── Finance Quick View ────────────────────────────────── */}
@@ -529,6 +646,9 @@ export default function DashboardPage() {
         animKcal={animKcal}
         maxStreak={maxStreak}
       />
+
+      {/* ── Quick Add Menu (Floating FAB) ────────────────────────── */}
+      <QuickAddMenu />
     </div>
   )
 }

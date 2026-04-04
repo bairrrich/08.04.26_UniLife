@@ -39,6 +39,8 @@ export async function GET(req: NextRequest) {
       feedPosts,
       rawHabits,
       rawBudgets,
+      waterLogsToday,
+      waterLogsWeek,
     ] = await Promise.all([
       // Monthly diary entries
       db.diaryEntry.findMany({
@@ -97,6 +99,16 @@ export async function GET(req: NextRequest) {
         },
         include: { category: true },
       }),
+      // Water logs for today
+      db.waterLog.findMany({
+        where: { date: { gte: todayDate, lte: todayEnd } },
+      }),
+      // Water logs for the week (for weekly activity chart)
+      weekFrom
+        ? db.waterLog.findMany({
+            where: { date: { gte: new Date(weekFrom), lte: new Date(weekTo) } },
+          })
+        : Promise.resolve([]),
     ])
 
     // ── Finance stats ──
@@ -226,6 +238,9 @@ export async function GET(req: NextRequest) {
       totalPercentage,
     }
 
+    // ── Water stats ──
+    const waterTodayMl = waterLogsToday.reduce((sum, w) => sum + (w.amountMl || 250), 0)
+
     return NextResponse.json({
       success: true,
       data: {
@@ -240,6 +255,8 @@ export async function GET(req: NextRequest) {
         habits: habitsData,
         habitsStats,
         budgetData,
+        waterTodayMl,
+        waterLogsWeek,
       },
     })
   } catch (error) {
