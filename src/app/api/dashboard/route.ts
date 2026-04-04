@@ -12,14 +12,22 @@ export async function GET(req: NextRequest) {
     const weekFrom = searchParams.get('weekFrom') || ''
     const weekTo = searchParams.get('weekTo') || ''
 
-    const monthStart = `${month}-01`
-    // Calculate the actual last day of the month (handles months with 28-31 days)
-    const lastDay = new Date(parseInt(month.split('-')[0]), parseInt(month.split('-')[1]) + 1, 0).getDate()
-    const monthEnd = `${month}-${String(lastDay).padStart(2, '0')}`
+    // Parse month YYYY-MM into Date objects for Prisma DateTime comparisons
+    const [yearStr, monthStr] = month.split('-')
+    const yearNum = parseInt(yearStr, 10)
+    const monthNum = parseInt(monthStr, 10)
+    const monthStart = new Date(yearNum, monthNum - 1, 1, 0, 0, 0, 0)
+    // day=0 of next month = last day of current month
+    const monthEnd = new Date(yearNum, monthNum, 0, 23, 59, 59, 999)
 
-    // Build habit date filter (last 7 days)
+    // Parse today into start/end of day for exact date matching
+    const todayDate = new Date(today + 'T00:00:00.000')
+    const todayEnd = new Date(today + 'T23:59:59.999')
+
+    // Build habit date filter (last 7 days) as a proper Date object
     const habitFromDate = weekFrom
-      || new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10)
+      ? new Date(weekFrom)
+      : new Date(Date.now() - 7 * 86400000)
 
     // Run all queries in parallel
     const [
@@ -40,7 +48,7 @@ export async function GET(req: NextRequest) {
       // Weekly diary entries
       weekFrom && weekTo
         ? db.diaryEntry.findMany({
-            where: { date: { gte: weekFrom, lte: weekTo } },
+            where: { date: { gte: new Date(weekFrom), lte: new Date(weekTo) } },
             orderBy: { date: 'desc' },
           })
         : Promise.resolve([]),
@@ -49,9 +57,9 @@ export async function GET(req: NextRequest) {
         where: { date: { gte: monthStart, lte: monthEnd } },
         include: { category: true },
       }),
-      // Meals with items for today (nutrition stats)
+      // Meals with items for today (nutrition stats) — use range for date matching
       db.meal.findMany({
-        where: { date: today },
+        where: { date: { gte: todayDate, lte: todayEnd } },
         include: { items: { select: { kcal: true, protein: true, fat: true, carbs: true } } },
       }),
       // Workouts for the month
@@ -78,9 +86,15 @@ export async function GET(req: NextRequest) {
           },
         },
       }),
-      // Budgets for the month
+      // Budgets active during this month (startDate <= monthEnd AND (endDate >= monthStart OR endDate is null))
       db.budget.findMany({
-        where: { date: { gte: monthStart, lte: monthEnd } },
+        where: {
+          startDate: { lte: monthEnd },
+          OR: [
+            { endDate: { gte: monthStart } },
+            { endDate: null },
+          ],
+        },
         include: { category: true },
       }),
     ])
@@ -134,10 +148,16 @@ export async function GET(req: NextRequest) {
     // ── Habits ──
     const habitsData = rawHabits.map((h) => {
       const logs = Array.isArray(h.logs) ? h.logs : []
-      const todayLog = logs.find((l) => l.date === today)
+      // Compare dates as ISO strings (YYYY-MM-DD) for reliable matching
+      const todayStr = todayDate.toISOString().slice(0, 10)
+      const todayLog = logs.find((l) => {
+        const logDateStr = l.date instanceof Date ? l.date.toISOString().slice(0, 10) : String(l.date).slice(0, 10)
+        return logDateStr === todayStr
+      })
       const last7Days: Record<string, boolean> = {}
       for (const log of logs) {
-        last7Days[log.date] = true
+        const logDateStr = log.date instanceof Date ? log.date.toISOString().slice(0, 10) : String(log.date).slice(0, 10)
+        last7Days[logDateStr] = true
       }
       const todayCompleted = !!todayLog
 

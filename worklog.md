@@ -1702,3 +1702,42 @@ The application was failing to load and experiencing constant reloads due to two
 - Replaced all 15 raw `res.json()` calls with `safeJson()` across 6 component files
 - Fixed brace mismatch parsing error in goals-page.tsx
 - All fetch calls now gracefully handle HTML responses during Turbopack compilation
+
+---
+## Task ID: fix-critical-bugs
+### Agent: main-coordinator
+### Task: Fix infinite re-rendering and JSON parse error that prevented the app from loading
+
+### Root Cause Analysis:
+The app had two critical bugs caused by a single root issue in the dashboard API:
+1. **Invalid date calculation** in `/src/app/api/dashboard/route.ts` — The `lastDay` calculation used `parseInt(month.split('-')[1]) + 1` which produced the wrong month's last day (e.g., April got May's 31 = invalid date `2026-04-31`)
+2. **String vs Date objects** — The API was passing date strings like `"2026-04-01"` to Prisma's `DateTime` field `where` clauses, but Prisma expects `Date` objects. The diary and finance routes already used `Date` objects correctly, but the combined dashboard route was using strings.
+3. **Invalid Budget schema field** — The dashboard query used `date` field for Budget model, but Budget uses `startDate`/`endDate` fields.
+
+These caused:
+- Prisma validation error → 500 response → HTML error page returned
+- Frontend tried to `JSON.parse()` the HTML → `Unexpected token '<', "<!DOCTYPE "...`
+- Error handling triggered re-fetch → loop → infinite re-rendering
+
+### Fixes Applied:
+
+**File: `/src/app/api/dashboard/route.ts`**
+1. **Date objects instead of strings**: Changed `monthStart`/`monthEnd` from template literal strings to `new Date()` objects (matching the pattern used in diary and finance routes)
+2. **Fixed month-end calculation**: Removed erroneous `+ 1` from month index, now correctly uses `new Date(year, monthNum, 0, 23, 59, 59, 999)` which gives the last day of the specified month
+3. **Today range for meals**: Changed `where: { date: today }` (exact match) to `where: { date: { gte: todayDate, lte: todayEnd } }` (range match)
+4. **Budget query fix**: Changed `where: { date: { gte/lte } }` to `where: { startDate: { lte: monthEnd }, OR: [{ endDate: { gte: monthStart } }, { endDate: null }] }`
+5. **Habit log date comparison**: Fixed date comparison to use `.toISOString().slice(0, 10)` for reliable Date-to-string matching
+6. **WeekFrom/WeekTo**: Wrapped in `new Date()` constructors for proper DateTime handling
+
+### Verification Results:
+- ✅ Dashboard API returns HTTP 200 (was 500)
+- ✅ No JSON parse errors in console
+- ✅ No infinite re-rendering
+- ✅ All modules render without errors (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics, Settings)
+- ✅ ESLint: 0 errors
+- ✅ Screenshot captured showing full dashboard with all widgets
+
+### Stage Summary:
+- Root cause: Prisma DateTime validation rejecting string values in the combined dashboard API
+- 3 distinct bugs fixed in a single API route (date format, month calculation, budget field name)
+- App is now fully functional and loading correctly
