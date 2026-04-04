@@ -200,6 +200,7 @@ export default function DiaryPage() {
   const [tagInput, setTagInput] = useState('')
   const [isLoading, setIsLoading] = useState(true)
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
+  const [weekFilterDate, setWeekFilterDate] = useState<Date | null>(null)
 
   const toggleExpanded = (entryId: string) => {
     setExpandedEntries((prev) => {
@@ -236,6 +237,14 @@ export default function DiaryPage() {
   }, [fetchEntries])
 
   // ─── Derived State ───────────────────────────────────────────────────────
+
+  // Today's mood from existing entries
+  const todayMood = useMemo(() => {
+    const todayKey = formatDateKey(today)
+    const todayEntries = entries.filter((e) => formatDateKey(parseEntryDate(e.date)) === todayKey)
+    if (todayEntries.length === 0) return null
+    return todayEntries[0].mood
+  }, [entries, today])
 
   // Map of date key -> array of entries
   const entriesByDate = useMemo(() => {
@@ -469,6 +478,51 @@ export default function DiaryPage() {
     setForm((f) => ({ ...f, mood: value }))
   }
 
+  // Quick mood check: create/update today's entry with mood only
+  const handleQuickMood = useCallback(async (mood: number) => {
+    const todayKey = formatDateKey(today)
+    const todayEntries = entries.filter((e) => formatDateKey(parseEntryDate(e.date)) === todayKey)
+    toast.dismiss()
+    try {
+      if (todayEntries.length > 0) {
+        // Update existing entry's mood
+        const entry = todayEntries[0]
+        const res = await fetch(`/api/diary/${entry.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: entry.title || undefined,
+            content: entry.content,
+            mood,
+            date: entry.date,
+            tags: entry.tags.length > 0 ? entry.tags : undefined,
+          }),
+        })
+        if (res.ok) {
+          toast.success(`Настроение обновлено: ${MOOD_EMOJI[mood]} ${MOOD_LABELS[mood]}`)
+          fetchEntries()
+        }
+      } else {
+        // Create new entry with mood
+        const res = await fetch('/api/diary', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            content: 'Быстрое настроение',
+            mood,
+            date: today.toISOString(),
+          }),
+        })
+        if (res.ok) {
+          toast.success(`Настроение: ${MOOD_EMOJI[mood]} ${MOOD_LABELS[mood]}`)
+          fetchEntries()
+        }
+      }
+    } catch {
+      toast.error('Ошибка при сохранении настроения')
+    }
+  }, [entries, today, fetchEntries])
+
   // ─── Render Helpers ─────────────────────────────────────────────────────
 
   const renderMoodStars = (mood: number | null, interactive: boolean = false, onChange?: (v: number) => void) => {
@@ -588,25 +642,40 @@ export default function DiaryPage() {
   const renderListView = () => {
     if (entries.length === 0) {
       return (
-        <Card className="overflow-hidden">
-          <CardContent className="py-16 text-center">
-            <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20 flex items-center justify-center">
-              <BookOpen className="h-10 w-10 text-primary/60" />
+        <Card className="card-hover overflow-hidden animate-slide-up">
+          <CardContent className="py-16 px-6 text-center">
+            {/* Gradient icon background */}
+            <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full">
+              <div className="absolute h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/25 via-teal-400/15 to-primary/20" />
+              <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400/30 to-teal-500/20 shadow-lg shadow-emerald-500/10 dark:shadow-emerald-500/5">
+                <BookOpen className="h-8 w-8 text-emerald-500 dark:text-emerald-400" />
+              </div>
             </div>
-            <p className="text-muted-foreground font-medium text-lg">
-              Нет записей за этот месяц
+            <p className="text-foreground font-semibold text-lg mb-1.5">
+              Начните записывать свои мысли
             </p>
-            <p className="text-muted-foreground text-sm mt-1.5 max-w-xs mx-auto">
-              Начните вести дневник — запишите свои мысли и отслеживайте настроение
+            <p className="text-muted-foreground/70 text-sm max-w-xs mx-auto leading-relaxed">
+              Дневник поможет вам отслеживать настроение, запоминать важные моменты и лучше понимать себя
             </p>
-            <Button
-              size="sm"
-              className="mt-4"
-              onClick={openNewEntryDialog}
-            >
-              <Plus className="h-4 w-4 mr-1.5" />
-              Создать запись
-            </Button>
+            <div className="flex items-center justify-center gap-3 mt-5">
+              <Button
+                size="sm"
+                className="gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 shadow-sm shadow-emerald-500/20 hover:shadow-emerald-500/30"
+                onClick={openNewEntryDialog}
+              >
+                <Plus className="h-4 w-4" />
+                Новая запись
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-xl"
+                onClick={() => handleQuickMood(4)}
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                Записать настроение
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )
@@ -1224,6 +1293,144 @@ export default function DiaryPage() {
           </div>
         </div>
       </div>
+
+      {/* ── Weekly Calendar Strip ────────────────────────────────────── */}
+      <Card className="rounded-xl border overflow-hidden">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-muted-foreground">Эта неделя</span>
+            {weekFilterDate && (
+              <button
+                type="button"
+                onClick={() => setWeekFilterDate(null)}
+                className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                Все дни
+              </button>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-1">
+            {/* Get Monday of this week */}
+            {(() => {
+              const todayDate = today
+              const dayOfWeek = todayDate.getDay()
+              const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+              const monday = new Date(todayDate)
+              monday.setDate(todayDate.getDate() + mondayOffset)
+
+              return Array.from({ length: 7 }).map((_, i) => {
+                const d = new Date(monday)
+                d.setDate(monday.getDate() + i)
+                const dateKey = formatDateKey(d)
+                const dayEntries = entriesByDate.get(dateKey)
+                const hasEntries = dayEntries && dayEntries.length > 0
+                const primaryMood = hasEntries ? dayEntries![0].mood : null
+                const isToday =
+                  d.getFullYear() === todayDate.getFullYear() &&
+                  d.getMonth() === todayDate.getMonth() &&
+                  d.getDate() === todayDate.getDate()
+                const isSelected =
+                  weekFilterDate &&
+                  d.getFullYear() === weekFilterDate.getFullYear() &&
+                  d.getMonth() === weekFilterDate.getMonth() &&
+                  d.getDate() === weekFilterDate.getDate()
+
+                return (
+                  <button
+                    key={dateKey}
+                    type="button"
+                    onClick={() => {
+                      if (weekFilterDate && isSelected) {
+                        setWeekFilterDate(null)
+                      } else {
+                        setWeekFilterDate(d)
+                        setSelectedDate(d)
+                        const dayEn = entriesByDate.get(dateKey)
+                        if (dayEn && dayEn.length > 0) {
+                          setSelectedEntry(dayEn[0])
+                        } else {
+                          setSelectedEntry(null)
+                        }
+                      }
+                    }}
+                    className={cn(
+                      'flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 transition-all min-w-[42px]',
+                      isToday && !isSelected && 'bg-primary/10 ring-1 ring-primary/30',
+                      isSelected && 'bg-primary text-primary-foreground',
+                      !isToday && !isSelected && 'hover:bg-accent'
+                    )}
+                  >
+                    <span className={cn(
+                      'text-[10px] font-medium',
+                      isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                    )}>
+                      {RU_DAYS[i]}
+                    </span>
+                    <span className={cn(
+                      'text-sm font-semibold tabular-nums',
+                      isSelected ? 'text-primary-foreground' : ''
+                    )}>
+                      {d.getDate()}
+                    </span>
+                    {primaryMood && (
+                      <span className="text-[10px] leading-none">{MOOD_EMOJI[primaryMood]}</span>
+                    )}
+                    {hasEntries && !primaryMood && (
+                      <div className={cn(
+                        'h-1.5 w-1.5 rounded-full',
+                        isSelected ? 'bg-primary-foreground' : 'bg-primary'
+                      )} />
+                    )}
+                  </button>
+                )
+              })
+            })()}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Quick Mood Check */}
+      <Card className="card-hover rounded-xl border overflow-hidden">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <div className={cn(
+                'flex h-12 w-12 items-center justify-center rounded-xl text-2xl',
+                todayMood ? MOOD_COLORS[todayMood] : 'bg-muted'
+              )}>
+                {todayMood ? MOOD_EMOJI[todayMood] : '😶'}
+              </div>
+              <div>
+                <p className="text-sm font-semibold">
+                  {todayMood ? `Настроение: ${MOOD_LABELS[todayMood]}` : 'Как настроение сегодня?'}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {todayMood ? 'Нажмите, чтобы изменить' : 'Выберите эмодзи ниже'}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => handleQuickMood(m)}
+                  className={cn(
+                    'h-10 w-10 rounded-xl flex items-center justify-center text-xl transition-all duration-200',
+                    'hover:scale-110 active-press',
+                    todayMood === m
+                      ? cn('ring-2 ring-offset-2 ring-primary scale-105', MOOD_COLORS[m])
+                      : 'bg-muted/50 hover:bg-muted'
+                  )}
+                  title={MOOD_LABELS[m]}
+                >
+                  {MOOD_EMOJI[m]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Month Navigation */}
       <Card className="w-full">

@@ -414,7 +414,10 @@ export default function NutritionPage() {
   }
 
   // ─── Water handler ────────────────────────────────────────────
+  const [waterAnimating, setWaterAnimating] = useState(false)
   const handleAddWater = async () => {
+    setWaterAnimating(true)
+    setTimeout(() => setWaterAnimating(false), 300)
     try {
       const res = await fetch('/api/nutrition/water', {
         method: 'POST',
@@ -560,6 +563,25 @@ export default function NutritionPage() {
   }
 
   const totalGlasses = 8
+
+  // ─── Time of Day context ──────────────────────────────────────────
+  const currentTime = useMemo(() => new Date(), [])
+  const currentHour = currentTime.getHours()
+  const currentMealPeriod = useMemo(() => {
+    if (currentHour >= 7 && currentHour < 10) return 'BREAKFAST'
+    if (currentHour >= 12 && currentHour < 14) return 'LUNCH'
+    if (currentHour >= 18 && currentHour < 20) return 'DINNER'
+    return 'SNACK'
+  }, [currentHour])
+
+  const currentMealConfig = MEAL_TYPE_CONFIG[currentMealPeriod]
+  const remainingKcal = Math.max(0, MACRO_GOALS.kcal.value - (stats?.totalKcal ?? 0))
+  const kcalProgress = stats?.totalKcal ? Math.round((stats.totalKcal / MACRO_GOALS.kcal.value) * 100) : 0
+  const motivationalText = useMemo(() => {
+    if (kcalProgress < 50) return 'Продолжайте!'
+    if (kcalProgress <= 80) return 'Хороший прогресс!'
+    return 'Почти на месте!'
+  }, [kcalProgress])
 
   return (
     <div className="animate-slide-up min-h-screen bg-gradient-to-b from-orange-50/40 to-white">
@@ -716,16 +738,21 @@ export default function NutritionPage() {
             </div>
 
             {/* Quick add button */}
-            <div className="mt-3 flex justify-center">
+            <div className="mt-3 flex flex-col items-center gap-1">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleAddWater}
-                className="gap-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                className={`gap-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-transform duration-200 ${waterAnimating ? 'scale-110' : 'hover:scale-[1.02]'}`}
               >
                 <Droplets className="size-4" />
-                +250 мл
+                Добавить воду ({waterStats.glasses}/8)
               </Button>
+              {waterStats.totalMl > 0 && (
+                <span className="text-[11px] text-muted-foreground">
+                  Выпито: <span className="font-semibold tabular-nums">{waterStats.totalMl}</span> мл
+                </span>
+              )}
             </div>
 
             {/* Water history mini chart — last 7 days */}
@@ -785,6 +812,35 @@ export default function NutritionPage() {
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Приёмы пищи</h2>
           <Badge variant="secondary">{meals.length} записей</Badge>
+        </div>
+
+        {/* Time of Day Indicator & Remaining Calories */}
+        <div className="mb-4 flex items-center gap-3 rounded-xl border bg-gradient-to-r from-orange-50/60 to-amber-50/40 p-3 dark:from-orange-950/20 dark:to-amber-950/10">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/50">
+            <Clock className="size-4 text-orange-600 dark:text-orange-400" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">
+              Сейчас: <span className="text-orange-700 dark:text-orange-300">{currentMealConfig.emoji} {currentMealConfig.label}</span>
+              {currentMealPeriod !== 'SNACK' && (
+                <span className="text-xs text-muted-foreground font-normal ml-1">
+                  ({currentHour}:00)
+                </span>
+              )}
+            </p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-xs text-muted-foreground">
+                Осталось: <span className="font-semibold text-foreground tabular-nums">{remainingKcal.toLocaleString('ru-RU')}</span> ккал
+              </span>
+              <span className="text-xs text-muted-foreground">·</span>
+              <span className="text-xs font-medium text-orange-600 dark:text-orange-400">
+                {motivationalText}
+              </span>
+            </div>
+          </div>
+          <div className="text-right">
+            <span className="text-lg font-bold tabular-nums text-orange-700 dark:text-orange-300">{kcalProgress}%</span>
+          </div>
         </div>
 
         {sortMealsByType(meals).length === 0 ? (

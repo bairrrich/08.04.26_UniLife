@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -185,27 +185,39 @@ export function SettingsPage() {
           <CardDescription>Ваша личная информация</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center gap-4">
+          {/* Avatar Section — centered */}
+          <div className="flex flex-col items-center gap-3">
             <div className="relative">
-              <Avatar className="h-16 w-16 ring-2 ring-primary/20">
-                <AvatarImage src="/unilife-logo.png" alt="Avatar" />
-                <AvatarFallback className="text-xl">А</AvatarFallback>
-              </Avatar>
+              <div className="h-20 w-20 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center ring-2 ring-primary/30 ring-offset-2 ring-offset-background">
+                <span className="text-3xl font-bold text-primary">
+                  {name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+                </span>
+              </div>
               {/* Online indicator */}
-              <span className="absolute bottom-0 right-0 h-4 w-4 rounded-full border-2 border-background bg-emerald-500" />
+              <span className="absolute bottom-1 right-1 h-5 w-5 rounded-full border-[3px] border-background bg-emerald-500" />
             </div>
-            <div>
+            <button
+              type="button"
+              onClick={() => toast.info('Изменение фото будет доступно после подключения аутентификации')}
+              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+            >
+              Изменить фото
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3 rounded-xl bg-muted/30 p-3">
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="font-medium">{name}</h3>
+                <h3 className="font-semibold text-base">{name}</h3>
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-500">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                   В сети
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">{email}</p>
-              <Button variant="outline" size="sm" className="mt-2">
-                Изменить фото
-              </Button>
+              <p className="text-sm text-muted-foreground mt-0.5">{email}</p>
+              {bio && (
+                <p className="text-xs text-muted-foreground/70 mt-1 line-clamp-1">{bio}</p>
+              )}
             </div>
           </div>
 
@@ -290,7 +302,7 @@ export function SettingsPage() {
           <CardDescription>Выберите оформление приложения</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             <Button
               variant={theme === 'light' ? 'default' : 'outline'}
               className="gap-2"

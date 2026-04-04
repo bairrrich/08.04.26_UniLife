@@ -271,12 +271,23 @@ export function WorkoutPage() {
   // Summary calculations
   const totalWorkouts = workouts.length
   const totalMinutes = workouts.reduce((sum, w) => sum + (w.durationMin ?? 0), 0)
+  const totalHours = (totalMinutes / 60).toFixed(1)
   const avgDuration =
     totalWorkouts > 0 ? Math.round(totalMinutes / totalWorkouts) : 0
   const totalExercises = workouts.reduce(
     (sum, w) => sum + w.exercises.length,
     0
   )
+
+  // Unique exercise types this month
+  const exerciseTypes = useMemo(() => {
+    const types = new Set<string>()
+    workouts.forEach((w) => {
+      const t = detectWorkoutType(w.name)
+      types.add(t)
+    })
+    return Array.from(types)
+  }, [workouts])
 
   // Total volume calculation (sets × reps × weight for all strength exercises)
   const totalVolume = useMemo(() => {
@@ -852,6 +863,30 @@ export function WorkoutPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Exercise Type Badges + Duration Row */}
+      {!loading && workouts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {exerciseTypes.map((type) => {
+            const config = WORKOUT_TYPE_CONFIG[type as WorkoutType]
+            return (
+              <Badge
+                key={type}
+                variant="secondary"
+                className="gap-1.5 px-2.5 py-1 text-xs font-medium"
+              >
+                {config?.icon}
+                {config?.label || type}
+              </Badge>
+            )
+          })}
+          <Separator orientation="vertical" className="h-4 mx-1" />
+          <span className="text-xs text-muted-foreground flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            <span className="font-semibold tabular-nums">{totalHours}ч</span> за месяц
+          </span>
+        </div>
+      )}
 
       {/* Month Selector */}
       <div className="flex items-center gap-3">

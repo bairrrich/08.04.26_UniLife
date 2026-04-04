@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import {
   Search,
@@ -156,6 +156,7 @@ export function SearchDialog() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResponse | null>(null)
   const [loading, setLoading] = useState(false)
+  const [selectedIndex, setSelectedIndex] = useState(-1)
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { setActiveModule } = useAppStore()
@@ -231,11 +232,6 @@ export function SearchDialog() {
     }
   }, [])
 
-  const handleResultClick = (module: AppModule) => {
-    setActiveModule(module)
-    setOpen(false)
-  }
-
   // Build grouped results
   const groupedResults: SearchGroup[] = results
     ? MODULE_CONFIG.filter((cfg) => {
@@ -251,6 +247,44 @@ export function SearchDialog() {
     (sum, group) => sum + group.items.length,
     0
   )
+
+  const handleResultClick = (module: AppModule) => {
+    setActiveModule(module)
+    setOpen(false)
+  }
+
+  // Reset selected index when results change
+  useEffect(() => {
+    setSelectedIndex(-1)
+  }, [results, totalResults])
+
+  // Build a flat list of items for keyboard navigation
+  const flatItems = useMemo(() => {
+    const items: { module: AppModule; index: number }[] = []
+    for (const group of groupedResults) {
+      for (const item of group.items) {
+        items.push({ module: group.module, index: items.length })
+      }
+    }
+    return items
+  }, [groupedResults])
+
+  const handleNavigate = useCallback((direction: 'up' | 'down') => {
+    if (flatItems.length === 0) return
+    setSelectedIndex((prev) => {
+      if (prev === -1) return direction === 'down' ? 0 : flatItems.length - 1
+      const next = direction === 'down' ? prev + 1 : prev - 1
+      if (next < 0) return flatItems.length - 1
+      if (next >= flatItems.length) return 0
+      return next
+    })
+  }, [flatItems.length])
+
+  const handleSelectCurrent = useCallback(() => {
+    if (selectedIndex >= 0 && selectedIndex < flatItems.length) {
+      handleResultClick(flatItems[selectedIndex].module)
+    }
+  }, [selectedIndex, flatItems, handleResultClick])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -276,6 +310,15 @@ export function SearchDialog() {
             onKeyDown={(e) => {
               if (e.key === 'Escape') {
                 setOpen(false)
+              } else if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                handleNavigate('down')
+              } else if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                handleNavigate('up')
+              } else if (e.key === 'Enter') {
+                e.preventDefault()
+                handleSelectCurrent()
               }
             }}
           />

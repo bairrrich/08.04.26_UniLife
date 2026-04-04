@@ -627,6 +627,20 @@ export default function DashboardPage() {
     return result
   }, [diaryEntries, now])
 
+  // ── Relative Time Helper ────────────────────────────────────────────
+  const getRelativeTime = (dateStr: string): string => {
+    const date = new Date(dateStr)
+    const diffMs = now.getTime() - date.getTime()
+    const diffMins = Math.floor(diffMs / 60000)
+    const diffHours = Math.floor(diffMs / 3600000)
+    const diffDays = Math.floor(diffMs / 86400000)
+    if (diffMins < 1) return 'только что'
+    if (diffMins < 60) return `${diffMins} мин назад`
+    if (diffHours < 24) return `${diffHours} ч назад`
+    if (diffDays < 7) return `${diffDays} д назад`
+    return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+  }
+
   // ── Animated Counters ──────────────────────────────────────────────────
   const animWeekEntries = useAnimatedCounter(weekEntryCount, 600, !loading)
   const animIncome = useAnimatedCounter(financeStats?.totalIncome ?? 0, 600, !loading)
@@ -716,6 +730,36 @@ export default function DashboardPage() {
     }
   }
 
+  // ── Recent Transactions (last 5) ──────────────────────────────────
+  const recentTransactions = useMemo(() => {
+    return [...transactionsData]
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5)
+  }, [transactionsData])
+
+  // ── Daily Progress Bar ─────────────────────────────────────────────
+  const dailyProgress = useMemo(() => {
+    if (loading) return 0
+    let pct = 0
+    // Mood checked today? (20%)
+    if (todayMood) pct += 20
+    // Meals logged? (30%)
+    if (hasMealsToday) pct += 30
+    // Workout done today? (30%)
+    const todayWorkout = workouts.some((w) => {
+      const d = new Date(w.date)
+      return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
+      )
+    })
+    if (todayWorkout) pct += 30
+    // Habits complete? (20%)
+    if (totalActive > 0 && completedToday === totalActive) pct += 20
+    return pct
+  }, [loading, todayMood, hasMealsToday, workouts, now, totalActive, completedToday])
+
   // ── Render ─────────────────────────────────────────────────────────────
 
   return (
@@ -741,6 +785,24 @@ export default function DashboardPage() {
             </p>
           )}
         </div>
+
+        {/* Daily Progress Bar */}
+        {!loading && (
+          <div className="mt-3 flex items-center gap-3">
+            <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700 ease-out"
+                style={{
+                  width: `${dailyProgress}%`,
+                  background: 'linear-gradient(to right, #10b981, #14b8a6)',
+                }}
+              />
+            </div>
+            <span className="text-[11px] font-medium tabular-nums text-muted-foreground shrink-0">
+              {dailyProgress}%
+            </span>
+          </div>
+        )}
       </div>
 
       {/* ── Stats Cards Grid ───────────────────────────────────────────── */}
@@ -873,7 +935,7 @@ export default function DashboardPage() {
           <CardTitle className="text-base">Быстрые действия</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
+          <div className="stagger-children flex flex-wrap gap-3">
             {quickActions.map((action) => (
               <button
                 key={action.module}
@@ -888,6 +950,112 @@ export default function DashboardPage() {
                 {action.label}
               </button>
             ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ── Recent Transactions ───────────────────────────────────── */}
+      <Card className="rounded-xl border">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Wallet className="h-4 w-4 text-amber-500" />
+              Последние операции
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              onClick={() => setActiveModule('finance')}
+            >
+              Все транзакции
+              <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="space-y-3">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <div className="flex-1 space-y-1">
+                    <Skeleton className="h-3.5 w-3/4" />
+                    <Skeleton className="h-3 w-1/4" />
+                  </div>
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : recentTransactions.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">Нет транзакций</p>
+          ) : (
+            <div className="space-y-2">
+              {recentTransactions.map((txn) => {
+                const isIncome = txn.type === 'INCOME'
+                return (
+                  <div key={txn.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
+                      isIncome
+                        ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
+                        : 'bg-red-100 text-red-500 dark:bg-red-950/50 dark:text-red-400'
+                    }`}>
+                      {isIncome ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
+                        {isIncome ? 'Доход' : 'Расход'}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {getRelativeTime(txn.date)}
+                      </p>
+                    </div>
+                    <span className={`text-sm font-semibold tabular-nums shrink-0 ${
+                      isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                    }`}>
+                      {isIncome ? '+' : '-'}{formatCurrency(txn.amount)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Compact Mood Chart Widget ────────────────────────────── */}
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-rose-100 dark:bg-rose-900/30">
+                <Heart className="h-4 w-4 text-rose-500" />
+              </div>
+              <div className="min-w-0">
+                <h3 className="text-sm font-semibold truncate">Настроение за неделю</h3>
+                <p className="text-[11px] text-muted-foreground">Текущая серия: <span className="font-semibold text-rose-500 dark:text-rose-400">{diaryStreak} дн.</span></p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {recentMoods.map((m, i) => {
+                const moodColor = m.mood === 1 ? 'bg-red-500 dark:bg-red-400'
+                  : m.mood === 2 ? 'bg-orange-500 dark:bg-orange-400'
+                  : m.mood === 3 ? 'bg-yellow-400 dark:bg-yellow-300'
+                  : m.mood === 4 ? 'bg-green-500 dark:bg-green-400'
+                  : m.mood === 5 ? 'bg-emerald-500 dark:bg-emerald-400'
+                  : 'bg-gray-200 dark:bg-gray-700'
+                const dayLabel = dayNamesShort[(now.getDay() - (6 - i) + 7) % 7] || dayNamesShort[i]
+                return (
+                  <div key={i} className="flex flex-col items-center gap-1">
+                    <div
+                      className={`h-6 w-6 rounded-full transition-all duration-300 ${moodColor}`}
+                      title={m.mood ? `${moodEmojis[m.mood]} ${moodLabels[m.mood]}` : 'Нет данных'}
+                    />
+                    <span className="text-[9px] text-muted-foreground">{dayLabel}</span>
+                  </div>
+                )
+              })}
+            </div>
           </div>
         </CardContent>
       </Card>

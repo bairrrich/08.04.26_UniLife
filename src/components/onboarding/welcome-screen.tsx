@@ -110,26 +110,35 @@ export function WelcomeScreen() {
   const [selectedGoals, setSelectedGoals] = useState<string[]>([])
 
   useEffect(() => {
-    const completed = localStorage.getItem('unilife-onboarding-complete')
-    const savedName = localStorage.getItem('unilife-user-name')
-    if (completed === 'true') {
-      setStatus('dismissed') // eslint-disable-line react-hooks/set-state-in-effect -- reading from external storage on mount
-    } else {
-      if (savedName) setUserName(savedName)
+    try {
+      const completed = localStorage.getItem('unilife-onboarding-complete')
+      const savedName = localStorage.getItem('unilife-user-name')
+      if (completed === 'true') {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- reading from external storage on mount
+        setStatus('dismissed')
+      } else {
+        if (savedName) setUserName(savedName)
+        setStatus('show')
+      }
+    } catch {
       setStatus('show')
     }
   }, [])
 
   const handleComplete = useCallback(() => {
-    localStorage.setItem('unilife-onboarding-complete', 'true')
-    if (userName.trim()) {
-      localStorage.setItem('unilife-user-name', userName.trim())
-    }
+    try {
+      localStorage.setItem('unilife-onboarding-complete', 'true')
+      if (userName.trim()) {
+        localStorage.setItem('unilife-user-name', userName.trim())
+      }
+    } catch { /* localStorage unavailable */ }
     setStatus('dismissed')
   }, [userName])
 
   const handleSkip = useCallback(() => {
-    localStorage.setItem('unilife-onboarding-complete', 'true')
+    try {
+      localStorage.setItem('unilife-onboarding-complete', 'true')
+    } catch { /* localStorage unavailable */ }
     setStatus('dismissed')
   }, [])
 

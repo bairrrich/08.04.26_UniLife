@@ -195,10 +195,24 @@ function getProgressTrackColor(progress: number): string {
 }
 
 function getProgressTextColor(progress: number): string {
-  if (progress >= 80) return 'text-emerald-600 dark:text-emerald-400'
-  if (progress >= 50) return 'text-blue-600 dark:text-blue-400'
-  if (progress >= 25) return 'text-amber-600 dark:text-amber-400'
+  if (progress >= 70) return 'text-emerald-600 dark:text-emerald-400'
+  if (progress >= 40) return 'text-amber-600 dark:text-amber-400'
   return 'text-rose-600 dark:text-rose-400'
+}
+
+function getProgressRingColor(progress: number): string {
+  if (progress >= 70) return '#10b981'
+  if (progress >= 40) return '#f59e0b'
+  return '#ef4444'
+}
+
+function getDeadlineWarning(deadline: string | null): boolean {
+  if (!deadline) return false
+  const now = new Date()
+  const dl = new Date(deadline)
+  const diffMs = dl.getTime() - now.getTime()
+  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+  return diffDays >= 0 && diffDays <= 7
 }
 
 // ======================== Component ========================
@@ -756,16 +770,38 @@ export function GoalsPage() {
                     className="card-hover overflow-hidden relative"
                   >
                     <CardContent className="p-4 space-y-3">
-                      {/* Top row: Category badge + Status */}
+                      {/* Top row: Category badge + Status + Progress Ring */}
                       <div className="flex items-center justify-between">
-                        <Badge variant="secondary" className={`text-xs gap-1 ${catConfig.badgeClass}`}>
-                          {catConfig.icon}
-                          {catConfig.label}
-                        </Badge>
-                        <div className="flex items-center gap-1.5">
-                          <div className={`h-2 w-2 rounded-full ${statusConfig.dotClass}`} />
-                          <span className={`text-xs font-medium ${statusConfig.color}`}>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Badge variant="secondary" className={`text-xs gap-1 shrink-0 ${catConfig.badgeClass}`}>
+                            {catConfig.icon}
+                            {catConfig.label}
+                          </Badge>
+                          {getDeadlineWarning(goal.deadline) && goal.status === 'active' && (
+                            <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft">
+                              ⚠️ Скоро дедлайн
+                            </Badge>
+                          )}
+                          <div className={`h-2 w-2 rounded-full shrink-0 ${statusConfig.dotClass}`} />
+                          <span className={`text-xs font-medium shrink-0 ${statusConfig.color}`}>
                             {statusConfig.label}
+                          </span>
+                        </div>
+                        {/* Progress Ring */}
+                        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center">
+                          <svg className="h-10 w-10 -rotate-90" viewBox="0 0 40 40">
+                            <circle cx="20" cy="20" r="16" fill="none" strokeWidth="3" className="stroke-muted" />
+                            <circle
+                              cx="20" cy="20" r="16" fill="none"
+                              strokeWidth="3" strokeLinecap="round"
+                              stroke={getProgressRingColor(goal.progress)}
+                              strokeDasharray={100.5}
+                              strokeDashoffset={100.5 * (1 - goal.progress / 100)}
+                              className="transition-all duration-700 ease-out"
+                            />
+                          </svg>
+                          <span className={`absolute text-[9px] font-bold tabular-nums ${getProgressTextColor(goal.progress)}`}>
+                            {goal.progress}%
                           </span>
                         </div>
                       </div>

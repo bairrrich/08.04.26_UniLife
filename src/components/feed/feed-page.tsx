@@ -96,11 +96,11 @@ const ENTITY_ICONS: Record<EntityType, React.ReactNode> = {
 }
 
 const ENTITY_COLORS: Record<EntityType, string> = {
-  diary: 'bg-amber-100 text-amber-700',
-  transaction: 'bg-emerald-100 text-emerald-700',
-  meal: 'bg-rose-100 text-rose-700',
-  workout: 'bg-blue-100 text-blue-700',
-  collection: 'bg-purple-100 text-purple-700',
+  diary: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  transaction: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
+  meal: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
+  workout: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
+  collection: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
 }
 
 const ENTITY_BORDER: Record<EntityType, string> = {
@@ -191,6 +191,8 @@ export function FeedPage() {
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({})
   // Expanded comments state: which posts show all comments
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
+  // Comment section visibility: which posts show the comment area
+  const [showCommentSection, setShowCommentSection] = useState<Set<string>>(new Set())
   // Comment sending state per post
   const [sendingComment, setSendingComment] = useState<Set<string>>(new Set())
 
@@ -312,6 +314,7 @@ export function FeedPage() {
     setCommentTexts((prev) => ({ ...prev, [postId]: '' }))
     // Auto-expand to show the new comment
     setExpandedComments((prev) => new Set(prev).add(postId))
+    setShowCommentSection((prev) => new Set(prev).add(postId))
 
     try {
       const res = await fetch('/api/feed/comment', {
@@ -382,6 +385,18 @@ export function FeedPage() {
 
   const toggleExpandComments = (postId: string) => {
     setExpandedComments((prev) => {
+      const next = new Set(prev)
+      if (next.has(postId)) {
+        next.delete(postId)
+      } else {
+        next.add(postId)
+      }
+      return next
+    })
+  }
+
+  const toggleCommentSection = (postId: string) => {
+    setShowCommentSection((prev) => {
       const next = new Set(prev)
       if (next.has(postId)) {
         next.delete(postId)
@@ -588,21 +603,24 @@ export function FeedPage() {
         ) : posts.length === 0 ? (
           <Card className="overflow-hidden">
             <CardContent className="py-20 text-center">
-              <div className="mx-auto mb-4 w-20 h-20 rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20 flex items-center justify-center">
-                <Rss className="h-10 w-10 text-primary/60" />
+              <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full float-animation">
+                <div className="absolute h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/30 via-primary/20 to-amber-400/20 animate-pulse-soft" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400/30 to-primary/20">
+                  <Rss className="h-8 w-8 text-primary/70" />
+                </div>
               </div>
-              <p className="text-muted-foreground font-medium text-lg">
+              <p className="text-muted-foreground font-semibold text-xl mb-2">
                 Лента пуста
               </p>
-              <p className="text-muted-foreground text-sm mt-2 max-w-xs mx-auto">
-                Поделитесь своими мыслями и достижениями
+              <p className="text-muted-foreground/70 text-sm max-w-sm mx-auto leading-relaxed">
+                Начните делиться своими мыслями, достижениями и моментами дня с друзьями
               </p>
               <Button
-                size="sm"
-                className="mt-4"
+                size="lg"
+                className="mt-6 gap-2 rounded-xl bg-gradient-to-r from-primary to-primary/80 shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all"
                 onClick={() => setDialogOpen(true)}
               >
-                <Plus className="h-4 w-4 mr-1.5" />
+                <Sparkles className="h-4 w-4" />
                 Создать первую запись
               </Button>
             </CardContent>
@@ -705,20 +723,32 @@ export function FeedPage() {
                       />
                       <span>{likeCount > 0 ? likeCount : ''}</span>
                     </button>
-                    <button className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-blue-500 transition-colors">
+                    <button
+                      className={`flex items-center gap-1.5 text-sm transition-colors ${
+                        showCommentSection.has(post.id)
+                          ? 'text-blue-500'
+                          : 'text-muted-foreground hover:text-blue-500'
+                      }`}
+                      onClick={() => toggleCommentSection(post.id)}
+                    >
                       <MessageCircle className="h-4 w-4" />
                       <span>{post.comments.length > 0 ? post.comments.length : ''}</span>
+                      {!showCommentSection.has(post.id) && post.comments.length === 0 && (
+                        <span className="text-xs opacity-70">Показать</span>
+                      )}
                     </button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 ml-auto">
                       <ThumbsUp className="h-4 w-4" />
                     </Button>
                   </div>
 
-                  {/* Comments section */}
+                  {/* Comments section — toggle visibility */}
+                  {showCommentSection.has(post.id) && (
+                  <>
                   {post.comments.length === 0 && !expandedComments.has(post.id) ? (
-                    <div className="text-center py-2">
+                    <div className="text-center py-3">
                       <p className="text-xs text-muted-foreground/60 italic">
-                        Будьте первым, кто прокомментирует!
+                        Комментарии скоро появятся
                       </p>
                     </div>
                   ) : (
@@ -817,6 +847,8 @@ export function FeedPage() {
                       </button>
                     </div>
                   </div>
+                  </>
+                  )}
                 </CardContent>
               </Card>
             )

@@ -94,11 +94,11 @@ const STATUS_BUTTON_STYLES: Record<CollectionStatus, string> = {
 }
 
 const TYPE_ICONS: Record<CollectionType, React.ReactNode> = {
-  BOOK: <BookOpen className="h-5 w-5" />,
-  MOVIE: <Film className="h-5 w-5" />,
-  RECIPE: <ChefHat className="h-5 w-5" />,
-  SUPPLEMENT: <Pill className="h-5 w-5" />,
-  PRODUCT: <Package className="h-5 w-5" />,
+  BOOK: <BookOpen className="h-4 w-4" />,
+  MOVIE: <Film className="h-4 w-4" />,
+  RECIPE: <ChefHat className="h-4 w-4" />,
+  SUPPLEMENT: <Pill className="h-4 w-4" />,
+  PRODUCT: <Package className="h-4 w-4" />,
 }
 
 const TYPE_ICONS_LARGE: Record<CollectionType, React.ReactNode> = {
@@ -519,7 +519,7 @@ export function CollectionsPage() {
                             className={`h-5 w-5 transition ${
                               star <= formRating
                                 ? 'fill-amber-400 text-amber-400'
-                                : 'text-muted-foreground/30'
+                                : 'text-gray-300 dark:text-gray-600'
                             }`}
                           />
                         </button>
@@ -633,7 +633,7 @@ export function CollectionsPage() {
               {items.map((item) => (
                 <Card
                   key={item.id}
-                  className="overflow-hidden hover-lift active-press transition cursor-pointer group"
+                  className="overflow-hidden transition-all duration-200 cursor-pointer group hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
                   onClick={() => openDetail(item)}
                 >
                   {/* Cover placeholder */}
@@ -643,7 +643,7 @@ export function CollectionsPage() {
                     )} flex items-center justify-center relative overflow-hidden transition-transform duration-300 group-hover:scale-[1.03]`}
                   >
                     <div className="text-white/80 transition-transform duration-300 group-hover:scale-110">
-                      {TYPE_ICONS[item.type as CollectionType]}
+                      {TYPE_ICONS_LARGE[item.type as CollectionType]}
                     </div>
                     {/* Status badge */}
                     <div className="absolute top-2 right-2">
@@ -662,6 +662,10 @@ export function CollectionsPage() {
                         {STATUS_LABELS[item.status]}
                       </span>
                     </div>
+                    {/* Type icon in top-left corner */}
+                    <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-md bg-black/20 backdrop-blur-sm text-white/90">
+                      {TYPE_ICONS[item.type as CollectionType]}
+                    </div>
                   </div>
                   <div className="p-3 space-y-1.5">
                     <h3 className="text-sm font-medium line-clamp-2 leading-snug">
@@ -677,10 +681,10 @@ export function CollectionsPage() {
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
-                            className={`h-3 w-3 ${
+                            className={`h-3.5 w-3.5 transition-colors ${
                               i < item.rating!
                                 ? 'fill-amber-400 text-amber-400'
-                                : 'text-muted-foreground/20'
+                                : 'text-gray-300 dark:text-gray-600'
                             }`}
                           />
                         ))}
@@ -839,7 +843,7 @@ export function CollectionsPage() {
                               className={`h-5 w-5 transition ${
                                 star <= editRating
                                   ? 'fill-amber-400 text-amber-400'
-                                  : 'text-muted-foreground/30'
+                                  : 'text-gray-300 dark:text-gray-600'
                               }`}
                             />
                           </button>
@@ -925,7 +929,7 @@ export function CollectionsPage() {
                               className={`h-5 w-5 transition ${
                                 star <= (detailItem.rating || 0)
                                   ? 'fill-amber-400 text-amber-400'
-                                  : 'text-muted-foreground/30'
+                                  : 'text-gray-300 dark:text-gray-600'
                               }`}
                             />
                           </button>

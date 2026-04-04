@@ -1741,3 +1741,237 @@ These caused:
 - Root cause: Prisma DateTime validation rejecting string values in the combined dashboard API
 - 3 distinct bugs fixed in a single API route (date format, month calculation, budget field name)
 - App is now fully functional and loading correctly
+
+---
+## Task ID: improvement-round-1
+### Agent: fullstack-dev-agent
+### Task: Comprehensive UI improvements and bug fixes
+
+### Work Log:
+- **Welcome Screen Persistence**: Added try-catch wrappers around all localStorage read/write operations in `welcome-screen.tsx` to handle cases where localStorage is unavailable. Kept eslint-disable for set-state-in-effect since reading from external storage on mount is intentional.
+- **Diary Quick Mood Check**: Added a compact inline card widget at the top of the diary page showing today's current mood with emoji display. Implemented `handleQuickMood()` that creates a new entry or updates existing entry's mood with one click on emoji buttons (😢😕😐🙂😄). Shows active state with ring highlight on selected mood.
+- **Finance Spending Insights**: Added "Аналитика расходов" card below charts with 3 computed insights: average daily spending (calculated from unique expense days), biggest expense this month (with description), and top 3 categories mini-list with numbered ranks, category icons, and amounts. All computed from existing fetched data via `useMemo`.
+- **Feed Empty State Enhancement**: Replaced simple empty state with animated gradient icon (double-circle with pulse animation and float animation), larger title font, descriptive subtitle text, and prominent gradient CTA button with Sparkles icon.
+- **Workout Exercise Type Badges**: Added exercise type badge row between summary cards and month selector. Shows colored badges for each workout type present this month (Силовая, Кардио, HIIT, Растяжка). Added total duration in hours for the month displayed alongside badges.
+- **Global CSS Improvements**: Added 4 new CSS utilities: `.glass-card-dark` (darker glass morphism variant), `.number-highlight` (animated number pop-in with spring physics), `.slide-in-right` (items appearing from right with opacity transition), `.pulse-subtle` (gentle opacity pulse, 3s cycle, gentler than existing pulse-ring).
+- **Notification Center Review**: Verified the component uses pure prop-based approach with `buildReminders()` function. No external subscriptions or `useSyncExternalStore`. No changes needed.
+- **Activity Heatmap Review**: Verified each grid cell already has `title` attribute showing formatted Russian date and count with proper word forms. No changes needed.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All existing functionality preserved
+
+### Stage Summary:
+- 6 files modified (welcome-screen, diary-page, finance-page, feed-page, workout-page, globals.css)
+- 2 files reviewed with no changes needed (notification-center, activity-heatmap)
+- All changes are additive — no breaking modifications
+
+---
+## Task ID: ui-enhancements-6
+### Agent: ui-enhancement-agent
+### Task: 6 UI improvements across Diary, Settings, Nutrition, Dashboard, and Collections modules
+
+### Work Summary:
+
+**Task 1 — Weekly Calendar Strip (Diary Page):**
+- Added compact weekly calendar strip (`diary-page.tsx`) above Quick Mood Check section
+- Shows last 7 days (Mon-Sun) as small clickable circles with day names and date numbers
+- Today highlighted with primary color ring/border
+- Days with diary entries show a colored primary dot below the date
+- Days with entries that have mood set display the mood emoji overlay
+- Click on a day to filter entries and show detail — click again or "Все дни" to reset
+- Added `weekFilterDate` state for filtering
+
+**Task 2 — Settings Profile Avatar Enhancement:**
+- Replaced small Avatar component with larger centered avatar circle (h-20 w-20)
+- Avatar shows user's initials (from name) with gradient background and ring-2 ring-offset decoration
+- Moved online indicator to bottom-right of larger avatar
+- Added "Изменить фото" text button below avatar that shows toast.info about auth
+- Added rounded info card below avatar showing name, email, bio with online status badge
+- Removed unused Avatar/AvatarImage/AvatarFallback import
+
+**Task 3 — Time of Day Context (Nutrition Page):**
+- Added time indicator showing current meal period (Завтрак 7-10, Обед 12-14, Ужин 18-20, Перекус)
+- Added remaining calories indicator showing how much more can be eaten today
+- Added motivational text based on kcal progress: "< 50%: Продолжайте!", "50-80%: Хороший прогресс!", "> 80%: Почти на месте!"
+- Displayed as a compact info card with clock icon, orange gradient background, and percentage badge
+
+**Task 4 — Recent Transactions Mini-list (Dashboard):**
+- Added compact "Последние операции" card showing last 5 transactions from existing `transactionsData` state
+- Each item: icon based on type (green TrendingUp for income, red TrendingDown for expense), description, relative time, amount
+- "Все транзакции →" link navigates to finance module
+- Loading skeleton state and empty state
+- No new API calls — uses existing `transactionsData`
+
+**Task 5 — Collections Grid Layout Enhancement:**
+- Enhanced hover animation on cards: `hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5` replacing CSS class `hover-lift`
+- Added type icon in top-left corner of each card (BookOpen, Film, ChefHat, Pill, Package) with dark backdrop
+- Enhanced rating display: filled stars with `fill-amber-400 text-amber-400` + outlined empty stars with `fill-none stroke-amber-400/40`
+- Increased star size from h-3 w-3 to h-3.5 w-3.5
+
+**Task 6 — Daily Progress Bar (Dashboard Header):**
+- Added thin progress bar (h-1) in dashboard header showing overall daily completion
+- Calculated from: mood checked today? (20%), meals logged? (30%), workout done? (30%), habits complete? (20%)
+- Color gradient from emerald (#10b981) to teal (#14b8a6)
+- Percentage shown on the right side with tabular-nums
+- Smooth 700ms transition animation, only shown when not loading
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All 5 modified files compile without errors
+- ✅ No breaking changes to existing functionality
+- ✅ All UI text in Russian
+
+### Files Modified:
+1. `src/components/diary/diary-page.tsx` — Weekly calendar strip
+2. `src/components/layout/settings-page.tsx` — Profile avatar enhancement
+3. `src/components/nutrition/nutrition-page.tsx` — Time of day context
+4. `src/components/dashboard/dashboard-page.tsx` — Recent transactions + daily progress bar
+5. `src/components/collections/collections-page.tsx` — Grid layout enhancement
+
+---
+## Task ID: ui-polish-4tasks
+### Agent: ui-polish-agent
+### Task: Goals progress rings, habits streak badges, nutrition water tracker, mobile responsive fixes
+
+### Work Summary:
+
+**TASK 1: Goals Page — Progress Rings**
+- Already implemented — SVG circular progress rings (40x40) were present on each goal card with correct color coding (emerald ≥70%, amber ≥40%, red <40%) and percentage inside the ring. No changes needed.
+
+**TASK 2: Habits — Streak Fire Badges** (`habit-page.tsx`)
+- Changed inline streak badge condition from `habit.streak > 0` to `habit.streak >= 3`, so the 🔥 streak badge only appears for meaningful streaks
+- Replaced `<Flame>` icon component with 🔥 emoji in the inline badge next to habit names
+- Renamed the summary card title from "Лучший результат" to "Лучшая серия" for clarity
+- Replaced `Trophy` icon with `Flame` icon in the "Лучшая серия" card for visual consistency with the streak theme
+
+**TASK 3: Nutrition — Water Tracker Enhancement** (`nutrition-page.tsx`)
+- Water add button already showed `Добавить воду ({glasses}/8)` — no change needed
+- Changed subtle text from "Всего выпито:" to "Выпито:" to match requested format
+
+**TASK 4: Mobile Responsive Fixes**
+- Dashboard stat cards grid already uses `grid-cols-2 lg:grid-cols-4` — no change needed
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All existing functionality preserved
+
+---
+## Task ID: ui-enhance-5tasks
+### Agent: ui-enhance-agent
+### Task: Analytics activity summary, collections rating stars, diary empty state, feed comment toggle, dark mode polish
+
+### Work Summary:
+
+**TASK 1: Analytics Page — Activity Overview Summary** (`analytics-page.tsx`)
+- Added new "Обзор активности" summary card at top of analytics page, before existing module stats
+- Card contains 4 key stats in responsive grid (2 cols mobile, 4 cols desktop) using `stagger-children`:
+  1. **Всего действий** — total actions across all modules (diary + transactions + workouts + habits), emerald accent with Zap icon
+  2. **Самый активный день** — computed from all event dates, amber accent with CalendarDays icon
+  3. **Самый активный модуль** — compares counts across 4 modules, violet accent with Trophy icon
+  4. **Среднее за день** — total actions / days in period, blue accent with TrendingUp icon
+- Each stat has colored icon circle, gradient background tile, dark mode support
+- Card uses `card-hover` class with `bg-gradient-to-br from-background to-muted/30` and dark variants
+- Skeleton loading state shown while data loads
+- Uses `useMemo` for efficient computation of activity stats
+- New icons imported: `Zap`, `Trophy` from lucide-react
+
+**TASK 2: Collections Page — Rating Stars Visual** (`collections-page.tsx`)
+- Updated empty star styling across all 4 star display locations:
+  - Card rating display (item cards)
+  - Detail dialog interactive rating
+  - Add item form rating selector
+  - Edit mode rating selector
+- Changed empty stars from `text-muted-foreground/30` / `stroke-amber-400/40` to `text-gray-300 dark:text-gray-600`
+- Filled stars remain amber-400 (`fill-amber-400 text-amber-400`)
+- Provides better contrast and visual distinction between filled/empty stars
+
+**TASK 3: Diary Page — Improved Empty State** (`diary-page.tsx`)
+- Enhanced the empty state for diary list view with:
+  - Larger gradient icon circle (24x24) with outer glow and inner icon (BookOpen in emerald)
+  - Motivational title: "Начните записывать свои мысли"
+  - Descriptive subtitle about diary benefits
+  - Two CTA buttons side by side:
+    - "Новая запись" (primary, gradient emerald-to-teal with shadow)
+    - "Записать настроение" (outline, calls `handleQuickMood(4)`)
+  - Added `card-hover`, `animate-slide-up` CSS classes for animations
+  - Full dark mode support with adjusted shadows and icon colors
+
+**TASK 4: Feed Page — Comment Expansion Toggle** (`feed-page.tsx`)
+- Added `showCommentSection` state (Set<string>) tracking which posts have comments visible
+- Made the MessageCircle button in post actions toggle comment section visibility
+- Button shows blue highlight when comments are expanded, "Показать" hint when collapsed and no comments
+- When no comments and expanded: shows "Комментарии скоро появятся" placeholder
+- When comments exist and expanded: shows existing comment list + input (unchanged behavior)
+- Comment input area only shown when comment section is expanded
+- Auto-expands comment section when a new comment is submitted
+- Added `toggleCommentSection` helper function
+
+**TASK 5: Dark Mode Polish** (`feed-page.tsx`)
+- Added dark mode variants to `ENTITY_COLORS` constant:
+  - diary: `dark:bg-amber-900/40 dark:text-amber-300`
+  - transaction: `dark:bg-emerald-900/40 dark:text-emerald-300`
+  - meal: `dark:bg-rose-900/40 dark:text-rose-300`
+  - workout: `dark:bg-blue-900/40 dark:text-blue-300`
+  - collection: `dark:bg-purple-900/40 dark:text-purple-300`
+- Verified all new components in analytics, diary, feed, collections have proper dark: variants
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles and serves HTTP 200
+- ✅ All existing functionality preserved across all 4 modified files
+- ✅ Dark mode variants verified for all new components
+
+---
+## Task ID: improvement-round-2
+### Agent: main-coordinator
+### Task: Continue comprehensive improvements — Wave 3 & 4
+
+### Bugs Fixed This Round:
+1. **JSX comment syntax error** in `dashboard-page.tsx` line 1026 — missing `}` closing JSX comment `{/* ... */}`, causing Turbopack parse failure → 500 error
+2. **Variable hoisting error** in `search-dialog.tsx` — `totalResults` and `groupedResults` were used in `useEffect` and `useMemo` before their declaration. Moved declarations above their usage to fix `ReferenceError: Cannot access 'totalResults' before initialization`
+
+### Improvements Applied:
+
+#### Wave 1 (by agent):
+- **Diary Quick Mood Check** — compact inline card with 5 emoji buttons for one-click mood setting
+- **Finance Spending Insights** — average daily spending, biggest expense, top 3 categories (all from existing data)
+- **Feed Empty State** — animated gradient icon, motivational subtitle, prominent CTA
+- **Workout Exercise Badges** — colored badges for workout types, total duration in hours
+- **Global CSS** — `.glass-card-dark`, `.number-highlight`, `.slide-in-right`, `.pulse-subtle`
+- **Welcome Screen** — localStorage persistence with try-catch wrappers
+
+#### Wave 2 (by agent):
+- **Weekly Calendar Strip** in Diary — 7-day horizontal strip with mood dots and day filtering
+- **Settings Profile Avatar** — enlarged h-20 avatar with initials, ring decoration, "change photo" button
+- **Nutrition Time of Day** — current meal period indicator, remaining calories, motivational progress text
+- **Dashboard Recent Transactions** — last 5 transactions mini-list with type icons and relative time
+- **Collections Grid Enhancement** — hover animations, type icon badges, enhanced star ratings
+- **Dashboard Daily Progress Bar** — thin emerald gradient bar showing daily completion percentage
+
+#### Wave 3 (by agent):
+- **Habits Streak Badges** — 🔥 badge for streaks >= 3 days, "Лучшая серия" summary card with Flame icon
+- **Nutrition Water Text** — "Выпито: X мл" display below water grid
+
+#### Wave 4 (by agent):
+- **Analytics Summary Card** — 4 key stats (total actions, most active day/module, daily average) with responsive grid
+- **Collections Rating Stars** — visual ★/☆ stars with amber filled + gray empty styling
+- **Diary Improved Empty State** — gradient icon, motivational text, dual CTA buttons
+- **Feed Comment Expansion** — toggle to show/hide comments with placeholder
+- **Dark Mode Polish** — dark: variants verified/added across all new components
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All 10 modules pass agent-browser QA with zero console errors
+- ✅ Dashboard API: HTTP 200
+- ✅ Screenshot captured confirming visual rendering
+
+### Unresolved / Next Phase:
+1. User Authentication (NextAuth.js) — highest priority
+2. Image Upload for diary entries and collection items
+3. PWA Support (service worker + manifest)
+4. Push Notifications (water, workout, diary reminders)
+5. Data Import from CSV (in addition to JSON)
+6. Advanced Analytics (weekly/monthly trend comparison)
