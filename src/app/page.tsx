@@ -6,6 +6,63 @@ import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
 import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Component, type ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import { AlertTriangle, RefreshCw } from 'lucide-react'
+
+// ─── Error Boundary with retry for ChunkLoadError ─────────────────────
+interface ErrorBoundaryState {
+  hasError: boolean
+  error: Error | null
+}
+
+class ModuleErrorBoundary extends Component<
+  { children: ReactNode; moduleName: string },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: ReactNode; moduleName: string }) {
+    super(props)
+    this.state = { hasError: false, error: null }
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    return { hasError: true, error }
+  }
+
+  handleRetry = () => {
+    this.setState({ hasError: false, error: null })
+  }
+
+  render() {
+    if (this.state.hasError) {
+      const isChunkError =
+        this.state.error?.message?.includes('ChunkLoadError') ||
+        this.state.error?.message?.includes('Failed to load chunk') ||
+        this.state.error?.message?.includes('Loading chunk')
+
+      return (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="h-8 w-8 text-destructive" />
+          </div>
+          <h3 className="mb-2 text-lg font-semibold">
+            {isChunkError ? 'Модуль загружается' : 'Что-то пошло не так'}
+          </h3>
+          <p className="mb-6 max-w-sm text-sm text-muted-foreground">
+            {isChunkError
+              ? `Не удалось загрузить модуль «${this.props.moduleName}». Turbopack компилирует чанк — попробуйте ещё раз.`
+              : this.state.error?.message || 'Неизвестная ошибка'}
+          </p>
+          <Button onClick={this.handleRetry} variant="outline" className="gap-2">
+            <RefreshCw className="h-4 w-4" />
+            Попробовать снова
+          </Button>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 // ─── Lazy-loaded module pages ──────────────────────────────────────────
 // Using next/dynamic creates separate chunk boundaries so Turbopack
@@ -46,18 +103,18 @@ const Settings = dynamic(() => import('@/components/layout/settings-page'), {
 })
 
 // ─── Module map for fast lookup ───────────────────────────────────────
-const MODULES: Record<string, React.LazyExoticComponent<Record<string, never>>> = {
-  dashboard: Dashboard,
-  diary: Diary,
-  finance: Finance,
-  nutrition: Nutrition,
-  workout: Workout,
-  collections: Collections,
-  feed: Feed,
-  habits: Habits,
-  goals: Goals,
-  analytics: Analytics,
-  settings: Settings,
+const MODULES: Record<string, { component: React.LazyExoticComponent<Record<string, never>>; label: string }> = {
+  dashboard: { component: Dashboard, label: 'Дашборд' },
+  diary: { component: Diary, label: 'Дневник' },
+  finance: { component: Finance, label: 'Финансы' },
+  nutrition: { component: Nutrition, label: 'Питание' },
+  workout: { component: Workout, label: 'Тренировки' },
+  collections: { component: Collections, label: 'Коллекции' },
+  feed: { component: Feed, label: 'Лента' },
+  habits: { component: Habits, label: 'Привычки' },
+  goals: { component: Goals, label: 'Цели' },
+  analytics: { component: Analytics, label: 'Аналитика' },
+  settings: { component: Settings, label: 'Настройки' },
 }
 
 // ─── Skeleton for lazy loading ─────────────────────────────────────────
@@ -82,7 +139,8 @@ function PageSkeleton() {
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function Home() {
   const { activeModule } = useAppStore()
-  const PageComponent = MODULES[activeModule] || Dashboard
+  const mod = MODULES[activeModule] || MODULES.dashboard
+  const PageComponent = mod.component
 
   return (
     <div className="min-h-screen bg-background">
@@ -98,7 +156,9 @@ export default function Home() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.15 }}
             >
-              <PageComponent />
+              <ModuleErrorBoundary moduleName={mod.label}>
+                <PageComponent />
+              </ModuleErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </div>
