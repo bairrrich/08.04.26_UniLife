@@ -2962,3 +2962,25 @@ Stage Summary:
 - ✅ ESLint: 0 errors, 0 warnings
 - ✅ GET / 200 — app compiles and serves correctly
 - ✅ Dashboard renders without infinite re-render loop
+
+---
+## Task ID: fix-rerender-bug
+### Agent: main
+### Task: Fix infinite re-render loop caused by useSyncExternalStore getServerSnapshot
+
+### Work Log:
+- **Root Cause**: In `src/lib/module-counts.ts`, the `getServerSnapshot` function returned a new empty object `{}` on every call. React's `useSyncExternalStore` requires `getServerSnapshot` to return a **cached/stable reference** — otherwise React detects a change between server and client snapshots, triggering an infinite re-render loop.
+- **Fix**: Replaced inline `return {}` with a module-level constant `const SERVER_SNAPSHOT: Record<string, number> = {}` that is returned by `getServerSnapshot`. This ensures the same object reference is returned on every call.
+- **Cleanup**: Removed unused imports `useCallback` and `useRef` from the module-counts.ts import statement.
+- **Other Components Reviewed**: Checked Focus Timer (both `focus-timer.tsx` and `focus-timer-widget.tsx`), Productivity Score, Weekly Activity Chart, and Quick Add Menu — all properly manage intervals with refs and cleanup. No additional re-render issues found.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly with no errors
+- ✅ The "getServerSnapshot should be cached" console error is now resolved
+- ✅ No other components causing re-render loops
+
+### Stage Summary:
+- Critical infinite re-render bug fixed by caching getServerSnapshot return value
+- Root cause: new `{}` object created on every call violated React's useSyncExternalStore contract
+- Clean fix: 1 constant + import cleanup, no behavioral changes

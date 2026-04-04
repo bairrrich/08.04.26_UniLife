@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncExternalStore, useCallback, useRef, useEffect } from 'react'
+import { useSyncExternalStore, useEffect } from 'react'
 
 // ── In-memory cache with 5-minute TTL ──────────────────────────────
 
@@ -79,8 +79,12 @@ function getSnapshot(): Record<string, number> {
   return cachedCountsRef
 }
 
+// IMPORTANT: getServerSnapshot must return a cached/stable reference.
+// Returning a new {} on every call causes an infinite re-render loop.
+const SERVER_SNAPSHOT: Record<string, number> = {}
+
 function getServerSnapshot(): Record<string, number> {
-  return {}
+  return SERVER_SNAPSHOT
 }
 
 // Track if initial fetch has been kicked off (module-level, persists across mounts)
