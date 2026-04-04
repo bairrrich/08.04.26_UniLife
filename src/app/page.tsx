@@ -7,11 +7,11 @@ import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
 import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Component, type ReactNode, useEffect, useState } from 'react'
+import { Component, type ReactNode, memo } from 'react'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle, RefreshCw, Plus, Dumbbell, Receipt, Sparkles, BookOpen, Activity, Target } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { fetchModuleCounts } from '@/lib/module-counts'
+import { useModuleCounts } from '@/lib/module-counts'
 
 // ─── Error Boundary with retry for ChunkLoadError ─────────────────────
 interface ErrorBoundaryState {
@@ -156,15 +156,9 @@ const FOOTER_LINKS = [
   { label: 'Коллекции', module: 'collections' as const },
 ]
 
-function Footer() {
+const Footer = memo(function Footer() {
   const { setActiveModule } = useAppStore()
-  const [stats, setStats] = useState<Record<string, number>>({})
-
-  useEffect(() => {
-    fetchModuleCounts().then((counts) => {
-      setStats(counts)
-    })
-  }, [])
+  const counts = useModuleCounts()
 
   return (
     <footer className="mt-auto border-t bg-muted/30 hidden md:block">
@@ -232,19 +226,19 @@ function Footer() {
           <ul className="space-y-1.5">
             <li className="flex items-center gap-2 text-xs text-muted-foreground">
               <BookOpen className="h-3 w-3 text-emerald-500" />
-              <span>{stats.diary ?? '—'} записей в дневнике</span>
+              <span>{counts.diary ?? '—'} записей в дневнике</span>
             </li>
             <li className="flex items-center gap-2 text-xs text-muted-foreground">
               <Activity className="h-3 w-3 text-blue-500" />
-              <span>{stats.workout ?? '—'} тренировок</span>
+              <span>{counts.workout ?? '—'} тренировок</span>
             </li>
             <li className="flex items-center gap-2 text-xs text-muted-foreground">
               <Target className="h-3 w-3 text-violet-500" />
-              <span>{stats.habits ?? '—'} привычек</span>
+              <span>{counts.habits ?? '—'} привычек</span>
             </li>
             <li className="flex items-center gap-2 text-xs text-muted-foreground">
               <Receipt className="h-3 w-3 text-amber-500" />
-              <span>{stats.finance ?? '—'} транзакций</span>
+              <span>{counts.finance ?? '—'} транзакций</span>
             </li>
           </ul>
         </div>
@@ -259,7 +253,7 @@ function Footer() {
       </div>
     </footer>
   )
-}
+})
 
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function Home() {

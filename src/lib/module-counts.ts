@@ -9,6 +9,7 @@ const CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 let cachedCounts: Record<string, number> = {}
 let cacheTimestamp = 0
 let listeners: Set<() => void> = new Set()
+let cachedCountsRef = cachedCounts // stable reference for useSyncExternalStore
 
 function notifyListeners() {
   listeners.forEach((fn) => fn())
@@ -36,6 +37,7 @@ export async function fetchModuleCounts(): Promise<Record<string, number>> {
 
   const counts = await fetchModuleCountsFromApi()
   cachedCounts = counts
+  cachedCountsRef = counts // update stable reference
   cacheTimestamp = now
   notifyListeners()
   return counts
@@ -43,6 +45,7 @@ export async function fetchModuleCounts(): Promise<Record<string, number>> {
 
 export function invalidateModuleCountsCache(): void {
   cachedCounts = {}
+  cachedCountsRef = cachedCounts
   cacheTimestamp = 0
   notifyListeners()
 }
@@ -71,36 +74,37 @@ function subscribe(listener: () => void): () => void {
   return () => { listeners.delete(listener) }
 }
 
+// Return a stable reference — only changes when cache is actually updated
 function getSnapshot(): Record<string, number> {
-  return cachedCounts
+  return cachedCountsRef
 }
 
 function getServerSnapshot(): Record<string, number> {
   return {}
 }
 
+// Track if initial fetch has been kicked off (module-level, persists across mounts)
+let initialFetchStarted = false
+
 export function useModuleCounts(): Record<string, number> {
   const counts = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
-  const fetchedRef = useRef(false)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  // Trigger initial fetch + polling interval via effect (no setState)
   useEffect(() => {
-    if (fetchedRef.current) return
-    fetchedRef.current = true
+    // Only start the initial fetch + polling once globally
+    if (initialFetchStarted) return
+    initialFetchStarted = true
 
-    // Fire-and-forget fetch — the useSyncExternalStore subscription
-    // will re-render when cachedCounts is updated
+    // Fire-and-forget fetch
     fetchModuleCounts()
 
-    timerRef.current = setInterval(() => {
+    const timer = setInterval(() => {
       fetchModuleCounts()
     }, POLL_INTERVAL)
 
     return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current)
-      }
+      clearInterval(timer)
+      // Allow re-init if all consumers unmount
+      initialFetchStarted = false
     }
   }, [])
 

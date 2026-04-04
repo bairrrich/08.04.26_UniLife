@@ -93,14 +93,7 @@ export default function DashboardPage() {
   const [budgetData, setBudgetData] = useState<BudgetData | null>(null)
   const [hasMealsToday, setHasMealsToday] = useState(false)
   const [waterTodayMl, setWaterTodayMl] = useState(0)
-  const [weeklyActivity, setWeeklyActivity] = useState<{
-    dayName: string
-    dateKey: string
-    diary: number
-    workouts: number
-    habits: number
-    isToday: boolean
-  }[]>([])
+
   const [quoteIndex, setQuoteIndex] = useState(() => getDayOfYear() % MOTIVATIONAL_QUOTES.length)
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
 
@@ -365,30 +358,24 @@ export default function DashboardPage() {
     return pct
   }, [loading, todayMood, hasMealsToday, workouts, now, totalActive, completedToday])
 
-  // ── Weekly Activity Chart Data ──────────────────────────────
-  useMemo(() => {
-    if (loading) {
-      setWeeklyActivity([])
-      return
-    }
+  // ── Weekly Activity Chart Data (pure computed, no side effects) ─────
+  const weeklyActivity = useMemo(() => {
+    if (loading) return []
     const todayKey = toDateStr(now)
     const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 
-    // Count diary entries per day
     const diaryByDay = new Map<string, number>()
     for (const e of diaryEntries) {
       const key = toDateStr(new Date(e.date))
       diaryByDay.set(key, (diaryByDay.get(key) ?? 0) + 1)
     }
 
-    // Count workouts per day
     const workoutByDay = new Map<string, number>()
     for (const w of workouts) {
       const key = toDateStr(new Date(w.date))
       workoutByDay.set(key, (workoutByDay.get(key) ?? 0) + 1)
     }
 
-    // Count habits completed per day
     const habitsByDay = new Map<string, number>()
     for (const h of habitsData?.data ?? []) {
       for (const [dateStr] of Object.entries(h.last7Days || {})) {
@@ -411,7 +398,7 @@ export default function DashboardPage() {
         isToday: key === todayKey,
       })
     }
-    setWeeklyActivity(result)
+    return result
   }, [loading, diaryEntries, workouts, habitsData, now])
 
   // ── Productivity Score ──────────────────────────────────────────

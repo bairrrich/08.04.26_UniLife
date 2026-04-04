@@ -2921,3 +2921,44 @@ Stage Summary:
 - ✅ ESLint: 0 errors, 0 warnings
 - ✅ GET / 200 — app compiles and serves correctly
 - ✅ All existing functionality preserved
+
+---
+Task ID: fix-re-rendering
+Agent: main-coordinator
+Task: Fix constant re-rendering issue
+
+Work Log:
+- Identified 4 root causes of infinite/constant re-rendering
+- Fixed critical bug: useMemo with setState side-effect in dashboard-page.tsx
+- Fixed useSyncExternalStore reference stability in module-counts.ts
+- Eliminated duplicate fetchModuleCounts calls (Footer + Sidebar)
+- Memoized Footer component
+- Optimized useAnimatedCounter from 60fps to 20fps
+
+Stage Summary:
+### Root Causes Found & Fixed:
+
+1. **🔴 Critical: useMemo with side-effect (dashboard-page.tsx lines 369-415)**
+   - `useMemo()` called `setWeeklyActivity(result)` — a React anti-pattern causing infinite re-render loop
+   - Each render → useMemo runs → setWeeklyActivity → new render → repeat
+   - **Fix**: Converted to pure computed `useMemo` that returns the value directly, removed `useState` for weeklyActivity
+
+2. **🟠 useSyncExternalStore reference instability (module-counts.ts)**
+   - `getSnapshot()` returned `cachedCounts` — a module-level mutable variable
+   - On every fetch, `cachedCounts` was reassigned to a new object, but the initial `{}` reference stayed the same between renders until first fetch
+   - **Fix**: Added `cachedCountsRef` — stable reference that only changes when cache is updated; added module-level `initialFetchStarted` flag to prevent duplicate initial fetches across mounts
+
+3. **🟡 Duplicate API fetching (page.tsx Footer + Sidebar)**
+   - Footer had its own `useEffect(() => fetchModuleCounts())` 
+   - Sidebar also triggered fetch via `useModuleCounts()`
+   - **Fix**: Replaced Footer's local state + useEffect with shared `useModuleCounts()` hook; wrapped Footer in `memo()`
+
+4. **🟡 Excessive animation re-renders (hooks.ts)**
+   - `useAnimatedCounter` used `requestAnimationFrame` at 60fps
+   - With 8 animated counters, that was 480 setState calls/second
+   - **Fix**: Throttled to ~20fps (50ms frame interval), skip animation if target unchanged
+
+### Verification:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ GET / 200 — app compiles and serves correctly
+- ✅ Dashboard renders without infinite re-render loop
