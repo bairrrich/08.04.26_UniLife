@@ -52,7 +52,7 @@ const EXPORT_MODULES = [
   { key: 'feed', label: 'Лента', icon: Newspaper, emoji: '📰' },
 ] as const
 
-export function SettingsPage() {
+export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState('Алексей')
