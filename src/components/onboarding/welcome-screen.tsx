@@ -117,11 +117,19 @@ export function WelcomeScreen() {
         // eslint-disable-next-line react-hooks/set-state-in-effect -- reading from external storage on mount
         setStatus('dismissed')
       } else {
+        // Auto-complete onboarding in development to avoid blocking the UI
+        if (process.env.NODE_ENV === 'development') {
+          localStorage.setItem('unilife-onboarding-complete', 'true')
+          if (savedName) setUserName(savedName)
+          setStatus('dismissed')
+          return
+        }
         if (savedName) setUserName(savedName)
         setStatus('show')
       }
     } catch {
-      setStatus('show')
+      // If localStorage is unavailable (e.g. sandbox), just dismiss
+      setStatus('dismissed')
     }
   }, [])
 

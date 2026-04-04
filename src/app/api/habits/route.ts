@@ -3,7 +3,7 @@ import { db } from '@/lib/db'
 
 const USER_ID = 'user_demo_001'
 
-// GET /api/habits — Fetch all habits with today's logs
+// GET /api/habits — Fetch all habits with today's logs and streaks
 export async function GET() {
   try {
     const today = new Date()
@@ -11,6 +11,7 @@ export async function GET() {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
+    // Fetch habits with today's logs (single query)
     const habits = await db.habit.findMany({
       where: { userId: USER_ID },
       include: {
@@ -26,70 +27,82 @@ export async function GET() {
       orderBy: { createdAt: 'asc' },
     })
 
-    // Calculate streaks for each habit
-    const habitsWithStreaks = await Promise.all(
-      habits.map(async (habit) => {
-        const allLogs = await db.habitLog.findMany({
-          where: { habitId: habit.id },
+    // Fetch ALL logs for all habits in a single query (for streaks & last7Days)
+    const habitIds = habits.map((h) => h.id)
+    const allLogs = habitIds.length > 0
+      ? await db.habitLog.findMany({
+          where: { habitId: { in: habitIds } },
           orderBy: { date: 'desc' },
         })
+      : []
 
-        let streak = 0
-        const checkDate = new Date()
-        checkDate.setHours(0, 0, 0, 0)
+    // Group logs by habit ID
+    const logsByHabit = new Map<string, typeof allLogs>()
+    for (const log of allLogs) {
+      const existing = logsByHabit.get(log.habitId) || []
+      existing.push(log)
+      logsByHabit.set(log.habitId, existing)
+    }
 
-        // If today is not completed, start from yesterday
-        const todayLog = allLogs.find((log) => {
+    // Calculate streaks and last7Days for each habit (in-memory, no extra queries)
+    const habitsWithStreaks = habits.map((habit) => {
+      const habitLogs = logsByHabit.get(habit.id) || []
+
+      let streak = 0
+      const checkDate = new Date()
+      checkDate.setHours(0, 0, 0, 0)
+
+      // If today is not completed, start from yesterday
+      const todayLog = habitLogs.find((log) => {
+        const logDate = new Date(log.date)
+        logDate.setHours(0, 0, 0, 0)
+        return logDate.getTime() === checkDate.getTime()
+      })
+
+      if (!todayLog) {
+        checkDate.setDate(checkDate.getDate() - 1)
+      }
+
+      for (let i = 0; i < 365; i++) {
+        const targetDate = new Date(checkDate)
+        targetDate.setDate(targetDate.getDate() - i)
+        targetDate.setHours(0, 0, 0, 0)
+
+        const found = habitLogs.find((log) => {
           const logDate = new Date(log.date)
           logDate.setHours(0, 0, 0, 0)
-          return logDate.getTime() === checkDate.getTime()
+          return logDate.getTime() === targetDate.getTime()
         })
 
-        if (!todayLog) {
-          checkDate.setDate(checkDate.getDate() - 1)
+        if (found) {
+          streak++
+        } else {
+          break
         }
+      }
 
-        for (let i = 0; i < 365; i++) {
-          const targetDate = new Date(checkDate)
-          targetDate.setDate(targetDate.getDate() - i)
-          targetDate.setHours(0, 0, 0, 0)
+      // Get last 7 days logs for mini-grid
+      const last7DaysLogs: Record<string, boolean> = {}
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date()
+        d.setDate(d.getDate() - i)
+        d.setHours(0, 0, 0, 0)
+        const key = d.toISOString().split('T')[0]
+        const found = habitLogs.find((log) => {
+          const logDate = new Date(log.date)
+          logDate.setHours(0, 0, 0, 0)
+          return logDate.getTime() === d.getTime()
+        })
+        last7DaysLogs[key] = !!found
+      }
 
-          const found = allLogs.find((log) => {
-            const logDate = new Date(log.date)
-            logDate.setHours(0, 0, 0, 0)
-            return logDate.getTime() === targetDate.getTime()
-          })
-
-          if (found) {
-            streak++
-          } else {
-            break
-          }
-        }
-
-        // Get last 7 days logs for mini-grid
-        const last7DaysLogs: Record<string, boolean> = {}
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date()
-          d.setDate(d.getDate() - i)
-          d.setHours(0, 0, 0, 0)
-          const key = d.toISOString().split('T')[0]
-          const found = allLogs.find((log) => {
-            const logDate = new Date(log.date)
-            logDate.setHours(0, 0, 0, 0)
-            return logDate.getTime() === d.getTime()
-          })
-          last7DaysLogs[key] = !!found
-        }
-
-        return {
-          ...habit,
-          streak,
-          todayCompleted: habit.logs.length > 0,
-          last7Days: last7DaysLogs,
-        }
-      })
-    )
+      return {
+        ...habit,
+        streak,
+        todayCompleted: habit.logs.length > 0,
+        last7Days: last7DaysLogs,
+      }
+    })
 
     // Calculate global stats
     const totalActive = habits.length
