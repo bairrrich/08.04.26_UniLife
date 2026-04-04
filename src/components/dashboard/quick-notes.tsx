@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useRef, useSyncExternalStore } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,7 @@ interface QuickNote {
 const STORAGE_KEY = 'unilife-quick-notes'
 const MAX_NOTES = 10
 const MAX_CHARS = 200
-const EMPTY_NOTES: QuickNote[] = []
+const NOTES_CHANGED_EVENT = 'unilife-notes-changed'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -70,57 +70,39 @@ function formatTimestamp(iso: string): string {
   })
 }
 
-// ─── localStorage sync via useSyncExternalStore ───────────────────────────────
-
-let listeners: Array<() => void> = []
-
-function subscribeToNotes(callback: () => void) {
-  listeners.push(callback)
-  return () => {
-    listeners = listeners.filter((l) => l !== callback)
-  }
-}
-
-let cachedRaw: string | null | undefined
-let cachedNotes: QuickNote[] = EMPTY_NOTES  // Start with same reference as server snapshot to avoid hydration mismatch
-
-function getNotesSnapshot(): QuickNote[] {
-  const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
-  if (raw === cachedRaw) return cachedNotes
-  cachedRaw = raw
-  cachedNotes = parseNotes(raw)
-  return cachedNotes
-}
-
-function getNotesServerSnapshot(): QuickNote[] {
-  return EMPTY_NOTES
-}
-
+/** Dispatch a custom event so all QuickNotes instances stay in sync */
 function emitNotesChange() {
-  // Invalidate cache so next getSnapshot call re-reads from localStorage
-  const raw = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
-  cachedRaw = raw
-  cachedNotes = parseNotes(raw)
-  for (const listener of listeners) {
-    listener()
-  }
+  window.dispatchEvent(new CustomEvent(NOTES_CHANGED_EVENT))
 }
-
-// ─── Mounted detection via useSyncExternalStore ──────────────────────────────
-
-const emptySubscribe = () => () => {}
-const getMountedSnapshot = () => true
-const getMountedServerSnapshot = () => false
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function QuickNotes() {
-  const isMounted = useSyncExternalStore(emptySubscribe, getMountedSnapshot, getMountedServerSnapshot)
-  const storedNotes = useSyncExternalStore(subscribeToNotes, getNotesSnapshot, getNotesServerSnapshot)
+  const [mounted, setMounted] = useState(false)
+  const [notes, setNotes] = useState<QuickNote[]>([])
   const [inputValue, setInputValue] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  const notes = isMounted ? storedNotes : EMPTY_NOTES
+  // ── Read from localStorage once after mount ─────────────────────────────
+  useEffect(() => {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    setNotes(parseNotes(raw)) // eslint-disable-line react-hooks/set-state-in-effect -- reading from external storage on mount
+    setMounted(true)
+  }, [])
+
+  // ── Listen for cross-tab + cross-component sync ────────────────────────
+  useEffect(() => {
+    const handleSync = () => {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      setNotes(parseNotes(raw))
+    }
+    window.addEventListener('storage', handleSync)
+    window.addEventListener(NOTES_CHANGED_EVENT, handleSync)
+    return () => {
+      window.removeEventListener('storage', handleSync)
+      window.removeEventListener(NOTES_CHANGED_EVENT, handleSync)
+    }
+  }, [])
 
   const handleAddNote = useCallback(() => {
     const text = inputValue.trim()
@@ -134,6 +116,7 @@ export function QuickNotes() {
 
     const updated = [newNote, ...notes].slice(0, MAX_NOTES)
     saveNotes(updated)
+    setNotes(updated)
     emitNotesChange()
     setInputValue('')
     inputRef.current?.focus()
@@ -143,6 +126,7 @@ export function QuickNotes() {
     (id: string) => {
       const updated = notes.filter((n) => n.id !== id)
       saveNotes(updated)
+      setNotes(updated)
       emitNotesChange()
     },
     [notes]
@@ -160,8 +144,8 @@ export function QuickNotes() {
 
   const remaining = MAX_CHARS - inputValue.length
 
-  // Server / pre-hydration: render skeleton
-  if (!isMounted) {
+  // Server / pre-mount: render skeleton
+  if (!mounted) {
     return (
       <Card className="rounded-xl border">
         <CardHeader className="pb-3">

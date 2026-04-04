@@ -320,16 +320,10 @@ const calculateStreak = (dates: string[]): number => {
 
 function useAnimatedCounter(target: number, duration = 600, enabled = true): number {
   const [value, setValue] = useState(0)
-  const prevTargetRef = useRef(target)
   const rafRef = useRef<number>(0)
 
   useEffect(() => {
-    prevTargetRef.current = target
-  })
-
-  useEffect(() => {
     if (!enabled) {
-      // If disabled, sync to target immediately (deferred via rAF to avoid sync setState)
       rafRef.current = requestAnimationFrame(() => setValue(target))
       return () => {
         if (rafRef.current) cancelAnimationFrame(rafRef.current)
@@ -395,167 +389,116 @@ export default function DashboardPage() {
   const [quoteIndex, setQuoteIndex] = useState(() => getDayOfYear() % MOTIVATIONAL_QUOTES.length)
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
 
-  // ── Data Fetching (sequential with delay to avoid Turbopack crash) ────
-  const fetchWithTimeout = useCallback(async (url: string, timeoutMs = 8000) => {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
-    try {
-      const res = await fetch(url, { signal: controller.signal })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const text = await res.text()
-      // Guard against HTML responses (Next.js 404 page)
-      if (text.trimStart().startsWith('<')) throw new Error('Received HTML instead of JSON')
-      return JSON.parse(text)
-    } finally {
-      clearTimeout(timer)
-    }
-  }, [])
-
-  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
-
+  // ── Data Fetching (single combined API to avoid Turbopack instability) ──
   const fetchAllData = useCallback(async () => {
     setLoading(true)
     const currentMonth = getCurrentMonthStr()
     const today = getTodayStr()
     const { from, to } = getWeekRange()
 
-    // Fetch sequentially with small delays to avoid overloading Turbopack
-    const fetchOne = (url: string) => fetchWithTimeout(url).then((v) => ({ status: 'fulfilled' as const, value: v })).catch((e) => ({ status: 'rejected' as const, reason: e }))
-
     try {
-      const diaryMonthRes = await fetchOne(`/api/diary?month=${currentMonth}`)
-      await sleep(100)
-      const financeRes = await fetchOne(`/api/finance/stats?month=${currentMonth}`)
-      await sleep(100)
-      const nutritionRes = await fetchOne(`/api/nutrition/stats?date=${today}`)
-      await sleep(100)
-      const workoutRes = await fetchOne(`/api/workout?month=${currentMonth}`)
-      await sleep(100)
-      const feedRes = await fetchOne('/api/feed?limit=5')
-      await sleep(100)
-      const diaryWeekRes = await fetchOne(`/api/diary?from=${from}&to=${to}`)
-      await sleep(100)
-      const financeTransactionsRes = await fetchOne(`/api/finance?month=${currentMonth}`)
-      await sleep(100)
-      const habitsRes = await fetchOne('/api/habits')
-      await sleep(100)
-      const budgetRes = await fetchOne(`/api/budgets?month=${currentMonth}`)
-      await sleep(100)
-      const mealsTodayRes = await fetchOne(`/api/nutrition?date=${today}`)
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), 15000)
+
+      const res = await fetch(
+        `/api/dashboard?month=${currentMonth}&today=${today}&weekFrom=${encodeURIComponent(from)}&weekTo=${encodeURIComponent(to)}`,
+        { signal: controller.signal }
+      )
+      clearTimeout(timer)
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const text = await res.text()
+      if (text.trimStart().startsWith('<')) throw new Error('Received HTML instead of JSON')
+      const json = JSON.parse(text)
+
+      if (!json.success || !json.data) throw new Error('Invalid response')
+
+      const data = json.data
 
       // Monthly diary entries
-      if (diaryMonthRes.status === 'fulfilled' && diaryMonthRes.value.data) {
-        setDiaryEntries(diaryMonthRes.value.data)
-      }
+      setDiaryEntries(data.diaryMonth || [])
 
       // Weekly mood for chart
-      if (diaryWeekRes.status === 'fulfilled' && diaryWeekRes.value.data) {
-        const weekEntries = diaryWeekRes.value.data as DiaryEntry[]
-        const moodByDay = new Map<string, number>()
-
-        for (const entry of weekEntries) {
-          if (entry.mood) {
-            const d = new Date(entry.date)
-            const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
-            const dayName = dayNamesShort[dayIndex]
-            moodByDay.set(dayName, entry.mood)
-          }
+      const weekEntries = (data.diaryWeek || []) as DiaryEntry[]
+      const moodByDay = new Map<string, number>()
+      for (const entry of weekEntries) {
+        if (entry.mood) {
+          const d = new Date(entry.date)
+          const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
+          const dayName = dayNamesShort[dayIndex]
+          moodByDay.set(dayName, entry.mood)
         }
-
-        const moodData = dayNamesShort.map((day) => ({
+      }
+      setWeeklyMoodData(
+        dayNamesShort.map((day) => ({
           day,
           mood: moodByDay.get(day) ?? 0,
           label: moodByDay.get(day)
             ? moodEmojis[moodByDay.get(day)!] + ' ' + moodLabels[moodByDay.get(day)!]
             : 'Нет данных',
         }))
-        setWeeklyMoodData(moodData)
-      }
+      )
 
       // Finance stats
-      if (financeRes.status === 'fulfilled' && financeRes.value.success && financeRes.value.data) {
-        setFinanceStats(financeRes.value.data)
+      setFinanceStats(data.financeStats || null)
+
+      // Transactions
+      const txns = (data.transactions || []) as Transaction[]
+      setTransactionsData(txns)
+
+      // Weekly spending chart
+      const now = new Date()
+      const dailySpending = new Map<string, number>()
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now)
+        d.setDate(now.getDate() - i)
+        d.setHours(0, 0, 0, 0)
+        const dateStr = d.toISOString().split('T')[0]
+        dailySpending.set(dateStr, 0)
       }
-
-      // Finance transactions for weekly spending & weekly summary
-      if (
-        financeTransactionsRes.status === 'fulfilled' &&
-        financeTransactionsRes.value.success &&
-        financeTransactionsRes.value.data
-      ) {
-        const transactions = financeTransactionsRes.value.data as Transaction[]
-        setTransactionsData(transactions)
-        const now = new Date()
-
-        // Build last 7 days map
-        const dailySpending = new Map<string, number>()
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(now)
-          d.setDate(now.getDate() - i)
-          d.setHours(0, 0, 0, 0)
-          const dateStr = d.toISOString().split('T')[0]
-          dailySpending.set(dateStr, 0)
-        }
-
-        // Aggregate expense transactions by day
-        for (const t of transactions) {
-          if (t.type === 'EXPENSE') {
-            const tDate = new Date(t.date)
-            const dateStr = tDate.toISOString().split('T')[0]
-            if (dailySpending.has(dateStr)) {
-              dailySpending.set(dateStr, (dailySpending.get(dateStr) ?? 0) + t.amount)
-            }
+      for (const t of txns) {
+        if (t.type === 'EXPENSE') {
+          const tDate = new Date(t.date)
+          const dateStr = tDate.toISOString().split('T')[0]
+          if (dailySpending.has(dateStr)) {
+            dailySpending.set(dateStr, (dailySpending.get(dateStr) ?? 0) + t.amount)
           }
         }
-
-        // Convert to chart data
-        const spendingData: { day: string; spending: number }[] = []
-        for (let i = 6; i >= 0; i--) {
-          const d = new Date(now)
-          d.setDate(now.getDate() - i)
-          d.setHours(0, 0, 0, 0)
-          const dateStr = d.toISOString().split('T')[0]
-          const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
-          spendingData.push({
-            day: dayNamesShort[dayIndex],
-            spending: dailySpending.get(dateStr) ?? 0,
-          })
-        }
-        setWeeklySpendingData(spendingData)
       }
-
-      // Nutrition stats
-      if (nutritionRes.status === 'fulfilled' && nutritionRes.value.success && nutritionRes.value.data) {
-        setNutritionStats(nutritionRes.value.data)
-      }
-
-      // Workouts
-      if (workoutRes.status === 'fulfilled' && workoutRes.value.success && workoutRes.value.data) {
-        setWorkouts(workoutRes.value.data)
-      }
-
-      // Feed posts
-      if (feedRes.status === 'fulfilled' && feedRes.value.success && feedRes.value.data) {
-        setFeedPosts(feedRes.value.data)
-      }
-
-      // Habits data
-      if (habitsRes.status === 'fulfilled' && habitsRes.value.success && habitsRes.value.data) {
-        setHabitsData({
-          data: habitsRes.value.data,
-          stats: habitsRes.value.stats,
+      const spendingData: { day: string; spending: number }[] = []
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(now)
+        d.setDate(now.getDate() - i)
+        d.setHours(0, 0, 0, 0)
+        const dateStr = d.toISOString().split('T')[0]
+        const dayIndex = d.getDay() === 0 ? 6 : d.getDay() - 1
+        spendingData.push({
+          day: dayNamesShort[dayIndex],
+          spending: dailySpending.get(dateStr) ?? 0,
         })
       }
+      setWeeklySpendingData(spendingData)
 
-      // Budget data
-      if (budgetRes.status === 'fulfilled' && budgetRes.value.success && budgetRes.value.data) {
-        setBudgetData(budgetRes.value.data)
-      }
+      // Nutrition stats
+      setNutritionStats(data.nutritionStats || null)
 
-      // Meals today (for notification center)
-      if (mealsTodayRes.status === 'fulfilled' && mealsTodayRes.value.success && mealsTodayRes.value.data) {
-        setHasMealsToday(mealsTodayRes.value.data.length > 0)
-      }
+      // Meals today
+      setHasMealsToday(data.mealsToday || false)
+
+      // Workouts
+      setWorkouts(data.workouts || [])
+
+      // Feed posts
+      setFeedPosts(data.feedPosts || [])
+
+      // Habits
+      setHabitsData({
+        data: data.habits || [],
+        stats: data.habitsStats || { totalActive: 0, completedToday: 0, bestStreak: 0 },
+      })
+
+      // Budgets
+      setBudgetData(data.budgetData || null)
     } catch (err) {
       console.error('Dashboard fetch error:', err)
     } finally {
