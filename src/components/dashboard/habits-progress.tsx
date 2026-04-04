@@ -1,11 +1,13 @@
 'use client'
 
+import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Target, CheckCircle2 } from 'lucide-react'
 import type { HabitItem } from './types'
 import type { AppModule } from '@/store/use-app-store'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -13,7 +15,7 @@ interface HabitsProgressProps {
   loading: boolean
   totalActive: number
   completedToday: number
-  animHabitsPct: number
+  habitsPercentage: number
   circumference: number
   dashOffset: number
   uncompletedHabits: HabitItem[]
@@ -23,11 +25,11 @@ interface HabitsProgressProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function HabitsProgress({
+export const HabitsProgress = memo(function HabitsProgress({
   loading,
   totalActive,
   completedToday,
-  animHabitsPct,
+  habitsPercentage,
   circumference,
   dashOffset,
   uncompletedHabits,
@@ -90,7 +92,8 @@ export function HabitsProgress({
               </svg>
               <div className="absolute flex flex-col items-center">
                 <span className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {animHabitsPct}%
+                  <AnimatedNumber value={habitsPercentage} />
+                  <span className="text-lg">%</span>
                 </span>
               </div>
             </div>
@@ -136,4 +139,4 @@ export function HabitsProgress({
       </CardContent>
     </Card>
   )
-}
+})

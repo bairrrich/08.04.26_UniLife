@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -11,33 +12,31 @@ import {
   Apple,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
-import { Trophy } from 'lucide-react'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface WeeklySummaryProps {
   loading: boolean
-  animWeekEntries: number
   weekEntryCount: number
-  animWeekWorkouts: number
+  weekWorkoutCount: number
   weekExpenseSum: number
   completedToday: number
   totalActive: number
-  animKcal: number
+  todayKcal: number
   maxStreak: number
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function WeeklySummary({
+export const WeeklySummary = memo(function WeeklySummary({
   loading,
-  animWeekEntries,
   weekEntryCount,
-  animWeekWorkouts,
+  weekWorkoutCount,
   weekExpenseSum,
   completedToday,
   totalActive,
-  animKcal,
+  todayKcal,
   maxStreak,
 }: WeeklySummaryProps) {
   return (
@@ -67,9 +66,9 @@ export function WeeklySummary({
                 <p className="text-xs text-muted-foreground">Записи</p>
                 <div className="flex items-center gap-1">
                   <p className="text-lg font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">
-                    {animWeekEntries}
+                    <AnimatedNumber value={weekEntryCount} />
                   </p>
-                  {animWeekEntries > 0 && (
+                  {weekEntryCount > 0 && (
                     <TrendingUp className="h-3 w-3 text-emerald-500" />
                   )}
                 </div>
@@ -85,9 +84,9 @@ export function WeeklySummary({
                 <p className="text-xs text-muted-foreground">Тренировки</p>
                 <div className="flex items-center gap-1">
                   <p className="text-lg font-semibold tabular-nums text-blue-700 dark:text-blue-300">
-                    {animWeekWorkouts}
+                    <AnimatedNumber value={weekWorkoutCount} />
                   </p>
-                  {animWeekWorkouts > 0 && (
+                  {weekWorkoutCount > 0 && (
                     <TrendingUp className="h-3 w-3 text-blue-500" />
                   )}
                 </div>
@@ -139,9 +138,9 @@ export function WeeklySummary({
                 <p className="text-xs text-muted-foreground">Калории</p>
                 <div className="flex items-center gap-1">
                   <p className="text-lg font-semibold tabular-nums text-orange-700 dark:text-orange-300">
-                    {animKcal.toLocaleString('ru-RU')}
+                    <AnimatedNumber value={todayKcal} />
                   </p>
-                  {animKcal > 0 && (
+                  {todayKcal > 0 && (
                     <TrendingUp className="h-3 w-3 text-orange-500" />
                   )}
                 </div>
@@ -152,4 +151,4 @@ export function WeeklySummary({
       </CardContent>
     </Card>
   )
-}
+})

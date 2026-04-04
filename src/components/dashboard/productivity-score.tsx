@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Zap } from 'lucide-react'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -15,7 +16,7 @@ interface ProductivityScoreProps {
   habitsCompleted: number
   habitsTotal: number
   nutritionLogged: boolean
-  animatedScore: number
+  score: number
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -99,7 +100,7 @@ function getBreakdownItems(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ProductivityScore({
+export const ProductivityScore = memo(function ProductivityScore({
   loading,
   diaryWritten,
   waterMl,
@@ -107,10 +108,8 @@ export function ProductivityScore({
   habitsCompleted,
   habitsTotal,
   nutritionLogged,
-  animatedScore,
+  score,
 }: ProductivityScoreProps) {
-  const score = animatedScore
-
   const colors = useMemo(() => getScoreColor(score), [score])
   const statusText = useMemo(() => getStatusText(score), [score])
   const breakdown = useMemo(
@@ -170,10 +169,10 @@ export function ProductivityScore({
                   strokeDashoffset={dashOffset}
                 />
               </svg>
-              {/* Score number */}
+              {/* Score number — animated locally */}
               <div className="absolute flex flex-col items-center">
                 <span className={`text-3xl font-bold tabular-nums ${colors.text}`}>
-                  {score}
+                  <AnimatedNumber value={score} duration={800} />
                 </span>
                 <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                   из 100
@@ -237,4 +236,4 @@ export function ProductivityScore({
       </CardContent>
     </Card>
   )
-}
+})

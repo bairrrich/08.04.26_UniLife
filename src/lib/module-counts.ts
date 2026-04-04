@@ -35,6 +35,17 @@ async function fetchFromApi(): Promise<Record<string, number>> {
   }
 }
 
+// Shallow compare two count objects to avoid unnecessary re-renders
+function countsEqual(a: Record<string, number>, b: Record<string, number>): boolean {
+  const keysA = Object.keys(a)
+  const keysB = Object.keys(b)
+  if (keysA.length !== keysB.length) return false
+  for (const key of keysA) {
+    if (a[key] !== b[key]) return false
+  }
+  return true
+}
+
 async function refreshCounts(): Promise<Record<string, number>> {
   const now = Date.now()
   if (cachedCounts && cacheTimestamp && now - cacheTimestamp < CACHE_TTL) {
@@ -45,10 +56,16 @@ async function refreshCounts(): Promise<Record<string, number>> {
   if (!fetchPromise) {
     fetchPromise = fetchFromApi()
       .then((data) => {
-        cachedCounts = data
-        cacheTimestamp = Date.now()
         fetchPromise = null
-        broadcast(data)
+        // Only broadcast if data actually changed
+        if (!countsEqual(data, cachedCounts)) {
+          cachedCounts = data
+          cacheTimestamp = Date.now()
+          broadcast(data)
+        } else {
+          // Still update cache timestamp to avoid re-fetching
+          cacheTimestamp = Date.now()
+        }
         return data
       })
       .catch(() => {

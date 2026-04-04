@@ -3218,3 +3218,27 @@ Stage Summary:
 - All text remains in Russian, all existing functionality preserved
 - ESLint: 0 errors, 0 warnings
 - TypeScript: 0 errors in analytics component files
+
+---
+Task ID: re-render-fix
+Agent: main
+Task: Fix eternal re-rendering issue in UniLife dashboard
+
+Work Log:
+- Analyzed all components in the render tree to identify re-render sources
+- Found root cause: `useAnimatedCounter` hook in `dashboard-page.tsx` had 8 instances, each causing ~12 state updates via `requestAnimationFrame` during 600ms animation. All intermediate `setValue()` calls triggered full DashboardPage re-renders (8 × 12 = ~96 re-renders in 600ms)
+- Created `AnimatedNumber` component (`src/components/ui/animated-number.tsx`) — a memoized leaf component that manages animation state locally, preventing parent re-renders during animation
+- Simplified `useAnimatedCounter` hook (`src/components/dashboard/hooks.ts`) to a simple pass-through (returns target value directly, no animation state)
+- Updated `StatCards` component to use `AnimatedNumber` internally with `React.memo`
+- Updated `ProductivityScore` component with `React.memo` and internal `AnimatedNumber` for score display
+- Updated `HabitsProgress` component with `React.memo` and internal `AnimatedNumber` for percentage display
+- Updated `WeeklySummary` component with `React.memo` and internal `AnimatedNumber` for all numeric values
+- Updated `DashboardPage` to pass target values instead of animated values to child components
+- Added `countsEqual()` to `useModuleCounts` to prevent unnecessary broadcasts when data hasn't changed (shallow comparison before notifying subscribers)
+- All lint checks pass (0 errors, 0 warnings)
+
+Stage Summary:
+- **Root cause fixed**: Eliminated ~96 unnecessary re-renders during dashboard initial load by moving animation state from parent (DashboardPage) to isolated leaf components (AnimatedNumber)
+- **Files modified**: `hooks.ts`, `animated-number.tsx` (new), `stat-cards.tsx`, `productivity-score.tsx`, `habits-progress.tsx`, `weekly-summary.tsx`, `dashboard-page.tsx`, `module-counts.ts`
+- **Pattern change**: Animated counter values are now managed inside child components, not in the parent. Parent passes stable target values. Animation state is isolated and doesn't bubble up.
+- **useModuleCounts optimization**: Added shallow comparison to avoid broadcasting identical data, reducing unnecessary sidebar/footer re-renders during polling

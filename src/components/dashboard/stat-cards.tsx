@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -10,34 +11,32 @@ import {
   TrendingUp,
   TrendingDown,
 } from 'lucide-react'
-import { MOOD_EMOJI } from '@/lib/format'
-import { formatCurrency } from '@/lib/format'
+import { MOOD_EMOJI, formatCurrency } from '@/lib/format'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
 interface StatCardsProps {
   loading: boolean
   todayMood: number | null
-  animWeekEntries: number
-  animIncome: number
-  animExpense: number
-  animKcal: number
-  animWorkouts: number
+  weekEntries: number
+  totalIncome: number
+  totalExpense: number
   todayKcal: number
+  workoutsCount: number
   kcalGoal: number
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function StatCards({
+export const StatCards = memo(function StatCards({
   loading,
   todayMood,
-  animWeekEntries,
-  animIncome,
-  animExpense,
-  animKcal,
-  animWorkouts,
+  weekEntries,
+  totalIncome,
+  totalExpense,
   todayKcal,
+  workoutsCount,
   kcalGoal,
 }: StatCardsProps) {
   return (
@@ -62,7 +61,7 @@ export function StatCards({
               </span>
               <div>
                 <p className="text-lg font-semibold tabular-nums">
-                  {animWeekEntries}
+                  <AnimatedNumber value={weekEntries} />
                 </p>
                 <p className="text-xs text-emerald-600/70 dark:text-emerald-400/70">записей за неделю</p>
               </div>
@@ -89,13 +88,13 @@ export function StatCards({
               <div className="flex items-center gap-1">
                 <TrendingUp className="h-3 w-3 text-emerald-500" />
                 <span className="text-sm font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                  {formatCurrency(animIncome)}
+                  <AnimatedNumber value={totalIncome} formatter={(v) => formatCurrency(v)} />
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <TrendingDown className="h-3 w-3 text-red-500" />
                 <span className="text-sm font-semibold tabular-nums text-red-600 dark:text-red-400">
-                  {formatCurrency(animExpense)}
+                  <AnimatedNumber value={totalExpense} formatter={(v) => formatCurrency(v)} />
                 </span>
               </div>
             </div>
@@ -119,7 +118,7 @@ export function StatCards({
           <CardContent className="pt-0">
             <div>
               <p className="text-lg font-semibold tabular-nums">
-                {animKcal.toLocaleString('ru-RU')}
+                <AnimatedNumber value={todayKcal} />
                 <span className="text-sm font-normal text-muted-foreground">
                   {' '}/ {kcalGoal.toLocaleString('ru-RU')} ккал
                 </span>
@@ -156,7 +155,9 @@ export function StatCards({
           </CardHeader>
           <CardContent className="pt-0">
             <div>
-              <p className="text-lg font-semibold tabular-nums">{animWorkouts}</p>
+              <p className="text-lg font-semibold tabular-nums">
+                <AnimatedNumber value={workoutsCount} />
+              </p>
               <p className="text-xs text-blue-600/70 dark:text-blue-400/70">тренировок в этом месяце</p>
             </div>
           </CardContent>
@@ -164,4 +165,4 @@ export function StatCards({
       )}
     </div>
   )
-}
+})

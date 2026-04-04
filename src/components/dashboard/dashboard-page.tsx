@@ -66,7 +66,7 @@ import {
   PIE_COLORS,
   formatDate,
 } from './constants'
-import { useAnimatedCounter } from './hooks'
+// AnimatedNumber is now used inside leaf components to isolate animation state
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -308,14 +308,8 @@ export default function DashboardPage() {
     return result
   }, [diaryEntries, now])
 
-  // ── Animated Counters ─────────────────────────────────────────────
-  const animWeekEntries = useAnimatedCounter(weekEntryCount, 600, !loading)
-  const animIncome = useAnimatedCounter(financeStats?.totalIncome ?? 0, 600, !loading)
-  const animExpense = useAnimatedCounter(financeStats?.totalExpense ?? 0, 600, !loading)
-  const animKcal = useAnimatedCounter(todayKcal, 600, !loading)
-  const animWorkouts = useAnimatedCounter(workouts.length, 600, !loading)
-  const animHabitsPct = useAnimatedCounter(habitsPercentage, 600, !loading)
-  const animWeekWorkouts = useAnimatedCounter(weekWorkoutCount, 600, !loading)
+  // ── No animated counters here — animation is handled inside leaf
+  //    components via <AnimatedNumber> to isolate re-renders ────
 
   // ── Quote Handlers ───────────────────────────────────────────────
   const handleRefreshQuote = () => {
@@ -425,7 +419,7 @@ export default function DashboardPage() {
     return score
   }, [loading, todayEntry, waterTodayMl, todayWorkout, totalActive, completedToday, hasMealsToday])
 
-  const animProductivityScore = useAnimatedCounter(productivityScore, 800, !loading)
+  // Productivity score animation is inside ProductivityScore component
 
   // ── Time Ago Helper ───────────────────────────────────────────
   const getTimeAgo = useCallback((dateStr: string): string => {
@@ -471,19 +465,18 @@ export default function DashboardPage() {
         habitsCompleted={completedToday}
         habitsTotal={totalActive}
         nutritionLogged={hasMealsToday}
-        animatedScore={animProductivityScore}
+        score={productivityScore}
       />
 
       {/* ── Stats Cards ─────────────────────────────────────────────── */}
       <StatCards
         loading={loading}
         todayMood={todayMood}
-        animWeekEntries={animWeekEntries}
-        animIncome={animIncome}
-        animExpense={animExpense}
-        animKcal={animKcal}
-        animWorkouts={animWorkouts}
+        weekEntries={weekEntryCount}
+        totalIncome={financeStats?.totalIncome ?? 0}
+        totalExpense={financeStats?.totalExpense ?? 0}
         todayKcal={todayKcal}
+        workoutsCount={workouts.length}
         kcalGoal={kcalGoal}
       />
 
@@ -548,7 +541,7 @@ export default function DashboardPage() {
         loading={loading}
         totalActive={totalActive}
         completedToday={completedToday}
-        animHabitsPct={animHabitsPct}
+        habitsPercentage={habitsPercentage}
         circumference={circumference}
         dashOffset={dashOffset}
         uncompletedHabits={uncompletedHabits}
@@ -628,13 +621,12 @@ export default function DashboardPage() {
       {/* ── Weekly Summary ──────────────────────────────────────── */}
       <WeeklySummary
         loading={loading}
-        animWeekEntries={animWeekEntries}
         weekEntryCount={weekEntryCount}
-        animWeekWorkouts={animWeekWorkouts}
+        weekWorkoutCount={weekWorkoutCount}
         weekExpenseSum={weekExpenseSum}
         completedToday={completedToday}
         totalActive={totalActive}
-        animKcal={animKcal}
+        todayKcal={todayKcal}
         maxStreak={maxStreak}
       />
 
