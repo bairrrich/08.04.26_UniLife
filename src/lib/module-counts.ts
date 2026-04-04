@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 // ── In-memory cache with 5-minute TTL ──────────────────────────────
 
@@ -91,27 +91,33 @@ export function setFeedLastSeen(): void {
   localStorage.setItem(FEED_LAST_SEEN_KEY, String(Date.now()))
 }
 
+// ── Stable empty object to prevent unnecessary re-renders ─────────
+const EMPTY_COUNTS: Record<string, number> = {}
+
 // ── Hook: simple useState + useEffect, no useSyncExternalStore ──────
 
 export function useModuleCounts(): Record<string, number> {
-  const [counts, setCounts] = useState<Record<string, number>>(cachedCounts)
-  const setCountsRef = useRef(setCounts)
-  setCountsRef.current = setCounts
+  const [counts, setCounts] = useState<Record<string, number>>(EMPTY_COUNTS)
+  const mountedRef = useRef(false)
 
   useEffect(() => {
     consumerCount++
 
-    // Register subscriber
-    const handler = (c: Record<string, number>) => setCountsRef.current(c)
-    subscribers.add(handler)
-
-    // If we already have cached data, use it immediately
-    if (cachedCounts) {
-      setCounts(cachedCounts)
+    // Register subscriber — use a stable callback via ref to avoid stale closures
+    const handler = (c: Record<string, number>) => {
+      if (mountedRef.current) {
+        setCounts(c)
+      }
     }
+    subscribers.add(handler)
+    mountedRef.current = true
 
-    // Fetch fresh data
-    refreshCounts()
+    // Fetch fresh data (don't set cached data here to avoid SSR/client mismatch)
+    refreshCounts().then((data) => {
+      if (mountedRef.current && Object.keys(data).length > 0) {
+        setCounts(data)
+      }
+    })
 
     // Start polling interval (only one, shared across all instances)
     if (!intervalId) {
@@ -119,6 +125,7 @@ export function useModuleCounts(): Record<string, number> {
     }
 
     return () => {
+      mountedRef.current = false
       consumerCount--
       subscribers.delete(handler)
 
@@ -141,5 +148,5 @@ export function useModuleCounts(): Record<string, number> {
 export function invalidateModuleCountsCache(): void {
   cachedCounts = {}
   cacheTimestamp = 0
-  broadcast({})
+  broadcast(EMPTY_COUNTS)
 }

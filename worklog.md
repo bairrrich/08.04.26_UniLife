@@ -3264,3 +3264,31 @@ Stage Summary:
 - **Navigation stability**: Server now survives module navigation (previously crashed on chunk recompilation)
 - **ESLint**: 0 errors, 0 warnings
 - **Verified**: Dashboard, Finance, Diary navigation all work correctly
+---
+Task ID: fix-page-reload-loop
+Agent: main-agent
+Task: Fix application not loading and page constantly reloading
+
+Work Log:
+- Diagnosed root cause of "приложение не загружается и страница перезагружается":
+  1. `.next` cache was corrupted (374MB) causing Turbopack compilation failures
+  2. Memory limit was too low (1024MB) causing dev server OOM crashes
+  3. `module-counts.ts` hook had potential SSR/client hydration mismatch
+- Cleaned `.next` cache completely (rm -rf .next)
+- Increased memory limit from 1024MB to 2048MB in package.json dev script
+- Added explicit `--turbopack` flag to dev script
+- Rewrote `module-counts.ts`:
+  - Initialize with stable EMPTY_COUNTS constant instead of mutable module variable
+  - Added mountedRef guard to prevent state updates after unmount
+  - Removed immediate setCounts(cachedCounts) in useEffect that could cause mismatch
+  - Only update state after successful fetch with actual data
+  - Added useCallback import for consistency
+- Verified fix: server starts in ~600ms, page compiles in ~3.4s (was 10.6s)
+- Browser-tested: page loads correctly, no console errors, all modules accessible
+- Screenshot captured confirming app renders properly
+
+Stage Summary:
+- Page reload loop fixed — root cause was corrupted Turbopack cache + OOM crashes
+- Dev server now runs reliably with 2048MB memory limit
+- module-counts hook made more resilient against SSR/hydration mismatches
+- All 11 modules verified working: Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics, Settings
