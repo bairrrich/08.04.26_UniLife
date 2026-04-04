@@ -1,166 +1,29 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { safeJson } from '@/lib/safe-fetch'
 import { Crosshair, Plus, Target, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { toast } from 'sonner'
-import type { GoalData, GoalsResponse, FilterTab } from './types'
+import { useGoals } from './hooks'
 import { getMotivationalPhrase } from './constants'
 import { GoalStats } from './goal-stats'
 import { GoalCard } from './goal-card'
 import { GoalDialog } from './goal-dialog'
+import { FilterTabs } from './filter-tabs'
 
 export default function GoalsPage() {
-  const [goals, setGoals] = useState<GoalData[]>([])
-  const [stats, setStats] = useState({ totalGoals: 0, completedGoals: 0, avgProgress: 0 })
-  const [loading, setLoading] = useState(true)
-  const [filterTab, setFilterTab] = useState<FilterTab>('all')
-
-  // Dialog state
-  const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingGoal, setEditingGoal] = useState<GoalData | null>(null)
-  const [formTitle, setFormTitle] = useState('')
-  const [formDescription, setFormDescription] = useState('')
-  const [formCategory, setFormCategory] = useState('personal')
-  const [formTargetValue, setFormTargetValue] = useState('')
-  const [formCurrentValue, setFormCurrentValue] = useState('0')
-  const [formUnit, setFormUnit] = useState('')
-  const [formDeadline, setFormDeadline] = useState('')
-  const [formStatus, setFormStatus] = useState('active')
-  const [formProgress, setFormProgress] = useState('0')
-  const [submitting, setSubmitting] = useState(false)
-
-  const fetchGoals = useCallback(async () => {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/goals')
-      const json: GoalsResponse | null = await safeJson<GoalsResponse>(res)
-      if (json && json.success) { setGoals(json.data); setStats(json.stats) }
-    } catch (err) {
-      console.error('Failed to fetch goals:', err)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => { fetchGoals() }, [fetchGoals])
-
-  const filteredGoals = goals.filter((g) => {
-    if (filterTab === 'active') return g.status === 'active'
-    if (filterTab === 'completed') return g.status === 'completed'
-    return true
-  })
-
-  // ─── Dialog Handlers ──────────────────────────────────────────────────────
-
-  const resetForm = () => {
-    setFormTitle(''); setFormDescription(''); setFormCategory('personal')
-    setFormTargetValue(''); setFormCurrentValue('0'); setFormUnit('')
-    setFormDeadline(''); setFormStatus('active'); setFormProgress('0')
-    setEditingGoal(null)
-  }
-
-  const openAddDialog = () => { resetForm(); setDialogOpen(true) }
-
-  const openEditDialog = (goal: GoalData) => {
-    setEditingGoal(goal); setFormTitle(goal.title)
-    setFormDescription(goal.description || ''); setFormCategory(goal.category)
-    setFormTargetValue(goal.targetValue != null ? String(goal.targetValue) : '')
-    setFormCurrentValue(String(goal.currentValue)); setFormUnit(goal.unit || '')
-    setFormDeadline(goal.deadline ? goal.deadline.split('T')[0] : '')
-    setFormStatus(goal.status); setFormProgress(String(goal.progress))
-    setDialogOpen(true)
-  }
-
-  const handleSubmit = async () => {
-    if (!formTitle.trim()) return
-    toast.dismiss(); setSubmitting(true)
-    try {
-      const body = {
-        title: formTitle.trim(), description: formDescription.trim() || null,
-        category: formCategory, targetValue: formTargetValue ? Number(formTargetValue) : null,
-        currentValue: Number(formCurrentValue) || 0, unit: formUnit.trim() || null,
-        deadline: formDeadline ? new Date(formDeadline).toISOString() : null,
-        status: formStatus, progress: Math.min(100, Math.max(0, Number(formProgress) || 0)),
-      }
-      if (editingGoal) {
-        const res = await fetch(`/api/goals/${editingGoal.id}`, {
-          method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await safeJson(res)
-        if (!json || !json.success) { toast.error('Ошибка при обновлении цели'); return }
-        toast.success('Цель обновлена')
-      } else {
-        const res = await fetch('/api/goals', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
-        })
-        const json = await safeJson(res)
-        if (!json || !json.success) { toast.error('Ошибка при создании цели'); return }
-        toast.success('Цель создана')
-      }
-      setDialogOpen(false); fetchGoals()
-    } catch (err) {
-      console.error('Failed to save goal:', err)
-      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
-  // ─── Quick Actions ────────────────────────────────────────────────────────
-
-  const handleUpdateProgress = async (goal: GoalData) => {
-    toast.dismiss()
-    try {
-      const newProgress = Math.min(100, goal.progress + 5)
-      const res = await fetch(`/api/goals/${goal.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ progress: newProgress }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
-      if (!json || !json.success) { toast.error('Ошибка обновления прогресса'); return }
-      toast.success(`Прогресс: ${newProgress}%`); fetchGoals()
-    } catch (err) {
-      toast.error('Ошибка обновления прогресса')
-    }
-  }
-
-  const handleComplete = async (goal: GoalData) => {
-    toast.dismiss()
-    try {
-      const res = await fetch(`/api/goals/${goal.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'completed', progress: 100 }),
-      })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
-      if (!json || !json.success) { toast.error('Ошибка завершения цели'); return }
-      toast.success('Цель завершена! 🎉'); fetchGoals()
-    } catch (err) {
-      toast.error('Ошибка завершения цели')
-    }
-  }
-
-  const handleDelete = async (goalId: string) => {
-    toast.dismiss()
-    try {
-      const res = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
-      if (!json || !json.success) { toast.error('Ошибка при удалении цели'); return }
-      toast.success('Цель удалена'); fetchGoals()
-    } catch (err) {
-      console.error('Failed to delete goal:', err)
-      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
-    }
-  }
-
-  // ─── Render ──────────────────────────────────────────────────────────────
+  const {
+    goals, stats, loading, filterTab, setFilterTab,
+    dialogOpen, handleDialogChange, editingGoal, submitting,
+    formTitle, setFormTitle, formDescription, setFormDescription,
+    formCategory, setFormCategory, formTargetValue, setFormTargetValue,
+    formCurrentValue, setFormCurrentValue, formUnit, setFormUnit,
+    formDeadline, setFormDeadline, formStatus, setFormStatus,
+    formProgress, setFormProgress,
+    openAddDialog, openEditDialog, handleSubmit,
+    handleUpdateProgress, handleComplete, handleDelete,
+    filteredGoals,
+  } = useGoals()
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -179,7 +42,7 @@ export default function GoalsPage() {
             <Plus className="h-4 w-4 mr-2" />Новая цель
           </Button>
           <GoalDialog
-            open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm() }}
+            open={dialogOpen} onOpenChange={handleDialogChange}
             editingGoal={editingGoal}
             formTitle={formTitle} setFormTitle={setFormTitle}
             formDescription={formDescription} setFormDescription={setFormDescription}
@@ -238,35 +101,7 @@ export default function GoalsPage() {
       ) : (
         <>
           <GoalStats goals={goals} stats={stats} />
-
-          {/* Filter Tabs */}
-          <div className="flex gap-2">
-            {([
-              { key: 'all' as FilterTab, label: 'Все' },
-              { key: 'active' as FilterTab, label: 'Активные' },
-              { key: 'completed' as FilterTab, label: 'Завершённые' },
-            ]).map((tab) => (
-              <button
-                key={tab.key} type="button"
-                onClick={() => setFilterTab(tab.key)}
-                className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-                  filterTab === tab.key
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted hover:bg-muted/80 text-muted-foreground'
-                }`}
-              >
-                {tab.label}
-                <span className="ml-1.5 text-xs opacity-70">
-                  {tab.key === 'all'
-                    ? goals.length
-                    : tab.key === 'active'
-                      ? goals.filter((g) => g.status === 'active').length
-                      : goals.filter((g) => g.status === 'completed').length
-                  }
-                </span>
-              </button>
-            ))}
-          </div>
+          <FilterTabs filterTab={filterTab} setFilterTab={setFilterTab} goals={goals} />
 
           {filteredGoals.length === 0 ? (
             <Card className="animate-slide-up overflow-hidden relative py-12">

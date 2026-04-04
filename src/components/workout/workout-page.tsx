@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 import { safeJson } from '@/lib/safe-fetch'
-import { getCurrentMonthStr } from '@/lib/format'
+import { getCurrentMonthStr, getRelativeTime } from '@/lib/format'
 import { toast } from 'sonner'
 
 import type { Workout, ExerciseData } from './types'
@@ -20,7 +20,6 @@ import {
   parseSets,
   calculateVolume,
   formatVolume,
-  formatRelativeTime: formatDate,
 } from './constants'
 import { StatCards } from './stat-cards'
 import { WorkoutCard } from './workout-card'
@@ -86,7 +85,7 @@ export function WorkoutPage() {
   const lastWorkoutTime = useMemo(() => {
     if (workouts.length === 0) return null
     const sorted = [...workouts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    return formatDate(sorted[0].date)
+    return getRelativeTime(sorted[0].date)
   }, [workouts])
 
   // Form handlers
