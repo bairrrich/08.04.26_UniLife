@@ -91,6 +91,8 @@ const NutritionSummaryWidget = dynamic(() => import('./nutrition-summary-widget'
 const CurrentStreaks = dynamic(() => import('./current-streaks'), { ssr: false, loading: widgetLoad })
 const WeeklyScore = dynamic(() => import('./weekly-score'), { ssr: false, loading: widgetLoad })
 const MiniCalendar = dynamic(() => import('./mini-calendar'), { ssr: false, loading: widgetLoad })
+const QuickMoodWidget = dynamic(() => import('./quick-mood-widget'), { ssr: false, loading: smallLoad })
+const BreathingWidget = dynamic(() => import('./breathing-widget'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -598,8 +600,11 @@ export default function DashboardPage() {
         kcalGoal={kcalGoal}
       />
 
-      {/* ── Mini Calendar ─────────────────────────────────────────── */}
-      <MiniCalendar />
+      {/* ── Quick Mood + Mini Calendar 2-column grid ─────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <QuickMoodWidget />
+        <MiniCalendar />
+      </div>
 
       {/* ── Weekly Insights ──────────────────────────────────────────── */}
       <WeeklyInsights
@@ -733,6 +738,9 @@ export default function DashboardPage() {
           <ExpensePieChart loading={loading} expensePieData={expensePieData} />
         </div>
       </div>
+
+      {/* ── Breathing Exercise Widget ────────────────────────────── */}
+      <BreathingWidget />
 
       {/* ── Recent Activity Feed ───────────────────────────────── */}
       <ActivityFeed

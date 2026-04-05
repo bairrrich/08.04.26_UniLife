@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { getFeedLastSeen } from '@/lib/module-counts'
@@ -35,15 +36,16 @@ interface NavItemConfig {
 }
 
 const MAIN_NAV_ITEMS: NavItemConfig[] = [
+  { id: 'dashboard', label: 'Главная', icon: LayoutDashboard },
   { id: 'diary', label: 'Дневник', icon: BookOpen },
   { id: 'finance', label: 'Финансы', icon: Wallet },
-  { id: 'workout', label: 'Тренировки', icon: Dumbbell },
+  { id: 'workout', label: 'Спорт', icon: Dumbbell },
   { id: 'habits', label: 'Привычки', icon: Target },
 ]
 
 const MODULE_NAV_ITEMS: NavItemConfig[] = [
-  { id: 'dashboard', label: 'Дашборд', icon: LayoutDashboard },
   { id: 'nutrition', label: 'Питание', icon: Apple },
+  { id: 'habits', label: 'Привычки', icon: Target },
   { id: 'collections', label: 'Коллекции', icon: Library },
   { id: 'feed', label: 'Лента', icon: Rss },
   { id: 'goals', label: 'Цели', icon: Crosshair },
@@ -72,6 +74,14 @@ function NavItem({
         isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
       )}
     >
+      {/* Animated active indicator pill */}
+      {isActive && (
+        <motion.div
+          layoutId="mobile-nav-active"
+          className="absolute inset-x-2 -top-px h-1 rounded-full bg-primary"
+          transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+        />
+      )}
       <div className="relative">
         <Icon className={cn('h-5 w-5 shrink-0 transition-transform duration-200', isActive && 'scale-110')} />
         {badge !== undefined && badge > 0 && (
@@ -86,9 +96,6 @@ function NavItem({
       )}>
         {item.label}
       </span>
-      {isActive && (
-        <span className="absolute -top-px left-1/2 -translate-x-1/2 h-0.5 w-5 rounded-full bg-primary transition-all duration-300" />
-      )}
     </button>
   )
 }
@@ -176,12 +183,12 @@ function MoreSheet({
 
           <Separator className="my-3" />
 
-          {/* Main Tabs Section */}
+          {/* Quick Access Section */}
           <p className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold mb-2.5 px-1">
-            На главной панели
+            Быстрый доступ
           </p>
-          <div className="grid grid-cols-4 gap-1.5">
-            {MAIN_NAV_ITEMS.map((item) => {
+          <div className="flex items-center gap-2 flex-wrap">
+            {MAIN_NAV_ITEMS.slice(0, 3).map((item) => {
               const Icon = item.icon
               const isActive = activeModule === item.id
               return (
@@ -189,14 +196,14 @@ function MoreSheet({
                   key={item.id}
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
-                    'active-press flex flex-col items-center justify-center gap-1.5 rounded-lg p-2.5 transition-all duration-200',
+                    'active-press flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200',
                     isActive
-                      ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground/60 hover:text-foreground'
+                      ? 'bg-primary/10 text-primary ring-1 ring-primary/20'
+                      : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/50'
                   )}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-[10px] font-medium truncate w-full text-center">
+                  <Icon className="h-3.5 w-3.5" />
+                  <span className="text-[11px] font-medium">
                     {item.label}
                   </span>
                 </button>
@@ -281,8 +288,8 @@ export function MobileNav() {
         <MoreSheet activeModule={activeModule} onNavigate={setActiveModule} hasNewFeedPosts={hasNewFeedPosts} />
         </div>
       </div>
-      {/* Safe area inset for iPhone notch */}
-      <div className="h-[env(safe-area-inset-bottom)]" />
+      {/* Safe area inset for iPhone notch / home indicator */}
+      <div className="pb-[env(safe-area-inset-bottom)]" />
     </nav>
   )
 }
