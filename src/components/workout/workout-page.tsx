@@ -52,27 +52,31 @@ export function WorkoutPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="relative">
-        <div className="absolute -top-16 -right-8 w-56 h-56 rounded-full bg-gradient-to-br from-blue-400/20 to-indigo-400/15 blur-3xl pointer-events-none" />
-        <div className="absolute -top-8 -left-4 w-40 h-40 rounded-full bg-gradient-to-amber-400/15 to-rose-400/10 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Dumbbell className="h-5 w-5 sm:h-6 sm:w-6" />
-              Тренировки
-            </h2>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1">
-              Журнал упражнений и тренировок
-              {lastWorkoutTime && (
-                <span className="ml-2 inline-flex items-center gap-1 text-xs">
-                  · Последняя: <span className="font-medium text-foreground">{lastWorkoutTime}</span>
-                </span>
-              )}
-            </p>
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-blue-400/20 to-indigo-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-rose-400/10 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950 dark:text-blue-400">
+              <Dumbbell className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Тренировки</h1>
+              <p className="text-sm text-muted-foreground">
+                Журнал упражнений и тренировок
+                {lastWorkoutTime && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-xs">
+                    · Последняя: <span className="font-medium text-foreground">{lastWorkoutTime}</span>
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="shrink-0 sm:size-default">
-            <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Добавить</span>
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
+            </Button>
+          </div>
         </div>
       </div>
 

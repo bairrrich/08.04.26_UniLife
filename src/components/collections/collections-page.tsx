@@ -53,34 +53,38 @@ export default function CollectionsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* Header with decorative gradient blob */}
-      <div className="relative">
-        <div className="absolute -top-16 -right-8 w-56 h-56 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/15 blur-3xl pointer-events-none" />
-        <div className="absolute -top-8 -left-4 w-40 h-40 rounded-full bg-gradient-to-amber-400/15 to-orange-400/10 blur-3xl pointer-events-none" />
-        <div className="relative flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Library className="h-5 w-5 sm:h-6 sm:w-6" />
-              Коллекции
-            </h2>
-            <p className="text-muted-foreground text-xs sm:text-sm mt-1 truncate">
-              Книги, фильмы, рецепты и полезные находки
-            </p>
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-400/10 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+              <Library className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Коллекции</h1>
+              <p className="text-sm text-muted-foreground truncate">
+                Книги, фильмы, рецепты и полезные находки
+              </p>
+            </div>
           </div>
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="shrink-0 sm:size-default">
-            <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Добавить</span>
-          </Button>
-          <AddItemDialog
-            open={dialogOpen} onOpenChange={setDialogOpen}
-            formType={formType} setFormType={setFormType}
-            formTitle={formTitle} setFormTitle={setFormTitle}
-            formAuthor={formAuthor} setFormAuthor={setFormAuthor}
-            formDescription={formDescription} setFormDescription={setFormDescription}
-            formRating={formRating} setFormRating={setFormRating}
-            formStatus={formStatus} setFormStatus={setFormStatus}
-            formTags={formTags} setFormTags={setFormTags}
-            formNotes={formNotes} setFormNotes={setFormNotes}
-            onSubmit={handleSubmit}
-          />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
+            </Button>
+            <AddItemDialog
+              open={dialogOpen} onOpenChange={setDialogOpen}
+              formType={formType} setFormType={setFormType}
+              formTitle={formTitle} setFormTitle={setFormTitle}
+              formAuthor={formAuthor} setFormAuthor={setFormAuthor}
+              formDescription={formDescription} setFormDescription={setFormDescription}
+              formRating={formRating} setFormRating={setFormRating}
+              formStatus={formStatus} setFormStatus={setFormStatus}
+              formTags={formTags} setFormTags={setFormTags}
+              formNotes={formNotes} setFormNotes={setFormNotes}
+              onSubmit={handleSubmit}
+            />
+          </div>
         </div>
       </div>
 

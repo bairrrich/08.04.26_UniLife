@@ -88,6 +88,9 @@ const QuickNotesWidget = dynamic(() => import('./quick-notes-widget'), { ssr: fa
 const DailyProgressWidget = dynamic(() => import('./daily-progress-widget'), { ssr: false, loading: widgetLoad })
 const MoodWeatherIndicator = dynamic(() => import('./mood-weather-indicator'), { ssr: false, loading: () => <div className="h-[56px] w-[280px] skeleton-shimmer rounded-xl" /> })
 const NutritionSummaryWidget = dynamic(() => import('./nutrition-summary-widget'), { ssr: false, loading: widgetLoad })
+const CurrentStreaks = dynamic(() => import('./current-streaks'), { ssr: false, loading: widgetLoad })
+const WeeklyScore = dynamic(() => import('./weekly-score'), { ssr: false, loading: widgetLoad })
+const MiniCalendar = dynamic(() => import('./mini-calendar'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -595,6 +598,9 @@ export default function DashboardPage() {
         kcalGoal={kcalGoal}
       />
 
+      {/* ── Mini Calendar ─────────────────────────────────────────── */}
+      <MiniCalendar />
+
       {/* ── Weekly Insights ──────────────────────────────────────────── */}
       <WeeklyInsights
         loading={loading}
@@ -688,6 +694,12 @@ export default function DashboardPage() {
         <QuickNotes />
         <WeatherWidget />
         <FocusTimerWidget />
+      </div>
+
+      {/* ── Current Streaks & Weekly Score ────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <CurrentStreaks />
+        <WeeklyScore />
       </div>
 
       {/* ── Nutrition Summary Widget ────────────────────────── */}

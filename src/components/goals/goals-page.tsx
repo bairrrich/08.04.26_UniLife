@@ -168,39 +168,44 @@ export default function GoalsPage() {
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/10 blur-3xl" />
         <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
-        <div className="relative flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Crosshair className="h-6 w-6" />Цели
-            </h2>
-            <div className="flex items-center gap-2 mt-1">
-              <p className="text-muted-foreground text-sm">Трекер целей и достижений</p>
-              <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
-                <Calendar className="h-3 w-3" />
-                {getTodayBadge()}
-              </Badge>
+        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
+              <Crosshair className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Цели</h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Трекер целей и достижений</span>
+                <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
+                  <Calendar className="h-3 w-3" />
+                  {getTodayBadge()}
+                </Badge>
+              </div>
             </div>
           </div>
-          <Button onClick={openAddDialog}>
-            <Plus className="h-4 w-4 mr-2" />Новая цель
-          </Button>
-          <GoalDialog
-            open={dialogOpen} onOpenChange={handleDialogChange}
-            editingGoal={editingGoal}
-            formTitle={formTitle} setFormTitle={setFormTitle}
-            formDescription={formDescription} setFormDescription={setFormDescription}
-            formCategory={formCategory} setFormCategory={setFormCategory}
-            formTargetValue={formTargetValue} setFormTargetValue={setFormTargetValue}
-            formCurrentValue={formCurrentValue} setFormCurrentValue={setFormCurrentValue}
-            formUnit={formUnit} setFormUnit={setFormUnit}
-            formDeadline={formDeadline} setFormDeadline={setFormDeadline}
-            formStatus={formStatus} setFormStatus={setFormStatus}
-            formProgress={formProgress} setFormProgress={setFormProgress}
-            formStartDate={formStartDate} setFormStartDate={setFormStartDate}
-            formPriority={formPriority} setFormPriority={setFormPriority}
-            formMilestones={formMilestones} setFormMilestones={setFormMilestones}
-            submitting={submitting} onSubmit={handleSubmit}
-          />
+          <div className="flex items-center gap-2 shrink-0">
+            <Button onClick={openAddDialog} className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
+            </Button>
+            <GoalDialog
+              open={dialogOpen} onOpenChange={handleDialogChange}
+              editingGoal={editingGoal}
+              formTitle={formTitle} setFormTitle={setFormTitle}
+              formDescription={formDescription} setFormDescription={setFormDescription}
+              formCategory={formCategory} setFormCategory={setFormCategory}
+              formTargetValue={formTargetValue} setFormTargetValue={setFormTargetValue}
+              formCurrentValue={formCurrentValue} setFormCurrentValue={setFormCurrentValue}
+              formUnit={formUnit} setFormUnit={setFormUnit}
+              formDeadline={formDeadline} setFormDeadline={setFormDeadline}
+              formStatus={formStatus} setFormStatus={setFormStatus}
+              formProgress={formProgress} setFormProgress={setFormProgress}
+              formStartDate={formStartDate} setFormStartDate={setFormStartDate}
+              formPriority={formPriority} setFormPriority={setFormPriority}
+              formMilestones={formMilestones} setFormMilestones={setFormMilestones}
+              submitting={submitting} onSubmit={handleSubmit}
+            />
+          </div>
         </div>
       </div>
 

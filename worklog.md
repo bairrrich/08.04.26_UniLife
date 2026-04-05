@@ -7061,3 +7061,77 @@ Task: Compare all module pages for style inconsistencies and unify them to one s
 - All module pages now share a unified visual style with consistent headers, widths, and spacing
 - Nutrition module completely redesigned to match standard pattern (no longer the outlier)
 - Diary and Feed headers updated for consistency
+
+---
+Task ID: qa-round-4
+Agent: cron-review-coordinator
+Task: QA testing, style unification, new dashboard widgets
+
+## Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11 modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics, Settings) render correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data available via `/api/seed`
+- **Lint**: 0 errors, 0 warnings
+- **Build**: All routes compile successfully via Turbopack
+- **APIs**: 20+ REST endpoints, all returning HTTP 200
+- **Welcome Onboarding**: Properly persisted via localStorage — only shows on first visit
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ Full agent-browser QA across all 11 modules — all render with 0 console errors
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles and serves HTTP 200
+- ✅ All API endpoints returning correct data
+
+#### Style Unification (All 10 module pages now consistent)
+- **Nutrition Page** (previous round): Rewrote to standard pattern — removed `max-w-2xl`, `bg-gradient-to-b`, custom padding; added standard header with `UtensilsCrossed` icon in orange box, gradient blobs, date badge, add button; removed FAB button; MacroRings + DailyNutritionScore now side-by-side on desktop
+- **Diary Page** (previous round): Removed `max-w-5xl mx-auto` — now uses full parent width
+- **Feed Page** (previous round): Updated header to standard pattern with rose gradient blobs, `Rss` icon in rose box
+- **Workout Page**: Updated header — `<h2>` → `<h1>`, icon moved from inline to separate blue-colored box, `relative` → `relative overflow-hidden`, standardized gradient blob positions/sizes, button class unified
+- **Habits Page**: Updated header — `<h2>` → `<h1>`, icon moved to separate emerald-colored box, reduced gradient blobs from 3 to 2, date badge and flame indicator moved from h1 to subtitle area, button class unified
+- **Collections Page**: Updated header — `<h2>` → `<h1>`, icon moved to separate violet-colored box, standardized gradient blobs, button class unified
+- **Goals Page**: Updated header — `<h2>` → `<h1>`, icon moved to separate violet-colored box, added `flex-wrap sm:flex-nowrap`, button class unified
+
+#### New Features
+1. **Mini Calendar Widget** (`/src/components/dashboard/mini-calendar.tsx`):
+   - Compact monthly calendar with Russian month/day names
+   - Today highlighted with primary color
+   - Colored indicator dots for diary (amber), workout (blue), habits (green)
+   - Month navigation with previous/next arrows
+   - Click day → navigate to diary module
+   - Entry count subtitle with Russian pluralization
+   - Loading skeleton state, dark mode support
+
+2. **Current Streaks Widget** (`/src/components/dashboard/current-streaks.tsx`):
+   - Shows active streaks across 4 modules (Diary, Workout, Habits, Nutrition)
+   - Parallel data fetching from 4 API endpoints
+   - Color-coded streak bars (emerald ≥7, amber ≥3, muted <3)
+   - 🔥 emoji for streaks ≥ 3 days
+   - Progress bar relative to 30-day maximum
+   - Motivational empty state
+
+3. **Weekly Score Widget** (`/src/components/dashboard/weekly-score.tsx`):
+   - Calculates 0-100 weekly health score from 4 categories
+   - SVG circular gauge with color-coded arc (emerald ≥70, amber ≥40, red <40)
+   - Large centered score number with tabular-nums
+   - 2×2 mini stats grid below (Diary, Workouts, Habits, Nutrition)
+   - Parallel data fetching, skeleton loading state
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All 11 modules verified working after changes
+- ✅ 0 console errors across all modules (tested via agent-browser)
+- ✅ Dark mode supported for all new components
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+5. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+6. **Offline Support** — Service worker caching for offline usage
+7. **Push Notifications** — Push notifications for reminders (water, workout, diary)
+8. **Data Import Enhancement** — CSV import support in addition to JSON
+9. **Budget Alerts** — In-app budget threshold notifications
+10. **Localization** — i18n support for multiple languages beyond Russian
