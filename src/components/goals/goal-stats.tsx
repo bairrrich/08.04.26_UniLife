@@ -2,8 +2,9 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, Trophy, TrendingUp, Clock } from 'lucide-react'
+import { Target, Trophy, TrendingUp, Clock, CalendarClock, Zap, CalendarDays } from 'lucide-react'
 import type { GoalData } from './types'
+import { cn } from '@/lib/utils'
 
 interface GoalStatsProps {
   goals: GoalData[]
@@ -94,6 +95,36 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
     }).length
   }, [goals])
 
+  // ─── Nearest deadline calculation ─────────────────────────────────────────
+  const nearestDeadline = useMemo(() => {
+    const now = new Date()
+    const activeWithDeadline = goals
+      .filter((g) => g.deadline && g.status !== 'completed')
+      .map((g) => ({
+        ...g,
+        daysLeft: Math.ceil((new Date(g.deadline!).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+      }))
+      .sort((a, b) => Math.abs(a.daysLeft) - Math.abs(b.daysLeft))
+
+    return activeWithDeadline.length > 0 ? activeWithDeadline[0] : null
+  }, [goals])
+
+  // ─── Average progress speed calculation ───────────────────────────────────
+  const avgProgressSpeed = useMemo(() => {
+    const activeGoals = goals.filter((g) => g.status === 'active' && g.progress > 0)
+    if (activeGoals.length === 0) return null
+
+    const speeds = activeGoals.map((g) => {
+      const created = new Date(g.createdAt)
+      const now = new Date()
+      const daysElapsed = Math.max(1, Math.ceil((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+      return g.progress / daysElapsed
+    })
+
+    const avgSpeed = speeds.reduce((sum, s) => sum + s, 0) / speeds.length
+    return { value: Math.round(avgSpeed * 10) / 10, label: '% в день' }
+  }, [goals])
+
   // SVG progress ring params
   const ringRadius = 40
   const ringCircumference = 2 * Math.PI * ringRadius
@@ -166,8 +197,9 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-3 gap-4 stagger-children">
+      {/* Stats Row — 5 columns on lg, 3 on md, 2 on sm */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 stagger-children">
+        {/* Total Goals */}
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
@@ -181,6 +213,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
 
+        {/* Completed */}
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
@@ -194,6 +227,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
 
+        {/* Average Progress */}
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
@@ -203,6 +237,63 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
             <div className="min-w-0">
               <p className="text-2xl font-bold tabular-nums">{animatedAvg}%</p>
               <p className="text-xs text-muted-foreground truncate">Ср. прогресс</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Nearest Deadline */}
+        <Card className="card-hover overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-rose-600/5" />
+          <CardContent className="relative flex flex-col gap-1 p-4">
+            <div className="flex items-center gap-2">
+              <div className="h-10 w-10 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
+                <CalendarClock className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              </div>
+              <div className="min-w-0">
+                <p className={cn(
+                  'text-lg font-bold tabular-nums',
+                  nearestDeadline
+                    ? nearestDeadline.daysLeft < 0
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : nearestDeadline.daysLeft <= 3
+                        ? 'text-rose-600 dark:text-rose-400'
+                        : nearestDeadline.daysLeft <= 7
+                          ? 'text-amber-600 dark:text-amber-400'
+                          : 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-muted-foreground',
+                )}>
+                  {nearestDeadline
+                    ? nearestDeadline.daysLeft < 0
+                      ? `-${Math.abs(nearestDeadline.daysLeft)}`
+                      : `${nearestDeadline.daysLeft}`
+                    : '—'}
+                </p>
+                <p className="text-[10px] text-muted-foreground truncate">Ближайший дедлайн</p>
+              </div>
+            </div>
+            {nearestDeadline && (
+              <p className="text-[10px] text-muted-foreground truncate pl-12">{nearestDeadline.title}</p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Progress Speed */}
+        <Card className="card-hover overflow-hidden relative col-span-2 md:col-span-1">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5" />
+          <CardContent className="relative flex items-center gap-3 p-4">
+            <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
+              <Zap className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-lg font-bold tabular-nums">
+                {avgProgressSpeed ? `${avgProgressSpeed.value}` : '—'}
+                {avgProgressSpeed && (
+                  <span className="text-xs font-normal text-muted-foreground ml-0.5">
+                    {avgProgressSpeed.label}
+                  </span>
+                )}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">Скорость прогресса</p>
             </div>
           </CardContent>
         </Card>

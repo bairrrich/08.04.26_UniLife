@@ -3,6 +3,7 @@
 import { useAppStore } from '@/store/use-app-store'
 import { AppSidebar } from '@/components/layout/app-sidebar'
 import { MobileNav } from '@/components/layout/mobile-nav'
+import { ScrollToTop } from '@/components/layout/scroll-to-top'
 import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
 import { AnimatePresence, motion } from 'framer-motion'
 import dynamic from 'next/dynamic'
@@ -299,6 +300,7 @@ export default function Home() {
           </AnimatePresence>
         </div>
         <Footer />
+        <ScrollToTop />
         <MobileNav />
       </main>
     </div>

@@ -3832,3 +3832,163 @@ Stage Summary:
 - ESLint: 0 errors across all changes
 - Dev server: running cleanly after .next cache cleanup (368MB → 0)
 - No breaking changes to existing functionality
+
+---
+## Task ID: goals-enhance
+### Agent: goals-enhance-agent
+### Task: Enhance Goals module with deadline countdown, category icons, milestones, and improved stats
+
+### Work Log:
+- **constants.tsx**: 
+  - Added 2 new categories to `CATEGORY_CONFIG`: `education` (GraduationCap, violet) and `fitness` (Dumbbell, orange)
+  - Changed category icons to match spec: health→Heart (rose), finance→PiggyBank (amber), personal→User (emerald), career→Briefcase (blue), education/learning→GraduationCap (violet), fitness→Dumbbell (orange)
+  - Added `hoverGlow` field to each category config for category-matched glow shadow on card hover
+  - Enhanced `STATUS_CONFIG` with new statuses: `paused` (amber Pause icon) and `cancelled` (muted XCircle icon); kept `abandoned` as alias
+  - Added icon/iconBg/borderClass fields to each status: active→emerald Play with pulse animation, completed→emerald CheckCircle2, paused→amber Pause, cancelled→muted XCircle
+  - Updated status labels to match spec: active→"В процессе", completed→"Завершено", paused→"На паузе", cancelled→"Отменено"
+  - Added new helper functions: `getDeadlineDaysLeft()`, `getDeadlineBadgeClass()`, `getDeadlineUrgencyColor()`, `getDeadlineIconColor()`, `getProgressSpeed()`
+  - Added `DEFAULT_CATEGORY` and `DEFAULT_STATUS` fallback constants
+  - Updated `CATEGORY_OPTIONS` and `STATUS_OPTIONS` to include new categories/statuses with icons
+  - Removed unused `Target` and `Calendar` imports
+- **goal-card.tsx**:
+  - Enhanced hover: added `hover:scale-[1.01]` with `transition-all duration-300` and category-matched glow shadow (`catConfig.hoverGlow`)
+  - Added deadline countdown badge with Calendar icon: urgency-based coloring (emerald >7 days, amber 3-7 days, rose <3 days/overdue), pulsing animation for overdue
+  - Added celebratory gradient border for completed goals (`borderClass` from status config)
+  - Added gradient overlay behind completed card content (`from-emerald-500/20 via-teal-500/10 to-cyan-500/20`)
+  - Changed completed checkmark from blue to emerald for consistency
+  - Enhanced status indicator with animated dot pulse for active status (`animate-pulse-soft`)
+  - Added `active-press` class to all action buttons for press feedback
+  - Action buttons now transition to full opacity on card hover (`group-hover:opacity-100`)
+  - Current value label shown on progress bar for goals with target values
+  - Milestone dots only shown for goals with `targetValue > 0`
+  - Used `cn()` utility for class merging throughout
+- **goal-stats.tsx**:
+  - Added "Ближайший дедлайн" (Nearest Deadline) stat card: CalendarClock icon in rose, shows closest deadline goal name and days countdown with urgency coloring (emerald/amber/rose)
+  - Added "Скорость прогресса" (Progress Speed) stat card: Zap icon in violet, shows average daily progress speed across all active goals
+  - Expanded stats grid from 3 to 5 columns (2 on mobile, 3 on md, 5 on lg) with `stagger-children` animation
+  - Each stat card has gradient background, colored icon in rounded-lg container
+  - Imported `CalendarClock`, `Zap`, `CalendarDays` icons and `cn()` utility
+
+### Stage Summary:
+- 3 files modified: constants.tsx, goal-card.tsx, goal-stats.tsx
+- 2 new categories added (education, fitness) with correct icons and colors
+- 4 status types supported (active, completed, paused, cancelled) with animated indicators
+- Deadline countdown badges with urgency-based color coding and Calendar icon
+- Category-matched hover glow effects on goal cards
+- Celebratory gradient border/overlay for completed goals
+- 2 new stat cards (nearest deadline, progress speed) added to stats dashboard
+- ESLint: 0 errors in modified files (pre-existing error in quick-add-menu.tsx unrelated)
+
+---
+## Task ID: quick-add-scroll-top
+### Agent: quick-add-scroll-agent
+### Task: Enhance Quick Add Menu with more items, animations, and add Scroll-to-Top button
+
+### Work Log:
+
+**Task 1 — Enhanced Quick Add Menu (`/src/components/dashboard/quick-add-menu.tsx`):**
+- Added 3 new quick add items to the menu:
+  - New Habit (Sparkles icon, violet, module: 'habits', shortcut: 'H')
+  - New Goal (Crosshair icon, blue, module: 'goals', shortcut: 'G')
+  - New Collection Item (Library icon, emerald, module: 'collections', shortcut: 'C')
+- Added keyboard shortcut hints next to each menu item:
+  - Displayed as `<kbd>` elements on the right side of each item
+  - Hidden on mobile (`hidden md:inline-flex`), visible on desktop only
+  - Shortcuts match existing keyboard-shortcuts-dialog.tsx mappings (J=diary, F=finance, N=nutrition, W=workout, H=habits, G=goals, C=collections)
+- Added framer-motion animations:
+  - Each menu item wrapped in `motion.div` with staggered entry animation (50ms delay between items)
+  - Items animate from `opacity: 0, x: 8` to `opacity: 1, x: 0`
+  - FAB button scales up (`scale-110`) when menu is open with enhanced shadow
+  - Plus icon rotates 45° when menu is open (via `open` state conditional class)
+  - Added backdrop blur on dropdown content (`backdrop-blur-md bg-background/95`)
+- Added section dividers:
+  - "Записи" section: Diary, Expense, Meal, Workout
+  - "Цели" section: Habit, Goal, Collection
+  - Separated with gradient divider lines (`from-transparent via-border/50 to-transparent`)
+  - Section labels shown as uppercase muted text (`text-[10px] font-semibold`)
+- Added "Недавно добавленные" (Recently Added) section:
+  - Tracks last 3 items in localStorage (`unilife-recent-adds` key)
+  - Shows section label with Clock icon
+  - Displays each recent item with its icon, label, and matching hover style
+  - Deduplicates by module (most recent wins)
+  - Section only shown when history exists
+- Refactored menu data into `MENU_SECTIONS` array with `MenuSection` and `QuickAddItem` interfaces
+- Created `ITEM_BY_MODULE` lookup map for recently-added item resolution
+- Used lazy state initializer `useState(() => readRecentAdds())` to avoid lint error with setState in useEffect
+
+**Task 2 — Scroll-to-Top Button (`/src/components/layout/scroll-to-top.tsx`):**
+- Created new component with scroll-based visibility (shows when scrollY > 400px)
+- Uses requestAnimationFrame-throttled scroll event listener for performance
+- Responsive positioning: `bottom-20 right-4` on mobile, `md:bottom-24 md:right-6` on desktop
+- Positioned above the Quick Add FAB (z-40 vs FAB z-50)
+- Framer-motion AnimatePresence for smooth fade-in/fade-out with scale animation
+- Spring animation on appear (`stiffness: 400, damping: 25`)
+- ArrowUp icon in small circular button (h-10 w-10)
+- Glass-like design: `bg-background border shadow-md`
+- Hover: scale-110 + stronger shadow; Active: scale-95
+- Smooth scroll to top on click via `window.scrollTo({ top: 0, behavior: 'smooth' })`
+
+**Task 3 — Updated page.tsx:**
+- Added `ScrollToTop` import from `@/components/layout/scroll-to-top`
+- Placed `<ScrollToTop />` between `<Footer />` and `<MobileNav />` in the main layout
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles cleanly
+- ✅ All existing functionality preserved
+- ✅ Fixed lint error: replaced `useEffect` + `setState` with lazy state initializer
+
+### Stage Summary:
+- Quick Add Menu now has 7 items organized in 2 sections with dividers and labels
+- Keyboard shortcut hints displayed on desktop for all menu items
+- Staggered framer-motion animations on menu item entry
+- Recently added items tracked in localStorage (max 3)
+- Scroll-to-Top button with spring animation and responsive positioning
+- Both components fully support dark mode
+
+---
+## Task ID: improvements-batch-1
+### Agent: coordinator
+### Task: Batch improvements — Daily Checklist, Goals Enhancement, Quick Add Menu, Scroll-to-Top
+
+### Work Log:
+- **Task 1 — Daily Checklist Widget** (`/src/components/dashboard/daily-checklist.tsx`):
+  - Created interactive checklist with 5 daily tasks (diary, meals, workout, habits, water)
+  - Color-coded progress bar (emerald ≥80%, amber ≥50%, rose <50%)
+  - Clickable items navigate to relevant module
+  - Celebration state when all tasks complete ("Все задачи на сегодня выполнены! 🎉")
+  - Integrated into dashboard-page.tsx after DailyProgress, before ProductivityScore
+  
+- **Task 2 — Goals Module Enhancement**:
+  - Added CATEGORY_CONFIG and STATUS_CONFIG constants with icons and colors
+  - Goal cards: deadline countdown badges (emerald/amber/rose urgency), category icons, milestone dots on progress bar
+  - Completed goals: gradient overlay with celebratory border
+  - Status indicators: animated pulse dots, colored icons per status
+  - Enhanced hover: scale + category-matched glow shadow
+  - Goal stats: added "Nearest Deadline" and "Progress Speed" cards, expanded to 5-column grid
+
+- **Task 3 — Quick Add Menu Enhancement** (`/src/components/dashboard/quick-add-menu.tsx`):
+  - Added 3 new items: New Habit (Sparkles), New Goal (Crosshair), New Collection (Library)
+  - Added keyboard shortcut hints (kbd badges, hidden on mobile)
+  - Section dividers: "Записи" (Diary/Expense/Meal/Workout) and "Цели" (Habit/Goal/Collection)
+  - Staggered entry animation via framer-motion
+  - Recently added section tracked in localStorage
+
+- **Task 4 — Scroll-to-Top Button** (`/src/components/layout/scroll-to-top.tsx`):
+  - Appears after scrolling 400px, hides near top
+  - Positioned above FAB button (bottom-24 on desktop, bottom-20 on mobile)
+  - Spring animation via framer-motion AnimatePresence
+  - Glass-like design with ArrowUp icon
+  - Integrated into page.tsx between Footer and MobileNav
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles in ~8.4s first load, ~10ms cached
+- ✅ All API endpoints respond correctly (module-counts, habits, dashboard)
+- ✅ GET / returns HTTP 200
+
+### Stage Summary:
+- 4 improvements delivered in parallel
+- 2 new files created (daily-checklist.tsx, scroll-to-top.tsx)
+- 4 existing files modified (dashboard-page.tsx, quick-add-menu.tsx, goal-card.tsx, goal-stats.tsx, constants.tsx, page.tsx)
+- No breaking changes to existing functionality

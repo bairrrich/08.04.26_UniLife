@@ -131,6 +131,10 @@ const QuickAddMenu = dynamic(() => import('./quick-add-menu').then(m => ({ defau
   loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />,
   ssr: false,
 })
+const DailyChecklist = dynamic(() => import('./daily-checklist').then(m => ({ default: m.DailyChecklist })), {
+  loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />,
+  ssr: false,
+})
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -522,6 +526,18 @@ export default function DashboardPage() {
         {/* Daily Progress Bar */}
         {!loading && <DailyProgress progress={dailyProgress} />}
       </div>
+
+      {/* ── Daily Checklist ─────────────────────────────────── */}
+      <DailyChecklist
+        loading={loading}
+        hasDiaryToday={!!todayMood}
+        hasMealsToday={hasMealsToday}
+        workoutDone={todayWorkout}
+        habitsCompleted={completedToday}
+        habitsTotal={totalActive}
+        waterMl={waterTodayMl}
+        onNavigate={(module) => setActiveModule(module as AppModule)}
+      />
 
       {/* ── Productivity Score ────────────────────────────────────── */}
       <ProductivityScore
