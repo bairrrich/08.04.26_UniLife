@@ -3,6 +3,7 @@
 import { Wallet, Plus, Filter, Receipt, PiggyBank, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { getCurrentMonthStr } from '@/lib/format'
 
 import { SummaryCards } from './summary-cards'

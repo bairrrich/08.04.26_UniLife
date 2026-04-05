@@ -172,7 +172,7 @@ export default function HabitsPage() {
       ) : (
         <>
           {/* Stats */}
-          <HabitStats stats={stats} />
+          <HabitStats stats={stats} habits={habits} />
 
           {/* Heatmap Calendar */}
           <HabitHeatmap habits={habits} />

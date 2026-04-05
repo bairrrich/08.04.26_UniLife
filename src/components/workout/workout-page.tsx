@@ -28,6 +28,7 @@ export function WorkoutPage() {
     totalWorkouts, totalMinutes, avgDuration, totalExercises,
     exerciseTypes, totalVolume, lastWorkoutTime,
     personalRecords,
+    weeklyFrequency,
     handleSubmit, handleEditSubmit, handleApplyPreset,
     openEditDialog, toggleExpand, changeMonth, closeEditDialog,
     totalHours,
@@ -45,25 +46,29 @@ export function WorkoutPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Dumbbell className="h-6 w-6" />
-            Тренировки
-          </h2>
-          <p className="text-muted-foreground text-sm mt-1">
-            Журнал упражнений и тренировок
-            {lastWorkoutTime && (
-              <span className="ml-2 inline-flex items-center gap-1 text-xs">
-                · Последняя: <span className="font-medium text-foreground">{lastWorkoutTime}</span>
-              </span>
-            )}
-          </p>
+      <div className="relative">
+        <div className="absolute -top-16 -right-8 w-56 h-56 rounded-full bg-gradient-to-br from-blue-400/20 to-indigo-400/15 blur-3xl pointer-events-none" />
+        <div className="absolute -top-8 -left-4 w-40 h-40 rounded-full bg-gradient-to-amber-400/15 to-rose-400/10 blur-3xl pointer-events-none" />
+        <div className="relative flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+              <Dumbbell className="h-6 w-6" />
+              Тренировки
+            </h2>
+            <p className="text-muted-foreground text-sm mt-1">
+              Журнал упражнений и тренировок
+              {lastWorkoutTime && (
+                <span className="ml-2 inline-flex items-center gap-1 text-xs">
+                  · Последняя: <span className="font-medium text-foreground">{lastWorkoutTime}</span>
+                </span>
+              )}
+            </p>
+          </div>
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Добавить
+          </Button>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Добавить
-        </Button>
       </div>
 
       <StatCards
@@ -72,6 +77,8 @@ export function WorkoutPage() {
         avgDuration={avgDuration}
         totalExercises={totalExercises}
         totalVolume={totalVolume}
+        prCount={personalRecords.prCount}
+        weeklyFrequency={weeklyFrequency}
       />
 
       {/* Exercise Type Badges + Duration Row */}
@@ -125,17 +132,20 @@ export function WorkoutPage() {
         </div>
       ) : workouts.length === 0 ? (
         <Card className="animate-slide-up overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5 pointer-events-none" />
-          <CardContent className="relative flex flex-col items-center justify-center py-12 text-center">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-blue-500/25">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 via-teal-500/5 to-cyan-500/8 pointer-events-none" />
+          <CardContent className="relative flex flex-col items-center justify-center py-14 text-center">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
               <Dumbbell className="h-10 w-10 text-white" />
             </div>
             <h3 className="text-lg font-semibold mb-1">Нет тренировок</h3>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-1">
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
               {WORKOUT_PHRASES[phraseIdx]}
             </p>
             <p className="text-xs text-muted-foreground/70 mb-6">
               Запиши свою первую тренировку и начни отслеживать прогресс
+            </p>
+            <p className="text-xs text-muted-foreground/50 mb-6 italic">
+              Каждый великий путь начинается с одного шага 💪
             </p>
             <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
               {WORKOUT_PRESETS.map((preset) => {
@@ -168,7 +178,7 @@ export function WorkoutPage() {
         </Card>
       ) : (
         <ScrollArea className="max-h-[600px]">
-          <div className="space-y-3">
+          <div className="space-y-3 stagger-children">
             {workouts.map((workout) => (
               <WorkoutCard
                 key={workout.id}
@@ -176,6 +186,7 @@ export function WorkoutPage() {
                 isExpanded={expandedId === workout.id}
                 onToggle={() => toggleExpand(workout.id)}
                 onEdit={openEditDialog}
+                exerciseMaxWeights={personalRecords.maxWeightsByName}
               />
             ))}
           </div>

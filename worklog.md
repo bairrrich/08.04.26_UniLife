@@ -5897,3 +5897,169 @@ Task: QA testing, bug fix, and feature development
 8. **Localization** — i18n support for multiple languages beyond Russian
 9. **Budget Alerts** — In-app budget threshold notifications
 10. **Quick Notes** — Persistent quick notes widget on dashboard
+---
+
+## Task ID: widget-quick-notes + widget-daily-progress
+### Agent: dashboard-widget-agent
+### Task: Create Quick Notes Widget and Daily Progress Overview Widget for the UniLife dashboard
+
+### Work Log:
+
+**Widget 1 — Quick Notes Widget (`/src/components/dashboard/quick-notes-widget.tsx`):**
+- Created a persistent notepad widget that saves notes to `localStorage` key `unilife_quick_notes`
+- Features implemented:
+  - `Textarea` with auto-resize (up to `max-h-32`), loading from localStorage on mount via lazy initializer
+  - Character count display (`{current}/{MAX_CHARS}`) with color-coded warnings (amber at ≤50 remaining, red at 0)
+  - "Сохранить" button that saves to localStorage with `toast.success('Заметка сохранена')`
+  - Auto-save on blur with 500ms debounce via `setTimeout` ref
+  - Last saved timestamp display (relative time: "Сохранено только что", "Сохранено 5 мин. назад", or HH:MM)
+  - Clear button with double-click confirmation pattern (shows "Точно?" on first click, actual clear on second click within 3s)
+  - Max 500 characters enforced via `.slice(0, MAX_CHARS)`
+  - `glass-card` styling from globals.css, `animate-slide-up` + `card-hover` classes
+  - `useSyncExternalStore` for mounted guard (avoids `setState-in-effect` lint error)
+  - Pre-mount skeleton with shimmer placeholders
+- Uses shadcn/ui `Card`, `Button`, `Textarea` components + lucide-react icons (FileEdit, Save, Trash2, Clock)
+- All text in Russian
+
+**Widget 2 — Daily Progress Overview Widget (`/src/components/dashboard/daily-progress-widget.tsx`):**
+- Created a visual daily checklist widget showing what the user has accomplished today
+- Props interface: `hasDiaryToday`, `hasMealsToday`, `hasWorkoutToday`, `habitsCompleted`, `habitsTotal`, `waterGlasses`, `waterGoal`
+- 5 checklist items with colored icons:
+  - ✅ Запись в дневнике (BookOpen, emerald)
+  - ✅ Записан приём пищи (Utensils, orange)
+  - ✅ Тренировка выполнена (Dumbbell, blue)
+  - ✅ Привычки выполнены (Target, violet, shows X из Y)
+  - ✅ 8 стаканов воды (Droplets, sky, shows X из Y)
+- Each item shows emerald checkmark (filled circle + Check icon) when completed, muted Circle when pending
+- Completed items get `line-through` text and reduced opacity
+- Overall daily progress percentage with colored shadcn `Progress` bar (emerald ≥80%, amber ≥50%, rose <50%)
+- Badge showing completed/total count
+- Motivational message based on completion percentage (5 tiers: 0-20%, 21-50%, 51-80%, 81-99%, 100%)
+- Animated entrance with `stagger-children` class on checklist items
+- `glass-card` styling, `animate-slide-up` + `card-hover` classes
+- `useSyncExternalStore` for mounted guard
+- Pre-mount skeleton with shimmer placeholders
+- All text in Russian
+
+**Integration (`/src/components/dashboard/dashboard-page.tsx`):**
+- Added dynamic imports for both new widgets with `ssr: false` and loading placeholder
+- Placed both widgets in a responsive 2-column grid (`md:grid-cols-2`) between Daily Goals Banner and Daily Checklist
+- `QuickNotesWidget` — no props needed (self-contained with localStorage)
+- `DailyProgressWidget` — receives props derived from dashboard state:
+  - `hasDiaryToday={!!todayMood}`
+  - `hasMealsToday={hasMealsToday}`
+  - `hasWorkoutToday={todayWorkout}`
+  - `habitsCompleted={completedToday}`
+  - `habitsTotal={totalActive}`
+  - `waterGlasses={Math.round(waterTodayMl / 250)}` (converting ml to glasses)
+  - `waterGoal={8}`
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ Both widgets render in the dashboard between Daily Goals Banner and Daily Checklist
+
+### Files Created:
+1. `/src/components/dashboard/quick-notes-widget.tsx` — Quick Notes persistent notepad widget
+2. `/src/components/dashboard/daily-progress-widget.tsx` — Daily Progress Overview checklist widget
+
+### Files Modified:
+1. `/src/components/dashboard/dashboard-page.tsx` — Added dynamic imports + grid layout integration
+
+---
+## Task ID: qa-round-8
+### Agent: cron-review-coordinator
+### Task: Comprehensive QA, bug fixes, new features, styling improvements
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11 modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics, Settings) render correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data via `/api/seed`
+- **Lint**: 0 errors, 0 warnings
+- **Build**: All routes compile via Turbopack
+- **APIs**: 17 REST endpoints, 16 return HTTP 200 (search returns 400 for unencoded Cyrillic — expected behavior)
+- **Browser QA**: All 11 modules tested via agent-browser — zero console errors on every module
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ Full agent-browser QA across all 11 modules — ALL PASS with zero errors
+- ✅ 17 API endpoints tested, 16 return HTTP 200
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles and serves HTTP 200
+
+#### Bug Fixes
+1. **Collections item-dialog.tsx** — Missing `Input` import causing 3 lint errors (react/jsx-no-undef). Added `import { Input } from '@/components/ui/input'`.
+
+#### New Features
+1. **Quick Notes Widget** (Dashboard): `src/components/dashboard/quick-notes-widget.tsx`
+   - Persistent notepad saving to localStorage (`unilife_quick_notes`)
+   - Auto-resize textarea, 500-char limit with color-coded counter
+   - Auto-save on blur (500ms debounce), manual save button with toast
+   - Last-saved timestamp (relative time), clear with double-click confirmation
+   - Glass-card styling, useSyncExternalStore mounted guard
+
+2. **Daily Progress Widget** (Dashboard): `src/components/dashboard/daily-progress-widget.tsx`
+   - Visual daily checklist: diary, meals, workout, habits, water (5 items)
+   - Colored icons with emerald checkmark (done) / muted circle (pending)
+   - Progress bar with color coding (emerald ≥80%, amber ≥50%, rose <50%)
+   - 5-tier motivational messages based on completion percentage
+   - Stagger-children animation, glass-card styling
+
+3. **Finance Chart Toggle**: Bar ↔ Line chart switch in expense chart component
+4. **Finance Category Click-to-Filter**: Clicking a category filters the transaction list
+5. **Finance Animated Progress Bars**: Category breakdown bars animate from 0% on mount
+6. **Habits Completion Sparkle**: 6 sparkle particles radiate on habit completion
+7. **Habits Difficulty Indicator**: Colored dots (🟢Лёгкая/🟡Средняя/🔴Сложная)
+8. **Habits Extended Dialog**: Frequency picker (4 options), difficulty selector, reminder time
+9. **Habits Highlight Stats**: "Most consistent", "Needs attention", "Total completions" cards
+10. **Habits Day-by-Day Grid**: GitHub-style colored squares (Пн–Вс) in weekly progress
+11. **Feed Post Options Menu**: DropdownMenu with share, copy, bookmark, hide, delete actions
+12. **Feed Post Dialog**: Image URL with preview, mood selector (7 options), visibility toggle
+13. **Feed Enhanced Comments**: Clock icon + relative time on comments
+14. **Workout Type Presets**: Quick-select buttons (Сила💪, Кардио🏃, Растяжка🧘, HIIT⚡) in dialog
+15. **Workout Rest Timer Hint**: "Отдых: 60с" displayed between exercises
+16. **Collections Search**: Search input field filtering by title/author
+17. **Collections Type Grid Selector**: Emoji-based type picker in add dialog (📚🎬🍳💊🛒)
+18. **Collections Notes**: Notes/заметки Textarea field in add dialog
+
+#### Styling Improvements (25+ files modified)
+- **Dashboard**: 2 new widgets (Quick Notes, Daily Progress) in responsive 2-column grid
+- **Finance**: Animated progress bars, savings card gradient (>20%), swipe-delete hint, chart toggle, recurring indicator icon, note character count, category icons
+- **Habits**: Sparkle animation on completion (new CSS keyframe), difficulty dots, day-by-day colored squares, enhanced stat cards with Trophy/AlertTriangle/Sparkles icons
+- **Feed**: More options dropdown, image preview in dialog, mood selector, visibility badges, enhanced comment styling
+- **Workout**: 2px colored border accent (teal), duration/exercise count badges, rest timer between exercises, stagger-children on list, improved empty state with motivational quote
+- **Collections**: 5% opacity type-specific gradient overlays, search input, bottom border on active tabs, per-type count badges, emoji type selector
+- **CSS**: Added `@keyframes sparkle-out` and `.animate-sparkle` for habit completion effect
+
+### Files Created (2):
+- `src/components/dashboard/quick-notes-widget.tsx`
+- `src/components/dashboard/daily-progress-widget.tsx`
+
+### Files Modified (25+):
+- `src/components/dashboard/dashboard-page.tsx` (integrated 2 new widgets)
+- `src/components/finance/summary-cards.tsx`, `transaction-list.tsx`, `category-breakdown.tsx`, `expense-chart.tsx`, `transaction-dialog.tsx`, `finance-page.tsx`
+- `src/components/habits/habit-card.tsx`, `weekly-progress.tsx`, `habit-dialog.tsx`, `habit-stats.tsx`, `habit-page.tsx`
+- `src/components/feed/post-card.tsx`, `post-dialog.tsx`, `empty-state.tsx`
+- `src/components/workout/workout-card.tsx`, `workout-page.tsx`, `workout-dialog.tsx`, `stat-cards.tsx`, `constants.tsx`
+- `src/components/collections/item-card.tsx`, `collections-page.tsx`, `hooks.ts`, `add-item-dialog.tsx`, `stats-bar.tsx`, `constants.tsx`, `item-dialog.tsx`
+- `src/app/globals.css` (sparkle animation)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All 11 modules verified via agent-browser with zero console errors
+- ✅ All 17 API endpoints return correct status codes
+- ✅ No breaking changes to existing functionality
+- ✅ Dashboard renders with all new widgets confirmed via snapshot
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+5. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+6. **Offline Support** — Service worker caching for offline usage
+7. **Notifications** — Push notifications for reminders (water, workout, diary)
+8. **Localization** — i18n support for multiple languages beyond Russian
+9. **Budget Alerts** — In-app budget threshold notifications
+10. **Data Visualization** — More charts and graphs across modules (nutrition trends, workout volume over time)

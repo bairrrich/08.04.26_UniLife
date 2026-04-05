@@ -1,8 +1,9 @@
 'use client'
 
-import { Library, Plus, ArrowUpDown } from 'lucide-react'
+import { Library, Plus, ArrowUpDown, Search } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   Select,
@@ -24,6 +25,7 @@ export default function CollectionsPage() {
   const {
     items, loading, activeType, activeStatus, sortBy,
     setActiveType, setActiveStatus, setSortBy,
+    searchQuery, setSearchQuery,
     dialogOpen, setDialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
     formType, setFormType, formTitle, setFormTitle,
@@ -40,6 +42,8 @@ export default function CollectionsPage() {
     handleRatingUpdate, openDetail, startEditing,
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
     totalCount, completedCount, inProgressCount, averageRating,
+    typeCounts,
+    formNotes, setFormNotes,
   } = useCollections()
 
   return (
@@ -70,14 +74,26 @@ export default function CollectionsPage() {
             formRating={formRating} setFormRating={setFormRating}
             formStatus={formStatus} setFormStatus={setFormStatus}
             formTags={formTags} setFormTags={setFormTags}
+            formNotes={formNotes} setFormNotes={setFormNotes}
             onSubmit={handleSubmit}
           />
         </div>
       </div>
 
+      {/* Search Input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input
+          placeholder="Поиск по названию или автору..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="pl-9"
+        />
+      </div>
+
       {/* Type Tabs */}
       <Tabs value={activeType} onValueChange={setActiveType}>
-        <TabsList className="flex-wrap h-auto gap-1">
+        <TabsList className="flex-wrap h-auto gap-1 [&_[data-state=active]]:border-b-2 [&_[data-state=active]]:border-primary [&_[data-state=active]]:shadow-none">
           <TabsTrigger value="all">Все</TabsTrigger>
           {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(([key, label]) => (
             <TabsTrigger key={key} value={key}>{label}</TabsTrigger>
@@ -90,6 +106,7 @@ export default function CollectionsPage() {
           completedCount={completedCount}
           inProgressCount={inProgressCount}
           averageRating={averageRating}
+          typeCounts={typeCounts}
         />
 
         {/* Quick Add Templates */}

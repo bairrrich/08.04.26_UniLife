@@ -27,6 +27,7 @@ import {
   STATUS_TRANSITIONS,
   TYPE_ICONS_LARGE,
   TYPE_ICON_BG,
+  TYPE_ICON_BG_LIGHT,
   getCoverGradient,
   parseTags,
   formatDaysAgo,
@@ -65,6 +66,10 @@ interface ItemDialogProps {
   onStatusUpdate: (item: CollectionItem, status: CollectionStatus) => void
   onDelete: (item: CollectionItem) => void
   onRatingUpdate: (item: CollectionItem, rating: number) => void
+  isFavorite?: boolean
+  onToggleFavorite?: (itemId: string) => void
+  relatedItems?: CollectionItem[]
+  onOpenRelated?: (item: CollectionItem) => void
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -134,6 +139,10 @@ export function ItemDialog({
   onStatusUpdate,
   onDelete,
   onRatingUpdate,
+  isFavorite,
+  onToggleFavorite,
+  relatedItems,
+  onOpenRelated,
 }: ItemDialogProps) {
   if (!item) return null
 
@@ -169,6 +178,16 @@ export function ItemDialog({
               )}
             </span>
           </div>
+          {/* Favorite toggle */}
+          {onToggleFavorite && (
+            <button
+              type="button"
+              onClick={() => onToggleFavorite(item.id)}
+              className="absolute bottom-3 right-4 h-8 w-8 flex items-center justify-center rounded-full bg-black/20 backdrop-blur-sm hover:bg-black/40 transition-colors"
+            >
+              <Star className={`h-4 w-4 transition-all ${isFavorite ? 'fill-amber-400 text-amber-400 scale-110' : 'text-white/80'}`} />
+            </button>
+          )}
         </div>
 
         <DialogHeader>
@@ -321,6 +340,38 @@ export function ItemDialog({
                   Удалить
                 </Button>
               </div>
+
+              {/* Related items suggestions */}
+              {relatedItems && relatedItems.length > 0 && (
+                <div className="space-y-2 pt-2">
+                  <Label className="text-sm text-muted-foreground">Похожие элементы</Label>
+                  <div className="space-y-2">
+                    {relatedItems.map((related) => (
+                      <button
+                        key={related.id}
+                        type="button"
+                        onClick={() => onOpenRelated?.(related)}
+                        className="w-full flex items-center gap-2.5 rounded-lg border p-2.5 text-left hover:bg-muted/50 transition-colors"
+                      >
+                        <span className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 ${TYPE_ICON_BG_LIGHT[related.type as CollectionType]}`}>
+                          {TYPE_ICONS_LARGE[related.type as CollectionType] && (
+                            <span className="[&>svg]:h-4 [&>svg]:w-4">{TYPE_ICONS_LARGE[related.type as CollectionType]}</span>
+                          )}
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium truncate">{related.title}</p>
+                          {related.author && (
+                            <p className="text-[11px] text-muted-foreground truncate">{related.author}</p>
+                          )}
+                        </div>
+                        <Badge variant="secondary" className="text-[10px] shrink-0">
+                          {STATUS_LABELS[related.status]}
+                        </Badge>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

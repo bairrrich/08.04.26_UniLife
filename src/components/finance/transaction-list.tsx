@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy, ArrowRightLeft } from 'lucide-react'
+import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy, ArrowRightLeft, RefreshCw } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { getCategoryIcon, getAccountIcon } from './constants'
 import { cn } from '@/lib/utils'
@@ -433,6 +433,14 @@ export function TransactionList({
                                 </div>
                               </div>
                             </div>
+                            {/* Swipe-to-delete visual hint — shown on last item */}
+                            {tx === group.items[group.items.length - 1 && filteredGroups[filteredGroups.length - 1]?.items[filteredGroups[filteredGroups.length - 1]?.items.length - 1]] && (
+                              <div className="flex items-center justify-center gap-1.5 pt-2 pb-1 text-[10px] text-muted-foreground/40">
+                                <span>←</span>
+                                <span>свайп влево для удаления</span>
+                                <span>→</span>
+                              </div>
+                            )}
                           </div>
                         )
                       })}

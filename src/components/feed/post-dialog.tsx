@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
@@ -15,10 +17,28 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { Camera, SmilePlus, Tag } from 'lucide-react'
+import { Camera, SmilePlus, Tag, ImageIcon, Eye, Globe, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { EntityType } from './types'
 import { ENTITY_LABELS, QUICK_EMOJIS, MAX_CAPTION_LENGTH } from './constants'
+
+// Mood options
+const MOOD_OPTIONS = [
+  { key: '', label: 'Без настроения', emoji: '' },
+  { key: 'happy', label: 'Радостное', emoji: '😄' },
+  { key: 'calm', label: 'Спокойное', emoji: '😊' },
+  { key: 'motivated', label: 'Мотивированное', emoji: '💪' },
+  { key: 'grateful', label: 'Благодарное', emoji: '🙏' },
+  { key: 'tired', label: 'Уставшее', emoji: '😴' },
+  { key: 'sad', label: 'Грустное', emoji: '😢' },
+]
+
+// Visibility options
+const VISIBILITY_OPTIONS = [
+  { key: 'public', label: 'Публичная', icon: Globe },
+  { key: 'friends', label: 'Для друзей', icon: Eye },
+  { key: 'private', label: 'Приватная', icon: Lock },
+]
 
 interface PostDialogProps {
   open: boolean
@@ -39,14 +59,27 @@ export function PostDialog({
   formTags, setFormTags,
   onSubmit,
 }: PostDialogProps) {
+  const [imageUrl, setImageUrl] = useState('')
+  const [selectedMood, setSelectedMood] = useState('')
+  const [visibility, setVisibility] = useState('public')
+
   const handleInsertEmoji = (emoji: string) => {
     if (formCaption.length < MAX_CAPTION_LENGTH) {
       setFormCaption(formCaption + emoji)
     }
   }
 
+  const handleClose = (val: boolean) => {
+    if (!val) {
+      setImageUrl('')
+      setSelectedMood('')
+      setVisibility('public')
+    }
+    onOpenChange(val)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Новая запись</DialogTitle>
@@ -72,6 +105,95 @@ export function PostDialog({
               )}>
                 {formCaption.length}/{MAX_CAPTION_LENGTH}
               </span>
+            </div>
+          </div>
+
+          {/* Image URL with preview */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <ImageIcon className="h-3.5 w-3.5" />
+              Ссылка на изображение
+            </Label>
+            <Input
+              placeholder="https://example.com/image.jpg"
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              className="text-sm"
+            />
+            {imageUrl && (
+              <div className="relative rounded-lg overflow-hidden border h-32 bg-muted/20 flex items-center justify-center">
+                <img
+                  src={imageUrl}
+                  alt="Предпросмотр"
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none'
+                    ;(e.target as HTMLImageElement).parentElement!.innerHTML =
+                      '<span class=\"text-xs text-muted-foreground\">Не удалось загрузить изображение</span>'
+                  }}
+                />
+              </div>
+            )}
+            {!imageUrl && (
+              <button
+                type="button"
+                className="w-full h-20 rounded-xl border-2 border-dashed border-muted-foreground/20 hover:border-primary/40 flex flex-col items-center justify-center gap-1.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer"
+              >
+                <Camera className="h-5 w-5" />
+                <span className="text-xs font-medium">Добавить изображение по ссылке</span>
+              </button>
+            )}
+          </div>
+
+          {/* Mood selector */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <SmilePlus className="h-3.5 w-3.5" />
+              Настроение
+            </Label>
+            <div className="flex flex-wrap gap-1.5">
+              {MOOD_OPTIONS.map((mood) => (
+                <button
+                  key={mood.key}
+                  type="button"
+                  onClick={() => setSelectedMood(mood.key === selectedMood ? '' : mood.key)}
+                  className={cn(
+                    'h-9 px-3 rounded-lg flex items-center gap-1.5 text-xs font-medium transition-all',
+                    selectedMood === mood.key
+                      ? 'bg-primary/10 ring-1 ring-primary/30 text-foreground'
+                      : 'bg-muted hover:bg-muted/80 text-muted-foreground'
+                  )}
+                >
+                  {mood.emoji && <span>{mood.emoji}</span>}
+                  <span>{mood.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Visibility toggle */}
+          <div className="space-y-2">
+            <Label>Видимость</Label>
+            <div className="flex gap-2">
+              {VISIBILITY_OPTIONS.map((opt) => {
+                const Icon = opt.icon
+                return (
+                  <button
+                    key={opt.key}
+                    type="button"
+                    onClick={() => setVisibility(opt.key)}
+                    className={cn(
+                      'flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-all border',
+                      visibility === opt.key
+                        ? 'border-primary bg-primary/5 text-foreground'
+                        : 'border-transparent bg-muted hover:bg-muted/80 text-muted-foreground'
+                    )}
+                  >
+                    <Icon className="h-3.5 w-3.5" />
+                    {opt.label}
+                  </button>
+                )
+              })}
             </div>
           </div>
 
@@ -107,18 +229,6 @@ export function PostDialog({
                 </button>
               ))}
             </div>
-          </div>
-
-          {/* Image placeholder (non-functional UI) */}
-          <div className="space-y-1.5">
-            <Label>Фото</Label>
-            <button
-              type="button"
-              className="w-full h-24 rounded-xl border-2 border-dashed border-muted-foreground/20 hover:border-primary/40 flex flex-col items-center justify-center gap-1.5 text-muted-foreground/50 hover:text-muted-foreground transition-colors cursor-pointer"
-            >
-              <Camera className="h-6 w-6" />
-              <span className="text-xs font-medium">Добавить фото</span>
-            </button>
           </div>
 
           <div className="space-y-2">

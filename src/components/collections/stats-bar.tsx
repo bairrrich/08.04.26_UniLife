@@ -1,6 +1,8 @@
 import { Badge } from '@/components/ui/badge'
 import { Star, ListChecks, CheckCircle, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { TYPE_EMOJIS, TYPE_LABELS } from './constants'
+import type { CollectionType } from './types'
 
 interface StatsBarProps {
   loading: boolean
@@ -8,6 +10,7 @@ interface StatsBarProps {
   completedCount: number
   inProgressCount: number
   averageRating: number
+  typeCounts: Record<string, number>
 }
 
 function ProgressRing({ progress, size = 36, strokeWidth = 3 }: { progress: number; size?: number; strokeWidth?: number }) {
@@ -55,7 +58,7 @@ function StarDisplay({ rating }: { rating: number }) {
   )
 }
 
-export function StatsBar({ loading, totalCount, completedCount, inProgressCount, averageRating }: StatsBarProps) {
+export function StatsBar({ loading, totalCount, completedCount, inProgressCount, averageRating, typeCounts }: StatsBarProps) {
   if (loading || totalCount === 0) return null
 
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
@@ -118,6 +121,25 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
           </div>
         </div>
       </div>
+
+      {/* Per-type counts */}
+      <div className="flex gap-2 flex-wrap mt-3">
+        {(Object.entries(TYPE_EMOJIS) as [CollectionType, string][]).map(([key, emoji]) => {
+          const count = typeCounts[key] || 0
+          if (count === 0) return null
+          return (
+            <Badge key={key} variant="secondary" className="gap-1 font-normal text-xs">
+              <span>{emoji}</span>
+              {TYPE_LABELS[key]}: <span className="font-semibold tabular-nums">{count}</span>
+            </Badge>
+          )
+        })}
+      </div>
+
+      {/* Progress text */}
+      <p className="text-xs text-muted-foreground mt-2 tabular-nums">
+        {completedCount} из {totalCount} выполнено
+      </p>
     </div>
   )
 }

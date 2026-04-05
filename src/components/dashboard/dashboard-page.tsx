@@ -83,6 +83,8 @@ const FinanceQuickView = dynamic(() => import('./finance-quick-view'), { ssr: fa
 const DailyTip = dynamic(() => import('./daily-tip'), { ssr: false, loading: smallLoad })
 const DailyGoalsBanner = dynamic(() => import('./daily-goals-banner'), { ssr: false, loading: smallLoad })
 const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, loading: widgetLoad })
+const QuickNotesWidget = dynamic(() => import('./quick-notes-widget'), { ssr: false, loading: widgetLoad })
+const DailyProgressWidget = dynamic(() => import('./daily-progress-widget'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -493,6 +495,20 @@ export default function DashboardPage() {
 
       {/* ── Daily Goals Banner ────────────────────────────────── */}
       <DailyGoalsBanner />
+
+      {/* ── Quick Notes & Daily Progress Widgets ────────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <QuickNotesWidget />
+        <DailyProgressWidget
+          hasDiaryToday={!!todayMood}
+          hasMealsToday={hasMealsToday}
+          hasWorkoutToday={todayWorkout}
+          habitsCompleted={completedToday}
+          habitsTotal={totalActive}
+          waterGlasses={Math.round(waterTodayMl / 250)}
+          waterGoal={8}
+        />
+      </div>
 
       {/* ── Daily Checklist ─────────────────────────────────── */}
       <DailyChecklist

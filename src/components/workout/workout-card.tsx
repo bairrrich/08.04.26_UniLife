@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Clock, ChevronUp, ChevronDown, Pencil, Weight } from 'lucide-react'
+import { Clock, ChevronUp, ChevronDown, Pencil, Weight, Timer, Trophy } from 'lucide-react'
 import {
   detectWorkoutType,
   WORKOUT_TYPE_CONFIG,
@@ -21,9 +21,10 @@ interface WorkoutCardProps {
   isExpanded: boolean
   onToggle: () => void
   onEdit: (workout: Workout) => void
+  exerciseMaxWeights?: Record<string, number>
 }
 
-export function WorkoutCard({ workout, isExpanded, onToggle, onEdit }: WorkoutCardProps) {
+export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, exerciseMaxWeights }: WorkoutCardProps) {
   const workoutType = detectWorkoutType(workout.name)
   const typeConfig = WORKOUT_TYPE_CONFIG[workoutType] || WORKOUT_TYPE_CONFIG.strength
   const borderColor = getWorkoutBorderColor(workout.name)
@@ -35,7 +36,7 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit }: WorkoutCa
 
   return (
     <Card
-      className={`card-hover border-l-4 ${borderColor} hover:shadow-sm transition cursor-pointer`}
+      className={`card-hover border-l-2 ${borderColor} hover:shadow-sm transition cursor-pointer`}
       onClick={onToggle}
     >
       <CardHeader className="pb-0">
@@ -79,29 +80,54 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit }: WorkoutCa
             <p className="text-sm text-muted-foreground italic">{workout.note}</p>
           )}
           {workout.exercises.length > 0 ? (
-            <div className="space-y-3">
-              {workout.exercises.map((exercise) => {
+            <div className="space-y-2">
+              {workout.exercises.map((exercise, exIdx) => {
                 const sets = parseSets(exercise.sets)
+                const exMaxWeight = sets.length > 0 ? Math.max(...sets.map((s) => s.weight)) : 0
+                const isPersonalBest = exerciseMaxWeights && exMaxWeight > 0 && exerciseMaxWeights[exercise.name.toLowerCase()] === exMaxWeight
+                const isCardio = sets.length > 0 && sets[0].weight === 0
+                const restSeconds = isCardio ? 30 : 90
                 return (
-                  <div key={exercise.id} className="rounded-lg bg-muted/50 p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{exercise.name}</span>
-                      <span className="text-xs text-muted-foreground">{formatSetSummary(sets)}</span>
+                  <div key={exercise.id}>
+                    <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-medium">{exercise.name}</span>
+                          {isPersonalBest && (
+                            <span className="inline-flex items-center gap-0.5 text-amber-500" title="Личный рекорд">
+                              <Trophy className="h-3.5 w-3.5" />
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground tabular-nums">{formatSetSummary(sets)}</span>
+                      </div>
+                      {sets.length > 0 && (
+                        <div className="flex gap-2 flex-wrap">
+                          {sets.map((set, idx) => (
+                            <div
+                              key={idx}
+                              className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs ${
+                                set.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-background text-muted-foreground'
+                              }`}
+                            >
+                              <span className="font-medium tabular-nums">{idx + 1}</span>
+                              <Separator orientation="vertical" className="h-3" />
+                              <span className="tabular-nums">{set.weight}кг × {set.reps}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {sets.length > 1 && (
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 pt-0.5">
+                          <Timer className="h-3 w-3" />
+                          <span>Отдых: {restSeconds}с между подходами</span>
+                        </div>
+                      )}
                     </div>
-                    {sets.length > 0 && (
-                      <div className="flex gap-2 flex-wrap">
-                        {sets.map((set, idx) => (
-                          <div
-                            key={idx}
-                            className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs ${
-                              set.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-background text-muted-foreground'
-                            }`}
-                          >
-                            <span className="font-medium">{idx + 1}</span>
-                            <Separator orientation="vertical" className="h-3" />
-                            <span>{set.weight}кг × {set.reps}</span>
-                          </div>
-                        ))}
+                    {exIdx < workout.exercises.length - 1 && (
+                      <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground/50 py-2">
+                        <Timer className="h-2.5 w-2.5" />
+                        <span>Отдых: 60с</span>
                       </div>
                     )}
                   </div>

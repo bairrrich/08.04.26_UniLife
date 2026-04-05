@@ -25,6 +25,16 @@ export const STATUS_LABELS: Record<CollectionStatus, string> = {
   COMPLETED: 'Завершено',
 }
 
+// ─── Type Emojis ────────────────────────────────────────────────────────────────
+
+export const TYPE_EMOJIS: Record<CollectionType, string> = {
+  BOOK: '📚',
+  MOVIE: '🎬',
+  RECIPE: '🍳',
+  SUPPLEMENT: '💊',
+  PRODUCT: '🛒',
+}
+
 // ─── Status Colors ────────────────────────────────────────────────────────────
 
 export const STATUS_COLORS: Record<CollectionStatus, string> = {

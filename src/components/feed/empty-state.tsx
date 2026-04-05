@@ -9,7 +9,7 @@ interface EmptyStateProps {
 export function FeedEmptyState({ onOpenDialog }: EmptyStateProps) {
   return (
     <Card className="rounded-xl overflow-hidden border-0 bg-gradient-to-b from-muted/30 to-background">
-      <CardContent className="py-20 text-center">
+      <CardContent className="py-16 text-center">
         {/* Gradient icon */}
         <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full float-animation">
           <div className="absolute h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/30 via-primary/20 to-amber-400/20 animate-pulse-soft" />
@@ -21,12 +21,38 @@ export function FeedEmptyState({ onOpenDialog }: EmptyStateProps) {
         <p className="text-foreground font-semibold text-xl mb-2">
           Лента пуста
         </p>
-        <p className="text-muted-foreground/70 text-sm max-w-sm mx-auto leading-relaxed">
+        <p className="text-muted-foreground/70 text-sm max-w-sm mx-auto leading-relaxed mb-6">
           Поделитесь первым постом — расскажите о своих мыслях, достижениях или моментах дня
         </p>
+
+        {/* Step-by-step guide */}
+        <div className="max-w-sm mx-auto mb-6">
+          <div className="flex items-start gap-3 text-left mb-3">
+            <div className="shrink-0 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400">1</div>
+            <div>
+              <p className="text-sm font-medium">Опишите свой день</p>
+              <p className="text-xs text-muted-foreground">Расскажите о мыслях, достижениях или моментах</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 text-left mb-3">
+            <div className="shrink-0 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400">2</div>
+            <div>
+              <p className="text-sm font-medium">Добавьте настроение</p>
+              <p className="text-xs text-muted-foreground">Выберите эмодзи и теги для контекста</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 text-left">
+            <div className="shrink-0 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400">3</div>
+            <div>
+              <p className="text-sm font-medium">Опубликуйте</p>
+              <p className="text-xs text-muted-foreground">Ваши записи увидят другие пользователи</p>
+            </div>
+          </div>
+        </div>
+
         <Button
           size="lg"
-          className="mt-6 gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-600 hover:to-teal-600 transition-all"
+          className="mt-2 gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:from-emerald-600 hover:to-teal-600 transition-all active-press"
           onClick={onOpenDialog}
         >
           <PenLine className="h-4 w-4" />

@@ -95,6 +95,7 @@ export function useWorkouts() {
     let longestDuration = 0
     let mostExercises = 0
     let totalVolumeAllTime = 0
+    const maxWeightsByName: Record<string, number> = {}
 
     allWorkouts.forEach((w) => {
       if (w.durationMin && w.durationMin > longestDuration) longestDuration = w.durationMin
@@ -104,11 +105,37 @@ export function useWorkouts() {
         sets.forEach((s) => {
           if (s.weight > heaviestWeight) heaviestWeight = s.weight
           if (s.completed) totalVolumeAllTime += s.weight * s.reps
+          const nameLower = ex.name.toLowerCase()
+          if (s.weight > (maxWeightsByName[nameLower] || 0)) {
+            maxWeightsByName[nameLower] = s.weight
+          }
         })
       })
     })
 
-    return { heaviestWeight, longestDuration, mostExercises, totalVolumeAllTime }
+    const prCount = Object.keys(maxWeightsByName).length
+    return { heaviestWeight, longestDuration, mostExercises, totalVolumeAllTime, maxWeightsByName, prCount }
+  }, [allWorkouts])
+
+  // ── Weekly Frequency Comparison ─────────────────────────────────────────────
+
+  const weeklyFrequency = useMemo(() => {
+    const now = new Date()
+    const thisWeekStart = new Date(now)
+    thisWeekStart.setDate(now.getDate() - now.getDay() + 1)
+    thisWeekStart.setHours(0, 0, 0, 0)
+    const lastWeekStart = new Date(thisWeekStart)
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+    const lastWeekEnd = new Date(thisWeekStart)
+    lastWeekEnd.setHours(-1)
+
+    const thisWeekCount = allWorkouts.filter((w) => new Date(w.date) >= thisWeekStart).length
+    const lastWeekCount = allWorkouts.filter((w) => {
+      const d = new Date(w.date)
+      return d >= lastWeekStart && d <= lastWeekEnd
+    }).length
+
+    return { thisWeek: thisWeekCount, lastWeek: lastWeekCount, diff: thisWeekCount - lastWeekCount }
   }, [allWorkouts])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -260,6 +287,7 @@ export function useWorkouts() {
     totalVolume,
     lastWorkoutTime,
     personalRecords,
+    weeklyFrequency,
     // Handlers
     handleSubmit,
     handleEditSubmit,

@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Timer, Sparkles } from 'lucide-react'
 import {
   WORKOUT_PRESETS,
   detectWorkoutType,
@@ -20,6 +20,34 @@ import {
   emptyExercise,
 } from './constants'
 import type { ExerciseData } from './types'
+
+// ─── Exercise Type Presets ──────────────────────────────────────────────────
+
+const EXERCISE_TYPE_PRESETS = [
+  { label: 'Сила', emoji: '🏋️', type: 'strength' as const },
+  { label: 'Кардио', emoji: '💪', type: 'cardio' as const },
+  { label: 'Растяжка', emoji: '🧘', type: 'stretch' as const },
+  { label: 'HIIT', emoji: '⚡', type: 'hiit' as const },
+]
+
+const WORKOUT_NAME_PRESETS = [
+  { label: 'Сила', emoji: '💪', prefix: 'Сила 💪' },
+  { label: 'Кардио', emoji: '🏃', prefix: 'Кардио 🏃' },
+  { label: 'Растяжка', emoji: '🧘', prefix: 'Растяжка 🧘' },
+  { label: 'HIIT', emoji: '⚡', prefix: 'HIIT ⚡' },
+]
+
+// ─── Day-of-Week Workout Suggestions ─────────────────────────────────────────
+
+const DAY_WORKOUT_SUGGESTIONS: Record<number, string> = {
+  0: 'Воскресенье: Активный отдых',
+  1: 'Понедельник: Грудь и трицепс',
+  2: 'Вторник: Спина и бицепс',
+  3: 'Среда: Ноги и ягодицы',
+  4: 'Четверг: Плечи и пресс',
+  5: 'Пятница: Кардио и растяжка',
+  6: 'Суббота: Полное тело',
+}
 
 // ─── Shared Exercise Editor ─────────────────────────────────────────────────
 
@@ -56,6 +84,24 @@ function ExerciseEditor({
           <Plus className="h-3.5 w-3.5 mr-1" />
           Добавить
         </Button>
+      </div>
+
+      {/* Exercise type quick presets */}
+      <div className="flex gap-2">
+        {EXERCISE_TYPE_PRESETS.map((preset) => {
+          const config = WORKOUT_TYPE_CONFIG[preset.type]
+          return (
+            <button
+              key={preset.type}
+              type="button"
+              onClick={() => onExercisesChange([...exercises, { ...emptyExercise(exercises.length), name: `${preset.label} #${exercises.length + 1}` }])}
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors hover:bg-muted/60 active-press ${config.iconBg}`}
+            >
+              <span>{preset.emoji}</span>
+              <span>{preset.label}</span>
+            </button>
+          )
+        })}
       </div>
 
       {exercises.map((exercise, exIdx) => (
@@ -190,7 +236,33 @@ export function WorkoutDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Название</Label>
+              <div className="flex items-center justify-between">
+                <Label>Название</Label>
+                <button
+                  type="button"
+                  onClick={() => onNameChange(DAY_WORKOUT_SUGGESTIONS[new Date().getDay()] || '')}
+                  className="inline-flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Предложение дня
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5 mb-1.5">
+                {WORKOUT_NAME_PRESETS.map((preset) => (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => {
+                      const currentName = formName.replace(/^(Сила 💪|Кардио 🏃|Растяжка 🧘|HIIT ⚡)\s*/, '').trim()
+                      onNameChange(`${preset.prefix}${currentName ? ` ${currentName}` : ''}`)
+                    }}
+                    className="inline-flex items-center gap-1 rounded-full border bg-muted/30 px-2.5 py-1 text-xs font-medium transition-colors hover:bg-muted/60 active-press"
+                  >
+                    <span>{preset.emoji}</span>
+                    <span>{preset.label}</span>
+                  </button>
+                ))}
+              </div>
               <Input placeholder="Тренировка груди" value={formName} onChange={(e) => onNameChange(e.target.value)} />
             </div>
             <div className="space-y-2">
@@ -198,9 +270,18 @@ export function WorkoutDialog({
               <Input type="date" value={formDate} onChange={(e) => onDateChange(e.target.value)} />
             </div>
           </div>
-          <div className="space-y-2">
-            <Label>Длительность (мин)</Label>
-            <Input type="number" placeholder="60" value={formDuration} onChange={(e) => onDurationChange(e.target.value)} />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Длительность (мин)</Label>
+              <Input type="number" placeholder="60" value={formDuration} onChange={(e) => onDurationChange(e.target.value)} />
+            </div>
+            <div className="flex items-end pb-1">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Timer className="h-3.5 w-3.5" />
+                <span>Расчётное время: ~{Math.max(formExercises.length, 0) * 5} мин</span>
+                <span className="text-[10px] text-muted-foreground/60">(~5 мин/упр.)</span>
+              </div>
+            </div>
           </div>
           <div className="space-y-2">
             <Label>Заметки</Label>

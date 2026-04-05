@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Plus } from 'lucide-react'
+import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Plus, RefreshCw } from 'lucide-react'
 import { QUICK_EXPENSES, getAccountIcon, ACCOUNT_TYPE_LABELS } from './constants'
 import { cn } from '@/lib/utils'
 import type { Category, Account } from './types'
@@ -258,10 +258,29 @@ function TransactionForm({
         <Input type="date" value={date} onChange={(e) => onDateChange(e.target.value)} />
       </div>
 
+      {/* Recurring toggle */}
+      {!isTransfer && (
+        <div className="space-y-3 rounded-lg border border-primary/10 bg-primary/5 p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-4 w-4 text-primary" />
+              <span className="text-sm font-medium">Повторяющаяся</span>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground">Создать повторяющуюся транзакцию можно на вкладке «Повторяющиеся»</p>
+        </div>
+      )}
+
       {/* Note */}
       <div className="space-y-2">
         <Label>Заметка</Label>
         <Textarea placeholder="Необязательная заметка..." value={note} onChange={(e) => onNoteChange(e.target.value)} rows={2} />
+        <span className={cn(
+          'text-[10px] tabular-nums',
+          note.length > 180 ? 'text-amber-500' : 'text-muted-foreground/50'
+        )}>
+          {note.length}/200
+        </span>
       </div>
 
       {/* Submit */}

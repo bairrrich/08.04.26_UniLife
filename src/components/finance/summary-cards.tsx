@@ -268,18 +268,32 @@ export function SummaryCards({ stats, isLoading, transactions, previousMonthStat
         </CardContent>
       </Card>
 
-      {/* Savings Rate Card */}
-      <Card className="card-hover border-l-4 border-l-amber-500 py-4">
-        <CardContent className="px-4 py-0">
+      {/* Savings Rate Card — gradient when > 20% */}
+      <Card className={cn(
+        'card-hover border-l-4 border-l-amber-500 py-4 overflow-hidden relative',
+        (stats?.savingsRate ?? 0) > 20 && 'shimmer-border'
+      )}>
+        {(stats?.savingsRate ?? 0) > 20 && (
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 via-transparent to-amber-500/10 pointer-events-none" />
+        )}
+        <CardContent className="px-4 py-0 relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <PiggyBank className="h-4 w-4 text-amber-500" />
+              <PiggyBank className={cn('h-4 w-4', (stats?.savingsRate ?? 0) > 20 ? 'text-emerald-500' : 'text-amber-500')} />
               <span className="text-xs font-medium">Сбережения</span>
+              {(stats?.savingsRate ?? 0) > 20 && (
+                <span className="text-[9px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30 rounded-full px-1.5 py-0.5">отлично!</span>
+              )}
             </div>
-            <MiniSparkline data={savingsSparkline} color="#f59e0b" />
+            <MiniSparkline data={savingsSparkline} color={(stats?.savingsRate ?? 0) > 20 ? '#10b981' : '#f59e0b'} />
           </div>
           <div className="mt-1 flex items-center gap-1.5">
-            <p className="text-lg font-bold text-amber-600 tabular-nums dark:text-amber-400">
+            <p className={cn(
+              'text-lg font-bold tabular-nums',
+              (stats?.savingsRate ?? 0) > 20
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : 'text-amber-600 dark:text-amber-400'
+            )}>
               {stats?.savingsRate != null ? `${Math.round(stats.savingsRate)}%` : '0%'}
             </p>
             <ChangeBadge

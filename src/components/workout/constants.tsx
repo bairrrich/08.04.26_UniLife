@@ -148,7 +148,7 @@ export function getWorkoutBorderColor(name: string): string {
   if (lower.includes('рука') || lower.includes('arm')) return 'border-l-orange-400'
   if (lower.includes('hiit') || lower.includes('интервал')) return 'border-l-orange-400'
   if (lower.includes('растяж') || lower.includes('йога') || lower.includes('stretch')) return 'border-l-emerald-400'
-  return 'border-l-gray-300'
+  return 'border-l-teal-400'
 }
 
 // ─── Workout Motivational Phrases ───────────────────────────────────────────

@@ -1,7 +1,14 @@
-import { Heart, MessageCircle, ThumbsUp, Clock, Share2, Bookmark, BookmarkCheck, Send, Trash2 } from 'lucide-react'
+import { Heart, MessageCircle, ThumbsUp, Clock, Share2, Bookmark, BookmarkCheck, Send, Trash2, MoreHorizontal, EyeOff, Link2, Copy } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -123,9 +130,44 @@ export function PostCard({
                 <Trash2 className="h-4 w-4" />
               </Button>
             )}
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onShare(post)} title="Поделиться">
-              <Share2 className="h-4 w-4" />
-            </Button>
+            {/* More options dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => onShare(post)}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Поделиться
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => {
+                  navigator.clipboard?.writeText(post.caption || '')
+                }}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Скопировать текст
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onToggleBookmark(post.id)}>
+                  {isBookmarked ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
+                  {isBookmarked ? 'Убрать из сохранённых' : 'Сохранить'}
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-muted-foreground">
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Скрыть
+                </DropdownMenuItem>
+                {onDelete && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    onClick={handleDeleteClick}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Удалить
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
             <Button
               variant="ghost" size="icon"
               className={cn('h-8 w-8 transition-colors', isBookmarked && 'text-amber-500')}
@@ -337,14 +379,15 @@ function CommentItem({ comment }: { comment: FeedComment }) {
     <div className="flex gap-2.5">
       <Avatar className="h-7 w-7 shrink-0">
         <AvatarImage src={comment.user.avatar || undefined} alt={comment.user.name || 'User'} />
-        <AvatarFallback className="text-[10px]">
+        <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary/20 to-primary/5">
           {(comment.user.name || 'U').charAt(0).toUpperCase()}
         </AvatarFallback>
       </Avatar>
       <div className="rounded-lg bg-muted/60 px-3 py-2 flex-1">
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs font-medium">{comment.user.name || 'Пользователь'}</p>
-          <span className="text-[10px] text-muted-foreground/60">
+          <span className="text-[10px] text-muted-foreground/50 flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" />
             {formatRelativeTime(comment.createdAt)}
           </span>
         </div>

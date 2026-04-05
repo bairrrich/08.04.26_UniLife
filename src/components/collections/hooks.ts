@@ -7,8 +7,6 @@ import type { CollectionType, CollectionStatus, CollectionItem } from './types'
 import type { SortOption } from './constants'
 import { parseTags } from './constants'
 
-// ─── useCollections ────────────────────────────────────────────────────────────
-
 export function useCollections() {
   // ── List state ──────────────────────────────────────────────────────────────
   const [items, setItems] = useState<CollectionItem[]>([])
@@ -16,6 +14,17 @@ export function useCollections() {
   const [activeType, setActiveType] = useState<string>('all')
   const [activeStatus, setActiveStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('date')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('unilife-collection-favorites')
+        return saved ? new Set(JSON.parse(saved) as string[]) : new Set<string>()
+      } catch { return new Set<string>() }
+    }
+    return new Set<string>()
+  })
 
   // ── Dialog state ────────────────────────────────────────────────────────────
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -32,6 +41,8 @@ export function useCollections() {
   const [formRating, setFormRating] = useState(0)
   const [formStatus, setFormStatus] = useState<CollectionStatus>('WANT')
   const [formTags, setFormTags] = useState('')
+  const [formCoverUrl, setFormCoverUrl] = useState('')
+  const [formNotes, setFormNotes] = useState('')
 
   // ── Edit form state ─────────────────────────────────────────────────────────
   const [editTitle, setEditTitle] = useState('')
@@ -62,23 +73,33 @@ export function useCollections() {
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
-  // ── Sorted & filtered items ────────────────────────────────────────────────
+  // ── Sorted, filtered & searched items ────────────────────────────────────
   const sortedItems = useMemo(() => {
-    const sorted = [...items]
+    let filtered = [...items]
+    // Search filter
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase()
+      filtered = filtered.filter(
+        (i) =>
+          i.title.toLowerCase().includes(q) ||
+          (i.author && i.author.toLowerCase().includes(q))
+      )
+    }
+    // Sort
     switch (sortBy) {
       case 'rating':
-        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
         break
       case 'name':
-        sorted.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+        filtered.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
         break
       case 'date':
       default:
-        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         break
     }
-    return sorted
-  }, [items, sortBy])
+    return filtered
+  }, [items, sortBy, searchQuery])
 
   // ── Computed stats ──────────────────────────────────────────────────────────
   const totalCount = items.length
@@ -89,6 +110,38 @@ export function useCollections() {
     if (rated.length === 0) return 0
     return rated.reduce((sum, i) => sum + (i.rating || 0), 0) / rated.length
   }, [items])
+
+  // ── Type counts breakdown ──────────────────────────────────────────────────
+  const typeCounts = useMemo(() => {
+    const counts: Record<string, number> = {}
+    items.forEach((i) => {
+      counts[i.type] = (counts[i.type] || 0) + 1
+    })
+    return counts
+  }, [items])
+
+  // ── Related items (same type, different items) ────────────────────────────
+  const getRelatedItems = useCallback((item: CollectionItem) => {
+    return items.filter((i) => i.type === item.type && i.id !== item.id).slice(0, 3)
+  }, [items])
+
+  // ── Favorites ──────────────────────────────────────────────────────────────
+  const toggleFavorite = useCallback((itemId: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev)
+      if (next.has(itemId)) {
+        next.delete(itemId)
+        toast.success('Удалено из избранного')
+      } else {
+        next.add(itemId)
+        toast.success('Добавлено в избранное')
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('unilife-collection-favorites', JSON.stringify([...next]))
+      }
+      return next
+    })
+  }, [])
 
   // ── Quick add from template ─────────────────────────────────────────────────
   const openQuickAdd = (type: CollectionType) => {
@@ -101,6 +154,7 @@ export function useCollections() {
   const resetForm = () => {
     setFormType('BOOK'); setFormTitle(''); setFormAuthor('')
     setFormDescription(''); setFormRating(0); setFormStatus('WANT'); setFormTags('')
+    setFormCoverUrl(''); setFormNotes('')
   }
 
   const handleSubmit = async () => {
@@ -116,6 +170,8 @@ export function useCollections() {
           author: formAuthor.trim() || null, description: formDescription.trim() || null,
           rating: formRating > 0 ? formRating : null, status: formStatus,
           tags: tags.length > 0 ? tags : [],
+          notes: formNotes.trim() || null,
+          coverUrl: formCoverUrl.trim() || null,
         }),
       })
       const json = await safeJson(res)
@@ -243,17 +299,21 @@ export function useCollections() {
     // state
     items: sortedItems,
     loading, activeType, activeStatus, sortBy,
+    searchQuery, viewMode, favorites,
     dialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
 
     // setters
     setActiveType, setActiveStatus, setDialogOpen, setSortBy,
+    setSearchQuery, setViewMode, toggleFavorite,
 
     // add form
     formType, setFormType, formTitle, setFormTitle,
     formAuthor, setFormAuthor, formDescription, setFormDescription,
     formRating, setFormRating, formStatus, setFormStatus,
     formTags, setFormTags,
+    formCoverUrl, setFormCoverUrl,
+    formNotes, setFormNotes,
 
     // edit form
     editTitle, setEditTitle, editAuthor, setEditAuthor,
@@ -268,5 +328,6 @@ export function useCollections() {
 
     // computed
     totalCount, completedCount, inProgressCount, averageRating,
+    typeCounts, getRelatedItems,
   }
 }
