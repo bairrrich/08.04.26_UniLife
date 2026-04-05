@@ -3,6 +3,8 @@
 import { ProfileSection } from './settings/profile-section'
 import { NotificationsSection } from './settings/notifications-section'
 import { ThemeSection } from './settings/theme-section'
+import { AppearanceSection } from './settings/appearance-section'
+import { DataStatsSection } from './settings/data-stats-section'
 import { DataManagementSection } from './settings/data-management-section'
 import { AboutSection } from './settings/about-section'
 
@@ -22,6 +24,8 @@ export default function SettingsPage() {
       <ProfileSection />
       <NotificationsSection />
       <ThemeSection />
+      <AppearanceSection />
+      <DataStatsSection />
       <DataManagementSection />
       <AboutSection />
     </div>

@@ -90,7 +90,7 @@ function buildSegments(data: MoodDataPoint[]): { x: number; y: number; mood: num
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function WeeklyMoodChart({ loading, moodData }: WeeklyMoodChartProps) {
+export default function WeeklyMoodChart({ loading, moodData }: WeeklyMoodChartProps) {
   // ── Loading state ──
   if (loading) {
     return (

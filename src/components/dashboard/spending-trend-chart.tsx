@@ -26,7 +26,7 @@ interface SpendingTrendChartProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function SpendingTrendChart({ loading, weeklySpendingData }: SpendingTrendChartProps) {
+export default function SpendingTrendChart({ loading, weeklySpendingData }: SpendingTrendChartProps) {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-3">

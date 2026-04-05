@@ -5556,3 +5556,227 @@ Task: QA testing, bug fixes, and new feature development
 - ✅ All 9 API endpoints: HTTP 200
 - ✅ Dev server: compiles cleanly
 - ✅ All modules render without errors (confirmed via agent-browser)
+---
+## Task ID: 3-fix
+### Agent: bug-fix-agent
+### Work Task
+Fix dashboard crash: "Element type is invalid. Received a promise" caused by missing `export default` in widget files imported via `next/dynamic()`.
+
+### Work Summary
+**Root Cause**: `dashboard-page.tsx` uses `next/dynamic()` to lazy-load 30 widget components. `next/dynamic()` resolves the **default export** of each module, but the widget files only had **named exports** (`export function X` or `export const X = memo(function X)`). This caused React to receive `undefined` as a component, triggering the crash.
+
+**Fix Applied**: Added `export default` to all 30 dynamically imported widget files:
+
+**23 files with `export function` pattern** (changed to `export default function`):
+- daily-progress.tsx, motivational-quote.tsx, mood-dots.tsx, streak-widget.tsx, quick-actions.tsx, activity-feed.tsx, recent-transactions.tsx, activity-heatmap.tsx, weekly-insights.tsx, mood-bar-chart.tsx, expense-pie-chart.tsx, spending-trend-chart.tsx, weekly-mood-chart.tsx, weekly-activity-chart.tsx, mood-streak.tsx, daily-checklist.tsx, budget-overview.tsx, notification-center.tsx, quick-notes.tsx, weather-widget.tsx, focus-timer-widget.tsx, quick-add-menu.tsx, finance-quick-view.tsx
+
+**5 files with `export const X = memo(function X)` pattern** (added `export default X` at end):
+- stat-cards.tsx, habits-progress.tsx, weekly-summary.tsx, productivity-score.tsx, achievements/achievements-widget.tsx
+
+**2 files already had `export default`** (no change needed):
+- daily-tip.tsx, daily-goals-banner.tsx
+
+**No modifications made to**:
+- dashboard-page.tsx (imports already correct)
+- widgets-display.tsx (barrel file uses named re-exports, still works)
+- constants.ts, hooks.ts, types.ts (non-component files)
+
+**Verification**: ESLint passes with 0 errors. Named exports preserved — existing imports and barrel files continue to work.
+
+---
+## Task ID: 4-b
+### Agent: notification-quickadd-widgets-agent
+### Task: Add notification/reminder system, enhance quick-add functionality, and create dashboard widgets
+
+### Work Summary:
+
+**Part 1 — In-App Notification Toast System** (`/src/components/layout/notification-toast.tsx`):
+- Created `useNotifications()` hook that checks on dashboard load:
+  - Goals with deadlines within 3 days → toast: "Цель «X» — сегодня/завтра/через N дня"
+  - Habits not completed after 5pm → toast: "Не забудьте про привычки"
+  - No diary entry today after 6pm → toast: "Запишите мысли за день"
+- Each notification includes icon, message, and "Перейти" action button that navigates to the relevant module
+- Session-based dismissal using `sessionStorage` — each notification category shown max once per session
+- Fires only once on initial dashboard load using `useRef` guard
+- Created `NotificationToaster` component wrapper that invokes the hook
+- Exported from `/src/components/layout/notification-toast.tsx`
+
+**Part 2 — Enhanced Quick Add Menu** (`/src/components/dashboard/quick-add-menu.tsx`):
+- Added new quick-add option: "Записать настроение" (SmilePlus icon, rose color, shortcut M) — navigates to diary module
+- Renamed "Новая привычка" → "Добавить привычку" and "Новая цель" → "Поставить цель" (as requested)
+- Renamed section labels: "Записи" → "Быстрые записи", "Цели" → "Развитие"
+- Made accessible from every module page by moving FAB from dashboard to main `page.tsx` layout (global fixed positioning)
+- Added glass morphism styling: `bg-background/80 backdrop-blur-xl ring-1 ring-white/10` on dropdown, `ring-1 ring-white/20` on FAB
+- Improved item lookup to use unique `id` field instead of `module` (supports multiple items per module)
+- Smart navigation: if already on target module, triggers dialog immediately without re-render
+- Added responsive positioning: `bottom-6 right-6 md:bottom-8 md:right-8`
+
+**Part 3 — Dashboard Widgets**:
+- **Recent Goals Widget** (`/src/components/dashboard/recent-goals-widget.tsx`):
+  - Fetches goals from `/api/goals`, sorts by `updatedAt` descending
+  - Shows up to 3 most recently active goals with progress bars
+  - Color-coded progress: emerald ≥80%, sky ≥50%, amber ≥25%, rose <25%
+  - Quick +5% button on each goal (appears on hover, calls PUT `/api/goals/[id]`)
+  - Category color dots and deadline dates displayed
+  - "Все цели" navigation link to goals module
+  - Empty state with CTA button
+  - Full skeleton loading state
+
+- **Recent Diary Widget** (`/src/components/dashboard/recent-diary-widget.tsx`):
+  - Receives diary entries from dashboard data (no extra API call)
+  - Shows last 3 diary entries sorted by date with mood emoji indicators
+  - Mood gradient backgrounds per entry (red → orange → yellow → lime → emerald)
+  - Date and relative time display for each entry
+  - Click to navigate to diary module
+  - "Все записи" navigation link
+  - Empty state with CTA button
+  - Full skeleton loading state
+
+**Integration**:
+- Updated `/src/app/page.tsx`: Added `QuickAddMenu` and `NotificationToaster` as global dynamic imports
+- Updated `/src/components/dashboard/dashboard-page.tsx`: Replaced `QuickAddMenu` import with `RecentGoals` and `RecentDiary` widgets, placed in 2-column grid at bottom of dashboard
+
+### Verification Results:
+- ✅ ESLint: 0 errors in all changed files (1 pre-existing error in `appearance-section.tsx` unrelated to changes)
+- ✅ All new components use existing CSS classes (card-hover, animate-slide-up, active-press, tabular-nums, skeleton-shimmer)
+- ✅ All labels in Russian
+- ✅ Dark mode support via existing Tailwind dark: variants
+
+---
+## Task ID: 4-a - UI polish agent
+### Work Task
+Enhance Settings page and add global UI polish: Appearance settings, Data statistics, About section enhancement, smooth scrollbar, fade-in animation, and card consistency fixes.
+
+### Work Summary
+
+**Part 1: Settings Page Enhancement**
+
+a) **Appearance Settings** (`/src/components/layout/settings/appearance-section.tsx`):
+   - New "Внешний вид" section with compact mode toggle
+   - Uses `useSyncExternalStore` to read from `localStorage('unilife-compact-mode')` (avoids setState-in-effect lint error)
+   - Sets `data-compact` attribute on `<html>` element for future CSS selectors
+   - Side-by-side preview cards showing standard vs compact mode visual differences
+   - Active mode indicator badge
+   - Toast notifications on mode change
+
+b) **Data Statistics** (`/src/components/layout/settings/data-stats-section.tsx` + `/api/settings/stats/route.ts` + `/api/settings/clear/route.ts`):
+   - New "Статистика данных" section showing record counts per module with gradient progress bars
+   - 10 modules tracked: diary, transactions, categories, meals, waterLogs, workouts, collections, posts, comments, likes
+   - Summary cards: total records count + storage estimate (KB/MB)
+   - Refresh button to re-fetch stats
+   - "Экспорт всех данных" button (enhanced full export)
+   - "Очистить все данные" button with AlertDialog confirmation dialog
+   - New API: `GET /api/settings/stats` — returns counts per module + total + storage estimate
+   - New API: `POST /api/settings/clear` — deletes all user data in correct dependency order
+
+c) **About Section Enhancement** (`/src/components/layout/settings/about-section.tsx`):
+   - App identity card with UniLife logo emoji + description
+   - Info grid: version (v1.0), build date (2025), stack, UI kit, database, module count
+   - All 11 modules displayed in a 2×3 grid with icons: Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics, Settings
+   - "Разработано с ❤️ командой UniLife" credit at bottom
+
+d) **Settings page** (`/src/components/layout/settings-page.tsx`): Updated to include `AppearanceSection` and `DataStatsSection` in correct order (after Theme, before DataManagement).
+
+**Part 2: Global UI Polish**
+
+a) **Smooth scrollbar** (`/src/app/globals.css`):
+   - Added `.main-content::-webkit-scrollbar` styles (6px width, transparent track, themed thumb)
+   - Added `main-content` class to `<main>` element in `/src/app/page.tsx`
+
+b) **Fade-in animation** (`/src/app/globals.css`):
+   - Added `@keyframes fadeInUp` (opacity 0 → 1, translateY 8px → 0)
+   - Added `.fade-in-up` utility class (0.3s ease-out)
+
+c) **Card consistency — `rounded-xl` added to all Card components**:
+
+   Diary components:
+   - `entry-detail.tsx`: 2 empty-state Cards (line 38, 51) → added `rounded-xl`
+   - `diary-page.tsx`: Month navigation Card (line 500), loading skeleton Card (line 519), delete confirmation Card (line 635) → added `rounded-xl`
+   - `calendar-view.tsx`: Calendar Card (line 69) → added `rounded-xl`
+   - `entry-list.tsx`: Empty state Card (line 74) → added `rounded-xl`
+
+   Feed components:
+   - `empty-state.tsx`: Empty state Card (line 11) → added `rounded-xl`
+   - `post-card.tsx`: Post Card (line 81) → added `rounded-xl`
+   - `feed-page.tsx`: Skeleton Card (line 55) → added `rounded-xl`
+
+**Verification**: ESLint passes with 0 errors.
+
+---
+Task ID: cron-review-round-2026-04-05-1730
+Agent: main-coordinator
+Task: QA testing, bug fix, and feature development
+
+## Project Current Status Assessment
+
+**Overall Health**: ✅ Stable (with one known intermittent issue)
+- All 11 modules render and function correctly
+- All 11 API endpoints return HTTP 200 (including 2 new: /api/settings/stats, /api/settings/clear)
+- ESLint: 0 errors, 0 warnings
+- Dev server compiles cleanly
+
+**QA Results (agent-browser)**:
+- Dashboard: ✅ Now loads correctly after dynamic import fix (previously showed "Что-то пошло не так")
+- All sidebar navigation: ✅ Working
+- API endpoints: ✅ All return HTTP 200
+
+## Bug Fix: Dashboard Dynamic Import Crash
+
+**Root Cause**: Dashboard used 28 nested `dynamic()` imports with `.then(m => ({ default: m.ComponentName }))` pattern. Turbopack's ESM implementation sometimes fails to expose named function bindings as module properties, causing `m.ComponentName` to be `undefined`. React then receives `undefined` instead of a component, resulting in "Element type is invalid. Received a promise" error.
+
+**Fix Applied**:
+1. Simplified all 28 dynamic imports from `.then(m => ({ default: m.X }))` to plain `dynamic(() => import('./file'))` 
+2. Added `export default` to 28 widget files that previously had only named exports (`export function X`)
+3. 23 files: Changed `export function X(` → `export default function X(`
+4. 5 files: Added `export default X` at end (React.memo pattern: stat-cards, habits-progress, weekly-summary, productivity-score, achievements-widget)
+5. 2 files: Already had default exports (daily-tip, daily-goals-banner)
+
+## New Features Developed
+
+### 1. Settings Page Enhancement
+- **Appearance Section** (`appearance-section.tsx`): Compact mode toggle with preview, uses `useSyncExternalStore` for localStorage
+- **Data Statistics Section** (`data-stats-section.tsx`): Shows record counts per module with progress bars, storage estimate
+- **New API**: `GET /api/settings/stats` — fetches counts across all entity types
+- **New API**: `POST /api/settings/clear` — deletes all user data in dependency order
+- **About Section**: Version v1.0, build date, 11 modules grid, credits
+- **Global Scrollbar**: `.main-content` custom scrollbar CSS
+- **Fade-in Animation**: `@keyframes fadeInUp` + `.fade-in-up` utility class
+- **Card Consistency**: `rounded-xl` added to 10 Card components across diary and feed
+
+### 2. Notification Toast System
+- **New Component**: `notification-toast.tsx` with `useNotifications()` hook
+- Session-based smart notifications on dashboard load:
+  - Goals due within 3 days → "Цель «X» — сегодня/завтра/через N дня"
+  - Uncompleted habits after 5pm → "Не забудьте про привычки"
+  - No diary entry after 6pm → "Запишите мысли за день"
+- Toast actions with "Перейти" navigation buttons
+- Dismissible via sessionStorage
+
+### 3. Enhanced Quick Add Menu
+- New options: "Записать настроение", "Добавить привычку", "Поставить цель"
+- FAB moved to global layout (page.tsx) — accessible from every module
+- Glass morphism styling with backdrop-blur
+- Smart navigation (skip re-render if already on target module)
+
+### 4. New Dashboard Widgets
+- **Recent Goals Widget**: 3 most active goals with progress bars, quick +5% button
+- **Recent Diary Widget**: 3 latest entries with mood indicators, dates, relative time
+
+## Known Issues & Risks
+1. **Turbopack Dynamic Import Instability**: The dashboard fix (direct imports + default exports) resolved the main crash, but the `ModuleErrorBoundary` still catches occasional errors in sandbox environment when the process is killed mid-compilation. The error boundary's retry button handles this gracefully.
+2. **Server Stability**: Server still dies after ~30-60s idle in sandbox environment. Cron job handles restarts.
+3. **Single User**: All APIs use hardcoded DEMO_USER_ID.
+
+## Recommended Next Steps
+1. **Mobile responsiveness testing** — Thorough mobile audit of all 11 modules
+2. **Dark mode polish** — Verify new components (settings sections, notifications) in dark mode
+3. **PWA support** — Service worker + manifest for mobile install
+4. **Image upload** — Photo support for diary entries and collection items
+5. **Advanced analytics** — Weekly/monthly trend reports with comparison
+6. **Multi-language** — i18n support beyond Russian
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All 11 API endpoints: HTTP 200
+- ✅ Dashboard renders correctly (previously crashed)
+- ✅ Dev server: compiles cleanly

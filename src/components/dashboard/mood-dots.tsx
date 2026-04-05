@@ -15,7 +15,7 @@ interface MoodDotsProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MoodDots({ recentMoods, diaryStreak, now }: MoodDotsProps) {
+export default function MoodDots({ recentMoods, diaryStreak, now }: MoodDotsProps) {
   return (
     <Card className="rounded-xl border">
       <CardContent className="p-4">

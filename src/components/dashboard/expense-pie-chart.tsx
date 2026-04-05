@@ -26,7 +26,7 @@ interface ExpensePieChartProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ExpensePieChart({ loading, expensePieData }: ExpensePieChartProps) {
+export default function ExpensePieChart({ loading, expensePieData }: ExpensePieChartProps) {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-3">

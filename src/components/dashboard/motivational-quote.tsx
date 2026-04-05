@@ -14,7 +14,7 @@ interface MotivationalQuoteProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MotivationalQuote({ quoteIndex, quoteRefreshing, onRefresh }: MotivationalQuoteProps) {
+export default function MotivationalQuote({ quoteIndex, quoteRefreshing, onRefresh }: MotivationalQuoteProps) {
   return (
     <Card className="overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/20">
       <CardContent className="relative p-5">

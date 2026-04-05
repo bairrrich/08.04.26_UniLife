@@ -115,7 +115,7 @@ function getProgressTextColor(pct: number) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function DailyChecklist({
+export default function DailyChecklist({
   loading,
   hasDiaryToday,
   hasMealsToday,

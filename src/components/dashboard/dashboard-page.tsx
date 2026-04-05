@@ -42,48 +42,46 @@ import {
   formatDate,
 } from './constants'
 
-// ─── Lazy-loaded Widgets (bundled into 5 barrel chunks) ─────────────────
-// Bundle: widgets-display (5 small display widgets → 1 chunk)
-const DailyProgress = dynamic(() => import('./widgets-display').then(m => ({ default: m.DailyProgress })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const MotivationalQuote = dynamic(() => import('./widgets-display').then(m => ({ default: m.MotivationalQuote })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const MoodDots = dynamic(() => import('./widgets-display').then(m => ({ default: m.MoodDots })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const StreakWidget = dynamic(() => import('./widgets-display').then(m => ({ default: m.StreakWidget })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const QuickActions = dynamic(() => import('./widgets-display').then(m => ({ default: m.QuickActions })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
+const widgetLoad = () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />
+const smallLoad = () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" />
 
-// Bundle: widgets-activity (4 activity/transaction widgets → 1 chunk)
-const ActivityFeed = dynamic(() => import('./widgets-activity').then(m => ({ default: m.ActivityFeed })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const RecentTransactions = dynamic(() => import('./widgets-activity').then(m => ({ default: m.RecentTransactions })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const ActivityHeatmap = dynamic(() => import('./widgets-activity').then(m => ({ default: m.ActivityHeatmap })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const WeeklyInsights = dynamic(() => import('./widgets-activity').then(m => ({ default: m.WeeklyInsights })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
+// ─── Lazy-loaded Widgets ──────────────────────────────────────────────
+const DailyProgress = dynamic(() => import('./daily-progress'), { ssr: false, loading: widgetLoad })
+const MotivationalQuote = dynamic(() => import('./motivational-quote'), { ssr: false, loading: widgetLoad })
+const MoodDots = dynamic(() => import('./mood-dots'), { ssr: false, loading: widgetLoad })
+const StreakWidget = dynamic(() => import('./streak-widget'), { ssr: false, loading: widgetLoad })
+const QuickActions = dynamic(() => import('./quick-actions'), { ssr: false, loading: widgetLoad })
 
-// Bundle: widgets-charts (5 chart widgets → 1 chunk)
-const MoodBarChart = dynamic(() => import('./widgets-charts').then(m => ({ default: m.MoodBarChart })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const ExpensePieChart = dynamic(() => import('./widgets-charts').then(m => ({ default: m.ExpensePieChart })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const SpendingTrendChart = dynamic(() => import('./widgets-charts').then(m => ({ default: m.SpendingTrendChart })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const WeeklyMoodChart = dynamic(() => import('./widgets-charts').then(m => ({ default: m.WeeklyMoodChart })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const WeeklyActivityChart = dynamic(() => import('./widgets-charts').then(m => ({ default: m.WeeklyActivityChart })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
+const ActivityFeed = dynamic(() => import('./activity-feed'), { ssr: false, loading: widgetLoad })
+const RecentTransactions = dynamic(() => import('./recent-transactions'), { ssr: false, loading: widgetLoad })
+const ActivityHeatmap = dynamic(() => import('./activity-heatmap'), { ssr: false, loading: widgetLoad })
+const WeeklyInsights = dynamic(() => import('./weekly-insights'), { ssr: false, loading: widgetLoad })
 
-// Bundle: widgets-stats (5 stats/info widgets → 1 chunk)
-const StatCards = dynamic(() => import('./widgets-stats').then(m => ({ default: m.StatCards })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const HabitsProgress = dynamic(() => import('./widgets-stats').then(m => ({ default: m.HabitsProgress })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const WeeklySummary = dynamic(() => import('./widgets-stats').then(m => ({ default: m.WeeklySummary })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const MoodStreak = dynamic(() => import('./widgets-stats').then(m => ({ default: m.MoodStreak })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const ProductivityScore = dynamic(() => import('./widgets-stats').then(m => ({ default: m.ProductivityScore })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
+const MoodBarChart = dynamic(() => import('./mood-bar-chart'), { ssr: false, loading: widgetLoad })
+const ExpensePieChart = dynamic(() => import('./expense-pie-chart'), { ssr: false, loading: widgetLoad })
+const SpendingTrendChart = dynamic(() => import('./spending-trend-chart'), { ssr: false, loading: widgetLoad })
+const WeeklyMoodChart = dynamic(() => import('./weekly-mood-chart'), { ssr: false, loading: widgetLoad })
+const WeeklyActivityChart = dynamic(() => import('./weekly-activity-chart'), { ssr: false, loading: widgetLoad })
 
-// Bundle: widgets-panels (3 complex panel widgets → 1 chunk)
-const DailyChecklist = dynamic(() => import('./widgets-panels').then(m => ({ default: m.DailyChecklist })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const BudgetOverview = dynamic(() => import('./widgets-panels').then(m => ({ default: m.BudgetOverview })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const NotificationCenter = dynamic(() => import('./widgets-panels').then(m => ({ default: m.NotificationCenter })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
+const StatCards = dynamic(() => import('./stat-cards'), { ssr: false, loading: widgetLoad })
+const HabitsProgress = dynamic(() => import('./habits-progress'), { ssr: false, loading: widgetLoad })
+const WeeklySummary = dynamic(() => import('./weekly-summary'), { ssr: false, loading: widgetLoad })
+const MoodStreak = dynamic(() => import('./mood-streak'), { ssr: false, loading: widgetLoad })
+const ProductivityScore = dynamic(() => import('./productivity-score'), { ssr: false, loading: widgetLoad })
 
-// Individual heavy widgets (each → own chunk)
-const QuickNotes = dynamic(() => import('./quick-notes').then(m => ({ default: m.QuickNotes })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const WeatherWidget = dynamic(() => import('./weather-widget').then(m => ({ default: m.WeatherWidget })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const FocusTimerWidget = dynamic(() => import('./focus-timer-widget').then(m => ({ default: m.FocusTimerWidget })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const AchievementsWidget = dynamic(() => import('./achievements/achievements-widget').then(m => ({ default: m.AchievementsWidget })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const QuickAddMenu = dynamic(() => import('./quick-add-menu').then(m => ({ default: m.QuickAddMenu })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const FinanceQuickView = dynamic(() => import('./finance-quick-view').then(m => ({ default: m.FinanceQuickView })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
-const DailyTip = dynamic(() => import('./daily-tip').then(m => ({ default: m.DailyTip })), { ssr: false, loading: () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" /> })
-const DailyGoalsBanner = dynamic(() => import('./daily-goals-banner').then(m => ({ default: m.DailyGoalsBanner })), { ssr: false, loading: () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" /> })
+const DailyChecklist = dynamic(() => import('./daily-checklist'), { ssr: false, loading: widgetLoad })
+const BudgetOverview = dynamic(() => import('./budget-overview'), { ssr: false, loading: widgetLoad })
+const NotificationCenter = dynamic(() => import('./notification-center'), { ssr: false, loading: widgetLoad })
+
+const QuickNotes = dynamic(() => import('./quick-notes'), { ssr: false, loading: widgetLoad })
+const WeatherWidget = dynamic(() => import('./weather-widget'), { ssr: false, loading: widgetLoad })
+const FocusTimerWidget = dynamic(() => import('./focus-timer-widget'), { ssr: false, loading: widgetLoad })
+const AchievementsWidget = dynamic(() => import('./achievements/achievements-widget'), { ssr: false, loading: widgetLoad })
+const RecentGoals = dynamic(() => import('./recent-goals-widget'), { ssr: false, loading: widgetLoad })
+const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false, loading: widgetLoad })
+const FinanceQuickView = dynamic(() => import('./finance-quick-view'), { ssr: false, loading: widgetLoad })
+const DailyTip = dynamic(() => import('./daily-tip'), { ssr: false, loading: smallLoad })
+const DailyGoalsBanner = dynamic(() => import('./daily-goals-banner'), { ssr: false, loading: smallLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -683,8 +681,11 @@ export default function DashboardPage() {
         maxStreak={maxStreak}
       />
 
-      {/* ── Quick Add Menu (Floating FAB) ────────────────────────── */}
-      <QuickAddMenu />
+      {/* ── Recent Goals & Diary Widgets ──────────────────────── */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <RecentGoals />
+        <RecentDiary loading={loading} diaryEntries={diaryEntries} />
+      </div>
     </div>
   )
 }

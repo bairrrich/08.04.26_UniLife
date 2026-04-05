@@ -37,7 +37,7 @@ const TOOLTIP_LABELS = {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function WeeklyActivityChart({ loading, data }: WeeklyActivityChartProps) {
+export default function WeeklyActivityChart({ loading, data }: WeeklyActivityChartProps) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
 
   const maxTotal = useMemo(() => {

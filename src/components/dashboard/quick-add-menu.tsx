@@ -19,13 +19,15 @@ import {
   Crosshair,
   Library,
   Clock,
+  SmilePlus,
 } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
 interface QuickAddItem {
+  id: string
   label: string
   icon: React.ReactNode
   module: AppModule
@@ -43,9 +45,19 @@ interface MenuSection {
 
 const MENU_SECTIONS: MenuSection[] = [
   {
-    label: 'Записи',
+    label: 'Быстрые записи',
     items: [
       {
+        id: 'mood',
+        label: 'Записать настроение',
+        icon: <SmilePlus className="h-4 w-4" />,
+        module: 'diary',
+        iconBg: 'bg-rose-100 text-rose-600 dark:bg-rose-900/50 dark:text-rose-400',
+        hoverBg: 'hover:bg-rose-50 dark:hover:bg-rose-950/30',
+        shortcut: 'M',
+      },
+      {
+        id: 'diary',
         label: 'Новая запись в дневник',
         icon: <BookOpen className="h-4 w-4" />,
         module: 'diary',
@@ -54,6 +66,7 @@ const MENU_SECTIONS: MenuSection[] = [
         shortcut: 'J',
       },
       {
+        id: 'finance',
         label: 'Добавить расход',
         icon: <TrendingDown className="h-4 w-4" />,
         module: 'finance',
@@ -62,6 +75,7 @@ const MENU_SECTIONS: MenuSection[] = [
         shortcut: 'F',
       },
       {
+        id: 'nutrition',
         label: 'Записать приём пищи',
         icon: <Utensils className="h-4 w-4" />,
         module: 'nutrition',
@@ -70,6 +84,7 @@ const MENU_SECTIONS: MenuSection[] = [
         shortcut: 'N',
       },
       {
+        id: 'workout',
         label: 'Добавить тренировку',
         icon: <Dumbbell className="h-4 w-4" />,
         module: 'workout',
@@ -80,10 +95,11 @@ const MENU_SECTIONS: MenuSection[] = [
     ],
   },
   {
-    label: 'Цели',
+    label: 'Развитие',
     items: [
       {
-        label: 'Новая привычка',
+        id: 'habits',
+        label: 'Добавить привычку',
         icon: <Sparkles className="h-4 w-4" />,
         module: 'habits',
         iconBg: 'bg-violet-100 text-violet-600 dark:bg-violet-900/50 dark:text-violet-400',
@@ -91,14 +107,16 @@ const MENU_SECTIONS: MenuSection[] = [
         shortcut: 'H',
       },
       {
-        label: 'Новая цель',
+        id: 'goals',
+        label: 'Поставить цель',
         icon: <Crosshair className="h-4 w-4" />,
         module: 'goals',
-        iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-900/50 dark:text-blue-400',
-        hoverBg: 'hover:bg-blue-50 dark:hover:bg-blue-950/30',
+        iconBg: 'bg-sky-100 text-sky-600 dark:bg-sky-900/50 dark:text-sky-400',
+        hoverBg: 'hover:bg-sky-50 dark:hover:bg-sky-950/30',
         shortcut: 'G',
       },
       {
+        id: 'collections',
         label: 'Новый элемент коллекции',
         icon: <Library className="h-4 w-4" />,
         module: 'collections',
@@ -110,12 +128,12 @@ const MENU_SECTIONS: MenuSection[] = [
   },
 ]
 
-// ─── Flat lookup for all items by module ───────────────────────────────────
+// ─── Flat lookup for all items by id ───────────────────────────────────────
 
-const ITEM_BY_MODULE: Record<string, QuickAddItem> = {}
+const ITEM_BY_ID: Record<string, QuickAddItem> = {}
 MENU_SECTIONS.forEach((section) => {
   section.items.forEach((item) => {
-    ITEM_BY_MODULE[item.module] = item
+    ITEM_BY_ID[item.id] = item
   })
 })
 
@@ -125,8 +143,9 @@ const RECENT_STORAGE_KEY = 'unilife-recent-adds'
 const MAX_RECENT = 3
 
 interface RecentItem {
-  module: AppModule
+  id: string
   label: string
+  module: AppModule
   timestamp: number
 }
 
@@ -140,11 +159,11 @@ function readRecentAdds(): RecentItem[] {
   }
 }
 
-function writeRecentItem(module: AppModule, label: string) {
+function writeRecentItem(id: string, module: AppModule, label: string) {
   try {
     const items = readRecentAdds()
-    const filtered = items.filter((r) => r.module !== module)
-    filtered.unshift({ module, label, timestamp: Date.now() })
+    const filtered = items.filter((r) => r.id !== id)
+    filtered.unshift({ id, label, module, timestamp: Date.now() })
     localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(filtered.slice(0, MAX_RECENT)))
   } catch {
     // localStorage may be unavailable
@@ -153,39 +172,55 @@ function writeRecentItem(module: AppModule, label: string) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function QuickAddMenu() {
+export default function QuickAddMenu() {
   const [open, setOpen] = useState(false)
   const [recentItems, setRecentItems] = useState<RecentItem[]>(() => readRecentAdds())
+  const activeModule = useAppStore((s) => s.activeModule)
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const setPendingDialog = useAppStore((s) => s.setPendingDialog)
 
   const handleSelect = useCallback(
     (item: QuickAddItem) => {
       // Persist to recently added
-      writeRecentItem(item.module, item.label)
+      writeRecentItem(item.id, item.module, item.label)
       setRecentItems(readRecentAdds())
 
       setOpen(false)
+
+      // If already on the target module, just trigger dialog signal
+      if (activeModule === item.module) {
+        setPendingDialog(true)
+        return
+      }
+
+      // Navigate to module, then signal dialog after a tick
       setActiveModule(item.module)
-      // Signal to module to open its dialog after navigation
       setTimeout(() => {
         setPendingDialog(true)
-      }, 100)
+      }, 150)
     },
-    [setActiveModule, setPendingDialog],
+    [setActiveModule, setPendingDialog, activeModule],
   )
 
   // Pre-compute flat item index for stagger delay
   const allItems = MENU_SECTIONS.flatMap((s) => s.items)
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
+    <div className="fixed bottom-6 right-6 z-50 md:bottom-8 md:right-8">
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <button
             className={cn(
-              'group flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/25 transition-all duration-300 hover:shadow-xl hover:shadow-emerald-500/30 active:scale-95 dark:from-emerald-600 dark:to-teal-700',
-              open && 'scale-110 shadow-xl shadow-emerald-500/40',
+              'group flex h-14 w-14 items-center justify-center rounded-full',
+              'bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
+              'shadow-lg shadow-emerald-500/25',
+              'transition-all duration-300',
+              'hover:shadow-xl hover:shadow-emerald-500/30',
+              'active:scale-95',
+              'dark:from-emerald-600 dark:to-teal-700',
+              // Glass morphism on FAB
+              'ring-1 ring-white/20',
+              open && 'scale-110 shadow-xl shadow-emerald-500/40 ring-white/30',
             )}
             aria-label="Быстрое добавление"
           >
@@ -201,7 +236,13 @@ export function QuickAddMenu() {
         <DropdownMenuContent
           align="end"
           sideOffset={12}
-          className="w-64 rounded-xl border bg-background/95 backdrop-blur-md p-2 shadow-xl"
+          className={cn(
+            'w-72 rounded-2xl border p-2 shadow-2xl',
+            // Glass morphism card
+            'bg-background/80 backdrop-blur-xl',
+            'dark:bg-background/70 dark:backdrop-blur-2xl',
+            'ring-1 ring-white/10 dark:ring-white/5',
+          )}
         >
           {/* Header */}
           <div className="mb-1.5 px-2 py-1">
@@ -219,11 +260,11 @@ export function QuickAddMenu() {
                 Недавно добавленные
               </p>
               {recentItems.map((recent, idx) => {
-                const def = ITEM_BY_MODULE[recent.module]
+                const def = ITEM_BY_ID[recent.id]
                 if (!def) return null
                 return (
                   <motion.div
-                    key={`recent-${recent.module}`}
+                    key={`recent-${recent.id}`}
                     initial={{ opacity: 0, x: 8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.15, delay: idx * 0.04 }}
@@ -231,7 +272,7 @@ export function QuickAddMenu() {
                     <DropdownMenuItem
                       onClick={() => handleSelect(def)}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-2.5 py-2 cursor-pointer transition-colors duration-150',
+                        'flex items-center gap-3 rounded-xl px-2.5 py-2 cursor-pointer transition-colors duration-150',
                         def.hoverBg,
                       )}
                     >
@@ -254,8 +295,7 @@ export function QuickAddMenu() {
 
           {/* Main menu sections with staggered animation */}
           {MENU_SECTIONS.map((section, sectionIdx) => {
-            // Find starting index for this section's items in the flat list
-            const startIdx = allItems.findIndex((i) => i.module === section.items[0].module)
+            const startIdx = allItems.findIndex((i) => i.id === section.items[0].id)
 
             return (
               <div key={section.label}>
@@ -267,18 +307,18 @@ export function QuickAddMenu() {
                 {/* Section items */}
                 {section.items.map((item, itemIdx) => (
                   <motion.div
-                    key={item.module}
+                    key={item.id}
                     initial={{ opacity: 0, x: 8 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{
                       duration: 0.15,
-                      delay: (startIdx + itemIdx) * 0.05 + (recentItems.length > 0 ? recentItems.length * 0.04 + 0.1 : 0),
+                      delay: (startIdx + itemIdx) * 0.04 + (recentItems.length > 0 ? recentItems.length * 0.04 + 0.1 : 0),
                     }}
                   >
                     <DropdownMenuItem
                       onClick={() => handleSelect(item)}
                       className={cn(
-                        'flex items-center gap-3 rounded-lg px-2.5 py-2.5 cursor-pointer transition-colors duration-150',
+                        'flex items-center gap-3 rounded-xl px-2.5 py-2.5 cursor-pointer transition-colors duration-150',
                         item.hoverBg,
                       )}
                     >
@@ -292,7 +332,7 @@ export function QuickAddMenu() {
                       </div>
                       <span className="text-sm font-medium flex-1">{item.label}</span>
                       {/* Keyboard shortcut hint — desktop only */}
-                      <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted px-1.5 text-[10px] font-mono text-muted-foreground">
+                      <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted/50 px-1.5 text-[10px] font-mono text-muted-foreground">
                         {item.shortcut}
                       </kbd>
                     </DropdownMenuItem>

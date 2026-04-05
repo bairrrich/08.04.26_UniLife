@@ -22,7 +22,7 @@ interface StreakWidgetProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function StreakWidget({ loading, streakItems, maxStreak }: StreakWidgetProps) {
+export default function StreakWidget({ loading, streakItems, maxStreak }: StreakWidgetProps) {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-3">

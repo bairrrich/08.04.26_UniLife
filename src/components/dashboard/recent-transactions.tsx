@@ -18,7 +18,7 @@ interface RecentTransactionsProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function RecentTransactions({
+export default function RecentTransactions({
   loading,
   transactions,
   getRelativeTime,

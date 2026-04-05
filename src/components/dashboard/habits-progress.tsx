@@ -140,3 +140,5 @@ export const HabitsProgress = memo(function HabitsProgress({
     </Card>
   )
 })
+
+export default HabitsProgress

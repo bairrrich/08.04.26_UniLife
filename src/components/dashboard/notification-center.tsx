@@ -106,7 +106,7 @@ function getHabitWord(count: number): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function NotificationCenter(props: NotificationCenterProps) {
+export default function NotificationCenter(props: NotificationCenterProps) {
   const reminders = buildReminders(props)
 
   if (props.loading) {

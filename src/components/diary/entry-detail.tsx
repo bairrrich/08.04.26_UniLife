@@ -35,7 +35,7 @@ export function EntryDetail({
 }: EntryDetailProps) {
   if (!selectedDate) {
     return (
-      <Card>
+      <Card className="rounded-xl">
         <CardContent className="py-12 text-center">
           <CalendarDays className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-muted-foreground text-sm">
@@ -48,7 +48,7 @@ export function EntryDetail({
 
   if (entriesForSelectedDate.length === 0) {
     return (
-      <Card>
+      <Card className="rounded-xl">
         <CardContent className="py-12 text-center">
           <BookOpen className="h-10 w-10 mx-auto text-muted-foreground/40 mb-3" />
           <p className="text-muted-foreground text-sm mb-1">

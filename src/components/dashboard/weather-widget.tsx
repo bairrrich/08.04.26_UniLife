@@ -122,7 +122,7 @@ function WeatherError({ onRetry }: { onRetry: () => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────
 
-export function WeatherWidget() {
+export default function WeatherWidget() {
   const [weather, setWeather] = useState<OpenMeteoWeather | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)

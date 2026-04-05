@@ -68,7 +68,7 @@ function getProgressTextColor(pct: number): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function BudgetOverview({ loading, budgetData, onNavigateToFinance }: BudgetOverviewProps) {
+export default function BudgetOverview({ loading, budgetData, onNavigateToFinance }: BudgetOverviewProps) {
   if (loading) {
     return (
       <Card className="card-hover rounded-xl border">

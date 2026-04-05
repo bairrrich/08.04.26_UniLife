@@ -407,3 +407,5 @@ export const AchievementsWidget = memo(function AchievementsWidget({
     </Card>
   )
 })
+
+export default AchievementsWidget

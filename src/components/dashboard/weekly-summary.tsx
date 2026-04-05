@@ -152,3 +152,5 @@ export const WeeklySummary = memo(function WeeklySummary({
     </Card>
   )
 })
+
+export default WeeklySummary

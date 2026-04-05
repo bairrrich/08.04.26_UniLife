@@ -52,7 +52,7 @@ export default function FeedPage() {
       <div className="max-w-2xl mx-auto space-y-4 stagger-children">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="border-l-4 border-l-blue-200 dark:border-l-blue-800">
+            <Card key={i} className="rounded-xl border-l-4 border-l-blue-200 dark:border-l-blue-800">
               <CardContent className="p-4 space-y-3">
                 {/* Header: avatar + name + badge + time */}
                 <div className="flex items-center gap-3">

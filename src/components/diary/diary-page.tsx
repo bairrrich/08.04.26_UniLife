@@ -497,7 +497,7 @@ export default function DiaryPage() {
       <WeekMoodBar todayMood={todayMood} onQuickMood={handleQuickMood} />
 
       {/* Month Navigation */}
-      <Card className="w-full">
+      <Card className="w-full rounded-xl">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <Button variant="ghost" size="icon" onClick={goToPrevMonth} className="h-8 w-8">
@@ -516,7 +516,7 @@ export default function DiaryPage() {
       {/* Loading skeleton */}
       {isLoading && (
         <div className="grid gap-6">
-          <Card>
+          <Card className="rounded-xl">
             <CardContent className="p-6">
               <div className="animate-pulse space-y-3">
                 <div className="h-6 bg-muted rounded w-1/3" />
@@ -632,7 +632,7 @@ export default function DiaryPage() {
             Это действие нельзя отменить. Запись будет удалена навсегда.
           </p>
           {selectedEntry && (
-            <Card className="bg-muted/50">
+            <Card className="bg-muted/50 rounded-xl">
               <CardContent className="p-3">
                 <p className="text-xs text-muted-foreground">
                   {format(parseEntryDate(selectedEntry.date), 'd MMMM yyyy', { locale: ru })}

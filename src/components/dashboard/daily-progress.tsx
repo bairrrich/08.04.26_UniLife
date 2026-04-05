@@ -6,7 +6,7 @@ interface DailyProgressProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function DailyProgress({ progress }: DailyProgressProps) {
+export default function DailyProgress({ progress }: DailyProgressProps) {
   return (
     <div className="mt-3 flex items-center gap-3">
       <div className="flex-1 h-1 rounded-full bg-muted overflow-hidden">

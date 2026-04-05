@@ -66,7 +66,7 @@ export function CalendarView({
   }, [currentYear, currentMonth])
 
   return (
-    <Card className="w-full">
+    <Card className="w-full rounded-xl">
       <CardContent className="p-3 sm:p-4">
         {/* Day names header */}
         <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1">

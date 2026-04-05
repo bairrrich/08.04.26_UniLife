@@ -49,7 +49,7 @@ function getDayLabel(dateStr: string): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MoodStreak({ loading, recentMoods, streak, todayMood }: MoodStreakProps) {
+export default function MoodStreak({ loading, recentMoods, streak, todayMood }: MoodStreakProps) {
   if (loading) {
     return (
       <Card className="rounded-xl border card-hover animate-slide-up py-3">

@@ -47,7 +47,7 @@ const DAYS_IN_GRID = WEEKS * 7 // 84
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ActivityHeatmap({ loading, activityData }: ActivityHeatmapProps) {
+export default function ActivityHeatmap({ loading, activityData }: ActivityHeatmapProps) {
   const { grid, totalCount } = useMemo(() => {
     if (loading || activityData.length === 0) {
       return { grid: [] as { date: string; count: number }[], totalCount: 0 }

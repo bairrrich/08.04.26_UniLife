@@ -66,7 +66,7 @@ interface InsightItem {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function WeeklyInsights({
+export default function WeeklyInsights({
   loading,
   diaryEntries,
   workouts,

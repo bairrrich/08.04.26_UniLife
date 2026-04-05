@@ -37,7 +37,7 @@ function formatCurrency(amount: number): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function FinanceQuickView({
+export default function FinanceQuickView({
   loading,
   categories,
   totalExpense,

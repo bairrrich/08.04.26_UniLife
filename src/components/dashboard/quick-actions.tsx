@@ -49,7 +49,7 @@ const QUICK_ACTIONS: {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function QuickActions({ onNavigate }: QuickActionsProps) {
+export default function QuickActions({ onNavigate }: QuickActionsProps) {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-3">

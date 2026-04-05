@@ -129,7 +129,7 @@ function emitNotesChange() {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function QuickNotes() {
+export default function QuickNotes() {
   const [mounted, setMounted] = useState(false)
   const [notes, setNotes] = useState<QuickNote[]>([])
   const [inputValue, setInputValue] = useState('')

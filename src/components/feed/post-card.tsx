@@ -78,7 +78,7 @@ export function PostCard({
     : []
 
   return (
-    <Card className={`card-hover border-l-4 ${ENTITY_BORDER[post.entityType]} transition hover:bg-muted/50`}>
+    <Card className={`card-hover rounded-xl border-l-4 ${ENTITY_BORDER[post.entityType]} transition hover:bg-muted/50`}>
       <CardContent className="p-4 space-y-3">
         {/* Post header */}
         <div className="flex items-center gap-3">

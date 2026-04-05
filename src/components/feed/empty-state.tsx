@@ -8,7 +8,7 @@ interface EmptyStateProps {
 
 export function FeedEmptyState({ onOpenDialog }: EmptyStateProps) {
   return (
-    <Card className="overflow-hidden border-0 bg-gradient-to-b from-muted/30 to-background">
+    <Card className="rounded-xl overflow-hidden border-0 bg-gradient-to-b from-muted/30 to-background">
       <CardContent className="py-20 text-center">
         {/* Gradient icon */}
         <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full float-animation">

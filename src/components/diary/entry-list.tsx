@@ -71,7 +71,7 @@ export function EntryList({
   // Empty state: no entries at all
   if (entries.length === 0) {
     return (
-      <Card className="card-hover overflow-hidden animate-slide-up relative">
+      <Card className="card-hover rounded-xl overflow-hidden animate-slide-up relative">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-teal-500/5 pointer-events-none" />
         <CardContent className="relative flex flex-col items-center justify-center py-12 text-center">
           <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">

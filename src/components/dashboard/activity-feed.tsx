@@ -20,7 +20,7 @@ interface ActivityFeedProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function ActivityFeed({ loading, feedPosts, getTimeAgo, onNavigateToFeed }: ActivityFeedProps) {
+export default function ActivityFeed({ loading, feedPosts, getTimeAgo, onNavigateToFeed }: ActivityFeedProps) {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="flex flex-row items-center justify-between pb-3">

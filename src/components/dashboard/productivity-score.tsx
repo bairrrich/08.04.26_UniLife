@@ -237,3 +237,5 @@ export const ProductivityScore = memo(function ProductivityScore({
     </Card>
   )
 })
+
+export default ProductivityScore

@@ -28,6 +28,16 @@ const AppFooter = dynamic(
   () => import('@/components/layout/app-footer'),
   { loading: () => <FooterSkeleton /> }
 )
+// Global Quick Add Menu — accessible from every module page
+const QuickAddMenu = dynamic(
+  () => import('@/components/dashboard/quick-add-menu'),
+  { ssr: false }
+)
+// Global Notification Toast — fires on dashboard load
+const NotificationToaster = dynamic(
+  () => import('@/components/layout/notification-toast').then(m => ({ default: m.NotificationToaster })),
+  { ssr: false }
+)
 
 // ─── Error Boundary with retry for ChunkLoadError ─────────────────────
 interface ErrorBoundaryState {
@@ -252,13 +262,15 @@ export default function Home() {
     <div className="min-h-screen bg-background">
       <WelcomeScreen />
       <AppSidebar />
-      <main className="md:ml-60 min-h-screen flex flex-col">
+      <main className="main-content md:ml-60 min-h-screen flex flex-col">
         <div className="p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
           <AnimatedModule activeModule={activeModule} />
         </div>
         <AppFooter />
         <ScrollToTop />
         <MobileNav />
+        <QuickAddMenu />
+        <NotificationToaster />
       </main>
     </div>
   )

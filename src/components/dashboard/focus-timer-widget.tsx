@@ -341,7 +341,7 @@ function formatTimeHHMM(isoString: string): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export function FocusTimerWidget() {
+export default function FocusTimerWidget() {
   const [mounted, setMounted] = useState(false)
   const [mode, setMode] = useState<TimerMode>('focus')
   const [timeLeft, setTimeLeft] = useState(MODE_CONFIG.focus.duration)

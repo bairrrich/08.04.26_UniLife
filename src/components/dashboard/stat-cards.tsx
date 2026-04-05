@@ -166,3 +166,5 @@ export const StatCards = memo(function StatCards({
     </div>
   )
 })
+
+export default StatCards

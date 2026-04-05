@@ -24,7 +24,7 @@ interface MoodBarChartProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function MoodBarChart({ loading, weeklyMoodData }: MoodBarChartProps) {
+export default function MoodBarChart({ loading, weeklyMoodData }: MoodBarChartProps) {
   return (
     <Card className="rounded-xl border">
       <CardHeader className="pb-3">
