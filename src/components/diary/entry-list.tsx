@@ -10,7 +10,7 @@ import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI } from '@/lib/format'
 import { DiaryEntry } from './types'
-import { TAG_COLORS } from './constants'
+import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
 import { parseEntryDate } from './helpers'
 import { SearchFilter } from './search-filter'
@@ -128,7 +128,7 @@ export function EntryList({
       )}
 
       {/* Entry cards */}
-      <div className="space-y-3">
+      <div className="space-y-3 stagger-children">
         {filteredEntries.map((entry) => {
           const entryDate = parseEntryDate(entry.date)
           const moodClass = entry.mood ? MOOD_COLORS[entry.mood] : ''
@@ -213,13 +213,13 @@ export function EntryList({
                     {/* Tags */}
                     {entry.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-2">
-                        {entry.tags.map((tag, tagIdx) => (
+                        {entry.tags.map((tag) => (
                           <Badge
                             key={tag}
                             variant="secondary"
                             className={cn(
                               'text-xs rounded-full px-2.5 py-0 border-0',
-                              TAG_COLORS[tagIdx % TAG_COLORS.length]
+                              TAG_COLORS[hashTagColor(tag)]
                             )}
                           >
                             {tag}

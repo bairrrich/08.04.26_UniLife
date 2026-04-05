@@ -26,3 +26,5 @@ export interface GoalsResponse {
 }
 
 export type FilterTab = 'all' | 'active' | 'completed'
+
+export type CategoryFilter = 'all' | 'personal' | 'health' | 'finance' | 'career' | 'learning'

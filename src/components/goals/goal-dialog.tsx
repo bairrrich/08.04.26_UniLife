@@ -1,3 +1,6 @@
+'use client'
+
+import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -15,6 +18,8 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 import { CATEGORY_OPTIONS, STATUS_OPTIONS } from './constants'
+import { Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface GoalDialogProps {
   open: boolean
@@ -42,6 +47,50 @@ interface GoalDialogProps {
   onSubmit: () => void
 }
 
+// ─── Preset Goal Templates ─────────────────────────────────────────────────
+const GOAL_TEMPLATES = [
+  {
+    title: 'Прочитать 12 книг',
+    description: 'Цель прочитать 12 книг за год',
+    category: 'personal',
+    targetValue: '12',
+    currentValue: '0',
+    unit: 'книг',
+    icon: <BookOpen className="h-3.5 w-3.5" />,
+    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50',
+  },
+  {
+    title: 'Накопить 100 000 ₽',
+    description: 'Отложить накопления на финансовую подушку',
+    category: 'finance',
+    targetValue: '100000',
+    currentValue: '0',
+    unit: '₽',
+    icon: <PiggyBank className="h-3.5 w-3.5" />,
+    color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
+  },
+  {
+    title: 'Пробежать марафон',
+    description: 'Подготовиться и пробежать марафонскую дистанцию',
+    category: 'health',
+    targetValue: '42.2',
+    currentValue: '0',
+    unit: 'км',
+    icon: <Dumbbell className="h-3.5 w-3.5" />,
+    color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
+  },
+  {
+    title: 'Выучить английский',
+    description: 'Пройти 100 уроков английского языка',
+    category: 'learning',
+    targetValue: '100',
+    currentValue: '0',
+    unit: 'уроков',
+    icon: <GraduationCap className="h-3.5 w-3.5" />,
+    color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400 border-violet-200 dark:border-violet-800/50',
+  },
+]
+
 export function GoalDialog({
   open,
   onOpenChange,
@@ -67,6 +116,19 @@ export function GoalDialog({
   submitting,
   onSubmit,
 }: GoalDialogProps) {
+
+  const handleTemplateClick = (template: typeof GOAL_TEMPLATES[number]) => {
+    setFormTitle(template.title)
+    setFormDescription(template.description)
+    setFormCategory(template.category)
+    setFormTargetValue(template.targetValue)
+    setFormCurrentValue(template.currentValue)
+    setFormUnit(template.unit)
+    setFormProgress('0')
+  }
+
+  const isEditing = !!editingGoal
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -74,6 +136,37 @@ export function GoalDialog({
           <DialogTitle>{editingGoal ? 'Редактировать цель' : 'Новая цель'}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
+          {/* Preset Goal Templates — only shown when creating new goal */}
+          {!isEditing && (
+            <div className="space-y-2">
+              <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                <Sparkles className="h-3.5 w-3.5 text-amber-500" />
+                Быстрые шаблоны
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {GOAL_TEMPLATES.map((template) => {
+                  const isSelected = formTitle === template.title && formCategory === template.category && formTargetValue === template.targetValue
+                  return (
+                    <button
+                      key={template.title}
+                      type="button"
+                      onClick={() => handleTemplateClick(template)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-all duration-200 active-press',
+                        isSelected
+                          ? template.color + ' ring-2 ring-primary/30 shadow-sm'
+                          : 'bg-muted/60 text-muted-foreground border-transparent hover:bg-muted hover:text-foreground',
+                      )}
+                    >
+                      {template.icon}
+                      <span className="max-w-[140px] truncate">{template.title}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Title */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Название *</label>

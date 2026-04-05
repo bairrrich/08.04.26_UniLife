@@ -246,10 +246,12 @@ function InvestmentCard({
   investment,
   onAddTx,
   onDelete,
+  onDeleteTx,
 }: {
   investment: Investment
   onAddTx: (inv: Investment) => void
   onDelete: (id: string) => void
+  onDeleteTx: (investmentId: string, txId: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const totalInvested = investment.totalInvested ?? 0
@@ -333,7 +335,7 @@ function InvestmentCard({
         {expanded && investment.transactions && (
           <div className="mt-2 space-y-1">
             {investment.transactions.slice(0, 5).map((tx) => (
-              <div key={tx.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs">
+              <div key={tx.id} className="flex items-center gap-2 rounded-md px-2 py-1.5 text-xs group/tx">
                 <Badge variant="secondary" className={cn('text-[10px] px-1.5 py-0 shrink-0', INVESTMENT_TX_TYPE_COLORS[tx.type])}>
                   {TX_TYPE_ICONS[tx.type]}
                   <span className="ml-1">{INVESTMENT_TX_TYPE_LABELS[tx.type]}</span>
@@ -345,6 +347,14 @@ function InvestmentCard({
                 <span className="text-muted-foreground text-[10px] shrink-0">
                   {formatDateRu(tx.date)}
                 </span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-muted-foreground opacity-0 group-hover/tx:opacity-100 hover:text-red-500 transition-opacity shrink-0"
+                  onClick={(e) => { e.stopPropagation(); onDeleteTx(investment.id, tx.id) }}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
               </div>
             ))}
             {investment.transactions.length > 5 && (
@@ -378,6 +388,7 @@ export function InvestmentsManager({ isLoading }: { isLoading: boolean }) {
     createInvestment,
     deleteInvestment,
     addInvestmentTx,
+    deleteInvestmentTx,
   } = useFinance()
 
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -515,6 +526,7 @@ export function InvestmentsManager({ isLoading }: { isLoading: boolean }) {
                 investment={inv}
                 onAddTx={handleAddTx}
                 onDelete={deleteInvestment}
+                onDeleteTx={deleteInvestmentTx}
               />
             ))}
           </div>

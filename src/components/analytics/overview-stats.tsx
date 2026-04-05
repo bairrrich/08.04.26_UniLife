@@ -19,6 +19,13 @@ import { MOOD_EMOJI, formatCurrency, RU_DAYS_SHORT, toDateStr } from '@/lib/form
 import { SkeletonCard } from './skeleton-components'
 import type { DiaryEntry, Transaction } from './types'
 
+interface PeriodComparison {
+  diaryChange: number | null
+  expenseChange: number | null
+  workoutChange: number | null
+  habitsChange: number | null
+}
+
 interface OverviewStatsProps {
   loading: boolean
   diaryCount: number
@@ -33,6 +40,28 @@ interface OverviewStatsProps {
   habitsRate: number
   diaryEntries: DiaryEntry[]
   transactions: Transaction[]
+  periodComparison?: PeriodComparison
+}
+
+// ─── Period Comparison Badge ──────────────────────────────────────────────────
+
+function PeriodChangeBadge({ change, label }: { change: number | null; label: string }) {
+  if (change === null) return null
+  const isPositive = change >= 0
+  return (
+    <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${
+      isPositive
+        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+        : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+    }`}>
+      {isPositive ? (
+        <TrendingUp className="h-2.5 w-2.5" />
+      ) : (
+        <TrendingDown className="h-2.5 w-2.5" />
+      )}
+      {Math.abs(change)}%
+    </span>
+  )
 }
 
 // ─── Sparkline Component ─────────────────────────────────────────────────────
@@ -108,6 +137,7 @@ export function OverviewStats({
   habitsRate,
   diaryEntries,
   transactions,
+  periodComparison,
 }: OverviewStatsProps) {
   const diarySparkline = getDiarySparkline(diaryEntries)
   const financeSparkline = getFinanceSparkline(transactions)
@@ -124,13 +154,17 @@ export function OverviewStats({
       ) : (
         <>
           {/* Diary Stats */}
-          <Card className="card-hover rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 dark:border-emerald-800/30">
+          <Card className="card-hover relative overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/30 dark:border-emerald-800/30">
+            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-emerald-400 to-teal-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-emerald-700 dark:text-emerald-300">
                 Записи в дневнике
               </CardTitle>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
-                <BookOpen className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex items-center gap-1.5">
+                <PeriodChangeBadge change={periodComparison?.diaryChange ?? null} label="дневник" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/50">
+                  <BookOpen className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
@@ -151,13 +185,17 @@ export function OverviewStats({
           </Card>
 
           {/* Finance Stats */}
-          <Card className="card-hover rounded-xl border border-transparent bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 dark:border-amber-800/30">
+          <Card className="card-hover relative overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-amber-50 to-yellow-50 dark:from-amber-950/40 dark:to-yellow-950/30 dark:border-amber-800/30">
+            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-amber-400 to-yellow-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-amber-700 dark:text-amber-300">
                 Расходы / Доходы
               </CardTitle>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
-                <Wallet className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              <div className="flex items-center gap-1.5">
+                <PeriodChangeBadge change={periodComparison?.expenseChange ?? null} label="расходы" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/50">
+                  <Wallet className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
@@ -183,13 +221,17 @@ export function OverviewStats({
           </Card>
 
           {/* Workout Stats */}
-          <Card className="card-hover rounded-xl border border-transparent bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/40 dark:to-sky-950/30 dark:border-blue-800/30">
+          <Card className="card-hover relative overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-blue-50 to-sky-50 dark:from-blue-950/40 dark:to-sky-950/30 dark:border-blue-800/30">
+            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-blue-400 to-sky-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-blue-700 dark:text-blue-300">
                 Тренировки
               </CardTitle>
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
-                <Dumbbell className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <div className="flex items-center gap-1.5">
+                <PeriodChangeBadge change={periodComparison?.workoutChange ?? null} label="тренировки" />
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/50">
+                  <Dumbbell className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
@@ -207,7 +249,8 @@ export function OverviewStats({
           </Card>
 
           {/* Habits Stats */}
-          <Card className="card-hover rounded-xl border border-transparent bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/30 dark:border-violet-800/30">
+          <Card className="card-hover relative overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-violet-50 to-purple-50 dark:from-violet-950/40 dark:to-purple-950/30 dark:border-violet-800/30">
+            <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-violet-400 to-purple-500" />
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-xs font-medium text-violet-700 dark:text-violet-300">
                 Привычки

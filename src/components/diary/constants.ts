@@ -13,4 +13,18 @@ export const QUICK_TEMPLATES = [
   { label: 'Рабочий день', emoji: '💼', content: 'Сегодняшний рабочий день был насыщенным. ' },
   { label: 'Выходной', emoji: '🌴', content: 'Отличный выходной день! ' },
   { label: 'Спорт', emoji: '🏋️', content: 'Сегодня тренировался. ' },
+  { label: 'Утренние мысли', emoji: '🌅', title: 'Утренние мысли', content: 'Утро начинается с правильного настроя.\n\n3 вещи, которые я хочу сделать сегодня:\n1. \n2. \n3. \n\nМоё намерение на день: ' },
+  { label: 'Вечерний обзор', emoji: '🌙', title: 'Вечерний обзор', content: 'Что сегодня было хорошего?\n\nЧто я сделал(а) сегодня:\n- \n- \n- \n\nЧему я научился(ась)?\n\nЧто можно улучшить завтра? ' },
+  { label: 'Благодарности', emoji: '🙏', title: 'Благодарности', content: 'За что я благодарен(на) сегодня:\n\n1. \n2. \n3. \n\nСамый яркий момент дня: ' },
 ]
+
+/** Hash a string to a stable index for tag color assignment */
+export function hashTagColor(tag: string): number {
+  let hash = 0
+  for (let i = 0; i < tag.length; i++) {
+    const char = tag.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return Math.abs(hash) % TAG_COLORS.length
+}

@@ -139,9 +139,12 @@ export function WelcomeScreen() {
       if (userName.trim()) {
         localStorage.setItem('unilife-user-name', userName.trim())
       }
+      if (selectedGoals.length > 0) {
+        localStorage.setItem('unilife-user-goals', JSON.stringify(selectedGoals))
+      }
     } catch { /* localStorage unavailable */ }
     setStatus('dismissed')
-  }, [userName])
+  }, [userName, selectedGoals])
 
   const handleSkip = useCallback(() => {
     try {

@@ -32,6 +32,7 @@ import { EntryList } from './entry-list'
 import { EntryDetail } from './entry-detail'
 import { EntryDialog } from './entry-dialog'
 import { WeekMoodBar } from './week-mood-bar'
+import { MoodTrend } from './mood-trend'
 
 const emptyForm: EntryFormData = {
   title: '',
@@ -196,8 +197,8 @@ export default function DiaryPage() {
   const applyTemplate = (template: typeof QUICK_TEMPLATES[number]) => {
     setForm((f) => ({
       ...f,
-      content: f.content ? f.content + template.content : template.content,
-      title: f.title || template.label,
+      content: f.content ? f.content + '\n\n' + template.content : template.content,
+      title: f.title || ('title' in template && template.title ? template.title : template.label),
     }))
   }
 
@@ -364,6 +365,10 @@ export default function DiaryPage() {
                   {format(today, 'd MMMM, EEEE', { locale: ru })}
                 </span>
               </div>
+              {/* Mood Trend Mini Chart */}
+              {!isLoading && entries.length > 0 && (
+                <MoodTrend entries={entries} today={today} className="mt-2" />
+              )}
             </div>
           </div>
 

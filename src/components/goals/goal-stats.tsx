@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, Trophy, TrendingUp, Clock, CalendarClock, Zap, CalendarDays } from 'lucide-react'
+import { Target, Trophy, TrendingUp, Clock, CalendarClock, Zap, AlertTriangle } from 'lucide-react'
 import type { GoalData } from './types'
 import { cn } from '@/lib/utils'
 
@@ -84,6 +84,22 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
   const animatedCompleted = useAnimatedValue(stats.completedGoals)
   const animatedAvg = useAnimatedValue(stats.avgProgress)
 
+  // Count overdue goals
+  const overdueCount = useMemo(() => {
+    const now = new Date()
+    return goals.filter((g) => {
+      if (!g.deadline || g.status === 'completed') return false
+      const dl = new Date(g.deadline)
+      const diffDays = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+      return diffDays < 0
+    }).length
+  }, [goals])
+
+  // Count active goals
+  const activeCount = useMemo(() => {
+    return goals.filter((g) => g.status === 'active').length
+  }, [goals])
+
   // Count goals with deadlines within 7 days
   const approachingDeadlineCount = useMemo(() => {
     const now = new Date()
@@ -125,64 +141,109 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
     return { value: Math.round(avgSpeed * 10) / 10, label: '% в день' }
   }, [goals])
 
+  // Color for the average progress ring
+  const progressRingColor = stats.avgProgress >= 70 ? '#10b981' : stats.avgProgress >= 40 ? '#f59e0b' : '#ef4444'
+  const progressRingColorEnd = stats.avgProgress >= 70 ? '#059669' : stats.avgProgress >= 40 ? '#d97706' : '#dc2626'
+  const progressTextColor = stats.avgProgress >= 70
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : stats.avgProgress >= 40
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-rose-600 dark:text-rose-400'
+
   // SVG progress ring params
   const ringRadius = 40
   const ringCircumference = 2 * Math.PI * ringRadius
 
   return (
     <>
-      {/* Overall Progress Summary */}
-      <Card className="card-hover rounded-xl border">
-        <CardHeader className="pb-3">
+      {/* Overall Progress Summary with Enhanced Ring */}
+      <Card className="card-hover rounded-xl border overflow-hidden">
+        {/* Subtle gradient header background */}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+        <CardHeader className="pb-3 relative">
           <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-base">
-              <Target className="h-4 w-4 text-violet-500" />
+              <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
+                <Target className="h-4 w-4 text-white" />
+              </div>
               Общий прогресс
             </div>
-            {approachingDeadlineCount > 0 && (
-              <div className="flex items-center gap-1 text-xs text-amber-500 dark:text-amber-400">
-                <Clock className="h-3.5 w-3.5" />
-                <span className="font-medium">{approachingDeadlineCount} дедлайн{approachingDeadlineCount === 1 ? '' : 'ов'}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-3">
+              {overdueCount > 0 && (
+                <div className="flex items-center gap-1 text-xs text-rose-500 dark:text-rose-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  <span className="font-medium">{overdueCount} просрочен{overdueCount === 1 ? 'а' : overdueCount > 1 && overdueCount < 5 ? 'о' : 'о'}</span>
+                </div>
+              )}
+              {approachingDeadlineCount > 0 && (
+                <div className="flex items-center gap-1 text-xs text-amber-500 dark:text-amber-400">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="font-medium">{approachingDeadlineCount} дедлайн{approachingDeadlineCount === 1 ? '' : 'ов'}</span>
+                </div>
+              )}
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="relative">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-            <div className="relative flex h-24 w-24 shrink-0 items-center justify-center">
-              <svg className="h-24 w-24 -rotate-90" viewBox="0 0 100 100">
+            {/* Enhanced circular progress ring with glow */}
+            <div className="relative flex h-28 w-28 shrink-0 items-center justify-center">
+              {/* Subtle glow behind ring */}
+              <div
+                className="absolute inset-2 rounded-full opacity-20 blur-lg"
+                style={{ backgroundColor: progressRingColor }}
+              />
+              <svg className="h-28 w-28 -rotate-90" viewBox="0 0 100 100">
                 <defs>
                   <linearGradient id="stats-ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="#8b5cf6" />
-                    <stop offset="100%" stopColor="#6366f1" />
+                    <stop offset="0%" stopColor={progressRingColor} />
+                    <stop offset="100%" stopColor={progressRingColorEnd} />
                   </linearGradient>
                 </defs>
+                {/* Track */}
                 <circle cx="50" cy="50" r={ringRadius} fill="none" strokeWidth="8" className="stroke-muted/50" />
+                {/* Progress arc */}
                 <circle
                   cx="50" cy="50" r={ringRadius} fill="none" strokeWidth="8" strokeLinecap="round"
                   stroke="url(#stats-ring-grad)"
                   strokeDasharray={ringCircumference}
                   strokeDashoffset={ringCircumference * (1 - stats.avgProgress / 100)}
                   className="transition-all duration-1000 ease-out"
+                  style={{
+                    filter: `drop-shadow(0 0 6px ${progressRingColor}40)`,
+                  }}
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className="text-xl font-bold tabular-nums text-violet-600 dark:text-violet-400">
+                <span className={cn('text-2xl font-bold tabular-nums', progressTextColor)}>
                   {animatedAvg}%
                 </span>
+                <span className="text-[10px] text-muted-foreground">среднее</span>
               </div>
             </div>
-            <div className="flex-1 space-y-3">
-              <div className="grid grid-cols-2 gap-3 text-center sm:text-left">
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-2xl font-bold tabular-nums">{animatedTotal}</p>
-                  <p className="text-xs text-muted-foreground">Всего целей</p>
+            <div className="flex-1 space-y-3 w-full">
+              {/* Color-coded stat boxes */}
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-lg bg-emerald-50 dark:bg-emerald-900/20 p-3 border border-emerald-100 dark:border-emerald-800/30">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <Trophy className="h-3.5 w-3.5 text-emerald-500" />
+                    <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Завершено</p>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{animatedCompleted}</p>
                 </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">
-                    {animatedCompleted}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Достигнуто</p>
+                <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-3 border border-amber-100 dark:border-amber-800/30">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
+                    <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Активных</p>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{activeCount}</p>
+                </div>
+                <div className="rounded-lg bg-rose-50 dark:bg-rose-900/20 p-3 border border-rose-100 dark:border-rose-800/30">
+                  <div className="flex items-center justify-center gap-1 mb-1">
+                    <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
+                    <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">Просрочено</p>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums text-rose-600 dark:text-rose-400">{overdueCount}</p>
                 </div>
               </div>
               {/* Mini trend */}
@@ -197,7 +258,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Stats Row — 5 columns on lg, 3 on md, 2 on sm */}
+      {/* Stats Row — Enhanced with color coding */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 stagger-children">
         {/* Total Goals */}
         <Card className="card-hover overflow-hidden relative">
@@ -213,41 +274,98 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
 
-        {/* Completed */}
+        {/* Completed — Emerald */}
         <Card className="card-hover overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-blue-600/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
-              <Trophy className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+              <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold tabular-nums">{animatedCompleted}</p>
+              <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{animatedCompleted}</p>
               <p className="text-xs text-muted-foreground truncate">Завершено</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Average Progress */}
+        {/* Average Progress — Color-coded */}
         <Card className="card-hover overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-600/5" />
+          <div
+            className="absolute inset-0 bg-gradient-to-br opacity-100"
+            style={{
+              backgroundImage: stats.avgProgress >= 70
+                ? 'linear-gradient(to bottom right, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))'
+                : stats.avgProgress >= 40
+                  ? 'linear-gradient(to bottom right, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05))'
+                  : 'linear-gradient(to bottom right, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05))',
+            }}
+          />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className={cn(
+              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+              stats.avgProgress >= 70
+                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                : stats.avgProgress >= 40
+                  ? 'bg-amber-100 dark:bg-amber-900/30'
+                  : 'bg-rose-100 dark:bg-rose-900/30',
+            )}>
+              <TrendingUp className={cn(
+                'h-5 w-5',
+                stats.avgProgress >= 70
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : stats.avgProgress >= 40
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-rose-600 dark:text-rose-400',
+              )} />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold tabular-nums">{animatedAvg}%</p>
+              <p className={cn(
+                'text-2xl font-bold tabular-nums',
+                progressTextColor,
+              )}>
+                {animatedAvg}%
+              </p>
               <p className="text-xs text-muted-foreground truncate">Ср. прогресс</p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Nearest Deadline */}
+        {/* Nearest Deadline — Rose when overdue, amber when close */}
         <Card className="card-hover overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-rose-600/5" />
+          <div
+            className="absolute inset-0 bg-gradient-to-br"
+            style={{
+              backgroundImage: !nearestDeadline
+                ? 'linear-gradient(to bottom right, rgba(100, 116, 139, 0.1), rgba(71, 85, 105, 0.05))'
+                : nearestDeadline.daysLeft < 0
+                  ? 'linear-gradient(to bottom right, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05))'
+                  : nearestDeadline.daysLeft <= 7
+                    ? 'linear-gradient(to bottom right, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05))'
+                    : 'linear-gradient(to bottom right, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))',
+            }}
+          />
           <CardContent className="relative flex flex-col gap-1 p-4">
             <div className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
-                <CalendarClock className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <div className={cn(
+                'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+                !nearestDeadline
+                  ? 'bg-slate-100 dark:bg-slate-900/30'
+                  : nearestDeadline.daysLeft < 0
+                    ? 'bg-rose-100 dark:bg-rose-900/30'
+                    : nearestDeadline.daysLeft <= 7
+                      ? 'bg-amber-100 dark:bg-amber-900/30'
+                      : 'bg-emerald-100 dark:bg-emerald-900/30',
+              )}>
+                <CalendarClock className={cn(
+                  'h-5 w-5',
+                  !nearestDeadline
+                    ? 'text-slate-500 dark:text-slate-400'
+                    : nearestDeadline.daysLeft < 0
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : nearestDeadline.daysLeft <= 7
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-emerald-600 dark:text-emerald-400',
+                )} />
               </div>
               <div className="min-w-0">
                 <p className={cn(
@@ -255,11 +373,9 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
                   nearestDeadline
                     ? nearestDeadline.daysLeft < 0
                       ? 'text-rose-600 dark:text-rose-400'
-                      : nearestDeadline.daysLeft <= 3
-                        ? 'text-rose-600 dark:text-rose-400'
-                        : nearestDeadline.daysLeft <= 7
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-emerald-600 dark:text-emerald-400'
+                      : nearestDeadline.daysLeft <= 7
+                        ? 'text-amber-600 dark:text-amber-400'
+                        : 'text-emerald-600 dark:text-emerald-400'
                     : 'text-muted-foreground',
                 )}>
                   {nearestDeadline

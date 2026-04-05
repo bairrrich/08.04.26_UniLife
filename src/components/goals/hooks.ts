@@ -3,13 +3,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import { toast } from 'sonner'
-import type { GoalData, GoalsResponse, FilterTab } from './types'
+import type { GoalData, GoalsResponse, FilterTab, CategoryFilter } from './types'
 
 export function useGoals() {
   const [goals, setGoals] = useState<GoalData[]>([])
   const [stats, setStats] = useState({ totalGoals: 0, completedGoals: 0, avgProgress: 0 })
   const [loading, setLoading] = useState(true)
   const [filterTab, setFilterTab] = useState<FilterTab>('all')
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
 
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -44,7 +45,12 @@ export function useGoals() {
     if (filterTab === 'active') return g.status === 'active'
     if (filterTab === 'completed') return g.status === 'completed'
     return true
-  }), [goals, filterTab])
+  }).filter((g) => {
+    if (categoryFilter === 'all') return true
+    // Map category filter to goal categories
+    if (categoryFilter === 'learning') return g.category === 'learning' || g.category === 'education'
+    return g.category === categoryFilter
+  }), [goals, filterTab, categoryFilter])
 
   // ─── Dialog Handlers ──────────────────────────────────────────────────────
 
@@ -159,7 +165,7 @@ export function useGoals() {
 
   return {
     // state
-    goals, stats, loading, filterTab, setFilterTab,
+    goals, stats, loading, filterTab, setFilterTab, categoryFilter, setCategoryFilter,
     dialogOpen, handleDialogChange, editingGoal, submitting,
     // form
     formTitle, setFormTitle,

@@ -10,6 +10,7 @@ export interface HabitData {
   todayCompleted: boolean
   streak: number
   last7Days: Record<string, boolean>
+  lastMonthDays: Record<string, boolean>
   createdAt: string
 }
 

@@ -96,11 +96,29 @@ export async function GET() {
         last7DaysLogs[key] = !!found
       }
 
+      // Get current month days for heatmap (from 1st of month to today)
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+      monthStart.setHours(0, 0, 0, 0)
+      const lastMonthDaysLogs: Record<string, boolean> = {}
+      const cursor = new Date(monthStart)
+      while (cursor.getTime() <= today.getTime()) {
+        const key = cursor.toISOString().split('T')[0]
+        const found = habitLogs.find((log) => {
+          const logDate = new Date(log.date)
+          logDate.setHours(0, 0, 0, 0)
+          return logDate.getTime() === cursor.getTime()
+        })
+        lastMonthDaysLogs[key] = !!found
+        cursor.setDate(cursor.getDate() + 1)
+      }
+
       return {
         ...habit,
         streak,
         todayCompleted: habit.logs.length > 0,
         last7Days: last7DaysLogs,
+        lastMonthDays: lastMonthDaysLogs,
       }
     })
 

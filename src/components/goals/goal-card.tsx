@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar } from 'lucide-react'
+import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star } from 'lucide-react'
 import type { GoalData } from './types'
 import {
   CATEGORY_CONFIG,
@@ -33,12 +33,25 @@ interface GoalCardProps {
   onDelete: (goalId: string) => void
 }
 
+// Milestone celebration definitions
+const MILESTONES = [
+  { threshold: 25, emoji: '🌱', label: 'Квартель!' },
+  { threshold: 50, emoji: '🔥', label: 'Половина!' },
+  { threshold: 75, emoji: '⭐', label: 'Почти!' },
+  { threshold: 100, emoji: '🏆', label: 'Достигнуто!' },
+]
+
+function getMilestone(progress: number) {
+  return MILESTONES.find((m) => progress >= m.threshold && progress < m.threshold + 5) || null
+}
+
 export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete }: GoalCardProps) {
   const catConfig = CATEGORY_CONFIG[goal.category] || DEFAULT_CATEGORY
   const statusConfig = STATUS_CONFIG[goal.status] || DEFAULT_STATUS
   const daysLeft = getDeadlineDaysLeft(goal.deadline)
   const countdown = getDeadlineCountdown(goal.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0 && goal.status !== 'completed'
+  const isApproaching = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7 && goal.status !== 'completed'
 
   // ─── Animated progress ring ───────────────────────────────────────────────
   const [animatedProgress, setAnimatedProgress] = useState(0)
@@ -50,6 +63,9 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
     }, 100)
     return () => clearTimeout(timer)
   }, [goal.progress])
+
+  // ─── Milestone celebration badge ──────────────────────────────────────────
+  const milestone = useMemo(() => getMilestone(goal.progress), [goal.progress])
 
   // ─── Inline delete confirmation ───────────────────────────────────────────
   const [deleteConfirming, setDeleteConfirming] = useState(false)
@@ -77,6 +93,13 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
   // ─── Milestones ───────────────────────────────────────────────────────────
   const milestones = [25, 50, 75, 100]
 
+  // ─── Category-specific gradient background (always visible, subtle) ───────
+  const categoryGradientClass = cn(
+    'absolute inset-0 pointer-events-none',
+    catConfig.bgClass,
+    'opacity-[0.03]',
+  )
+
   // ─── SVG progress ring params ─────────────────────────────────────────────
   const radius = 32
   const strokeWidth = 4
@@ -92,9 +115,16 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
         'hover:scale-[1.01]',
         catConfig.hoverGlow,
         isCompleted && statusConfig.borderClass && 'border',
+        // Pulsing amber border glow for approaching deadlines
+        isApproaching && !isCompleted && 'animate-pulse-soft ring-2 ring-amber-400/30 ring-offset-2 ring-offset-background dark:ring-offset-card',
+        // Red border for overdue
+        isOverdue && 'ring-2 ring-rose-400/40 ring-offset-2 ring-offset-background dark:ring-offset-card',
       )}
     >
-      {/* Subtle gradient background on hover */}
+      {/* Subtle category-specific gradient background */}
+      <div className={categoryGradientClass} />
+
+      {/* Hover gradient overlay */}
       <div className={cn(
         'absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none',
         catConfig.bgClass,
@@ -140,13 +170,33 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </Badge>
             )}
 
-            {/* Warning badge for approaching deadlines (legacy, kept for compatibility) */}
+            {/* Warning badge for approaching deadlines */}
             {getDeadlineWarning(goal.deadline) && goal.status === 'active' && !isOverdue && daysLeft !== null && daysLeft > 3 && (
               <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft">
                 ⚠️ Скоро
               </Badge>
             )}
           </div>
+
+          {/* Milestone celebration badge */}
+          {milestone && !isCompleted && (
+            <div className="absolute -top-2 -right-2 z-10 animate-bounce">
+              <div className={cn(
+                'flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold shadow-lg',
+                goal.progress >= 100
+                  ? 'bg-gradient-to-r from-emerald-400 to-teal-400 text-white'
+                  : goal.progress >= 75
+                    ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-white'
+                    : goal.progress >= 50
+                      ? 'bg-gradient-to-r from-blue-400 to-indigo-400 text-white'
+                      : 'bg-gradient-to-r from-violet-400 to-purple-400 text-white',
+              )}>
+                <Sparkles className="h-3 w-3" />
+                {milestone.label}
+              </div>
+            </div>
+          )}
+
           {/* Large Progress Ring */}
           <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center">
             <svg className="h-[72px] w-[72px] -rotate-90" viewBox="0 0 72 72">
@@ -217,6 +267,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               <div className="absolute -bottom-1.5 left-0 right-0 flex items-center">
                 {milestones.map((ms) => {
                   const passed = goal.progress >= ms
+                  const isCurrent = milestone && milestone.threshold === ms
                   return (
                     <div
                       key={ms}
@@ -225,10 +276,12 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
                     >
                       <div
                         className={cn(
-                          'h-1.5 w-1.5 rounded-full transition-colors duration-300',
-                          passed
-                            ? goal.progress >= 100 ? 'bg-emerald-500' : 'bg-foreground/40'
-                            : 'bg-muted-foreground/20',
+                          'h-1.5 w-1.5 rounded-full transition-all duration-300',
+                          isCurrent
+                            ? 'bg-amber-500 scale-150'
+                            : passed
+                              ? goal.progress >= 100 ? 'bg-emerald-500' : 'bg-foreground/40'
+                              : 'bg-muted-foreground/20',
                         )}
                       />
                     </div>

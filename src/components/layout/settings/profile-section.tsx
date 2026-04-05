@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { User } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -9,12 +9,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
+import { useUserPrefs } from '@/lib/use-user-prefs'
 
 export function ProfileSection() {
-  const [name, setName] = useState('Алексей')
+  const { userName: prefsUserName } = useUserPrefs()
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('demo@unilife.app')
   const [bio, setBio] = useState('Люблю отслеживать всё в жизни 🚀')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (prefsUserName && prefsUserName !== 'Пользователь') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from external prefs on mount
+      setName(prefsUserName)
+    }
+  }, [prefsUserName])
 
   const handleSave = async () => {
     setSaving(true)

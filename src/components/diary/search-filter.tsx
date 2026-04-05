@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Search, SlidersHorizontal, X, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MOOD_EMOJI, MOOD_LABELS } from '@/lib/format'
-import { TAG_COLORS } from './constants'
+import { TAG_COLORS, hashTagColor } from './constants'
 import { DiaryEntry } from './types'
 
 interface SearchFilterProps {
@@ -188,7 +188,7 @@ export function SearchFilter({
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
-                  {topTags.map((tag, idx) => (
+                  {topTags.map((tag) => (
                     <Badge
                       key={tag}
                       variant="secondary"
@@ -197,7 +197,7 @@ export function SearchFilter({
                       }
                       className={cn(
                         'text-xs rounded-full px-2.5 py-0.5 border-0 cursor-pointer transition-all hover:opacity-90',
-                        TAG_COLORS[idx % TAG_COLORS.length],
+                        TAG_COLORS[hashTagColor(tag)],
                         selectedTag === tag &&
                           'ring-1 ring-primary/50 ring-offset-1 ring-offset-background'
                       )}

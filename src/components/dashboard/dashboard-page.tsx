@@ -21,6 +21,7 @@ import {
   getRelativeTime,
   MOOD_EMOJI,
 } from '@/lib/format'
+import { useUserPrefs } from '@/lib/use-user-prefs'
 
 import type {
   DiaryEntry,
@@ -81,6 +82,8 @@ const FocusTimerWidget = dynamic(() => import('./focus-timer-widget').then(m => 
 const AchievementsWidget = dynamic(() => import('./achievements/achievements-widget').then(m => ({ default: m.AchievementsWidget })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
 const QuickAddMenu = dynamic(() => import('./quick-add-menu').then(m => ({ default: m.QuickAddMenu })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
 const FinanceQuickView = dynamic(() => import('./finance-quick-view').then(m => ({ default: m.FinanceQuickView })), { ssr: false, loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" /> })
+const DailyTip = dynamic(() => import('./daily-tip').then(m => ({ default: m.DailyTip })), { ssr: false, loading: () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" /> })
+const DailyGoalsBanner = dynamic(() => import('./daily-goals-banner').then(m => ({ default: m.DailyGoalsBanner })), { ssr: false, loading: () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" /> })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -89,6 +92,7 @@ const FinanceQuickView = dynamic(() => import('./finance-quick-view').then(m => 
 
 export default function DashboardPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
+  const { userName } = useUserPrefs()
 
   // ── State ───────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true)
@@ -455,7 +459,7 @@ export default function DashboardPage() {
         <div className="relative flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {getGreeting()}, Алексей! 👋
+              {getGreeting()}, {userName}! 👋
             </h1>
             <p className="mt-1 text-sm capitalize text-muted-foreground">
               {formatDate(now)}
@@ -472,6 +476,12 @@ export default function DashboardPage() {
         {/* Daily Progress Bar */}
         {!loading && <DailyProgress progress={dailyProgress} />}
       </div>
+
+      {/* ── Daily Tip ────────────────────────────────────────── */}
+      <DailyTip />
+
+      {/* ── Daily Goals Banner ────────────────────────────────── */}
+      <DailyGoalsBanner />
 
       {/* ── Daily Checklist ─────────────────────────────────── */}
       <DailyChecklist

@@ -24,7 +24,7 @@ import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { MOOD_COLORS, MOOD_EMOJI, MOOD_LABELS, countWords } from '@/lib/format'
 import { EntryFormData } from './types'
-import { TAG_COLORS, QUICK_TEMPLATES } from './constants'
+import { TAG_COLORS, QUICK_TEMPLATES, hashTagColor } from './constants'
 
 interface EntryDialogProps {
   open: boolean
@@ -208,13 +208,13 @@ export function EntryDialog({
             </div>
             {form.tags.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
-                {form.tags.map((tag, tagIdx) => (
+                {form.tags.map((tag) => (
                   <Badge
                     key={tag}
                     variant="secondary"
                     className={cn(
                       'text-xs rounded-full px-2.5 py-0 border-0 gap-1 pr-1',
-                      TAG_COLORS[tagIdx % TAG_COLORS.length]
+                      TAG_COLORS[hashTagColor(tag)]
                     )}
                   >
                     {tag}

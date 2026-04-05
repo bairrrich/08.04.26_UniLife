@@ -449,9 +449,19 @@ export function useFinance() {
   }
 
   const deleteInvestmentTx = async (investmentId: string, txId: string) => {
-    // Since we don't have a dedicated delete route for investment transactions,
-    // we'll refetch to keep the UI in sync
-    toast.info('Удаление транзакций инвестиций пока недоступно')
+    toast.dismiss()
+    try {
+      const res = await fetch(`/api/finance/investments/${investmentId}/tx/${txId}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      if (!json.success) { toast.error('Ошибка удаления'); return }
+      toast.success('Транзакция удалена')
+      fetchData()
+    } catch {
+      toast.error('Ошибка удаления транзакции')
+    }
   }
 
   return {

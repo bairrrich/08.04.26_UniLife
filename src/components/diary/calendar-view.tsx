@@ -67,9 +67,9 @@ export function CalendarView({
 
   return (
     <Card className="w-full">
-      <CardContent className="p-4">
+      <CardContent className="p-3 sm:p-4">
         {/* Day names header */}
-        <div className="grid grid-cols-7 gap-1 mb-1">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1">
           {RU_DAYS_SHORT.map((day) => (
             <div
               key={day}
@@ -81,7 +81,7 @@ export function CalendarView({
         </div>
 
         {/* Calendar grid */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-0.5 sm:gap-1">
           {calendarDays.map((cell, idx) => {
             const dateKey = formatDateKey(cell.date)
             const dayEntries = entriesByDate.get(dateKey)
@@ -104,7 +104,7 @@ export function CalendarView({
                 type="button"
                 onClick={() => onDayClick(cell)}
                 className={cn(
-                  'h-12 w-full flex flex-col items-center justify-center rounded-lg text-sm relative transition-all',
+                  'h-12 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-sm relative transition-all',
                   !isCurrentMonth && 'text-muted-foreground/40',
                   isCurrentMonth && !isSelected && 'hover:bg-accent',
                   isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90',

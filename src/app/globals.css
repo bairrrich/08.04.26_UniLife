@@ -368,6 +368,15 @@
   transform: scale(0.97);
 }
 
+/* ── Hide scrollbar utility ──────────────────────────────────── */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* ── Dot grid pattern background ────────────────────────────────── */
 .dot-pattern {
   background-image: radial-gradient(oklch(0.8 0.01 240) 1px, transparent 1px);

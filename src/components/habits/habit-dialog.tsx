@@ -6,7 +6,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { EMOJI_OPTIONS, COLOR_OPTIONS } from './constants'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { EMOJI_OPTIONS, COLOR_OPTIONS, HABIT_PRESETS } from './constants'
 
 interface HabitDialogProps {
   open: boolean
@@ -83,42 +84,80 @@ function FrequencyPicker({ value, onChange }: { value: string; onChange: (v: str
   )
 }
 
+function PresetChips({
+  onSelect,
+}: {
+  onSelect: (name: string, emoji: string, color: string) => void
+}) {
+  return (
+    <div className="space-y-2">
+      <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+        Быстрый выбор
+      </label>
+      <div className="flex flex-wrap gap-2">
+        {HABIT_PRESETS.map((preset) => (
+          <button
+            key={preset.name}
+            type="button"
+            onClick={() => onSelect(preset.name, preset.emoji, preset.color)}
+            className="active-press flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium transition-all hover:bg-muted/60 hover:border-muted-foreground/30"
+          >
+            <span>{preset.emoji}</span>
+            <span>{preset.name}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function HabitDialog({
   open, onOpenChange, title, name, setName, emoji, setEmoji,
   color, setColor, frequency, setFrequency, targetCount, setTargetCount,
   submitLabel, onSubmit,
 }: HabitDialogProps) {
+  const handlePresetSelect = (presetName: string, presetEmoji: string, presetColor: string) => {
+    setName(presetName)
+    setEmoji(presetEmoji)
+    setColor(presetColor)
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Название</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например: Утренняя зарядка" />
+        <ScrollArea className="max-h-[70vh] pr-1">
+          <div className="space-y-4 pt-2 pb-2">
+            {/* Presets */}
+            <PresetChips onSelect={handlePresetSelect} />
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Название</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Например: Утренняя зарядка" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Иконка</label>
+              <EmojiPicker value={emoji} onChange={setEmoji} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Цвет</label>
+              <ColorPicker value={color} onChange={setColor} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Частота</label>
+              <FrequencyPicker value={frequency} onChange={setFrequency} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Цель (раз в день)</label>
+              <Input type="number" min="1" max="99" value={targetCount} onChange={(e) => setTargetCount(e.target.value)} className="w-24" />
+            </div>
+            <Button className="w-full" onClick={onSubmit} disabled={!name.trim()}>
+              {submitLabel}
+            </Button>
           </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Иконка</label>
-            <EmojiPicker value={emoji} onChange={setEmoji} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Цвет</label>
-            <ColorPicker value={color} onChange={setColor} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Частота</label>
-            <FrequencyPicker value={frequency} onChange={setFrequency} />
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Цель (раз в день)</label>
-            <Input type="number" min="1" max="99" value={targetCount} onChange={(e) => setTargetCount(e.target.value)} className="w-24" />
-          </div>
-          <Button className="w-full" onClick={onSubmit} disabled={!name.trim()}>
-            {submitLabel}
-          </Button>
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   )

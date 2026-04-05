@@ -16,6 +16,7 @@ import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { Menu } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { memo, useEffect } from 'react'
+import { useUserPrefs } from '@/lib/use-user-prefs'
 
 function getIcon(iconName: string): LucideIcon {
   return icons[iconName as keyof typeof icons] || icons.Circle
@@ -76,6 +77,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const notificationCount = useAppStore((s) => s.notificationCount)
   const moduleCounts = useModuleCounts()
+  const { userName } = useUserPrefs()
 
   const handleNavClick = (id: AppModule) => {
     setActiveModule(id)
@@ -166,7 +168,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium truncate">Алексей</p>
+            <p className="text-sm font-medium truncate">{userName}</p>
             <p className="text-[10px] text-emerald-500 font-medium truncate">
               В сети
             </p>

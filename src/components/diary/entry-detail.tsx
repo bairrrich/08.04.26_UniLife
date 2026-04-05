@@ -10,7 +10,7 @@ import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, MOOD_LABELS } from '@/lib/format'
 import { DiaryEntry } from './types'
-import { TAG_COLORS } from './constants'
+import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
 import { parseEntryDate, countWords, readingTimeMinutes } from './helpers'
 
@@ -155,21 +155,22 @@ export function EntryDetail({
                 {entry.content}
               </div>
 
-              {/* Word count */}
-              <p className="text-xs text-muted-foreground/50 tabular-nums">
-                {wordCount} слов
-              </p>
+              {/* Word count & reading time */}
+              <div className="flex items-center gap-3 text-xs text-muted-foreground/50 tabular-nums">
+                <span>{wordCount} слов</span>
+                <span>≈ {readingTimeMinutes(wordCount)} чтения</span>
+              </div>
 
               {/* Tags */}
               {entry.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pt-1">
-                  {entry.tags.map((tag, tagIdx) => (
+                  {entry.tags.map((tag) => (
                     <Badge
                       key={tag}
                       variant="secondary"
                       className={cn(
                         'text-xs rounded-full px-2.5 py-0 border-0 cursor-pointer hover:opacity-80 transition-opacity',
-                        TAG_COLORS[tagIdx % TAG_COLORS.length]
+                        TAG_COLORS[hashTagColor(tag)]
                       )}
                     >
                       <Tag className="h-3 w-3 mr-1" />

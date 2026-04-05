@@ -21,6 +21,35 @@ const MOTIVATIONAL_PHRASES = [
   'Каждый день — это новый шанс стать лучше, чем вчера.',
 ]
 
+// Motivational subtitles by day of week
+const DAY_SUBTITLES: Record<number, string> = {
+  0: 'Воскресенье — время для рефлексии и подготовки к новой неделе',
+  1: 'Понедельник — новый старт, новые возможности!',
+  2: 'Вторник — momentum is building up, продолжай!',
+  3: 'Среда — середина недели, ты на верном пути',
+  4: 'Четверг — финишная прямая, держи темп',
+  5: 'Пятница — последний рывок перед выходными',
+  6: 'Суббота — идеальный день для новых привычек',
+}
+
+// Habit presets for quick-add
+export interface HabitPreset {
+  name: string
+  emoji: string
+  color: string
+}
+
+export const HABIT_PRESETS: HabitPreset[] = [
+  { name: 'Пить воду', emoji: '💧', color: '#06b6d4' },
+  { name: 'Медитация', emoji: '🧘', color: '#8b5cf6' },
+  { name: 'Чтение', emoji: '📖', color: '#3b82f6' },
+  { name: 'Прогулка', emoji: '🚶', color: '#10b981' },
+  { name: 'Сон до 23:00', emoji: '😴', color: '#6366f1' },
+  { name: 'Без соцсетей', emoji: '📵', color: '#ef4444' },
+  { name: 'Утренняя зарядка', emoji: '💪', color: '#f97316' },
+  { name: 'Благодарность', emoji: '🙏', color: '#f59e0b' },
+]
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 export function getLast7Days(): string[] {
@@ -56,4 +85,9 @@ export function getTodayDateBadge(): string {
 export function getMotivationalPhrase(): string {
   const idx = new Date().getDate() % MOTIVATIONAL_PHRASES.length
   return MOTIVATIONAL_PHRASES[idx]
+}
+
+export function getDayOfWeekSubtitle(): string {
+  const day = new Date().getDay()
+  return DAY_SUBTITLES[day] || DAY_SUBTITLES[1]
 }

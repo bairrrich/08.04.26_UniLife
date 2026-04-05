@@ -1,6 +1,7 @@
 'use client'
 
-import { Crosshair, Plus, Target, AlertCircle, Calendar } from 'lucide-react'
+import { useMemo } from 'react'
+import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +12,7 @@ import { GoalStats } from './goal-stats'
 import { GoalCard } from './goal-card'
 import { GoalDialog } from './goal-dialog'
 import { FilterTabs } from './filter-tabs'
+import type { GoalData } from './types'
 
 const MOTIVATIONAL_SUBTITLES = [
   'Каждый шаг приближает вас к мечте',
@@ -34,6 +36,7 @@ function getTodayBadge() {
 export default function GoalsPage() {
   const {
     goals, stats, loading, filterTab, setFilterTab,
+    categoryFilter, setCategoryFilter,
     dialogOpen, handleDialogChange, editingGoal, submitting,
     formTitle, setFormTitle, formDescription, setFormDescription,
     formCategory, setFormCategory, formTargetValue, setFormTargetValue,
@@ -44,6 +47,19 @@ export default function GoalsPage() {
     handleUpdateProgress, handleComplete, handleDelete,
     filteredGoals,
   } = useGoals()
+
+  // Compute overdue goals for the notification banner
+  const overdueGoals = useMemo(() => {
+    const now = new Date()
+    return goals
+      .filter((g) => {
+        if (!g.deadline || g.status === 'completed') return false
+        const dl = new Date(g.deadline)
+        const diffDays = Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+        return diffDays < 0
+      })
+      .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
+  }, [goals])
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -128,7 +144,19 @@ export default function GoalsPage() {
       ) : (
         <>
           <GoalStats goals={goals} stats={stats} />
-          <FilterTabs filterTab={filterTab} setFilterTab={setFilterTab} goals={goals} />
+
+          {/* Overdue Goals Attention Banner */}
+          {overdueGoals.length > 0 && (
+            <OverdueBanner overdueGoals={overdueGoals} />
+          )}
+
+          <FilterTabs
+            filterTab={filterTab}
+            setFilterTab={setFilterTab}
+            categoryFilter={categoryFilter}
+            setCategoryFilter={setCategoryFilter}
+            goals={goals}
+          />
 
           {filteredGoals.length === 0 ? (
             <Card className="animate-slide-up overflow-hidden relative py-12">
@@ -165,6 +193,66 @@ export default function GoalsPage() {
           )}
         </>
       )}
+    </div>
+  )
+}
+
+// ─── Overdue Goals Notification Banner ───────────────────────────────────────
+function OverdueBanner({ overdueGoals }: { overdueGoals: GoalData[] }) {
+  const displayGoals = overdueGoals.slice(0, 3)
+
+  return (
+    <div className="relative overflow-hidden rounded-xl border border-rose-200 dark:border-rose-800/50 animate-slide-up">
+      {/* Red/amber gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-r from-rose-500/10 via-amber-500/5 to-rose-500/10 pointer-events-none" />
+
+      <div className="relative flex items-start gap-3 p-4">
+        {/* Alert icon */}
+        <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center shrink-0 shadow-lg shadow-rose-500/20">
+          <AlertTriangle className="h-5 w-5 text-white" />
+        </div>
+
+        <div className="flex-1 min-w-0 space-y-1.5">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-semibold text-rose-700 dark:text-rose-400">
+              {overdueGoals.length === 1
+                ? '1 цель просрочена'
+                : overdueGoals.length < 5
+                  ? `${overdueGoals.length} цели просрочены`
+                  : `${overdueGoals.length} целей просрочено`
+              }
+            </h3>
+            <Badge className="text-[10px] bg-rose-100 text-rose-700 border-rose-200 dark:bg-rose-900/40 dark:text-rose-400 dark:border-rose-800/50">
+              Требует внимания
+            </Badge>
+          </div>
+
+          {/* List up to 3 overdue goal names */}
+          <div className="space-y-1">
+            {displayGoals.map((goal) => (
+              <div key={goal.id} className="flex items-center gap-1.5">
+                <div className="h-1.5 w-1.5 rounded-full bg-rose-500 shrink-0" />
+                <span className="text-xs text-rose-600 dark:text-rose-400 truncate">
+                  {goal.title}
+                </span>
+                {goal.deadline && (
+                  <span className="text-[10px] text-muted-foreground shrink-0">
+                    (просрочено на {Math.abs(Math.ceil((new Date(goal.deadline).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))} дн.)
+                  </span>
+                )}
+              </div>
+            ))}
+            {overdueGoals.length > 3 && (
+              <p className="text-[10px] text-muted-foreground pl-3">
+                и ещё {overdueGoals.length - 3}...
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Chevron indicator */}
+        <ChevronRight className="h-5 w-5 text-rose-400/50 shrink-0 mt-1" />
+      </div>
     </div>
   )
 }
