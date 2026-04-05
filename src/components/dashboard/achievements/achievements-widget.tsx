@@ -205,6 +205,7 @@ export const AchievementsWidget = memo(function AchievementsWidget({
           : null,
       } : null,
       transactionsCount: transactionsData.length,
+      transactionsData: transactionsData.map((t) => ({ id: t.id, date: t.date, amount: t.amount, type: t.type })),
       workouts: workouts.map((w) => ({ id: w.id, date: w.date, durationMin: w.durationMin })),
       habitsData: habitsData ? {
         data: habitsData.data.map((h) => ({

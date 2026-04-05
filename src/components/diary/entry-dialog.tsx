@@ -23,7 +23,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { MOOD_COLORS, MOOD_EMOJI, MOOD_LABELS, countWords } from '@/lib/format'
-import { EntryFormData } from './types'
+import { EntryFormData, DiaryEntry } from './types'
 import { TAG_COLORS, QUICK_TEMPLATES, hashTagColor } from './constants'
 
 interface EntryDialogProps {
@@ -40,6 +40,7 @@ interface EntryDialogProps {
   onMoodClick: (value: number) => void
   onSubmit: () => void
   onApplyTemplate: (template: typeof QUICK_TEMPLATES[number]) => void
+  entries?: DiaryEntry[]
 }
 
 export function EntryDialog({
@@ -56,7 +57,22 @@ export function EntryDialog({
   onMoodClick,
   onSubmit,
   onApplyTemplate,
+  entries = [],
 }: EntryDialogProps) {
+  // Compute suggested tags from existing entries
+  const suggestedTags = React.useMemo(() => {
+    const tagCount = new Map<string, number>()
+    for (const entry of entries) {
+      for (const tag of entry.tags) {
+        tagCount.set(tag, (tagCount.get(tag) || 0) + 1)
+      }
+    }
+    return Array.from(tagCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 6)
+      .filter(([tag]) => !form.tags.includes(tag))
+      .map(([tag]) => tag)
+  }, [entries, form.tags])
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
@@ -126,11 +142,20 @@ export function EntryDialog({
 
           {/* Title */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Заголовок</label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Заголовок</label>
+              <span className="text-xs text-muted-foreground tabular-nums">
+                {form.title.length}/100
+              </span>
+            </div>
             <Input
               placeholder="Как прошел день?"
               value={form.title}
+              maxLength={100}
               onChange={(e) => onFormChange((f) => ({ ...f, title: e.target.value }))}
+              className={cn(
+                form.title.length > 90 && 'border-amber-400 focus-visible:ring-amber-400'
+              )}
             />
           </div>
 
@@ -227,6 +252,29 @@ export function EntryDialog({
                     </button>
                   </Badge>
                 ))}
+              </div>
+            )}
+            {/* Suggested tags */}
+            {suggestedTags.length > 0 && (
+              <div className="mt-2">
+                <span className="text-xs text-muted-foreground mb-1.5 block">Рекомендуемые:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {suggestedTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        onFormChange((f) => ({ ...f, tags: [...f.tags, tag] }))
+                      }}
+                      className={cn(
+                        'text-xs rounded-full px-2.5 py-0.5 border border-dashed transition-all hover:border-solid hover:opacity-80',
+                        TAG_COLORS[hashTagColor(tag)]
+                      )}
+                    >
+                      + {tag}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -82,6 +82,7 @@ const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false,
 const FinanceQuickView = dynamic(() => import('./finance-quick-view'), { ssr: false, loading: widgetLoad })
 const DailyTip = dynamic(() => import('./daily-tip'), { ssr: false, loading: smallLoad })
 const DailyGoalsBanner = dynamic(() => import('./daily-goals-banner'), { ssr: false, loading: smallLoad })
+const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -449,6 +450,18 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-slide-up space-y-8">
+      {/* ── Welcome Widget (first, hero-style) ──────────────────────── */}
+      <WelcomeWidget
+        loading={loading}
+        diaryStreak={diaryStreak}
+        dailyProgress={dailyProgress}
+        todayMood={todayMood}
+        hasMealsToday={hasMealsToday}
+        todayWorkoutDone={todayWorkout}
+        habitsCompletedToday={completedToday}
+        habitsTotal={totalActive}
+      />
+
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl" />

@@ -4,6 +4,7 @@ import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { RU_DAYS_SHORT, MOOD_DOT_COLORS, MOOD_EMOJI } from '@/lib/format'
+import { Badge } from '@/components/ui/badge'
 import { DiaryEntry, CalendarCell } from './types'
 import { getDaysInMonth, getFirstDayOfMonth, formatDateKey } from './helpers'
 
@@ -104,29 +105,32 @@ export function CalendarView({
                 type="button"
                 onClick={() => onDayClick(cell)}
                 className={cn(
-                  'h-12 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-sm relative transition-all',
+                  'h-12 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-sm relative transition-all duration-200',
                   !isCurrentMonth && 'text-muted-foreground/40',
-                  isCurrentMonth && !isSelected && 'hover:bg-accent',
-                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                  isToday && !isSelected && 'ring-2 ring-primary font-semibold',
-                  hasEntries && !isSelected && 'bg-accent/50 hover:bg-primary/10'
+                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent',
+                  isCurrentMonth && !isSelected && hasEntries && 'hover:bg-primary/10 hover:scale-105 hover:shadow-md',
+                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-md',
+                  isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background font-semibold',
+                  hasEntries && !isSelected && 'bg-accent/50'
                 )}
               >
                 <span className="text-sm">{cell.day}</span>
                 {primaryMood && (
-                  <div className="flex items-center gap-0.5 mt-0.5">
-                    <div className={cn('h-1.5 w-1.5 rounded-full', MOOD_DOT_COLORS[primaryMood])} />
-                  </div>
+                  <span className="text-xs leading-none mt-0.5">
+                    {MOOD_EMOJI[primaryMood]}
+                  </span>
                 )}
                 {hasEntries && dayEntries!.length > 1 && (
-                  <span className={cn(
-                    'absolute -top-1 -right-1 text-[9px] font-bold rounded-full h-3.5 w-3.5 flex items-center justify-center',
-                    isSelected
-                      ? 'bg-primary-foreground text-primary'
-                      : 'bg-primary text-primary-foreground'
-                  )}>
+                  <Badge
+                    className={cn(
+                      'absolute -top-1.5 -right-1.5 text-[9px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center border-0',
+                      isSelected
+                        ? 'bg-primary-foreground text-primary'
+                        : 'bg-primary text-primary-foreground shadow-sm'
+                    )}
+                  >
                     {dayEntries!.length}
-                  </span>
+                  </Badge>
                 )}
               </button>
             )

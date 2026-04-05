@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import {
   Timer, Play, Pause, RotateCcw, Clock, Flame, Zap, Coffee,
-  Sparkles, Brain, SkipForward, Volume2, VolumeX,
+  Sparkles, Brain, SkipForward, VolumeX, Trophy, Volume1,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -93,15 +93,15 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
     shortLabel: '5 мин',
     duration: 5 * 60,
     isBreak: true,
-    stroke: 'stroke-blue-500',
-    strokeBg: 'stroke-blue-500/15',
-    textClass: 'text-blue-600 dark:text-blue-400',
-    iconBg: 'bg-blue-100 dark:bg-blue-900/40',
-    iconClass: 'text-blue-600 dark:text-blue-400',
-    ringGradient: 'from-blue-500 to-indigo-400',
-    glowClass: 'shadow-blue-500/30',
-    buttonFrom: 'from-blue-500',
-    buttonTo: 'to-indigo-500',
+    stroke: 'stroke-amber-500',
+    strokeBg: 'stroke-amber-500/15',
+    textClass: 'text-amber-600 dark:text-amber-400',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+    iconClass: 'text-amber-600 dark:text-amber-400',
+    ringGradient: 'from-amber-500 to-orange-400',
+    glowClass: 'shadow-amber-500/30',
+    buttonFrom: 'from-amber-500',
+    buttonTo: 'to-orange-500',
     icon: Coffee,
     category: 'break',
   },
@@ -110,15 +110,15 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
     shortLabel: '15 мин',
     duration: 15 * 60,
     isBreak: true,
-    stroke: 'stroke-indigo-500',
-    strokeBg: 'stroke-indigo-500/15',
-    textClass: 'text-indigo-600 dark:text-indigo-400',
-    iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
-    iconClass: 'text-indigo-600 dark:text-indigo-400',
-    ringGradient: 'from-indigo-500 to-blue-400',
-    glowClass: 'shadow-indigo-500/30',
-    buttonFrom: 'from-indigo-500',
-    buttonTo: 'to-blue-500',
+    stroke: 'stroke-orange-500',
+    strokeBg: 'stroke-orange-500/15',
+    textClass: 'text-orange-600 dark:text-orange-400',
+    iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+    iconClass: 'text-orange-600 dark:text-orange-400',
+    ringGradient: 'from-orange-500 to-amber-400',
+    glowClass: 'shadow-orange-500/30',
+    buttonFrom: 'from-orange-500',
+    buttonTo: 'to-amber-500',
     icon: Sparkles,
     category: 'break',
   },
@@ -127,9 +127,21 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
 const FOCUS_MODES: TimerMode[] = ['focus', 'quickFocus', 'deepWork']
 const BREAK_MODES: TimerMode[] = ['shortBreak', 'longBreak']
 const TOTAL_SESSIONS_IN_CYCLE = 4
-const RING_RADIUS = 52
+const RING_RADIUS = 60
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
-const RING_SIZE = (RING_RADIUS + 8) * 2
+const RING_SIZE = (RING_RADIUS + 10) * 2
+
+// Motivational messages after session completion
+const MOTIVATIONAL_MESSAGES = [
+  'Отличная работа! Продолжай в том же духе! 🔥',
+  'Фокус — это суперсила! 💪',
+  'Ещё один шаг к целям! 🎯',
+  'Ты потрясающий! Не останавливайся! ⚡',
+  'Мозг благодарит тебя за перерыв! 🧠',
+  'Сила воли растёт с каждой сессией! 🌱',
+  'Дисциплина — путь к успеху! 🏆',
+  'Невероятная концентрация! ✨',
+]
 
 // ─── Session History ───────────────────────────────────────────────────────
 
@@ -351,6 +363,8 @@ export default function FocusTimerWidget() {
   const [showBreakSuggestion, setShowBreakSuggestion] = useState(false)
   const [todaySessions, setTodaySessions] = useState<FocusSession[]>([])
   const [streak, setStreak] = useState(0)
+  const [motivationalMsg, setMotivationalMsg] = useState<string | null>(null)
+  const motivationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const modeRef = useRef<TimerMode>(mode)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -403,6 +417,12 @@ export default function FocusTimerWidget() {
             duration: 4000,
           }
         )
+
+        // Show motivational message
+        const msg = MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)]
+        setMotivationalMsg(msg)
+        if (motivationTimeoutRef.current) clearTimeout(motivationTimeoutRef.current)
+        motivationTimeoutRef.current = setTimeout(() => setMotivationalMsg(null), 5000)
 
         // Show break suggestion
         setShowBreakSuggestion(true)
@@ -497,6 +517,7 @@ export default function FocusTimerWidget() {
     setTimeLeft(MODE_CONFIG[newMode].duration)
     setShowBreakSuggestion(false)
     completionHandledRef.current = false
+    setMotivationalMsg(null)
   }, [])
 
   const handleToggle = useCallback(() => {
@@ -504,6 +525,7 @@ export default function FocusTimerWidget() {
       setTimeLeft(MODE_CONFIG[mode].duration)
       setIsRunning(true)
       setShowBreakSuggestion(false)
+      setMotivationalMsg(null)
     } else {
       setIsRunning((prev) => !prev)
     }
@@ -556,6 +578,7 @@ export default function FocusTimerWidget() {
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress)
   const sessionInCycle =
     (sessions % TOTAL_SESSIONS_IN_CYCLE) || TOTAL_SESSIONS_IN_CYCLE
+  const isBreakMode = config.isBreak
 
   const todayFocusMinutes = useMemo(
     () => Math.round(todaySessions.reduce((sum, s) => sum + s.duration, 0) / 60),
@@ -627,11 +650,15 @@ export default function FocusTimerWidget() {
           {/* Sound toggle */}
           <button
             onClick={toggleSound}
-            className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            className={`ml-auto flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 ${
+              soundEnabled
+                ? `${config.iconBg} ${config.iconClass} hover:scale-105 active:scale-95`
+                : 'bg-muted/50 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted'
+            }`}
             aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
           >
             {soundEnabled ? (
-              <Volume2 className="h-3.5 w-3.5" />
+              <Volume1 className="h-3.5 w-3.5" />
             ) : (
               <VolumeX className="h-3.5 w-3.5" />
             )}
@@ -643,17 +670,17 @@ export default function FocusTimerWidget() {
         <div className="flex flex-col items-center gap-4">
           {/* ── Break Suggestion Card ── */}
           {showBreakSuggestion && (
-            <div className="w-full rounded-xl border border-blue-200 dark:border-blue-800/50 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-3 animate-slide-up">
+            <div className="w-full rounded-xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-3 animate-slide-up">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-lg">🧘</span>
-                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
                   Время перерыва!
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  className="h-8 flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-xs font-medium text-white hover:from-blue-600 hover:to-indigo-600"
+                  className="h-8 flex-1 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 text-xs font-medium text-white hover:from-amber-600 hover:to-orange-600"
                   onClick={() => handleBreakSuggestion('shortBreak')}
                 >
                   <Coffee className="mr-1 h-3 w-3" />
@@ -663,7 +690,7 @@ export default function FocusTimerWidget() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 flex-1 rounded-lg border-indigo-200 dark:border-indigo-700 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    className="h-8 flex-1 rounded-lg border-orange-200 dark:border-orange-700 text-xs font-medium text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/30"
                     onClick={() => handleBreakSuggestion('longBreak')}
                   >
                     <Sparkles className="mr-1 h-3 w-3" />
@@ -682,12 +709,29 @@ export default function FocusTimerWidget() {
             </div>
           )}
 
+          {/* ── Motivational Message ── */}
+          {motivationalMsg && (
+            <div className="motivation-enter w-full max-w-[280px] rounded-xl border border-emerald-200/60 dark:border-emerald-700/40 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 px-4 py-2.5 text-center">
+              <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                <Trophy className="h-4 w-4" />
+                <span>{motivationalMsg}</span>
+              </div>
+            </div>
+          )}
+
           {/* ── Circular Progress Ring ── */}
           <div className="relative">
             {/* Glow effect behind the ring when running */}
             {isRunning && (
               <div
-                className={`absolute inset-[-8px] rounded-full bg-gradient-to-br ${config.ringGradient} opacity-20 blur-lg transition-opacity duration-500 ${isRunning ? 'animate-pulse' : ''}`}
+                className={`absolute inset-[-12px] rounded-full bg-gradient-to-br ${config.ringGradient} opacity-20 blur-xl transition-opacity duration-500 ${isBreakMode ? 'timer-glow-amber' : 'timer-glow-emerald'}`}
+              />
+            )}
+
+            {/* Outer ring pulse animation when running */}
+            {isRunning && (
+              <div
+                className={`absolute inset-[-2px] rounded-full ring-pulse-anim ${config.textClass}`}
               />
             )}
 
@@ -697,59 +741,89 @@ export default function FocusTimerWidget() {
               viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
               className="-rotate-90"
             >
+              {/* Clock tick marks (12 marks like a clock) */}
+              {Array.from({ length: 60 }).map((_, i) => {
+                const angle = (i * 6) * Math.PI / 180
+                const isHour = i % 5 === 0
+                const outerR = RING_RADIUS + 10
+                const innerR = isHour ? RING_RADIUS + 4 : RING_RADIUS + 7
+                const x1 = RING_RADIUS + 10 + outerR * Math.cos(angle)
+                const y1 = RING_RADIUS + 10 + outerR * Math.sin(angle)
+                const x2 = RING_RADIUS + 10 + innerR * Math.cos(angle)
+                const y2 = RING_RADIUS + 10 + innerR * Math.sin(angle)
+                return (
+                  <line
+                    key={`tick-${i}`}
+                    x1={x1}
+                    y1={y1}
+                    x2={x2}
+                    y2={y2}
+                    stroke="currentColor"
+                    strokeWidth={isHour ? 1.5 : 0.5}
+                    className={`${isHour ? config.textClass : 'text-muted-foreground/30'} transition-colors duration-300`}
+                    strokeLinecap="round"
+                  />
+                )
+              })}
+
               {/* Background track */}
               <circle
-                cx={RING_RADIUS + 8}
-                cy={RING_RADIUS + 8}
+                cx={RING_RADIUS + 10}
+                cy={RING_RADIUS + 10}
                 r={RING_RADIUS}
                 fill="none"
-                strokeWidth="7"
+                strokeWidth="8"
                 className={config.strokeBg}
               />
               {/* Progress arc */}
               <circle
-                cx={RING_RADIUS + 8}
-                cy={RING_RADIUS + 8}
+                cx={RING_RADIUS + 10}
+                cy={RING_RADIUS + 10}
                 r={RING_RADIUS}
                 fill="none"
-                strokeWidth="7"
+                strokeWidth="8"
                 strokeLinecap="round"
                 strokeDasharray={RING_CIRCUMFERENCE}
                 strokeDashoffset={dashOffset}
                 className={`${config.stroke} transition-[stroke-dashoffset] duration-1000 ease-linear`}
+                style={{
+                  filter: isRunning ? `drop-shadow(0 0 6px ${config.stroke.includes('emerald') ? 'oklch(0.55 0.17 155 / 0.5)' : config.stroke.includes('amber') ? 'oklch(0.75 0.15 70 / 0.5)' : config.stroke.includes('violet') ? 'oklch(0.55 0.2 290 / 0.5)' : config.stroke.includes('sky') ? 'oklch(0.55 0.15 230 / 0.5)' : 'oklch(0.55 0.2 30 / 0.5)'})` : 'none',
+                }}
               />
             </svg>
 
             {/* Center content */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span
-                className={`text-3xl font-bold tracking-tight tabular-nums ${config.textClass}`}
+                className={`text-4xl font-extrabold tracking-tight tabular-nums ${config.textClass}`}
               >
                 {formatTime(timeLeft)}
               </span>
               <div
-                className={`mt-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${config.textClass} opacity-70`}
+                className={`mt-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider ${config.textClass} opacity-70`}
               >
-                <config.icon className="h-3 w-3" />
+                <config.icon className="h-3.5 w-3.5" />
                 {config.shortLabel}
               </div>
             </div>
           </div>
 
           {/* ── Session Counter ── */}
-          <div className="flex items-center gap-1.5">
-            {Array.from({ length: TOTAL_SESSIONS_IN_CYCLE }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i < sessionInCycle
-                    ? `w-5 bg-gradient-to-r ${config.ringGradient}`
-                    : 'w-3 bg-muted-foreground/20'
-                }`}
-              />
-            ))}
-            <span className="ml-1.5 text-[10px] text-muted-foreground tabular-nums">
-              {sessionInCycle}/{TOTAL_SESSIONS_IN_CYCLE}
+          <div className="flex flex-col items-center gap-1">
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: TOTAL_SESSIONS_IN_CYCLE }).map((_, i) => (
+                <div
+                  key={i}
+                  className={`h-2 rounded-full transition-all duration-300 ${
+                    i < sessionInCycle
+                      ? `w-6 bg-gradient-to-r ${config.ringGradient}`
+                      : 'w-3 bg-muted-foreground/20'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-[11px] font-medium text-muted-foreground tabular-nums">
+              Сессия {sessionInCycle} из {TOTAL_SESSIONS_IN_CYCLE}
             </span>
           </div>
 
@@ -771,7 +845,11 @@ export default function FocusTimerWidget() {
                     }`}
                   >
                     {isActive && (
-                      <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
+                      <span className={`absolute inset-0 rounded-md bg-gradient-to-r ${cfg.buttonFrom} ${cfg.buttonTo} opacity-10`} />
+                    )}
+                    <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
+                    {isActive && (
+                      <span className={`absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-gradient-to-r ${cfg.buttonFrom} ${cfg.buttonTo}`} />
                     )}
                     <span className="relative z-10 flex items-center gap-1">
                       <cfg.icon className="h-3 w-3" />
@@ -800,7 +878,11 @@ export default function FocusTimerWidget() {
                     }`}
                   >
                     {isActive && (
-                      <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
+                      <span className={`absolute inset-0 rounded-md bg-gradient-to-r ${cfg.buttonFrom} ${cfg.buttonTo} opacity-10`} />
+                    )}
+                    <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
+                    {isActive && (
+                      <span className={`absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-gradient-to-r ${cfg.buttonFrom} ${cfg.buttonTo}`} />
                     )}
                     <span className="relative z-10 flex items-center gap-1">
                       <cfg.icon className="h-3 w-3" />
@@ -826,14 +908,14 @@ export default function FocusTimerWidget() {
 
             <Button
               size="icon"
-              className={`h-12 w-12 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 bg-gradient-to-br ${config.buttonFrom} ${config.buttonTo} hover:shadow-xl text-white ${config.glowClass}`}
+              className={`h-14 w-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 bg-gradient-to-br ${config.buttonFrom} ${config.buttonTo} hover:shadow-xl text-white ${config.glowClass}`}
               onClick={handleToggle}
               aria-label={isRunning ? 'Пауза' : 'Старт'}
             >
               {isRunning ? (
-                <Pause className="h-5 w-5" />
+                <Pause className="h-6 w-6" />
               ) : (
-                <Play className="h-5 w-5 ml-0.5" />
+                <Play className="h-6 w-6 ml-0.5" />
               )}
             </Button>
 
@@ -893,7 +975,7 @@ export default function FocusTimerWidget() {
           )}
 
           {/* ── Bottom info ── */}
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
+          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground/60">
             <Clock className="h-3 w-3" />
             <span>
               {isRunning

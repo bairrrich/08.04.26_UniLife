@@ -228,8 +228,11 @@ export function EntryList({
                       </div>
                     )}
 
-                    {/* Word count & reading time */}
-                    <div className="mt-2">
+                    {/* Word count badge & reading time */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 tabular-nums">
+                        {entry.content.trim().split(/\s+/).filter(Boolean).length} слов
+                      </Badge>
                       <WordCount content={entry.content} />
                     </div>
                   </div>

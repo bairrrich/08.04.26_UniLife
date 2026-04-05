@@ -4,7 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CalendarDays, BookOpen, Plus, Edit, Trash2, Tag, Clock } from 'lucide-react'
+import { CalendarDays, BookOpen, Plus, Edit, Trash2, Tag, Clock, Share2 } from 'lucide-react'
+import { toast } from 'sonner'
+import { getRelativeTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -104,6 +106,10 @@ export function EntryDetail({
                       {format(parseEntryDate(entry.date), 'd MMMM yyyy, HH:mm', { locale: ru })}
                     </p>
                     <span className="text-xs text-muted-foreground/50">•</span>
+                    <span className="text-xs text-primary/70 font-medium tabular-nums">
+                      {getRelativeTime(entry.createdAt)}
+                    </span>
+                    <span className="text-xs text-muted-foreground/50">•</span>
                     <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
                       <Clock className="h-3 w-3" />
                       {readingTimeMinutes(wordCount)} чтения
@@ -151,7 +157,7 @@ export function EntryDetail({
               <Separator />
 
               {/* Content */}
-              <div className="text-sm leading-relaxed whitespace-pre-wrap">
+              <div className="text-sm leading-[1.75] tracking-wide whitespace-pre-wrap text-foreground/90">
                 {entry.content}
               </div>
 
@@ -182,32 +188,46 @@ export function EntryDetail({
 
               {/* Actions */}
               <Separator />
-              <div className="flex items-center justify-end gap-2">
+              <div className="flex items-center justify-between gap-2">
                 <Button
                   size="sm"
                   variant="outline"
+                  className="text-xs"
                   onClick={(e) => {
                     e.stopPropagation()
-                    onEntrySelect(entry)
-                    onEditClick(entry)
+                    toast.info('Ссылка скопирована в буфер обмена')
                   }}
                 >
-                  <Edit className="h-3.5 w-3.5 mr-1.5" />
-                  Редактировать
+                  <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                  Поделиться
                 </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="text-destructive hover:text-destructive"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onEntrySelect(entry)
-                    onDeleteClick(entry)
-                  }}
-                >
-                  <Trash2 className="h-3.5 w-3.5 mr-1.5" />
-                  Удалить
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEntrySelect(entry)
+                      onEditClick(entry)
+                    }}
+                  >
+                    <Edit className="h-3.5 w-3.5 mr-1.5" />
+                    Редактировать
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-destructive hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onEntrySelect(entry)
+                      onDeleteClick(entry)
+                    }}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                    Удалить
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

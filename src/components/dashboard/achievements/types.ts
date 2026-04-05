@@ -38,6 +38,7 @@ export interface AchievementContext {
     savingsRate: number | null
   } | null
   transactionsCount: number
+  transactionsData: { id: string; date: string; amount: number; type: string }[]
   workouts: { id: string; date: string; durationMin: number | null }[]
   habitsData: {
     data: { id: string; name: string; todayCompleted: boolean; streak: number; last7Days?: Record<string, boolean> }[]

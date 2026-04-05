@@ -605,6 +605,7 @@ export default function DiaryPage() {
         onMoodClick={handleMoodClick}
         onSubmit={handleSubmitNew}
         onApplyTemplate={applyTemplate}
+        entries={entries}
       />
       <EntryDialog
         open={showEditDialog}
@@ -620,6 +621,7 @@ export default function DiaryPage() {
         onMoodClick={handleMoodClick}
         onSubmit={handleSubmitEdit}
         onApplyTemplate={applyTemplate}
+        entries={entries}
       />
 
       {/* Delete Confirmation Dialog */}
