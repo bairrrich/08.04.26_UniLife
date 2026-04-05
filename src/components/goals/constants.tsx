@@ -25,72 +25,88 @@ import {
 export const CATEGORY_CONFIG: Record<string, {
   label: string
   icon: React.ReactNode
+  largeIcon: React.ReactNode
   badgeClass: string
   bgClass: string
   iconBgClass: string
+  iconGradientClass: string
   borderColor: string
   hoverGlow: string
 }> = {
   personal: {
     label: 'Личное',
     icon: <User className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />,
+    largeIcon: <User className="h-5 w-5 text-white" />,
     badgeClass: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400',
     bgClass: 'from-emerald-500/10 to-emerald-600/5',
     iconBgClass: 'bg-emerald-100 dark:bg-emerald-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-emerald-400 to-teal-500',
     borderColor: '#10b981',
     hoverGlow: 'group-hover:shadow-emerald-500/10',
   },
   health: {
     label: 'Здоровье',
     icon: <Heart className="h-3.5 w-3.5 text-rose-500 dark:text-rose-400" />,
+    largeIcon: <Heart className="h-5 w-5 text-white" />,
     badgeClass: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400',
     bgClass: 'from-rose-500/10 to-rose-600/5',
     iconBgClass: 'bg-rose-100 dark:bg-rose-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-rose-400 to-pink-500',
     borderColor: '#f43f5e',
     hoverGlow: 'group-hover:shadow-rose-500/10',
   },
   finance: {
     label: 'Финансы',
     icon: <PiggyBank className="h-3.5 w-3.5 text-amber-500 dark:text-amber-400" />,
+    largeIcon: <PiggyBank className="h-5 w-5 text-white" />,
     badgeClass: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400',
     bgClass: 'from-amber-500/10 to-amber-600/5',
     iconBgClass: 'bg-amber-100 dark:bg-amber-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-amber-400 to-orange-500',
     borderColor: '#f59e0b',
     hoverGlow: 'group-hover:shadow-amber-500/10',
   },
   career: {
     label: 'Карьера',
     icon: <Briefcase className="h-3.5 w-3.5 text-blue-500 dark:text-blue-400" />,
+    largeIcon: <Briefcase className="h-5 w-5 text-white" />,
     badgeClass: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
     bgClass: 'from-blue-500/10 to-blue-600/5',
     iconBgClass: 'bg-blue-100 dark:bg-blue-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-blue-400 to-indigo-500',
     borderColor: '#3b82f6',
     hoverGlow: 'group-hover:shadow-blue-500/10',
   },
   learning: {
     label: 'Обучение',
     icon: <GraduationCap className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />,
+    largeIcon: <GraduationCap className="h-5 w-5 text-white" />,
     badgeClass: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400',
     bgClass: 'from-violet-500/10 to-violet-600/5',
     iconBgClass: 'bg-violet-100 dark:bg-violet-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-violet-400 to-purple-500',
     borderColor: '#8b5cf6',
     hoverGlow: 'group-hover:shadow-violet-500/10',
   },
   education: {
     label: 'Образование',
     icon: <GraduationCap className="h-3.5 w-3.5 text-violet-500 dark:text-violet-400" />,
+    largeIcon: <GraduationCap className="h-5 w-5 text-white" />,
     badgeClass: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400',
     bgClass: 'from-violet-500/10 to-violet-600/5',
     iconBgClass: 'bg-violet-100 dark:bg-violet-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-violet-400 to-purple-500',
     borderColor: '#8b5cf6',
     hoverGlow: 'group-hover:shadow-violet-500/10',
   },
   fitness: {
     label: 'Фитнес',
     icon: <Dumbbell className="h-3.5 w-3.5 text-orange-500 dark:text-orange-400" />,
+    largeIcon: <Dumbbell className="h-5 w-5 text-white" />,
     badgeClass: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400',
     bgClass: 'from-orange-500/10 to-orange-600/5',
     iconBgClass: 'bg-orange-100 dark:bg-orange-900/30',
+    iconGradientClass: 'bg-gradient-to-br from-orange-400 to-red-500',
     borderColor: '#f97316',
     hoverGlow: 'group-hover:shadow-orange-500/10',
   },
@@ -161,6 +177,8 @@ export const PRIORITY_CONFIG: Record<string, {
   bgClass: string
   borderClass: string
   icon: React.ReactNode
+  pulseClass: string
+  dotColor: string
 }> = {
   high: {
     label: 'Высокий',
@@ -168,6 +186,8 @@ export const PRIORITY_CONFIG: Record<string, {
     bgClass: 'bg-rose-100 dark:bg-rose-900/30',
     borderClass: 'border-rose-200 dark:border-rose-800/50',
     icon: <ArrowUp className="h-3 w-3" />,
+    pulseClass: 'priority-pulse-high',
+    dotColor: 'bg-rose-500',
   },
   medium: {
     label: 'Средний',
@@ -175,6 +195,8 @@ export const PRIORITY_CONFIG: Record<string, {
     bgClass: 'bg-amber-100 dark:bg-amber-900/30',
     borderClass: 'border-amber-200 dark:border-amber-800/50',
     icon: <Minus className="h-3 w-3" />,
+    pulseClass: 'priority-pulse-medium',
+    dotColor: 'bg-amber-500',
   },
   low: {
     label: 'Низкий',
@@ -182,6 +204,8 @@ export const PRIORITY_CONFIG: Record<string, {
     bgClass: 'bg-sky-100 dark:bg-sky-900/30',
     borderClass: 'border-sky-200 dark:border-sky-800/50',
     icon: <ArrowDown className="h-3 w-3" />,
+    pulseClass: '',
+    dotColor: 'bg-sky-400',
   },
 }
 

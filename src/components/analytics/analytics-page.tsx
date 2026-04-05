@@ -25,6 +25,7 @@ import {
   RU_MONTHS_SHORT,
   RU_MONTHS,
   formatCurrency,
+  calculateStreak,
   type Period,
 } from '@/lib/format'
 
@@ -32,6 +33,7 @@ import type {
   DiaryEntry,
   Transaction,
   NutritionDay,
+  MealEntry,
   Workout,
   HabitItem,
   ActivityStats,
@@ -40,6 +42,10 @@ import type {
   WorkoutDistributionPoint,
   TopCategoryPoint,
   HabitsHeatmapCell,
+  WeeklyActivityCell,
+  ModuleStreak,
+  TimeOfDayPoint,
+  MoodTrendPoint,
 } from './types'
 import { PIE_COLORS, WORKOUT_TYPE_COLORS } from './constants'
 import { classifyWorkout, getMonthStr } from './helpers'
@@ -48,6 +54,11 @@ import { OverviewStats } from './overview-stats'
 import { ChartsRow } from './charts-row'
 import { NutritionChart, WorkoutDistributionChart, TopCategoriesChart } from './bottom-charts'
 import { HabitsHeatmapSection } from './habits-heatmap-section'
+import { WeeklyActivityHeatmap } from './weekly-activity-heatmap'
+import { MoodTrendsChart } from './mood-trends-chart'
+import { ModuleStreaks } from './module-streaks'
+import { TimeOfDayChart } from './time-of-day-chart'
+import { PersonalInsights } from './personal-insights'
 
 // ─── Period Comparison Types ──────────────────────────────────────────────────
 
@@ -68,6 +79,7 @@ export default function AnalyticsPage() {
   const [workouts, setWorkouts] = useState<Workout[]>([])
   const [habits, setHabits] = useState<HabitItem[]>([])
   const [nutritionDays, setNutritionDays] = useState<NutritionDay[]>([])
+  const [meals, setMeals] = useState<MealEntry[]>([])
   const [prevPeriodComparison, setPrevPeriodComparison] = useState<PeriodComparison>({
     diaryChange: null,
     expenseChange: null,
@@ -124,6 +136,7 @@ export default function AnalyticsPage() {
         safeFetch(`/api/finance?month=${currentMonth}`),
         safeFetch(`/api/workout?month=${currentMonth}`),
         safeFetch('/api/habits'),
+        safeFetch(`/api/nutrition?month=${currentMonth}`),
         ...nutritionUrls.map((url) => safeFetch(url)),
         // Previous period for comparison
         safeFetch(`/api/diary?from=${prevFromStr}&to=${prevToStr}`),
@@ -131,10 +144,10 @@ export default function AnalyticsPage() {
         safeFetch(`/api/workout?month=${prevMonth}`),
       ])
 
-      const [diaryRes, financeRes, workoutRes, habitsRes, ...nutritionResults] = results
-      const prevDiaryRes = results[4 + nutritionUrls.length]
-      const prevFinanceRes = results[5 + nutritionUrls.length]
-      const prevWorkoutRes = results[6 + nutritionUrls.length]
+      const [diaryRes, financeRes, workoutRes, habitsRes, mealsRes, ...nutritionResults] = results
+      const prevDiaryRes = results[5 + nutritionUrls.length]
+      const prevFinanceRes = results[6 + nutritionUrls.length]
+      const prevWorkoutRes = results[7 + nutritionUrls.length]
 
       // Diary
       if (diaryRes.status === 'fulfilled' && diaryRes.value.data) {
@@ -174,6 +187,23 @@ export default function AnalyticsPage() {
         setHabits(habitsRes.value.data)
       } else {
         setHabits([])
+      }
+
+      // Meals (for heatmap, streaks, time-of-day)
+      if (
+        mealsRes.status === 'fulfilled' &&
+        mealsRes.value.success &&
+        mealsRes.value.data
+      ) {
+        const rawMeals: MealEntry[] = mealsRes.value.data.map((m: { id: string; date: string; createdAt?: string; type: string }) => ({
+          id: m.id,
+          date: m.date,
+          createdAt: m.createdAt,
+          type: m.type,
+        }))
+        setMeals(rawMeals)
+      } else {
+        setMeals([])
       }
 
       // Nutrition days
@@ -244,8 +274,8 @@ export default function AnalyticsPage() {
 
   // Check if we have ANY data
   const hasData = useMemo(() => {
-    return diaryEntries.length > 0 || transactions.length > 0 || workouts.length > 0 || habits.length > 0 || nutritionDays.length > 0
-  }, [diaryEntries, transactions, workouts, habits, nutritionDays])
+    return diaryEntries.length > 0 || transactions.length > 0 || workouts.length > 0 || habits.length > 0 || nutritionDays.length > 0 || meals.length > 0
+  }, [diaryEntries, transactions, workouts, habits, nutritionDays, meals])
 
   // 1. Overview Stats
   const diaryCount = diaryEntries.length
@@ -469,14 +499,12 @@ export default function AnalyticsPage() {
       const d = new Date(now)
       d.setDate(now.getDate() - i)
       const dateStr = toDateStr(d)
-      // Count how many habits were completed on this day
       let completedCount = 0
       let totalCount = habits.length
       for (const h of habits) {
         if (h.last7Days[dateStr]) completedCount++
       }
-      // For days beyond last7Days window, mark as no data
-      const isInRange = i <= 6 || false // last7Days only covers 7 days
+      const isInRange = i <= 6 || false
       grid.push({
         date: dateStr,
         completed: totalCount > 0 ? completedCount === totalCount : false,
@@ -546,7 +574,6 @@ export default function AnalyticsPage() {
     }
     if (maxModuleCount === 0) mostActiveModule = '—'
 
-    // Calculate 7-day sparkline data
     const sparkline: number[] = []
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now)
@@ -555,7 +582,6 @@ export default function AnalyticsPage() {
       sparkline.push(dayCounts[dateStr] || 0)
     }
 
-    // Most productive time of day (simulated from data patterns)
     const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
     const dayOfWeekCounts: Record<number, number> = {}
     for (const [day, count] of Object.entries(dayCounts)) {
@@ -575,11 +601,234 @@ export default function AnalyticsPage() {
     return { totalActions, avgDaily, mostActiveDay, mostActiveModule, sparkline, mostProductiveDay }
   }, [diaryEntries, transactions, workouts, totalHabits, diaryCount, period])
 
-  // 9. Insights Data
+  // ── NEW: 9. Weekly Activity Heatmap Data ──────────────────────────────
+  const weeklyActivityData = useMemo((): WeeklyActivityCell[] => {
+    const now = new Date()
+    const data: WeeklyActivityCell[] = []
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      const dateStr = toDateStr(d)
+      const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1
+
+      // Count diary entries for this day
+      const diaryCountDay = diaryEntries.filter(
+        (e) => toDateStr(new Date(e.date)) === dateStr,
+      ).length
+
+      // Count workouts for this day
+      const workoutCountDay = workouts.filter(
+        (w) => toDateStr(new Date(w.date)) === dateStr,
+      ).length
+
+      // Count meals for this day
+      const mealCountDay = meals.filter(
+        (m) => toDateStr(new Date(m.date)) === dateStr,
+      ).length
+
+      // Count habits completed for this day
+      let habitsCompletedDay = 0
+      for (const h of habits) {
+        if (h.last7Days[dateStr]) habitsCompletedDay++
+      }
+
+      const total = diaryCountDay + workoutCountDay + mealCountDay + habitsCompletedDay
+
+      data.push({
+        date: dateStr,
+        day: d.getDate(),
+        dayOfWeek: d.getDay(),
+        dayLabel: RU_DAYS_SHORT[dayIdx],
+        diary: diaryCountDay,
+        workouts: workoutCountDay,
+        meals: mealCountDay,
+        habitsCompleted: habitsCompletedDay,
+        total,
+      })
+    }
+
+    return data
+  }, [diaryEntries, workouts, meals, habits])
+
+  // ── NEW: 10. Mood Trends (30 days) ───────────────────────────────────
+  const moodTrendData = useMemo((): MoodTrendPoint[] => {
+    const now = new Date()
+    const entries = diaryEntries
+      .filter((e) => e.mood !== null)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+    const data: MoodTrendPoint[] = []
+
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      const dateStr = toDateStr(d)
+
+      const dayEntries = entries.filter(
+        (e) => toDateStr(new Date(e.date)) === dateStr,
+      )
+      const dayMood = dayEntries.length > 0
+        ? Math.round(dayEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / dayEntries.length * 10) / 10
+        : 0
+
+      // Calculate weekly average (previous 7 days including current)
+      let weekAvg: number | null = null
+      if (i <= 23) { // Only show weekAvg when we have 7+ days of history
+        const weekStart = new Date(d)
+        weekStart.setDate(weekStart.getDate() - 6)
+        const weekEntries = entries.filter((e) => {
+          const eDate = new Date(e.date)
+          return eDate >= weekStart && eDate <= d
+        })
+        if (weekEntries.length > 0) {
+          weekAvg = Math.round(weekEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / weekEntries.length * 10) / 10
+        }
+      }
+
+      const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1
+      data.push({
+        date: dateStr,
+        label: `${d.getDate()} ${RU_MONTHS_SHORT[d.getMonth()]}`,
+        mood: dayMood,
+        weekAvg,
+      })
+    }
+
+    return data
+  }, [diaryEntries])
+
+  // ── NEW: 11. Module Completion Streaks ───────────────────────────────
+  const moduleStreaksData = useMemo((): ModuleStreak[] => {
+    const now = new Date()
+
+    // Diary streak
+    const diaryDates = diaryEntries.map((e) => toDateStr(new Date(e.date)))
+    const diaryStreak = calculateStreak(diaryDates)
+
+    // Workout streak
+    const workoutDates = workouts.map((w) => toDateStr(new Date(w.date)))
+    const workoutStreak = calculateStreak(workoutDates)
+
+    // Nutrition (meals) streak
+    const mealDates = meals.map((m) => toDateStr(new Date(m.date)))
+    const nutritionStreak = calculateStreak(mealDates)
+
+    // Habits streak (max across all habits)
+    const habitsStreak = habits.length > 0
+      ? Math.max(...habits.map((h) => h.streak))
+      : 0
+
+    return [
+      {
+        module: 'Дневник',
+        emoji: '📋',
+        streak: diaryStreak,
+        color: 'text-emerald-600',
+        bgColor: 'bg-gradient-to-br from-emerald-50 to-teal-50',
+        darkBgColor: 'dark:from-emerald-950/40 dark:to-teal-950/30',
+      },
+      {
+        module: 'Тренировки',
+        emoji: '💪',
+        streak: workoutStreak,
+        color: 'text-blue-600',
+        bgColor: 'bg-gradient-to-br from-blue-50 to-sky-50',
+        darkBgColor: 'dark:from-blue-950/40 dark:to-sky-950/30',
+      },
+      {
+        module: 'Питание',
+        emoji: '🥗',
+        streak: nutritionStreak,
+        color: 'text-orange-600',
+        bgColor: 'bg-gradient-to-br from-orange-50 to-amber-50',
+        darkBgColor: 'dark:from-orange-950/40 dark:to-amber-950/30',
+      },
+      {
+        module: 'Привычки',
+        emoji: '✅',
+        streak: habitsStreak,
+        color: 'text-violet-600',
+        bgColor: 'bg-gradient-to-br from-violet-50 to-purple-50',
+        darkBgColor: 'dark:from-violet-950/40 dark:to-purple-950/30',
+      },
+    ]
+  }, [diaryEntries, workouts, meals, habits])
+
+  // ── NEW: 12. Time-of-Day Activity Data ───────────────────────────────
+  const timeOfDayData = useMemo((): TimeOfDayPoint[] => {
+    const periods = [
+      { name: 'Утро', minHour: 5, maxHour: 12, fill: '#f59e0b' },
+      { name: 'День', minHour: 12, maxHour: 17, fill: '#10b981' },
+      { name: 'Вечер', minHour: 17, maxHour: 22, fill: '#6366f1' },
+      { name: 'Ночь', minHour: 22, maxHour: 5, fill: '#64748b' },
+    ]
+
+    // Collect all timestamps
+    const allTimestamps: string[] = [
+      ...diaryEntries.map((e) => e.createdAt || e.date),
+      ...workouts.map((w) => w.createdAt || w.date),
+      ...transactions.map((t) => t.createdAt || t.date),
+      ...meals.map((m) => m.createdAt || m.date),
+    ]
+
+    return periods.map((period) => {
+      let count = 0
+      for (const ts of allTimestamps) {
+        const d = new Date(ts)
+        const hour = d.getHours()
+        if (period.name === 'Ночь') {
+          if (hour >= 22 || hour < 5) count++
+        } else {
+          if (hour >= period.minHour && hour < period.maxHour) count++
+        }
+      }
+      return { period: period.name, count, fill: period.fill }
+    })
+  }, [diaryEntries, workouts, transactions, meals])
+
+  // ── NEW: 13. Best Mood Day ──────────────────────────────────────────
+  const { bestMoodDay, bestMood } = useMemo(() => {
+    const moodWithDates = diaryEntries
+      .filter((e) => e.mood !== null)
+      .map((e) => ({
+        date: new Date(e.date),
+        mood: e.mood!,
+      }))
+
+    if (moodWithDates.length === 0) return { bestMoodDay: null, bestMood: 0 }
+
+    let best = moodWithDates[0]
+    for (const entry of moodWithDates) {
+      if (entry.mood > best.mood) best = entry
+    }
+
+    const dayIdx = best.date.getDay() === 0 ? 6 : best.date.getDay() - 1
+    const bestMoodDay = `${RU_DAYS_SHORT[dayIdx]}, ${best.date.getDate()} ${RU_MONTHS_SHORT[best.date.getMonth()]}`
+
+    return { bestMoodDay, bestMood: best.mood }
+  }, [diaryEntries])
+
+  // ── NEW: 14. Longest Streak Module ─────────────────────────────────
+  const longestStreakModule = useMemo((): ModuleStreak | null => {
+    if (moduleStreaksData.length === 0) return null
+    const maxStreak = Math.max(...moduleStreaksData.map((s) => s.streak))
+    if (maxStreak === 0) return null
+    return moduleStreaksData.find((s) => s.streak === maxStreak) || null
+  }, [moduleStreaksData])
+
+  // ── NEW: 15. Peak Time Period ──────────────────────────────────────
+  const peakTimePeriod = useMemo((): TimeOfDayPoint | null => {
+    if (timeOfDayData.length === 0) return null
+    const maxCount = Math.max(...timeOfDayData.map((d) => d.count))
+    if (maxCount === 0) return null
+    return timeOfDayData.find((d) => d.count === maxCount) || null
+  }, [timeOfDayData])
+
+  // 16. Insights Data (existing)
   const insights = useMemo(() => {
     const items: { icon: React.ReactNode; text: string; color: string }[] = []
 
-    // Most productive day
     if (activityStats.mostProductiveDay && activityStats.mostProductiveDay !== '—') {
       items.push({
         icon: <Brain className="h-4 w-4" />,
@@ -588,7 +837,6 @@ export default function AnalyticsPage() {
       })
     }
 
-    // Top expense category
     if (topCategories.length > 0) {
       items.push({
         icon: <Wallet className="h-4 w-4" />,
@@ -597,7 +845,6 @@ export default function AnalyticsPage() {
       })
     }
 
-    // Average mood
     if (avgMood > 0) {
       const moodEmoji = MOOD_EMOJI[Math.round(avgMood)] || ''
       items.push({
@@ -607,7 +854,6 @@ export default function AnalyticsPage() {
       })
     }
 
-    // Workout streak (max streak from habits)
     const maxStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.streak)) : 0
     if (maxStreak > 0) {
       items.push({
@@ -617,7 +863,6 @@ export default function AnalyticsPage() {
       })
     }
 
-    // Total workout minutes
     if (totalMinutes > 0) {
       items.push({
         icon: <Dumbbell className="h-4 w-4" />,
@@ -626,7 +871,6 @@ export default function AnalyticsPage() {
       })
     }
 
-    // Habits completion
     if (totalHabits > 0) {
       items.push({
         icon: <Sparkles className="h-4 w-4" />,
@@ -635,7 +879,6 @@ export default function AnalyticsPage() {
       })
     }
 
-    // Nutrition average
     if (nutritionSummary.daysWithData > 0) {
       items.push({
         icon: <CalendarDays className="h-4 w-4" />,
@@ -744,6 +987,9 @@ export default function AnalyticsPage() {
             periodComparison={prevPeriodComparison}
           />
 
+          {/* ── NEW: Module Completion Streaks ────────────────────────────── */}
+          <ModuleStreaks loading={loading} streaks={moduleStreaksData} />
+
           {/* ── Charts Row: Mood + Spending ───────────────────────────────── */}
           <ChartsRow
             loading={loading}
@@ -752,11 +998,20 @@ export default function AnalyticsPage() {
             period={period}
           />
 
+          {/* ── NEW: Mood Trends (30 days) ────────────────────────────────── */}
+          <MoodTrendsChart loading={loading} data={moodTrendData} />
+
+          {/* ── NEW: Weekly Activity Heatmap ──────────────────────────────── */}
+          <WeeklyActivityHeatmap loading={loading} heatmapData={weeklyActivityData} />
+
           {/* ── Nutrition Summary + Workout Distribution ──────────────────── */}
           <div className="stagger-children grid gap-4 lg:grid-cols-2">
             <NutritionChart loading={loading} nutritionSummary={nutritionSummary} />
             <WorkoutDistributionChart loading={loading} workoutDistribution={workoutDistribution} workoutCount={workoutCount} />
           </div>
+
+          {/* ── NEW: Time-of-Day Activity Chart ───────────────────────────── */}
+          <TimeOfDayChart loading={loading} data={timeOfDayData} />
 
           {/* ── Top Categories + Habits Heatmap ───────────────────────────── */}
           <div className="stagger-children grid gap-4 lg:grid-cols-2">
@@ -770,7 +1025,19 @@ export default function AnalyticsPage() {
             />
           </div>
 
-          {/* ── Insights Section ─────────────────────────────────────────── */}
+          {/* ── NEW: Personal Insights Cards ──────────────────────────────── */}
+          <PersonalInsights
+            loading={loading}
+            mostProductiveDay={activityStats.mostProductiveDay ?? null}
+            bestMoodDay={bestMoodDay}
+            bestMood={bestMood}
+            longestStreakModule={longestStreakModule}
+            peakTimePeriod={peakTimePeriod}
+            totalActions={activityStats.totalActions}
+            avgMood={avgMood}
+          />
+
+          {/* ── Insights Section (existing) ───────────────────────────────── */}
           {!loading && insights.length > 0 && (
             <div className="card-hover overflow-hidden rounded-xl border border-border bg-gradient-to-br from-amber-50/60 via-background to-violet-50/40 dark:from-amber-950/20 dark:via-background dark:to-violet-950/15">
               <div className="flex items-center gap-2.5 border-b bg-muted/30 px-5 py-3.5">
@@ -778,7 +1045,7 @@ export default function AnalyticsPage() {
                   <Lightbulb className="h-4 w-4 text-white" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold">Инсайты</h2>
+                  <h2 className="text-sm font-semibold">Подробные инсайты</h2>
                   <Sparkles className="h-3.5 w-3.5 text-amber-500" />
                 </div>
                 <Badge variant="secondary" className="ml-auto text-[10px]">

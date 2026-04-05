@@ -79,3 +79,12 @@ export const workoutPieConfig: ChartConfig = {
 export const categoryBarConfig: ChartConfig = {
   amount: { label: 'Сумма', color: 'hsl(var(--chart-1))' },
 }
+
+export const moodTrendChartConfig: ChartConfig = {
+  mood: { label: 'Настроение', color: '#10b981' },
+  weekAvg: { label: 'Среднее за неделю', color: '#f59e0b' },
+}
+
+export const timeOfDayChartConfig: ChartConfig = {
+  count: { label: 'Действий', color: '#6366f1' },
+}

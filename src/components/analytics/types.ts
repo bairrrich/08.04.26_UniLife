@@ -5,6 +5,8 @@ export interface DiaryEntry {
   date: string
   mood: number | null
   title: string | null
+  createdAt?: string
+  content?: string
 }
 
 export interface Transaction {
@@ -12,6 +14,7 @@ export interface Transaction {
   date: string
   amount: number
   type: string
+  createdAt?: string
   category?: {
     name: string
     color: string
@@ -27,11 +30,19 @@ export interface NutritionDay {
   totalCarbs: number
 }
 
+export interface MealEntry {
+  id: string
+  date: string
+  createdAt?: string
+  type: string
+}
+
 export interface Workout {
   id: string
   name: string
   date: string
   durationMin: number | null
+  createdAt?: string
 }
 
 export interface HabitItem {
@@ -91,4 +102,40 @@ export interface HabitsHeatmapCell {
   completedCount?: number
   totalCount?: number
   dayOfWeek?: number
+}
+
+// ─── New Analytics Types ──────────────────────────────────────────────────────
+
+export interface WeeklyActivityCell {
+ date: string
+  day: number
+  dayOfWeek: number
+  dayLabel: string
+  diary: number
+  workouts: number
+  meals: number
+  habitsCompleted: number
+  total: number
+}
+
+export interface ModuleStreak {
+ module: string
+  emoji: string
+  streak: number
+  color: string
+  bgColor: string
+  darkBgColor: string
+}
+
+export interface TimeOfDayPoint {
+  period: string
+  count: number
+  fill: string
+}
+
+export interface MoodTrendPoint {
+  date: string
+  label: string
+  mood: number
+  weekAvg: number | null
 }

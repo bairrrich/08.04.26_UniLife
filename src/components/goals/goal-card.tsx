@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star, Tag, Zap, ChevronRight, Flag } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star, Tag, Zap, ChevronRight, Flag, ArrowUp, Minus, ArrowDown } from 'lucide-react'
 import type { GoalData, Milestone } from './types'
 import {
   CATEGORY_CONFIG,
@@ -40,6 +41,15 @@ const MILESTONES = [
   { threshold: 50, emoji: '🔥', label: 'Половина!' },
   { threshold: 75, emoji: '⭐', label: 'Почти!' },
   { threshold: 100, emoji: '🏆', label: 'Достигнуто!' },
+]
+
+// Progress timeline milestone points
+const TIMELINE_MILESTONES = [
+  { pct: 0, label: '0%', emoji: '🎯' },
+  { pct: 25, label: '25%', emoji: '🌱' },
+  { pct: 50, label: '50%', emoji: '🔥' },
+  { pct: 75, label: '75%', emoji: '⭐' },
+  { pct: 100, label: '100%', emoji: '🏆' },
 ]
 
 // Predefined subcategory tags
@@ -134,7 +144,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
     }
   }
 
-  // ─── Milestones ───────────────────────────────────────────────────────────
+  // ─── Milestones progress points ───────────────────────────────────────────
   const milestones = [25, 50, 75, 100]
 
   // ─── Category-specific gradient background (always visible, subtle) ───────
@@ -168,8 +178,10 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
 
   const completedMilestones = milestonesData.filter(m => m.completed).length
   const totalMilestones = milestonesData.length
+  const milestoneProgress = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0
 
   return (
+    <TooltipProvider delayDuration={200}>
     <Card
       ref={cardRef}
       className={cn(
@@ -209,16 +221,23 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
       )}
 
       <CardContent className="relative p-4 space-y-3 pt-5">
-        {/* Top row: Category icon+badge + Status + Deadline Badge + Progress Ring */}
-        <div className="flex items-center justify-between">
+        {/* Top row: Category icon + Badge + Status + Priority + Deadline + Progress Ring */}
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap gap-y-1">
-            {/* Category icon inside colored circle */}
-            <div className={cn('h-7 w-7 rounded-full flex items-center justify-center shrink-0', catConfig.iconBgClass)}>
-              {catConfig.icon}
-            </div>
-            <Badge variant="secondary" className={cn('text-[10px] gap-1 shrink-0', catConfig.badgeClass)}>
-              {catConfig.label}
-            </Badge>
+            {/* ─── Enhanced Category Icon with gradient background ──────────── */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  'h-9 w-9 rounded-xl flex items-center justify-center shrink-0 shadow-sm',
+                  catConfig.iconGradientClass,
+                )}>
+                  {catConfig.largeIcon}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {catConfig.label}
+              </TooltipContent>
+            </Tooltip>
 
             {/* Status indicator with icon */}
             <div className="flex items-center gap-1.5 shrink-0">
@@ -228,37 +247,46 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </span>
             </div>
 
-            {/* Priority badge */}
+            {/* ─── Enhanced Priority Badge with pulse ──────────────────────── */}
             {priorityConfig && (
-              <span className={cn(
-                'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium border',
-                priorityConfig.bgClass, priorityConfig.borderClass, priorityConfig.color,
-              )}>
-                <priorityConfig.icon />
-                {priorityConfig.label}
-              </span>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn(
+                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border shrink-0',
+                    priorityConfig.bgClass, priorityConfig.borderClass, priorityConfig.color,
+                    priorityConfig.pulseClass,
+                    goal.priority === 'high' && !isCompleted && 'animate-pulse-soft',
+                  )}>
+                    <priorityConfig.icon className="h-3 w-3" />
+                    {priorityConfig.label}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  Приоритет: {priorityConfig.label}
+                </TooltipContent>
+              </Tooltip>
             )}
 
             {/* Deadline countdown badge */}
             {countdown && !isCompleted && (
-              <Badge
-                variant="outline"
-                className={cn(
-                  'shrink-0 text-[10px] gap-1 font-medium',
-                  isOverdue && 'animate-pulse-soft',
-                  getDeadlineBadgeClass(daysLeft),
-                )}
-              >
-                <Calendar className="h-3 w-3" />
-                {countdown}
-              </Badge>
-            )}
-
-            {/* Warning badge for approaching deadlines within 3 days */}
-            {isApproaching && !isCompleted && daysLeft !== null && (
-              <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft">
-                ⚡ Скоро дедлайн!
-              </Badge>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      'shrink-0 text-[10px] gap-1 font-medium cursor-default',
+                      isOverdue && 'animate-pulse-soft',
+                      getDeadlineBadgeClass(daysLeft),
+                    )}
+                  >
+                    <Calendar className="h-3 w-3" />
+                    {countdown}
+                  </Badge>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {goal.deadline ? new Date(goal.deadline).toLocaleDateString('ru-RU') : ''}
+                </TooltipContent>
+              </Tooltip>
             )}
           </div>
 
@@ -325,7 +353,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           )}
         </div>
 
-        {/* Progress Bar with Milestone Dots */}
+        {/* ─── Progress Bar with Milestone Dots ───────────────────────────── */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">Прогресс</span>
@@ -376,8 +404,148 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           </div>
         </div>
 
+        {/* ─── Goal Progress Timeline ──────────────────────────────────────── */}
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+              <ChevronRight className="h-3 w-3" />
+              Хронология прогресса
+            </span>
+          </div>
+          <div className="relative px-1">
+            {/* Timeline line */}
+            <div className="absolute top-[7px] left-[6px] right-[6px] h-0.5 bg-muted rounded-full" />
+            {/* Filled portion */}
+            <div
+              className="absolute top-[7px] left-[6px] h-0.5 rounded-full transition-all duration-1000 ease-out"
+              style={{
+                width: `calc(${Math.min(animatedProgress, 100)}% - 4px)`,
+                backgroundColor: isCompleted ? '#10b981' : getProgressRingColor(goal.progress),
+                opacity: 0.6,
+              }}
+            />
+            {/* Timeline dots */}
+            <div className="relative flex items-center justify-between">
+              {TIMELINE_MILESTONES.map((tm) => {
+                const reached = goal.progress >= tm.pct
+                const isLatest = goal.progress >= tm.pct && goal.progress < tm.pct + 25
+                return (
+                  <Tooltip key={tm.pct}>
+                    <TooltipTrigger asChild>
+                      <div className="flex flex-col items-center gap-1 cursor-default">
+                        <div
+                          className={cn(
+                            'h-3.5 w-3.5 rounded-full border-2 flex items-center justify-center transition-all duration-500',
+                            reached
+                              ? isCompleted
+                                ? 'bg-emerald-500 border-emerald-500 scale-110'
+                                : 'bg-background border-emerald-400 scale-105'
+                              : 'bg-background border-muted-foreground/25',
+                            isLatest && !isCompleted && 'ring-2 ring-emerald-400/30',
+                          )}
+                        >
+                          {reached && !isCompleted && (
+                            <div className={cn(
+                              'h-1.5 w-1.5 rounded-full',
+                              tm.pct === 100 ? 'bg-emerald-500' : 'bg-emerald-400',
+                            )} />
+                          )}
+                          {reached && isCompleted && (
+                            <CheckCircle className="h-2.5 w-2.5 text-white" />
+                          )}
+                        </div>
+                        <span className={cn(
+                          'text-[9px] font-medium transition-colors',
+                          reached ? 'text-foreground/70' : 'text-muted-foreground/50',
+                        )}>
+                          {tm.label}
+                        </span>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="text-[10px]">
+                      {reached ? `${tm.emoji} ${tm.pct}% достигнуто` : `${tm.pct}% — в планах`}
+                    </TooltipContent>
+                  </Tooltip>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+
+        {/* ─── Milestone Progress Bar (for user-defined milestones) ────────── */}
+        {totalMilestones > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                <Flag className="h-3 w-3" />
+                Этапы
+              </span>
+              <span className="text-[10px] text-muted-foreground tabular-nums flex items-center gap-1">
+                <span className={cn(
+                  'font-semibold',
+                  milestoneProgress >= 70 ? 'text-emerald-600 dark:text-emerald-400'
+                    : milestoneProgress >= 40 ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-rose-600 dark:text-rose-400',
+                )}>
+                  {completedMilestones}
+                </span>
+                <span>/</span>
+                <span>{totalMilestones}</span>
+              </span>
+            </div>
+            {/* Mini milestone progress bar */}
+            <div className="flex items-center gap-2">
+              <Progress
+                value={milestoneProgress}
+                className={cn(
+                  'h-1.5',
+                  milestoneProgress >= 70
+                    ? 'bg-emerald-100 dark:bg-emerald-900/30 [&>div]:bg-emerald-500'
+                    : milestoneProgress >= 40
+                      ? 'bg-amber-100 dark:bg-amber-900/30 [&>div]:bg-amber-500'
+                      : 'bg-rose-100 dark:bg-rose-900/30 [&>div]:bg-rose-500',
+                )}
+              />
+              <span className={cn(
+                'text-[10px] font-bold tabular-nums w-8 text-right',
+                milestoneProgress >= 70 ? 'text-emerald-600 dark:text-emerald-400'
+                  : milestoneProgress >= 40 ? 'text-amber-600 dark:text-amber-400'
+                  : 'text-rose-600 dark:text-rose-400',
+              )}>
+                {milestoneProgress}%
+              </span>
+            </div>
+            {/* Milestones list */}
+            <div className="space-y-1">
+              {milestonesData.map((ms, idx) => (
+                <div
+                  key={ms.id || idx}
+                  className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-muted/30"
+                >
+                  <div
+                    className={cn(
+                      'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
+                      ms.completed
+                        ? 'bg-emerald-500 border-emerald-500'
+                        : 'border-muted-foreground/30 hover:border-muted-foreground/50',
+                    )}
+                  >
+                    {ms.completed && <CheckCircle className="h-3 w-3 text-white" />}
+                  </div>
+                  <span className={cn(
+                    'text-[11px] flex-1 truncate',
+                    ms.completed && 'line-through text-muted-foreground',
+                  )}>
+                    {ms.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Subcategory tags */}
-        {suggestedTags.length > 0 && (
+        {suggestedTags.length > 0 && totalMilestones === 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             <Tag className="h-3 w-3 text-muted-foreground/50 shrink-0" />
             {suggestedTags.slice(0, 3).map((tag) => (
@@ -416,46 +584,6 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
             </div>
           )}
         </div>
-
-        {/* Milestones substeps */}
-        {totalMilestones > 0 && (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
-                <Flag className="h-3 w-3" />
-                Этапы
-              </span>
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {completedMilestones}/{totalMilestones}
-              </span>
-            </div>
-            <div className="space-y-1">
-              {milestonesData.map((ms, idx) => (
-                <div
-                  key={ms.id || idx}
-                  className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors"
-                >
-                  <div
-                    className={cn(
-                      'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer',
-                      ms.completed
-                        ? 'bg-emerald-500 border-emerald-500'
-                        : 'border-muted-foreground/30 hover:border-muted-foreground/50',
-                    )}
-                  >
-                    {ms.completed && <CheckCircle className="h-3 w-3 text-white" />}
-                  </div>
-                  <span className={cn(
-                    'text-[11px] flex-1 truncate',
-                    ms.completed && 'line-through text-muted-foreground',
-                  )}>
-                    {ms.title}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Quick Actions — more prominent on hover */}
         <div className="flex items-center gap-1 pt-1 transition-opacity duration-200 group-hover:opacity-100 opacity-80">
@@ -520,5 +648,6 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
         style={{ backgroundColor: catConfig.borderColor }}
       />
     </Card>
+    </TooltipProvider>
   )
 }

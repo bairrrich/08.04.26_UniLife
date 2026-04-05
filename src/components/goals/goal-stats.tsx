@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, Trophy, TrendingUp, Clock, CalendarClock, Zap, AlertTriangle } from 'lucide-react'
+import { Target, Trophy, TrendingUp, Clock, CalendarClock, Zap, AlertTriangle, CalendarCheck, BarChart3 } from 'lucide-react'
 import type { GoalData } from './types'
 import { cn } from '@/lib/utils'
 
@@ -95,6 +95,27 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
     }).length
   }, [goals])
 
+  // ─── NEW: Average progress of ACTIVE goals only ───────────────────────────
+  const activeAvgProgress = useMemo(() => {
+    const activeGoals = goals.filter((g) => g.status === 'active')
+    if (activeGoals.length === 0) return 0
+    const avg = Math.round(activeGoals.reduce((sum, g) => sum + g.progress, 0) / activeGoals.length)
+    return avg
+  }, [goals])
+
+  // ─── NEW: Goals completed THIS MONTH ──────────────────────────────────────
+  const completedThisMonth = useMemo(() => {
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0)
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59)
+    return goals.filter((g) => {
+      if (g.status !== 'completed') return false
+      // Check if updated recently (completed this month as proxy)
+      const updated = new Date(g.updatedAt)
+      return updated >= monthStart && updated <= monthEnd
+    }).length
+  }, [goals])
+
   // Count active goals
   const activeCount = useMemo(() => {
     return goals.filter((g) => g.status === 'active').length
@@ -147,6 +168,14 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
   const progressTextColor = stats.avgProgress >= 70
     ? 'text-emerald-600 dark:text-emerald-400'
     : stats.avgProgress >= 40
+      ? 'text-amber-600 dark:text-amber-400'
+      : 'text-rose-600 dark:text-rose-400'
+
+  // ─── Active avg progress color ────────────────────────────────────────────
+  const activeProgressColor = activeAvgProgress >= 70 ? '#10b981' : activeAvgProgress >= 40 ? '#f59e0b' : '#ef4444'
+  const activeProgressTextColor = activeAvgProgress >= 70
+    ? 'text-emerald-600 dark:text-emerald-400'
+    : activeAvgProgress >= 40
       ? 'text-amber-600 dark:text-amber-400'
       : 'text-rose-600 dark:text-rose-400'
 
@@ -258,8 +287,8 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         </CardContent>
       </Card>
 
-      {/* Stats Row — Enhanced with color coding */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 stagger-children">
+      {/* Stats Row — Enhanced with all new stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 stagger-children">
         {/* Total Goals */}
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5" />
@@ -288,7 +317,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
 
-        {/* Average Progress — Color-coded */}
+        {/* ─── NEW: Average progress across ALL goals ──────────────────────── */}
         <Card className="card-hover overflow-hidden relative">
           <div
             className="absolute inset-0 bg-gradient-to-br opacity-100"
@@ -309,7 +338,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
                   ? 'bg-amber-100 dark:bg-amber-900/30'
                   : 'bg-rose-100 dark:bg-rose-900/30',
             )}>
-              <TrendingUp className={cn(
+              <BarChart3 className={cn(
                 'h-5 w-5',
                 stats.avgProgress >= 70
                   ? 'text-emerald-600 dark:text-emerald-400'
@@ -319,10 +348,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
               )} />
             </div>
             <div className="min-w-0">
-              <p className={cn(
-                'text-2xl font-bold tabular-nums',
-                progressTextColor,
-              )}>
+              <p className={cn('text-2xl font-bold tabular-nums', progressTextColor)}>
                 {animatedAvg}%
               </p>
               <p className="text-xs text-muted-foreground truncate">Ср. прогресс</p>
@@ -330,86 +356,92 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
 
-        {/* Nearest Deadline — Rose when overdue, amber when close */}
+        {/* ─── NEW: Average progress of ACTIVE goals ───────────────────────── */}
         <Card className="card-hover overflow-hidden relative">
           <div
-            className="absolute inset-0 bg-gradient-to-br"
+            className="absolute inset-0 bg-gradient-to-br opacity-100"
             style={{
-              backgroundImage: !nearestDeadline
-                ? 'linear-gradient(to bottom right, rgba(100, 116, 139, 0.1), rgba(71, 85, 105, 0.05))'
-                : nearestDeadline.daysLeft < 0
-                  ? 'linear-gradient(to bottom right, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.05))'
-                  : nearestDeadline.daysLeft <= 7
-                    ? 'linear-gradient(to bottom right, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05))'
-                    : 'linear-gradient(to bottom right, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))',
+              backgroundImage: activeAvgProgress >= 70
+                ? 'linear-gradient(to bottom right, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.05))'
+                : activeAvgProgress >= 40
+                  ? 'linear-gradient(to bottom right, rgba(245, 158, 11, 0.1), rgba(217, 119, 6, 0.05))'
+                  : 'linear-gradient(to bottom right, rgba(99, 102, 241, 0.1), rgba(79, 70, 229, 0.05))',
             }}
           />
-          <CardContent className="relative flex flex-col gap-1 p-4">
-            <div className="flex items-center gap-2">
-              <div className={cn(
-                'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
-                !nearestDeadline
-                  ? 'bg-slate-100 dark:bg-slate-900/30'
-                  : nearestDeadline.daysLeft < 0
-                    ? 'bg-rose-100 dark:bg-rose-900/30'
-                    : nearestDeadline.daysLeft <= 7
-                      ? 'bg-amber-100 dark:bg-amber-900/30'
-                      : 'bg-emerald-100 dark:bg-emerald-900/30',
-              )}>
-                <CalendarClock className={cn(
-                  'h-5 w-5',
-                  !nearestDeadline
-                    ? 'text-slate-500 dark:text-slate-400'
-                    : nearestDeadline.daysLeft < 0
-                      ? 'text-rose-600 dark:text-rose-400'
-                      : nearestDeadline.daysLeft <= 7
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-emerald-600 dark:text-emerald-400',
-                )} />
-              </div>
-              <div className="min-w-0">
-                <p className={cn(
-                  'text-lg font-bold tabular-nums',
-                  nearestDeadline
-                    ? nearestDeadline.daysLeft < 0
-                      ? 'text-rose-600 dark:text-rose-400'
-                      : nearestDeadline.daysLeft <= 7
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-emerald-600 dark:text-emerald-400'
-                    : 'text-muted-foreground',
-                )}>
-                  {nearestDeadline
-                    ? nearestDeadline.daysLeft < 0
-                      ? `-${Math.abs(nearestDeadline.daysLeft)}`
-                      : `${nearestDeadline.daysLeft}`
-                    : '—'}
-                </p>
-                <p className="text-[10px] text-muted-foreground truncate">Ближайший дедлайн</p>
-              </div>
+          <CardContent className="relative flex items-center gap-3 p-4">
+            <div className={cn(
+              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+              activeAvgProgress >= 70
+                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                : activeAvgProgress >= 40
+                  ? 'bg-amber-100 dark:bg-amber-900/30'
+                  : 'bg-indigo-100 dark:bg-indigo-900/30',
+            )}>
+              <TrendingUp className={cn(
+                'h-5 w-5',
+                activeAvgProgress >= 70
+                  ? 'text-emerald-600 dark:text-emerald-400'
+                  : activeAvgProgress >= 40
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-indigo-600 dark:text-indigo-400',
+              )} />
             </div>
-            {nearestDeadline && (
-              <p className="text-[10px] text-muted-foreground truncate pl-12">{nearestDeadline.title}</p>
-            )}
+            <div className="min-w-0">
+              <p className={cn('text-2xl font-bold tabular-nums', activeProgressTextColor)}>
+                {activeAvgProgress}%
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">Ср. прогресс активных</p>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Progress Speed */}
-        <Card className="card-hover overflow-hidden relative col-span-2 sm:col-span-1">
+        {/* ─── NEW: Completed This Month ───────────────────────────────────── */}
+        <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
             <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-              <Zap className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+              <CalendarCheck className="h-5 w-5 text-violet-600 dark:text-violet-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-bold tabular-nums">
-                {avgProgressSpeed ? `${avgProgressSpeed.value}` : '—'}
-                {avgProgressSpeed && (
-                  <span className="text-xs font-normal text-muted-foreground ml-0.5">
-                    {avgProgressSpeed.label}
-                  </span>
-                )}
+              <p className={cn(
+                'text-2xl font-bold tabular-nums',
+                completedThisMonth > 0 ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
+              )}>
+                {completedThisMonth}
               </p>
-              <p className="text-xs text-muted-foreground truncate">Скорость прогресса</p>
+              <p className="text-[10px] text-muted-foreground truncate">Завершено в этом месяце</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── NEW: Overdue Goals with red warning ─────────────────────────── */}
+        <Card className={cn(
+          'card-hover overflow-hidden relative col-span-2 sm:col-span-1',
+          overdueCount > 0 && 'ring-1 ring-rose-200 dark:ring-rose-800/50',
+        )}>
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-rose-600/5" />
+          <CardContent className="relative flex items-center gap-3 p-4">
+            <div className={cn(
+              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+              overdueCount > 0 ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-900/30',
+            )}>
+              <AlertTriangle className={cn(
+                'h-5 w-5',
+                overdueCount > 0
+                  ? 'text-rose-500 animate-pulse-soft'
+                  : 'text-slate-400 dark:text-slate-500',
+              )} />
+            </div>
+            <div className="min-w-0">
+              <p className={cn(
+                'text-2xl font-bold tabular-nums',
+                overdueCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground',
+              )}>
+                {overdueCount}
+              </p>
+              <p className="text-[10px] text-muted-foreground truncate">
+                {overdueCount > 0 ? 'Просрочено — требуется внимание!' : 'Нет просроченных'}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo } from 'react'
-import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles } from 'lucide-react'
+import { useMemo, useCallback } from 'react'
+import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Heart, Briefcase, ArrowRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
+import { cn } from '@/lib/utils'
 import { useGoals } from './hooks'
 import { getMotivationalPhrase, getMotivationalQuote } from './constants'
 import { GoalStats } from './goal-stats'
@@ -34,6 +34,82 @@ function getTodayBadge() {
   return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`
 }
 
+// ─── Sample goal suggestions for empty state ────────────────────────────────
+const SAMPLE_GOALS = [
+  {
+    title: 'Прочитать 12 книг за год',
+    description: 'По 1 книге в месяц',
+    category: 'personal',
+    targetValue: '12',
+    unit: 'книг',
+    icon: <BookOpen className="h-4 w-4" />,
+    gradient: 'from-emerald-500 to-teal-500',
+    bgLight: 'bg-emerald-50 dark:bg-emerald-900/20',
+    borderLight: 'border-emerald-200 dark:border-emerald-800/40',
+    textColor: 'text-emerald-700 dark:text-emerald-400',
+  },
+  {
+    title: 'Накопить 100 000 ₽',
+    description: 'Финансовая подушка безопасности',
+    category: 'finance',
+    targetValue: '100000',
+    unit: '₽',
+    icon: <PiggyBank className="h-4 w-4" />,
+    gradient: 'from-amber-500 to-orange-500',
+    bgLight: 'bg-amber-50 dark:bg-amber-900/20',
+    borderLight: 'border-amber-200 dark:border-amber-800/40',
+    textColor: 'text-amber-700 dark:text-amber-400',
+  },
+  {
+    title: 'Пробежать 10 км',
+    description: 'Беговая подготовка',
+    category: 'health',
+    targetValue: '10',
+    unit: 'км',
+    icon: <Heart className="h-4 w-4" />,
+    gradient: 'from-rose-500 to-pink-500',
+    bgLight: 'bg-rose-50 dark:bg-rose-900/20',
+    borderLight: 'border-rose-200 dark:border-rose-800/40',
+    textColor: 'text-rose-700 dark:text-rose-400',
+  },
+  {
+    title: 'Выучить английский B2',
+    description: '100 уроков за полгода',
+    category: 'learning',
+    targetValue: '100',
+    unit: 'уроков',
+    icon: <GraduationCap className="h-4 w-4" />,
+    gradient: 'from-violet-500 to-purple-500',
+    bgLight: 'bg-violet-50 dark:bg-violet-900/20',
+    borderLight: 'border-violet-200 dark:border-violet-800/40',
+    textColor: 'text-violet-700 dark:text-violet-400',
+  },
+  {
+    title: 'Получить повышение',
+    description: 'Развить навыки лидерства',
+    category: 'career',
+    targetValue: '5',
+    unit: 'навыков',
+    icon: <Briefcase className="h-4 w-4" />,
+    gradient: 'from-blue-500 to-indigo-500',
+    bgLight: 'bg-blue-50 dark:bg-blue-900/20',
+    borderLight: 'border-blue-200 dark:border-blue-800/40',
+    textColor: 'text-blue-700 dark:text-blue-400',
+  },
+  {
+    title: '30 дней тренировок',
+    description: 'Фитнес-челлендж',
+    category: 'personal',
+    targetValue: '30',
+    unit: 'тренировок',
+    icon: <Dumbbell className="h-4 w-4" />,
+    gradient: 'from-orange-500 to-red-500',
+    bgLight: 'bg-orange-50 dark:bg-orange-900/20',
+    borderLight: 'border-orange-200 dark:border-orange-800/40',
+    textColor: 'text-orange-700 dark:text-orange-400',
+  },
+]
+
 export default function GoalsPage() {
   const {
     goals, stats, loading, filterTab, setFilterTab,
@@ -52,6 +128,23 @@ export default function GoalsPage() {
     handleMilestoneToggle,
     filteredGoals,
   } = useGoals()
+
+  // ─── Pre-fill from sample suggestion ──────────────────────────────────────
+  const handleSampleClick = useCallback((sample: typeof SAMPLE_GOALS[number]) => {
+    setFormTitle(sample.title)
+    setFormDescription(sample.description)
+    setFormCategory(sample.category)
+    setFormTargetValue(sample.targetValue)
+    setFormCurrentValue('0')
+    setFormUnit(sample.unit)
+    setFormProgress('0')
+    setFormPriority('medium')
+    setFormStatus('active')
+    setFormDeadline('')
+    setFormStartDate('')
+    setFormMilestones('[]')
+    handleDialogChange(true)
+  }, [setFormTitle, setFormDescription, setFormCategory, setFormTargetValue, setFormCurrentValue, setFormUnit, setFormProgress, setFormPriority, setFormStatus, setFormDeadline, setFormStartDate, setFormMilestones, handleDialogChange])
 
   // Compute overdue goals for the notification banner
   const overdueGoals = useMemo(() => {
@@ -104,7 +197,7 @@ export default function GoalsPage() {
             formStatus={formStatus} setFormStatus={setFormStatus}
             formProgress={formProgress} setFormProgress={setFormProgress}
             formStartDate={formStartDate} setFormStartDate={setFormStartDate}
-            formPriority={formPriority} setFormPriority={formPriority}
+            formPriority={formPriority} setFormPriority={setFormPriority}
             formMilestones={formMilestones} setFormMilestones={setFormMilestones}
             submitting={submitting} onSubmit={handleSubmit}
           />
@@ -130,28 +223,94 @@ export default function GoalsPage() {
           </div>
         </div>
       ) : goals.length === 0 ? (
-        <Card className="animate-slide-up overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-          <CardContent className="relative py-16 text-center">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
-              <Target className="h-10 w-10 text-white" />
+        /* ─── Enhanced Empty State with CSS Illustration ──────────────────── */
+        <div className="space-y-6 animate-slide-up">
+          <Card className="overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+            <CardContent className="relative py-12 sm:py-16 text-center">
+              {/* CSS Illustration — abstract target/bullseye */}
+              <div className="relative mx-auto mb-6 w-32 h-32 sm:w-40 sm:h-40">
+                {/* Outer glow */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/20 blur-xl" />
+                {/* Concentric rings */}
+                <div className="absolute inset-0 rounded-full border-2 border-dashed border-emerald-200/40 dark:border-emerald-700/30" />
+                <div className="absolute inset-4 rounded-full border-2 border-dashed border-emerald-300/30 dark:border-emerald-600/25" />
+                <div className="absolute inset-8 rounded-full border-2 border-emerald-300/40 dark:border-emerald-500/30" />
+                <div className="absolute inset-12 rounded-full border-2 border-emerald-400/50 dark:border-emerald-400/40" />
+                {/* Center icon */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 float-animation">
+                    <Target className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+                  </div>
+                </div>
+                {/* Floating decorative elements */}
+                <div className="absolute top-2 right-4 h-3 w-3 rounded-full bg-amber-400/60 particle-dot" />
+                <div className="absolute bottom-4 left-2 h-2.5 w-2.5 rounded-full bg-violet-400/60 particle-dot" />
+                <div className="absolute top-8 left-6 h-2 w-2 rounded-full bg-rose-400/50 particle-dot" />
+                <div className="absolute bottom-8 right-6 h-3 w-3 rounded-full bg-blue-400/50 particle-dot" />
+              </div>
+
+              <h3 className="text-lg font-semibold mb-1.5">Нет целей</h3>
+              <p className="text-muted-foreground text-sm mb-1 max-w-xs mx-auto">
+                Поставьте первую цель и начните двигаться к ней.
+              </p>
+              <p className="text-sm text-muted-foreground/70 italic mb-6 max-w-sm mx-auto">
+                &ldquo;{getMotivationalSubtitle()}&rdquo;
+              </p>
+              <Button
+                onClick={openAddDialog}
+                size="lg"
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+              >
+                <Plus className="h-5 w-5 mr-2" />Поставить цель
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* Sample Goal Suggestions */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <h3 className="text-sm font-semibold">Идеи для целей</h3>
+              <span className="text-xs text-muted-foreground">— нажмите, чтобы начать</span>
             </div>
-            <h3 className="text-lg font-semibold mb-1">Нет целей</h3>
-            <p className="text-muted-foreground text-sm mb-1 max-w-xs mx-auto">
-              Поставьте первую цель и начните двигаться к ней.
-            </p>
-            <p className="text-sm text-muted-foreground/70 italic mb-6 max-w-sm mx-auto">
-              &ldquo;{getMotivationalSubtitle()}&rdquo;
-            </p>
-            <Button
-              onClick={openAddDialog}
-              size="lg"
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
-            >
-              <Plus className="h-5 w-5 mr-2" />Поставить цель
-            </Button>
-          </CardContent>
-        </Card>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
+              {SAMPLE_GOALS.map((sample) => (
+                <button
+                  key={sample.title}
+                  type="button"
+                  onClick={() => handleSampleClick(sample)}
+                  className={cn(
+                    'group text-left rounded-xl border p-4 transition-all duration-200 active-press',
+                    'hover:scale-[1.02] hover:shadow-md',
+                    'bg-card border-border hover:border-border',
+                  )}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-200 group-hover:shadow-md bg-gradient-to-br',
+                      sample.gradient,
+                    )}>
+                      <div className="text-white">{sample.icon}</div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold leading-tight group-hover:text-foreground transition-colors">
+                        {sample.title}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{sample.description}</p>
+                      {sample.targetValue && (
+                        <p className="text-[10px] text-muted-foreground/60 mt-1 tabular-nums">
+                          Цель: {Number(sample.targetValue).toLocaleString('ru-RU')} {sample.unit}
+                        </p>
+                      )}
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0 mt-1 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       ) : (
         <>
           <GoalStats goals={goals} stats={stats} />
