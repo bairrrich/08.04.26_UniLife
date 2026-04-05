@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star, Tag, Zap, ChevronRight, Flag, ArrowUp, Minus, ArrowDown } from 'lucide-react'
+import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star, Tag, Zap, ChevronRight, Flag, ArrowUp, Minus, ArrowDown, AlertTriangle } from 'lucide-react'
 import type { GoalData, Milestone } from './types'
 import {
   CATEGORY_CONFIG,
@@ -185,7 +185,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
     <Card
       ref={cardRef}
       className={cn(
-        'card-hover overflow-hidden relative group transition-all duration-300',
+        'card-hover hover-lift active-press overflow-hidden relative group transition-all duration-300',
         'hover:scale-[1.01]',
         catConfig.hoverGlow,
         isCompleted && statusConfig.borderClass && 'border',
@@ -220,7 +220,14 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 pointer-events-none" />
       )}
 
-      <CardContent className="relative p-4 space-y-3 pt-5">
+      {/* Priority pulsing red dot — high priority in top-right corner */}
+      {goal.priority === 'high' && !isCompleted && (
+        <div className="absolute top-2 right-2 z-10">
+          <div className="h-2.5 w-2.5 rounded-full bg-rose-500 animate-pulse-soft shadow-sm shadow-rose-500/50" />
+        </div>
+      )}
+
+      <CardContent className="relative p-4 space-y-3 pt-5 pb-5">
         {/* Top row: Category icon + Badge + Status + Priority + Deadline + Progress Ring */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap gap-y-1">
@@ -267,20 +274,29 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </Tooltip>
             )}
 
-            {/* Deadline countdown badge */}
-            {countdown && !isCompleted && (
+            {/* Deadline countdown badge — enhanced with warning/completed states */}
+            {countdown && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Badge
                     variant="outline"
                     className={cn(
                       'shrink-0 text-[10px] gap-1 font-medium cursor-default',
-                      isOverdue && 'animate-pulse-soft',
-                      getDeadlineBadgeClass(daysLeft),
+                      isOverdue && !isCompleted && 'animate-pulse-soft',
+                      isCompleted
+                        ? 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-400 dark:border-emerald-800/50'
+                        : getDeadlineBadgeClass(daysLeft),
+                      (isApproaching || isOverdue) && !isCompleted && 'font-bold',
                     )}
                   >
-                    <Calendar className="h-3 w-3" />
-                    {countdown}
+                    {isCompleted ? (
+                      <CheckCircle className="h-3 w-3" />
+                    ) : (isApproaching || isOverdue) ? (
+                      <AlertTriangle className="h-3 w-3" />
+                    ) : (
+                      <Calendar className="h-3 w-3" />
+                    )}
+                    {isCompleted ? 'Завершено' : countdown}
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
@@ -526,8 +542,9 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
                     className={cn(
                       'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
                       ms.completed
-                        ? 'bg-emerald-500 border-emerald-500'
+                        ? 'bg-emerald-500 border-emerald-500 scale-110'
                         : 'border-muted-foreground/30 hover:border-muted-foreground/50',
+                      ms.completed && 'animate-count-fade-in',
                     )}
                   >
                     {ms.completed && <CheckCircle className="h-3 w-3 text-white" />}
@@ -570,10 +587,23 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </span>
             </div>
           )}
-          {countdown && !isCompleted && (
-            <div className={cn('flex items-center gap-1.5', getDeadlineUrgencyColor(daysLeft))}>
-              <Clock className={cn('h-3.5 w-3.5', getDeadlineIconColor(daysLeft))} />
-              <span className="text-xs tabular-nums">{countdown}</span>
+          {/* Deadline info row — enhanced display */}
+          {countdown && (
+            <div className={cn(
+              'flex items-center gap-1.5',
+              isCompleted
+                ? 'text-emerald-500 dark:text-emerald-400'
+                : getDeadlineUrgencyColor(daysLeft),
+              (isApproaching || isOverdue) && !isCompleted && 'font-bold',
+            )}>
+              {isCompleted ? (
+                <CheckCircle className="h-3.5 w-3.5" />
+              ) : (isApproaching || isOverdue) ? (
+                <AlertTriangle className="h-3.5 w-3.5" />
+              ) : (
+                <Clock className={cn('h-3.5 w-3.5', getDeadlineIconColor(daysLeft))} />
+              )}
+              <span className="text-xs tabular-nums">{isCompleted ? 'Завершено в срок' : countdown}</span>
             </div>
           )}
           {/* Progress velocity */}
@@ -642,11 +672,23 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           </div>
         </div>
       </CardContent>
-      {/* Left colored border accent */}
+      {/* Left colored border accent — 3px */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl opacity-60"
+        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl opacity-70"
         style={{ backgroundColor: catConfig.borderColor }}
       />
+
+      {/* ─── Thin full-width progress bar at very bottom ──────────────── */}
+      <div className="absolute bottom-0 left-0 right-0 h-1.5 z-10 overflow-hidden">
+        <div
+          className="h-full transition-all duration-1000 ease-out"
+          style={{
+            width: `${animatedProgress}%`,
+            background: `linear-gradient(90deg, ${catConfig.borderColor}, ${catConfig.borderColor}88)`,
+            borderRadius: animatedProgress >= 100 ? '0' : '0 4px 4px 0',
+          }}
+        />
+      </div>
     </Card>
     </TooltipProvider>
   )

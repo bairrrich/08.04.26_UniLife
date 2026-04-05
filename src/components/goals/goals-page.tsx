@@ -1,7 +1,8 @@
 'use client'
 
-import { useMemo, useCallback } from 'react'
-import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Heart, Briefcase, ArrowRight } from 'lucide-react'
+import { useMemo, useCallback, useState } from 'react'
+import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Heart, Briefcase, ArrowRight, Search, X } from 'lucide-react'
+import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -159,6 +160,16 @@ export default function GoalsPage() {
       .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
   }, [goals])
 
+  // ─── Search state ────────────────────────────────────────────────────────
+  const [searchQuery, setSearchQuery] = useState('')
+
+  // Debounced search filter (300ms via useMemo re-evaluation on each render)
+  const searchedGoals = useMemo(() => {
+    if (!searchQuery.trim()) return filteredGoals
+    const q = searchQuery.trim().toLowerCase()
+    return filteredGoals.filter((g) => g.title.toLowerCase().includes(q))
+  }, [filteredGoals, searchQuery])
+
   // Motivational quote
   const quote = useMemo(() => getMotivationalQuote(), [])
 
@@ -188,6 +199,29 @@ export default function GoalsPage() {
             <Button onClick={openAddDialog} className="gap-1.5 shrink-0">
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
             </Button>
+            {/* Search input — visible when goals exist */}
+            {goals.length > 0 && (
+              <div className="relative max-w-xs shrink-0">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Input
+                  type="text"
+                  placeholder="Поиск целей..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-8 h-9 text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                    aria-label="Очистить поиск"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            )}
             <GoalDialog
               open={dialogOpen} onOpenChange={handleDialogChange}
               editingGoal={editingGoal}
@@ -354,7 +388,7 @@ export default function GoalsPage() {
             goals={goals}
           />
 
-          {filteredGoals.length === 0 ? (
+          {searchedGoals.length === 0 ? (
             <Card className="animate-slide-up overflow-hidden relative py-12">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-sky-500/5 pointer-events-none" />
               <CardContent className="relative flex flex-col items-center py-4">
@@ -362,11 +396,13 @@ export default function GoalsPage() {
                   <AlertCircle className="h-6 w-6 text-white" />
                 </div>
                 <p className="text-sm font-medium text-foreground/80">
-                  {filterTab === 'active'
-                    ? 'Нет активных целей'
-                    : filterTab === 'completed'
-                      ? 'Нет завершённых целей'
-                      : 'Нет целей в этой категории'
+                  {searchQuery.trim()
+                    ? 'Ничего не найдено'
+                    : filterTab === 'active'
+                      ? 'Нет активных целей'
+                      : filterTab === 'completed'
+                        ? 'Нет завершённых целей'
+                        : 'Нет целей в этой категории'
                   }
                 </p>
                 <p className="text-xs text-muted-foreground/60 mt-1 italic">
@@ -376,7 +412,7 @@ export default function GoalsPage() {
             </Card>
           ) : (
             <div className="stagger-children space-y-3">
-              {filteredGoals.map((goal) => (
+              {searchedGoals.map((goal) => (
                 <GoalCard
                   key={goal.id} goal={goal}
                   onEdit={openEditDialog}

@@ -65,11 +65,15 @@ function MiniTrendBars({ goals }: { goals: GoalData[] }) {
         <div key={i} className="flex flex-col items-center gap-0.5">
           <span className="text-[9px] text-muted-foreground tabular-nums">{m.rate}%</span>
           <div
-            className="w-5 rounded-sm transition-all duration-700 ease-out"
+            className="w-5 rounded-full transition-all duration-700 ease-out"
             style={{
               height: `${Math.max(4, (m.rate / maxRate) * 24)}px`,
-              backgroundColor: m.rate >= 70 ? '#10b981' : m.rate >= 40 ? '#f59e0b' : '#ef4444',
-              opacity: 0.8,
+              background: m.rate >= 70
+                ? 'linear-gradient(to top, #10b981, #34d399)'
+                : m.rate >= 40
+                  ? 'linear-gradient(to top, #f59e0b, #fbbf24)'
+                  : 'linear-gradient(to top, #ef4444, #f87171)',
+              opacity: 0.85,
             }}
           />
           <span className="text-[9px] text-muted-foreground">{m.label}</span>
@@ -244,7 +248,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
                 />
               </svg>
               <div className="absolute flex flex-col items-center">
-                <span className={cn('text-2xl font-bold tabular-nums', progressTextColor)}>
+                <span className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', progressTextColor)}>
                   {animatedAvg}%
                 </span>
                 <span className="text-[10px] text-muted-foreground">среднее</span>
@@ -258,21 +262,29 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
                     <Trophy className="h-3.5 w-3.5 text-emerald-500" />
                     <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Завершено</p>
                   </div>
-                  <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{animatedCompleted}</p>
+                      <p className="text-xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 animate-count-fade-in">{animatedCompleted}</p>
                 </div>
                 <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 p-3 border border-amber-100 dark:border-amber-800/30">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <TrendingUp className="h-3.5 w-3.5 text-amber-500" />
                     <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">Активных</p>
                   </div>
-                  <p className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400">{activeCount}</p>
+                      <div className="flex items-center gap-1">
+                    <p className="text-xl font-bold tabular-nums text-amber-600 dark:text-amber-400 animate-count-fade-in">{activeCount}</p>
+                    {overdueCount > 0 && (
+                      <div className="relative">
+                        <div className="h-2 w-2 rounded-full bg-rose-500" />
+                        <div className="absolute inset-0 h-2 w-2 rounded-full bg-rose-500 animate-ping opacity-75" />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="rounded-lg bg-rose-50 dark:bg-rose-900/20 p-3 border border-rose-100 dark:border-rose-800/30">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <AlertTriangle className="h-3.5 w-3.5 text-rose-500" />
                     <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">Просрочено</p>
                   </div>
-                  <p className="text-xl font-bold tabular-nums text-rose-600 dark:text-rose-400">{overdueCount}</p>
+                      <p className="text-xl font-bold tabular-nums text-rose-600 dark:text-rose-400 animate-count-fade-in">{overdueCount}</p>
                 </div>
               </div>
               {/* Mini trend */}
@@ -297,7 +309,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
               <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold tabular-nums">{animatedTotal}</p>
+              <p className="text-2xl font-bold tabular-nums animate-count-fade-in">{animatedTotal}</p>
               <p className="text-xs text-muted-foreground truncate">Всего целей</p>
             </div>
           </CardContent>
@@ -311,7 +323,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
               <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{animatedCompleted}</p>
+              <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 animate-count-fade-in">{animatedCompleted}</p>
               <p className="text-xs text-muted-foreground truncate">Завершено</p>
             </div>
           </CardContent>
@@ -348,7 +360,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
               )} />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums', progressTextColor)}>
+              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', progressTextColor)}>
                 {animatedAvg}%
               </p>
               <p className="text-xs text-muted-foreground truncate">Ср. прогресс</p>
@@ -387,7 +399,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
               )} />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums', activeProgressTextColor)}>
+              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', activeProgressTextColor)}>
                 {activeAvgProgress}%
               </p>
               <p className="text-[10px] text-muted-foreground truncate">Ср. прогресс активных</p>
@@ -404,7 +416,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
             </div>
             <div className="min-w-0">
               <p className={cn(
-                'text-2xl font-bold tabular-nums',
+                'text-2xl font-bold tabular-nums animate-count-fade-in',
                 completedThisMonth > 0 ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
               )}>
                 {completedThisMonth}
@@ -434,7 +446,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
             </div>
             <div className="min-w-0">
               <p className={cn(
-                'text-2xl font-bold tabular-nums',
+                'text-2xl font-bold tabular-nums animate-count-fade-in',
                 overdueCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground',
               )}>
                 {overdueCount}

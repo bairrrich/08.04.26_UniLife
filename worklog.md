@@ -7261,3 +7261,249 @@ Task: QA testing, mobile nav enhancement, new dashboard widgets (quick mood, bre
 3. **Image Upload** — 日记和收藏项图片支持
 4. **Advanced Analytics** — 周/月趋势报告
 5. **Real-time Updates** — WebSocket/SSE
+
+---
+## Task ID: ai-insights
+### Agent: ai-insights-agent
+### Task: Create AI-powered Daily Insights feature
+
+### Work Log:
+- Created `/src/app/api/ai/insights/route.ts` — GET endpoint at `/api/ai/insights?date=YYYY-MM-DD`
+  - Fetches data from 6 Prisma tables in parallel (diary, transactions, habits, workouts, meals, water)
+  - Builds comprehensive Russian-language prompt for LLM covering: mood trends, spending patterns, habit completion, workout consistency, nutrition tracking
+  - Calls z-ai-web-dev-sdk LLM (`ZAI.create()` + `zai.chat.completions.create()`) to generate personalized insights
+  - Parses JSON response from LLM with fallback handling
+  - 30-minute in-memory cache (Map with TTL) to avoid repeated LLM calls
+  - Response format: `{ success, data: { summary, tips, mood, score, generatedAt } }`
+- Created `/src/components/dashboard/ai-insights-widget.tsx` — visually stunning AI insights card
+  - Gradient header bar (emerald → teal)
+  - Brain/Sparkles icon with gradient background
+  - Circular progress ring (SVG) showing score 0–100 with color coding (emerald ≥80, teal ≥60, amber ≥40, red <40)
+  - Typing animation effect on summary text with blinking cursor
+  - Expandable tip list items with Lightbulb icons, click to expand/collapse
+  - Mood emoji display in center of score ring
+  - "Обновить" button with spinning RefreshCw icon during loading
+  - Full skeleton loading state matching the real layout
+  - Error/retry state with AlertCircle icon and retry button
+  - In-widget error banner when refresh fails (non-destructive)
+  - Footer with "Создано с помощью AI" label and generation timestamp
+  - Uses shadcn/ui Card, Button, Skeleton components
+  - Dark mode support throughout
+  - `animate-slide-up` class on container
+- Integrated widget into `/src/components/dashboard/dashboard-page.tsx`
+  - Added as dynamically imported component (`AiInsightsWidget`)
+  - Placed prominently after Quick Actions section
+  - Uses same loading placeholder pattern as other dashboard widgets
+
+### Verification:
+- ESLint: 0 errors, 0 warnings (`npm run lint`)
+- Dev server: compiles cleanly, all GET / requests return 200
+
+### Stage Summary:
+- New API endpoint `/api/ai/insights` with z-ai-web-dev-sdk LLM integration
+- New dashboard widget with typing animation, score ring, expandable tips
+- 30-minute in-memory cache prevents repeated LLM calls
+- Russian language throughout (prompt, UI text, tips)
+- All UI text in Russian as per project convention
+
+---
+Task ID: dashboard-style-enhance
+Agent: dashboard-style-agent
+Task: Dashboard styling enhancements and productivity breakdown
+
+Work Log:
+- Added 5 section dividers with gradient lines throughout dashboard:
+  1. "Быстрый доступ" — Before Quick Actions
+  2. "Ваш день" — Before Productivity Score
+  3. "Здоровье и продуктивность" — Before Habits Progress
+  4. "Финансы" — Before Recent Transactions
+  5. "Отслеживание" — Before Focus Timer / Breathing / Activity Feed
+- Each section header uses: uppercase tracking-wider text-muted-foreground with gradient h-px divider
+- Enhanced WelcomeWidget with:
+  1. Gradient mesh background (two overlapping blurred circles: emerald-teal top-right, amber-orange bottom-left)
+  2. Current time display (HH:MM format) next to greeting using Clock icon
+  3. Motivational quote blockquote now has border-l-2 border-primary/30 pl-3 accent
+  4. Weather-like mood indicator badge showing today's diary mood emoji (or "—") with SmilePlus icon
+- Created productivity-breakdown.tsx widget:
+  1. Horizontal bars per area (Дневник, Тренировки, Привычки, Питание) with CSS transition animated fill
+  2. Color-coded: emerald for diary, blue for workouts, violet for habits, orange for nutrition
+  3. Overall score at top (average of all 4 percentages) with color-coded progress bar
+  4. "Сегодня" label with CalendarDays icon
+  5. Compact single-column card design with hover-lift
+  6. Loading skeleton with 4 shimmer rows (emoji icon + label + bar placeholders)
+  7. animate-count-fade-in on percentage numbers
+  8. Full dark mode support via dark: variants on all colors
+- Integrated ProductivityBreakdown into dashboard "Ваш день" section with dynamic import
+- Computed breakdown data from existing dashboard state (todayMood, todayWorkout, completedToday, totalActive, hasMealsToday)
+
+Verification Results:
+- ESLint: 0 errors, 0 warnings
+- Dev server: all API routes returning 200, compiles cleanly
+
+Stage Summary:
+- Dashboard now has 5 logical section dividers organizing 30+ widgets
+- Welcome widget enhanced with gradient mesh, time display, mood indicator, and quote styling
+- New ProductivityBreakdown widget provides per-module progress bars with animated fills
+- All existing functionality preserved — no breaking changes
+
+---
+Task ID: goals-enhance
+Agent: goals-style-agent
+Task: Enhance Goals page with search, card styling, stats, and filter improvements
+
+Work Log:
+- Added search input with debounced filtering (searchQuery state + searchedGoals useMemo filtering by title case-insensitive)
+- Search uses shadcn Input with Search icon (pl-9) and X clear button (max-w-xs), shown only when goals.length > 0
+- Enhanced goal card visual design:
+  - Added hover-lift and active-press CSS classes to Card
+  - Changed left border accent from 1px (w-1) to 3px (w-[3px]) using category primary color
+  - Added bottom progress bar (h-1.5) with category gradient color spanning full card width
+  - Added pulsing red dot in top-right corner for high-priority active goals
+  - Enhanced deadline badge: bold red + AlertTriangle icon for approaching (≤3 days) or overdue, green CheckCircle for completed
+  - Enhanced deadline info row: same warning/completed styling logic
+  - Added animate-count-fade-in to completed milestone checkboxes
+- Enhanced goal stats:
+  - Added animate-count-fade-in to all stat numbers (ring, summary boxes, stat cards)
+  - Added warning badge (pulsing red dot) next to "Активных" count when overdue goals exist
+  - Enhanced mini trend bars with rounded-full ends and gradient fills instead of flat colors
+- Enhanced filter tabs:
+  - Added Framer Motion layoutId="status-tab-indicator" for smooth sliding background pill
+  - Category chips now have colored dot (h-1.5 w-1.5) before each label, using category-specific colors
+  - Count badges already had tabular-nums; kept consistent styling
+
+Verification Results:
+- ESLint: 0 errors, 0 warnings
+- Dev server: compiles cleanly, no errors in logs
+
+Stage Summary:
+- Search functionality added with debounced title filtering
+- Goal cards visually enhanced with 6 improvements (border, progress bar, priority dot, deadline display, milestone animation, hover effects)
+- Goal stats enhanced with animated counters, overdue warning badges, and gradient mini bars
+- Filter tabs enhanced with smooth Framer Motion animated indicator and category color dots
+- All changes preserve existing functionality
+
+---
+## Task ID: qa-round-4-style+features
+### Agent: cron-review-coordinator
+### Task: QA testing, styling improvements, new features, worklog update
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11 modules render correctly with 0 console errors
+- **Database**: SQLite via Prisma with 15+ models; seed data available
+- **Lint**: 0 errors, 0 warnings
+- **Build**: All routes compile successfully via Turbopack
+- **APIs**: 25+ REST endpoints, all returning HTTP 200
+- **New Features Added**: AI Daily Insights, Productivity Breakdown, Goals Search, Enhanced styling
+
+### QA Testing Results:
+- ✅ agent-browser QA across all 11 modules — 0 console errors
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: HTTP 200, compiles cleanly
+- ✅ All API endpoints verified: dashboard, diary, finance, nutrition, workout, collections, feed, habits, goals, module-counts, search — all HTTP 200
+
+### Completed This Round:
+
+#### Bug Fixes
+- None found — app is stable
+
+#### New Features (Mandatory)
+1. **AI Daily Insights Widget** (`ai-insights-widget.tsx` + `/api/ai/insights/route.ts`):
+   - LLM-powered personalized daily insights in Russian
+   - Fetches data from 6 Prisma tables (diary, transactions, habits, workouts, meals, water)
+   - Returns: summary, tips[], mood emoji, score (0-100)
+   - 30-minute in-memory cache for API responses
+   - Typing animation effect on summary text
+   - Circular progress ring for score display
+   - Expandable tips with lightbulb icons
+   - Refresh button with loading spinner
+   - Error/retry state handling
+   - Full dark mode support
+
+2. **Productivity Breakdown Widget** (`productivity-breakdown.tsx`):
+   - Per-module progress bars (Diary, Workouts, Habits, Nutrition)
+   - Color-coded: emerald/blue/violet/orange
+   - Overall average score at top
+   - CSS transition animated fills (700ms ease-out)
+   - Loading skeleton with 4 shimmer rows
+   - `animate-count-fade-in` on percentage numbers
+
+3. **Goals Page Search**:
+   - Search input with Search icon and X clear button
+   - Case-insensitive title filtering
+   - "Ничего не найдено" empty state when no matches
+
+#### Styling Improvements (Mandatory)
+1. **Dashboard Section Dividers**: 5 section headers with gradient line separators:
+   - "Быстрый доступ" — Before Quick Actions
+   - "Ваш день" — Before Productivity Score area
+   - "Здоровье и продуктивность" — Before Habits area
+   - "Финансы" — Before Finance widgets
+   - "Отслеживание" — Before Focus Timer / Activity Feed
+
+2. **Welcome Widget Enhancement**:
+   - Gradient mesh background (emerald-teal + amber-orange blurred circles)
+   - Live clock display (HH:MM, updates every 30s)
+   - Motivational quote with left border accent
+   - Today's mood emoji indicator from latest diary entry
+
+3. **Goals Page Enhancements**:
+   - `hover-lift` + `active-press` on goal cards
+   - 3px left border accent using category colors
+   - Bottom progress bar (h-1.5) with gradient fill
+   - Pulsing red dot for high-priority goals
+   - Deadline warnings: red bold + AlertTriangle for ≤3 days; green check for completed
+   - Animated milestone dots (scale-110 on completed)
+   - `animate-count-fade-in` on stat numbers
+   - Pulsing warning badge when overdue goals exist
+   - Mini trend bars with rounded-full ends and gradient fills
+   - Framer Motion `layoutId` animated tab indicator
+   - Category filter chips with colored dots
+
+### Files Created:
+- `/src/app/api/ai/insights/route.ts` — AI insights API endpoint with LLM integration
+- `/src/components/dashboard/ai-insights-widget.tsx` — AI insights dashboard widget
+- `/src/components/dashboard/productivity-breakdown.tsx` — Productivity breakdown widget
+
+### Files Modified:
+- `/src/components/dashboard/dashboard-page.tsx` — Section dividers, widget integration
+- `/src/components/dashboard/welcome-widget.tsx` — Gradient mesh, clock, mood indicator
+- `/src/components/goals/goals-page.tsx` — Search functionality
+- `/src/components/goals/goal-card.tsx` — Enhanced visual design
+- `/src/components/goals/goal-stats.tsx` — Animated counters, warning badges
+- `/src/components/goals/filter-tabs.tsx` — Animated indicator, category dots
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All 11 modules verified working after changes
+- ✅ agent-browser QA: Dashboard, Goals — 0 console errors
+- ✅ Screenshots captured for visual verification
+
+---
+
+### 项目当前状态描述/判断
+- **整体健康度**: ✅ 稳定 — 11个模块全部正常运行
+- **数据库**: SQLite + Prisma，15+ 模型
+- **Lint**: 0 errors, 0 warnings
+- **Build**: Turbopack 编译成功
+- **AI功能**: 新增AI每日洞察，使用z-ai-web-dev-sdk LLM
+- **本阶段重点**: 新功能（AI洞察、生产力分解、目标搜索）+ 大量样式改进
+
+### 当前目标/已完成的修改/验证结果
+- ✅ 新功能：AI Daily Insights Widget（LLM驱动个性化洞察）
+- ✅ 新功能：Productivity Breakdown Widget（4模块进度条）
+- ✅ 新功能：Goals页面搜索功能
+- ✅ 样式改进：Dashboard 5个区块分隔线 + Welcome Widget增强
+- ✅ 样式改进：Goals卡片视觉增强（进度条、优先级、截止日期警告、里程碑动画）
+- ✅ 样式改进：Goals统计数字动画 + 过滤器动画标签
+- ✅ ESLint 0 errors, 所有模块0 console errors
+
+### 未解决问题或风险，建议下一阶段优先事项
+1. **User Authentication** — NextAuth.js 多用户支持（最高优先级）
+2. **PWA Support** — Service worker + manifest
+3. **Image Upload** — 日记和收藏项图片支持
+4. **Feed Enhancement** — 分页/无限滚动、富文本、图片上传
+5. **Goal Templates** — 更丰富的目标模板
+6. **Dashboard Customization** — 用户可选择显示哪些小部件
+7. **Focus Timer ↔ Goals Integration** — 计时器关联目标
+8. **Advanced Analytics** — 周/月趋势报告

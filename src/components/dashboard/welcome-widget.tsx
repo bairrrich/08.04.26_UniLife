@@ -18,8 +18,10 @@ import {
   UtensilsCrossed,
   Dumbbell,
   Sparkles,
+  Clock,
+  SmilePlus,
 } from 'lucide-react'
-import { getDayOfYear, getGreeting } from '@/lib/format'
+import { getDayOfYear, getGreeting, MOOD_EMOJI } from '@/lib/format'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -197,10 +199,24 @@ export default function WelcomeWidget({
   const [mounted, setMounted] = useState(false)
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
   const [quoteOffset, setQuoteOffset] = useState(0)
+  const [currentTime, setCurrentTime] = useState('')
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- standard client-only hydration guard
     setMounted(true)
+  }, [])
+
+  // ── Current time (updates every 30s) ──────────────────────────────
+  useEffect(() => {
+    const updateTime = () => {
+      const n = new Date()
+      setCurrentTime(
+        `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
+      )
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 30000)
+    return () => clearInterval(interval)
   }, [])
 
   // ── User name from localStorage ──────────────────────────────────────
@@ -312,6 +328,10 @@ export default function WelcomeWidget({
       {/* Gradient background overlay */}
       <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${config.gradient} ${config.gradientDark}`} />
 
+      {/* Gradient mesh — two overlapping blurred circles */}
+      <div className="pointer-events-none absolute -right-12 -top-8 h-48 w-48 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
+      <div className="pointer-events-none absolute -left-8 bottom-0 h-36 w-36 rounded-full bg-gradient-to-br from-amber-400/10 to-orange-500/8 blur-3xl" />
+
       <CardContent className="relative p-5 sm:p-6">
         {/* ── Header: Greeting + Time Icon ──────────────────────────── */}
         <div className="mb-4 flex items-start justify-between gap-3">
@@ -322,12 +342,30 @@ export default function WelcomeWidget({
                 <TimeIcon className={`h-5 w-5 ${config.iconColor}`} />
               </div>
               <div>
-                <h2 className="text-lg font-bold tracking-tight sm:text-xl">
-                  {config.greeting}, <span className="text-gradient-emerald">{userName}</span>!
-                </h2>
-                <p className="text-sm capitalize text-muted-foreground">
-                  {formattedDate}
-                </p>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold tracking-tight sm:text-xl">
+                    {config.greeting}, <span className="text-gradient-emerald">{userName}</span>!
+                  </h2>
+                  {/* Current time display */}
+                  <span className="hidden items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground sm:inline-flex">
+                    <Clock className="h-3 w-3" />
+                    {currentTime}
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-2">
+                  <p className="text-sm capitalize text-muted-foreground">
+                    {formattedDate}
+                  </p>
+                  {/* Mood indicator from today's diary entry */}
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${
+                    todayMood
+                      ? 'border-emerald-200/50 bg-emerald-50/80 text-emerald-700 dark:border-emerald-800/30 dark:bg-emerald-950/30 dark:text-emerald-400'
+                      : 'border-border/50 bg-muted/50 text-muted-foreground'
+                  }`}>
+                    <SmilePlus className="h-3 w-3" />
+                    {todayMood ? MOOD_EMOJI[todayMood] : '—'}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -365,7 +403,7 @@ export default function WelcomeWidget({
                 />
               </Button>
             </div>
-            <blockquote className="mb-2 text-sm leading-relaxed text-foreground/90 italic">
+            <blockquote className="mb-2 border-l-2 border-primary/30 pl-3 text-sm leading-relaxed text-foreground/90 italic">
               &laquo;{currentQuote.text}&raquo;
             </blockquote>
             <p className="text-[11px] text-muted-foreground">

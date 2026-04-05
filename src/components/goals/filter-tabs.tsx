@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
+import { motion } from 'framer-motion'
 import type { GoalData, FilterTab, CategoryFilter } from './types'
 import { cn } from '@/lib/utils'
 
@@ -13,13 +14,13 @@ const STATUS_TABS: { key: FilterTab; label: string }[] = [
 ]
 
 // ─── Category Filter Chips ──────────────────────────────────────────────────
-const CATEGORY_CHIPS: { key: CategoryFilter; label: string; color: string; activeColor: string }[] = [
-  { key: 'all', label: 'Все категории', color: 'text-muted-foreground bg-muted-foreground/10', activeColor: 'bg-foreground text-background' },
-  { key: 'personal', label: 'Личное', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30', activeColor: 'bg-emerald-600 dark:bg-emerald-500 text-white' },
-  { key: 'health', label: 'Здоровье', color: 'text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30', activeColor: 'bg-rose-600 dark:bg-rose-500 text-white' },
-  { key: 'finance', label: 'Финансы', color: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30', activeColor: 'bg-amber-600 dark:bg-amber-500 text-white' },
-  { key: 'career', label: 'Карьера', color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30', activeColor: 'bg-blue-600 dark:bg-blue-500 text-white' },
-  { key: 'learning', label: 'Обучение', color: 'text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30', activeColor: 'bg-violet-600 dark:bg-violet-500 text-white' },
+const CATEGORY_CHIPS: { key: CategoryFilter; label: string; color: string; activeColor: string; dotColor: string }[] = [
+  { key: 'all', label: 'Все категории', color: 'text-muted-foreground bg-muted-foreground/10', activeColor: 'bg-foreground text-background', dotColor: 'bg-muted-foreground' },
+  { key: 'personal', label: 'Личное', color: 'text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-900/30', activeColor: 'bg-emerald-600 dark:bg-emerald-500 text-white', dotColor: 'bg-emerald-500' },
+  { key: 'health', label: 'Здоровье', color: 'text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-900/30', activeColor: 'bg-rose-600 dark:bg-rose-500 text-white', dotColor: 'bg-rose-500' },
+  { key: 'finance', label: 'Финансы', color: 'text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/30', activeColor: 'bg-amber-600 dark:bg-amber-500 text-white', dotColor: 'bg-amber-500' },
+  { key: 'career', label: 'Карьера', color: 'text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30', activeColor: 'bg-blue-600 dark:bg-blue-500 text-white', dotColor: 'bg-blue-500' },
+  { key: 'learning', label: 'Обучение', color: 'text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30', activeColor: 'bg-violet-600 dark:bg-violet-500 text-white', dotColor: 'bg-violet-500' },
 ]
 
 function countByStatus(goals: GoalData[], status: string) {
@@ -48,9 +49,9 @@ interface FilterTabsProps {
 export function FilterTabs({ filterTab, setFilterTab, categoryFilter, setCategoryFilter, goals }: FilterTabsProps) {
   return (
     <div className="space-y-3">
-      {/* Status Tabs — scrollable on mobile */}
+      {/* Status Tabs — scrollable on mobile with animated indicator */}
       <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
-        <div className="flex gap-1.5 p-1 bg-muted/60 rounded-xl w-fit min-w-full sm:min-w-0">
+        <div className="flex gap-1.5 p-1 bg-muted/60 rounded-xl w-fit min-w-full sm:min-w-0 relative">
           {STATUS_TABS.map((tab) => {
             const count = getStatusCount(goals, tab.key)
             const isActive = filterTab === tab.key
@@ -60,13 +61,20 @@ export function FilterTabs({ filterTab, setFilterTab, categoryFilter, setCategor
                 type="button"
                 onClick={() => setFilterTab(tab.key)}
                 className={cn(
-                  'relative rounded-lg px-4 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap flex-1 sm:flex-none justify-center',
+                  'relative rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-200 whitespace-nowrap flex-1 sm:flex-none justify-center z-10',
                   isActive
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                <span className="flex items-center gap-1.5">
+                {isActive && (
+                  <motion.div
+                    layoutId="status-tab-indicator"
+                    className="absolute inset-0 bg-background rounded-lg shadow-sm"
+                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <span className="relative flex items-center gap-1.5">
                   {tab.label}
                   <span
                     className={cn(
@@ -85,7 +93,7 @@ export function FilterTabs({ filterTab, setFilterTab, categoryFilter, setCategor
         </div>
       </div>
 
-      {/* Category Filter Chips — scrollable on mobile */}
+      {/* Category Filter Chips — scrollable on mobile with colored dots */}
       <div className="overflow-x-auto scrollbar-none -mx-1 px-1">
         <div className="flex gap-2 w-fit min-w-full sm:min-w-0">
           {CATEGORY_CHIPS.map((chip) => {
@@ -104,6 +112,10 @@ export function FilterTabs({ filterTab, setFilterTab, categoryFilter, setCategor
                   count === 0 && !isActive && 'opacity-40',
                 )}
               >
+                <span className={cn(
+                  'h-1.5 w-1.5 rounded-full shrink-0 transition-colors duration-200',
+                  isActive ? 'bg-white/60' : chip.dotColor,
+                )} />
                 {chip.label}
                 <span className={cn(
                   'inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full text-[10px] font-bold px-1 tabular-nums',

@@ -93,6 +93,8 @@ const WeeklyScore = dynamic(() => import('./weekly-score'), { ssr: false, loadin
 const MiniCalendar = dynamic(() => import('./mini-calendar'), { ssr: false, loading: widgetLoad })
 const QuickMoodWidget = dynamic(() => import('./quick-mood-widget'), { ssr: false, loading: smallLoad })
 const BreathingWidget = dynamic(() => import('./breathing-widget'), { ssr: false, loading: widgetLoad })
+const AiInsightsWidget = dynamic(() => import('./ai-insights-widget'), { ssr: false, loading: widgetLoad })
+const ProductivityBreakdown = dynamic(() => import('./productivity-breakdown'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -473,6 +475,52 @@ export default function DashboardPage() {
     return score
   }, [loading, todayEntry, waterTodayMl, todayWorkout, totalActive, completedToday, hasMealsToday])
 
+  // ── Productivity Breakdown Data ──────────────────────────────────
+  const productivityBreakdownData = useMemo((): Array<{
+    label: string
+    emoji: string
+    completed: number
+    total: number
+    color: string
+    percentage: number
+  }> => {
+    if (loading) return []
+    return [
+      {
+        label: 'Дневник',
+        emoji: '📋',
+        completed: !!todayMood ? 1 : 0,
+        total: 1,
+        color: 'emerald',
+        percentage: !!todayMood ? 100 : 0,
+      },
+      {
+        label: 'Тренировки',
+        emoji: '💪',
+        completed: todayWorkout ? 1 : 0,
+        total: 1,
+        color: 'blue',
+        percentage: todayWorkout ? 100 : 0,
+      },
+      {
+        label: 'Привычки',
+        emoji: '✅',
+        completed: completedToday,
+        total: totalActive || 1,
+        color: 'violet',
+        percentage: totalActive > 0 ? Math.round((completedToday / totalActive) * 100) : 0,
+      },
+      {
+        label: 'Питание',
+        emoji: '🥗',
+        completed: hasMealsToday ? 1 : 0,
+        total: 1,
+        color: 'orange',
+        percentage: hasMealsToday ? 100 : 0,
+      },
+    ]
+  }, [loading, todayMood, todayWorkout, completedToday, totalActive, hasMealsToday])
+
   // Productivity score animation is inside ProductivityScore component
 
   // ── Time Ago Helper ───────────────────────────────────────────
@@ -576,6 +624,12 @@ export default function DashboardPage() {
         onNavigate={(module) => setActiveModule(module as AppModule)}
       />
 
+      {/* ── Section: Your Day ────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 pt-2 pb-1">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Ваш день</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-muted-foreground/20 to-transparent" />
+      </div>
+
       {/* ── Productivity Score ────────────────────────────────────── */}
       <ProductivityScore
         loading={loading}
@@ -620,11 +674,32 @@ export default function DashboardPage() {
         maxStreak={maxStreak}
       />
 
+      {/* ── Section: Quick Access ────────────────────────────────────── */}
+      <div className="flex items-center gap-3 pt-2 pb-1">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Быстрый доступ</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-muted-foreground/20 to-transparent" />
+      </div>
+
       {/* ── Quick Actions ──────────────────────────────────────────────── */}
       <QuickActions onNavigate={setActiveModule} />
 
+      {/* ── AI Insights ──────────────────────────────────────────── */}
+      <AiInsightsWidget />
+
+      {/* ── Productivity Breakdown ────────────────────────────────── */}
+      <ProductivityBreakdown
+        loading={loading}
+        data={productivityBreakdownData.length > 0 ? productivityBreakdownData : null}
+      />
+
       {/* ── Weekly Activity Chart ─────────────────────────────────── */}
       <WeeklyActivityChart loading={loading} data={weeklyActivity} />
+
+      {/* ── Section: Finances ────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 pt-2 pb-1">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Финансы</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-muted-foreground/20 to-transparent" />
+      </div>
 
       {/* ── Recent Transactions ───────────────────────────────────── */}
       <RecentTransactions
@@ -662,6 +737,12 @@ export default function DashboardPage() {
         }))}
       />
 
+      {/* ── Section: Health & Productivity ─────────────────────────── */}
+      <div className="flex items-center gap-3 pt-2 pb-1">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Здоровье и продуктивность</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-muted-foreground/20 to-transparent" />
+      </div>
+
       {/* ── Habits Progress ───────────────────────────────────────── */}
       <HabitsProgress
         loading={loading}
@@ -693,6 +774,12 @@ export default function DashboardPage() {
         uncompletedHabitsCount={totalActive - completedToday}
         onNavigate={(module) => setActiveModule(module as AppModule)}
       />
+
+      {/* ── Section: Tracking ──────────────────────────────────────── */}
+      <div className="flex items-center gap-3 pt-2 pb-1">
+        <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Отслеживание</h2>
+        <div className="h-px flex-1 bg-gradient-to-r from-muted-foreground/20 to-transparent" />
+      </div>
 
       {/* ── Quick Notes, Weather & Focus Timer ────────────────── */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
