@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import {
   Card,
   CardContent,
@@ -8,16 +8,21 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Timer, Play, Pause, RotateCcw, Clock, Flame, Zap, Coffee, Sparkles } from 'lucide-react'
+import {
+  Timer, Play, Pause, RotateCcw, Clock, Flame, Zap, Coffee,
+  Sparkles, Brain, SkipForward, Volume2, VolumeX,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 // ─── Types & Config ────────────────────────────────────────────────────────
 
-type TimerMode = 'focus' | 'shortBreak' | 'longBreak'
+type TimerMode = 'focus' | 'quickFocus' | 'deepWork' | 'shortBreak' | 'longBreak'
 
 interface ModeConfig {
   label: string
+  shortLabel: string
   duration: number
+  isBreak: boolean
   stroke: string
   strokeBg: string
   textClass: string
@@ -28,12 +33,15 @@ interface ModeConfig {
   buttonFrom: string
   buttonTo: string
   icon: typeof Timer
+  category: 'focus' | 'break'
 }
 
 const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
   focus: {
-    label: 'Фокус',
+    label: 'Помодоро',
+    shortLabel: 'Фокус',
     duration: 25 * 60,
+    isBreak: false,
     stroke: 'stroke-emerald-500',
     strokeBg: 'stroke-emerald-500/15',
     textClass: 'text-emerald-600 dark:text-emerald-400',
@@ -44,24 +52,30 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
     buttonFrom: 'from-emerald-500',
     buttonTo: 'to-teal-500',
     icon: Zap,
+    category: 'focus',
   },
-  shortBreak: {
-    label: 'Короткий перерыв',
-    duration: 5 * 60,
-    stroke: 'stroke-amber-500',
-    strokeBg: 'stroke-amber-500/15',
-    textClass: 'text-amber-600 dark:text-amber-400',
-    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
-    iconClass: 'text-amber-600 dark:text-amber-400',
-    ringGradient: 'from-amber-500 to-orange-400',
-    glowClass: 'shadow-amber-500/30',
-    buttonFrom: 'from-amber-500',
-    buttonTo: 'to-orange-500',
-    icon: Coffee,
-  },
-  longBreak: {
-    label: 'Длинный перерыв',
+  quickFocus: {
+    label: 'Быстрый фокус',
+    shortLabel: 'Быстрый',
     duration: 15 * 60,
+    isBreak: false,
+    stroke: 'stroke-sky-500',
+    strokeBg: 'stroke-sky-500/15',
+    textClass: 'text-sky-600 dark:text-sky-400',
+    iconBg: 'bg-sky-100 dark:bg-sky-900/40',
+    iconClass: 'text-sky-600 dark:text-sky-400',
+    ringGradient: 'from-sky-500 to-cyan-400',
+    glowClass: 'shadow-sky-500/30',
+    buttonFrom: 'from-sky-500',
+    buttonTo: 'to-cyan-500',
+    icon: Timer,
+    category: 'focus',
+  },
+  deepWork: {
+    label: 'Глубокая работа',
+    shortLabel: 'Глубокая',
+    duration: 50 * 60,
+    isBreak: false,
     stroke: 'stroke-violet-500',
     strokeBg: 'stroke-violet-500/15',
     textClass: 'text-violet-600 dark:text-violet-400',
@@ -71,32 +85,177 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
     glowClass: 'shadow-violet-500/30',
     buttonFrom: 'from-violet-500',
     buttonTo: 'to-purple-500',
+    icon: Brain,
+    category: 'focus',
+  },
+  shortBreak: {
+    label: 'Короткий перерыв',
+    shortLabel: '5 мин',
+    duration: 5 * 60,
+    isBreak: true,
+    stroke: 'stroke-blue-500',
+    strokeBg: 'stroke-blue-500/15',
+    textClass: 'text-blue-600 dark:text-blue-400',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+    iconClass: 'text-blue-600 dark:text-blue-400',
+    ringGradient: 'from-blue-500 to-indigo-400',
+    glowClass: 'shadow-blue-500/30',
+    buttonFrom: 'from-blue-500',
+    buttonTo: 'to-indigo-500',
+    icon: Coffee,
+    category: 'break',
+  },
+  longBreak: {
+    label: 'Длинный перерыв',
+    shortLabel: '15 мин',
+    duration: 15 * 60,
+    isBreak: true,
+    stroke: 'stroke-indigo-500',
+    strokeBg: 'stroke-indigo-500/15',
+    textClass: 'text-indigo-600 dark:text-indigo-400',
+    iconBg: 'bg-indigo-100 dark:bg-indigo-900/40',
+    iconClass: 'text-indigo-600 dark:text-indigo-400',
+    ringGradient: 'from-indigo-500 to-blue-400',
+    glowClass: 'shadow-indigo-500/30',
+    buttonFrom: 'from-indigo-500',
+    buttonTo: 'to-blue-500',
     icon: Sparkles,
+    category: 'break',
   },
 }
 
-const MODE_KEYS: TimerMode[] = ['focus', 'shortBreak', 'longBreak']
+const FOCUS_MODES: TimerMode[] = ['focus', 'quickFocus', 'deepWork']
+const BREAK_MODES: TimerMode[] = ['shortBreak', 'longBreak']
 const TOTAL_SESSIONS_IN_CYCLE = 4
 const RING_RADIUS = 52
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 const RING_SIZE = (RING_RADIUS + 8) * 2
 
-// ─── Storage ───────────────────────────────────────────────────────────────
+// ─── Session History ───────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'unilife-focus-timer-state'
+const SESSIONS_STORAGE_KEY = 'unilify-focus-sessions'
+
+interface FocusSession {
+  id: string
+  date: string // YYYY-MM-DD
+  duration: number // seconds
+  type: TimerMode
+  completedAt: string // ISO string
+}
+
+function loadSessions(): FocusSession[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = localStorage.getItem(SESSIONS_STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (s: FocusSession) =>
+        s.id && s.date && typeof s.duration === 'number' && s.completedAt
+    )
+  } catch {
+    return []
+  }
+}
+
+function saveSessions(sessions: FocusSession[]) {
+  if (typeof window === 'undefined') return
+  try {
+    localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify(sessions))
+  } catch {
+    // localStorage not available
+  }
+}
+
+function addSession(mode: TimerMode, duration: number) {
+  const sessions = loadSessions()
+  const now = new Date()
+  const newSession: FocusSession = {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    date: now.toISOString().split('T')[0],
+    duration,
+    type: mode,
+    completedAt: now.toISOString(),
+  }
+  sessions.push(newSession)
+  // Keep last 500 sessions to prevent storage overflow
+  if (sessions.length > 500) {
+    sessions.splice(0, sessions.length - 500)
+  }
+  saveSessions(sessions)
+  return newSession
+}
+
+function getTodaySessions(): FocusSession[] {
+  const today = new Date().toISOString().split('T')[0]
+  return loadSessions().filter((s) => s.date === today)
+}
+
+function getThisWeekSessions(): FocusSession[] {
+  const now = new Date()
+  const dayOfWeek = now.getDay()
+  // Monday = 0, Sunday = 6 in our calculation
+  const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  const monday = new Date(now)
+  monday.setDate(now.getDate() - mondayOffset)
+  monday.setHours(0, 0, 0, 0)
+  const mondayStr = monday.toISOString().split('T')[0]
+  const todayStr = now.toISOString().split('T')[0]
+  return loadSessions().filter((s) => s.date >= mondayStr && s.date <= todayStr)
+}
+
+function calculateStreak(): number {
+  const sessions = loadSessions()
+  if (sessions.length === 0) return 0
+
+  // Get unique dates with sessions
+  const dates = [...new Set(sessions.map((s) => s.date))].sort().reverse()
+
+  // Check if today or yesterday has a session (streak is active)
+  const today = new Date().toISOString().split('T')[0]
+  const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]
+  if (!dates.includes(today) && !dates.includes(yesterday)) return 0
+
+  let streak = 0
+  const checkDate = new Date()
+  // Start from today
+  checkDate.setHours(0, 0, 0, 0)
+
+  for (let i = 0; i < 365; i++) {
+    const dateStr = checkDate.toISOString().split('T')[0]
+    if (dates.includes(dateStr)) {
+      streak++
+      checkDate.setDate(checkDate.getDate() - 1)
+    } else if (i === 0) {
+      // Today might not have a session yet, check from yesterday
+      checkDate.setDate(checkDate.getDate() - 1)
+      continue
+    } else {
+      break
+    }
+  }
+
+  return streak
+}
+
+// ─── Timer State Storage ───────────────────────────────────────────────────
+
+const TIMER_STATE_KEY = 'unilife-focus-timer-state'
 
 interface TimerState {
   mode: TimerMode
   timeLeft: number
   running: boolean
   sessions: number
+  soundEnabled: boolean
   updatedAt: number
 }
 
-function loadState(): TimerState | null {
+function loadTimerState(): TimerState | null {
   if (typeof window === 'undefined') return null
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    const raw = localStorage.getItem(TIMER_STATE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as TimerState
     if (
@@ -106,17 +265,11 @@ function loadState(): TimerState | null {
     ) {
       return null
     }
-    // If running, calculate how much time has passed since last save
     if (parsed.running && parsed.updatedAt) {
       const elapsed = Math.floor((Date.now() - parsed.updatedAt) / 1000)
       const actualLeft = parsed.timeLeft - elapsed
       if (actualLeft <= 0) {
-        // Timer would have completed while away
-        return {
-          ...parsed,
-          timeLeft: 0,
-          running: false,
-        }
+        return { ...parsed, timeLeft: 0, running: false }
       }
       return { ...parsed, timeLeft: actualLeft }
     }
@@ -126,13 +279,13 @@ function loadState(): TimerState | null {
   }
 }
 
-function saveState(state: TimerState) {
+function saveTimerState(state: TimerState) {
   if (typeof window === 'undefined') return
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      ...state,
-      updatedAt: Date.now(),
-    }))
+    localStorage.setItem(
+      TIMER_STATE_KEY,
+      JSON.stringify({ ...state, updatedAt: Date.now() })
+    )
   } catch {
     // localStorage not available
   }
@@ -143,7 +296,8 @@ function saveState(state: TimerState) {
 function playCompletionSound() {
   try {
     const ctx = new (window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext)()
     const notes = [523.25, 659.25, 783.99] // C5, E5, G5 chord
     notes.forEach((freq, i) => {
       const osc = ctx.createOscillator()
@@ -154,7 +308,10 @@ function playCompletionSound() {
       osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.15)
       gain.gain.setValueAtTime(0, ctx.currentTime + i * 0.15)
       gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + i * 0.15 + 0.05)
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.5)
+      gain.gain.exponentialRampToValueAtTime(
+        0.01,
+        ctx.currentTime + i * 0.15 + 0.5
+      )
       osc.start(ctx.currentTime + i * 0.15)
       osc.stop(ctx.currentTime + i * 0.15 + 0.5)
     })
@@ -172,6 +329,16 @@ function formatTime(seconds: number): string {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
 }
 
+function formatTimeShort(seconds: number): string {
+  const m = Math.floor(seconds / 60)
+  return `${m} мин`
+}
+
+function formatTimeHHMM(isoString: string): string {
+  const d = new Date(isoString)
+  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export function FocusTimerWidget() {
@@ -180,75 +347,117 @@ export function FocusTimerWidget() {
   const [timeLeft, setTimeLeft] = useState(MODE_CONFIG.focus.duration)
   const [isRunning, setIsRunning] = useState(false)
   const [sessions, setSessions] = useState(0)
+  const [soundEnabled, setSoundEnabled] = useState(true)
+  const [showBreakSuggestion, setShowBreakSuggestion] = useState(false)
+  const [todaySessions, setTodaySessions] = useState<FocusSession[]>([])
+  const [streak, setStreak] = useState(0)
 
   const modeRef = useRef<TimerMode>(mode)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const sessionsRef = useRef(sessions)
-  const toastShownRef = useRef(false)
+  const soundRef = useRef(soundEnabled)
+  const completionHandledRef = useRef(false)
 
   // Keep refs in sync
-  useEffect(() => { modeRef.current = mode }, [mode])
-  useEffect(() => { sessionsRef.current = sessions }, [sessions])
+  useEffect(() => {
+    modeRef.current = mode
+  }, [mode])
+  useEffect(() => {
+    sessionsRef.current = sessions
+  }, [sessions])
+  useEffect(() => {
+    soundRef.current = soundEnabled
+  }, [soundEnabled])
+
+  // ── Refresh stats ────────────────────────────────────────────────────
+  const refreshStats = useCallback(() => {
+    setTodaySessions(getTodaySessions())
+    setStreak(calculateStreak())
+  }, [])
 
   // ── Handle timer completion ──────────────────────────────────────────
-  const handleCompletion = useCallback((currentMode: TimerMode, currentSessions: number) => {
-    playCompletionSound()
+  const handleCompletion = useCallback(
+    (currentMode: TimerMode, currentSessions: number) => {
+      if (completionHandledRef.current) return
+      completionHandledRef.current = true
 
-    if (currentMode === 'focus') {
-      const newSessions = currentSessions + 1
-      setSessions(newSessions)
-      sessionsRef.current = newSessions
-      toast.success(`Помодоро завершён! Сессия ${newSessions} из ${TOTAL_SESSIONS_IN_CYCLE}`, {
-        description: newSessions % TOTAL_SESSIONS_IN_CYCLE === 0
-          ? 'Отличная работа! Пора сделать длинный перерыв'
-          : 'Сделайте короткий перерыв',
-        duration: 4000,
-      })
+      if (soundRef.current) {
+        playCompletionSound()
+      }
 
-      const nextMode: TimerMode = newSessions % TOTAL_SESSIONS_IN_CYCLE === 0
-        ? 'longBreak'
-        : 'shortBreak'
-      setMode(nextMode)
-      modeRef.current = nextMode
-      setTimeLeft(MODE_CONFIG[nextMode].duration)
-    } else {
-      const label = currentMode === 'shortBreak' ? 'Короткий перерыв' : 'Длинный перерыв'
-      toast.success(`${label} завершён!`, {
-        description: 'Время сфокусироваться',
-        duration: 3000,
-      })
-      setMode('focus')
-      modeRef.current = 'focus'
-      setTimeLeft(MODE_CONFIG.focus.duration)
-    }
+      if (!MODE_CONFIG[currentMode].isBreak) {
+        // Focus session completed — save to history
+        const newSession = addSession(currentMode, MODE_CONFIG[currentMode].duration)
+        const newSessions = currentSessions + 1
+        setSessions(newSessions)
+        sessionsRef.current = newSessions
+        refreshStats()
 
-    setIsRunning(false)
-    toastShownRef.current = true
-  }, [])
+        toast.success(
+          `${MODE_CONFIG[currentMode].shortLabel} завершён! Сессия ${newSessions} из ${TOTAL_SESSIONS_IN_CYCLE}`,
+          {
+            description:
+              newSessions % TOTAL_SESSIONS_IN_CYCLE === 0
+                ? 'Отличная работа! Пора сделать длинный перерыв'
+                : 'Сделайте короткий перерыв',
+            duration: 4000,
+          }
+        )
+
+        // Show break suggestion
+        setShowBreakSuggestion(true)
+      } else {
+        // Break completed
+        const label =
+          currentMode === 'shortBreak'
+            ? 'Короткий перерыв'
+            : 'Длинный перерыв'
+        toast.success(`${label} завершён!`, {
+          description: 'Время сфокусироваться',
+          duration: 3000,
+        })
+        setShowBreakSuggestion(false)
+      }
+
+      setIsRunning(false)
+    },
+    [refreshStats]
+  )
 
   // ── Initialize from localStorage ─────────────────────────────────────
   useEffect(() => {
-    const stored = loadState()
+    const stored = loadTimerState()
     const id = setTimeout(() => {
       setMounted(true)
       if (stored) {
         setMode(stored.mode)
         setTimeLeft(stored.timeLeft)
         setSessions(stored.sessions)
-        // If the timer was running and time ran out, handle completion
-        if (stored.running === false && stored.timeLeft === 0) {
-          handleCompletion(stored.mode, stored.sessions)
+        if (stored.soundEnabled !== undefined) {
+          setSoundEnabled(stored.soundEnabled)
+        }
+        // If the timer ran out while away, handle completion
+        if (stored.running === false && stored.timeLeft === 0 && !MODE_CONFIG[stored.mode as TimerMode]?.isBreak) {
+          handleCompletion(stored.mode as TimerMode, stored.sessions)
         }
       }
+      refreshStats()
     }, 0)
     return () => clearTimeout(id)
-  }, [handleCompletion])
+  }, [handleCompletion, refreshStats])
 
-  // ── Persist state to localStorage ────────────────────────────────────
+  // ── Persist timer state to localStorage ──────────────────────────────
   useEffect(() => {
     if (!mounted) return
-    saveState({ mode, timeLeft, running: isRunning, sessions, updatedAt: Date.now() })
-  }, [mode, timeLeft, isRunning, sessions, mounted])
+    saveTimerState({
+      mode,
+      timeLeft,
+      running: isRunning,
+      sessions,
+      soundEnabled,
+      updatedAt: Date.now(),
+    })
+  }, [mode, timeLeft, isRunning, sessions, soundEnabled, mounted])
 
   // ── Timer tick ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -259,6 +468,8 @@ export function FocusTimerWidget() {
       }
       return
     }
+
+    completionHandledRef.current = false
 
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -284,12 +495,15 @@ export function FocusTimerWidget() {
     setMode(newMode)
     modeRef.current = newMode
     setTimeLeft(MODE_CONFIG[newMode].duration)
+    setShowBreakSuggestion(false)
+    completionHandledRef.current = false
   }, [])
 
   const handleToggle = useCallback(() => {
     if (timeLeft <= 0) {
       setTimeLeft(MODE_CONFIG[mode].duration)
       setIsRunning(true)
+      setShowBreakSuggestion(false)
     } else {
       setIsRunning((prev) => !prev)
     }
@@ -298,14 +512,72 @@ export function FocusTimerWidget() {
   const handleReset = useCallback(() => {
     setIsRunning(false)
     setTimeLeft(MODE_CONFIG[mode].duration)
+    completionHandledRef.current = false
   }, [mode])
+
+  const handleSkip = useCallback(() => {
+    setIsRunning(false)
+    const currentConfig = MODE_CONFIG[modeRef.current]
+
+    if (currentConfig.isBreak) {
+      // Skip break → go to focus
+      const nextMode: TimerMode = 'focus'
+      setMode(nextMode)
+      modeRef.current = nextMode
+      setTimeLeft(MODE_CONFIG[nextMode].duration)
+      setShowBreakSuggestion(false)
+    } else {
+      // Skip focus → suggest break
+      handleCompletion(modeRef.current, sessionsRef.current)
+    }
+  }, [handleCompletion])
+
+  const handleBreakSuggestion = useCallback(
+    (breakMode: TimerMode) => {
+      handleModeChange(breakMode)
+      // Auto-start break
+      setTimeout(() => setIsRunning(true), 100)
+    },
+    [handleModeChange]
+  )
+
+  const handleDismissBreakSuggestion = useCallback(() => {
+    setShowBreakSuggestion(false)
+  }, [])
+
+  const toggleSound = useCallback(() => {
+    setSoundEnabled((prev) => !prev)
+  }, [])
 
   // ── Derived values ───────────────────────────────────────────────────
   const config = MODE_CONFIG[mode]
   const totalDuration = config.duration
   const progress = totalDuration > 0 ? 1 - timeLeft / totalDuration : 0
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress)
-  const sessionInCycle = ((sessions % TOTAL_SESSIONS_IN_CYCLE) || TOTAL_SESSIONS_IN_CYCLE)
+  const sessionInCycle =
+    (sessions % TOTAL_SESSIONS_IN_CYCLE) || TOTAL_SESSIONS_IN_CYCLE
+
+  const todayFocusMinutes = useMemo(
+    () => Math.round(todaySessions.reduce((sum, s) => sum + s.duration, 0) / 60),
+    [todaySessions]
+  )
+
+  const weekFocusMinutes = useMemo(
+    () => Math.round(getThisWeekSessions().reduce((sum, s) => sum + s.duration, 0) / 60),
+    [todaySessions]
+  )
+
+  const todayPills = useMemo(() => {
+    return [...todaySessions].reverse().slice(0, 5)
+  }, [todaySessions])
+
+  const todayOverflow = useMemo(() => {
+    return Math.max(0, todaySessions.length - 5)
+  }, [todaySessions])
+
+  const shouldSuggestLongBreak = useMemo(() => {
+    return sessions % TOTAL_SESSIONS_IN_CYCLE === 0 && sessions > 0
+  }, [sessions])
 
   // ── Pre-mount skeleton ──────────────────────────────────────────────
   if (!mounted) {
@@ -333,29 +605,90 @@ export function FocusTimerWidget() {
   return (
     <Card className="animate-slide-up card-hover rounded-xl border overflow-hidden">
       {/* Subtle gradient background based on mode */}
-      <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${config.ringGradient} opacity-[0.03]`} />
+      <div
+        className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${config.ringGradient} opacity-[0.03]`}
+      />
 
       <CardHeader className="relative pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
-          <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${config.iconBg}`}>
+          <div
+            className={`flex h-7 w-7 items-center justify-center rounded-lg ${config.iconBg}`}
+          >
             <Timer className={`h-4 w-4 ${config.iconClass}`} />
           </div>
           <span>Фокус-таймер</span>
-          {/* Session badge */}
-          <span className="ml-auto flex items-center gap-1 rounded-full bg-muted/60 px-2.5 py-0.5 text-xs font-medium text-muted-foreground tabular-nums">
-            <Flame className="h-3 w-3 text-orange-500" />
-            {sessions}
-          </span>
+          {/* Streak badge */}
+          {streak > 0 && (
+            <span className="flex items-center gap-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30 px-2 py-0.5 text-[10px] font-bold text-orange-600 dark:text-orange-400 tabular-nums">
+              <Flame className="h-3 w-3" />
+              {streak}
+            </span>
+          )}
+          {/* Sound toggle */}
+          <button
+            onClick={toggleSound}
+            className="ml-auto flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground"
+            aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
+          >
+            {soundEnabled ? (
+              <Volume2 className="h-3.5 w-3.5" />
+            ) : (
+              <VolumeX className="h-3.5 w-3.5" />
+            )}
+          </button>
         </CardTitle>
       </CardHeader>
 
       <CardContent className="relative">
         <div className="flex flex-col items-center gap-4">
+          {/* ── Break Suggestion Card ── */}
+          {showBreakSuggestion && (
+            <div className="w-full rounded-xl border border-blue-200 dark:border-blue-800/50 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-3 animate-slide-up">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-lg">🧘</span>
+                <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                  Время перерыва!
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="h-8 flex-1 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 text-xs font-medium text-white hover:from-blue-600 hover:to-indigo-600"
+                  onClick={() => handleBreakSuggestion('shortBreak')}
+                >
+                  <Coffee className="mr-1 h-3 w-3" />
+                  5 мин перерыв
+                </Button>
+                {shouldSuggestLongBreak && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 flex-1 rounded-lg border-indigo-200 dark:border-indigo-700 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/30"
+                    onClick={() => handleBreakSuggestion('longBreak')}
+                  >
+                    <Sparkles className="mr-1 h-3 w-3" />
+                    15 мин перерыв
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={handleDismissBreakSuggestion}
+                >
+                  Пропустить
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* ── Circular Progress Ring ── */}
           <div className="relative">
             {/* Glow effect behind the ring when running */}
             {isRunning && (
-              <div className={`absolute inset-[-8px] rounded-full bg-gradient-to-br ${config.ringGradient} opacity-20 blur-lg transition-opacity duration-500`} />
+              <div
+                className={`absolute inset-[-8px] rounded-full bg-gradient-to-br ${config.ringGradient} opacity-20 blur-lg transition-opacity duration-500 ${isRunning ? 'animate-pulse' : ''}`}
+              />
             )}
 
             <svg
@@ -389,12 +722,16 @@ export function FocusTimerWidget() {
 
             {/* Center content */}
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className={`text-3xl font-bold tracking-tight tabular-nums ${config.textClass}`}>
+              <span
+                className={`text-3xl font-bold tracking-tight tabular-nums ${config.textClass}`}
+              >
                 {formatTime(timeLeft)}
               </span>
-              <div className={`mt-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${config.textClass} opacity-70`}>
+              <div
+                className={`mt-1 flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider ${config.textClass} opacity-70`}
+              >
                 <config.icon className="h-3 w-3" />
-                {config.label}
+                {config.shortLabel}
               </div>
             </div>
           </div>
@@ -417,30 +754,62 @@ export function FocusTimerWidget() {
           </div>
 
           {/* ── Mode Tabs ── */}
-          <div className="flex items-center gap-0.5 rounded-lg bg-muted/50 p-0.5">
-            {MODE_KEYS.map((key) => {
-              const isActive = mode === key
-              const cfg = MODE_CONFIG[key]
-              return (
-                <button
-                  key={key}
-                  onClick={() => handleModeChange(key)}
-                  className={`relative flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-all duration-200 ${
-                    isActive
-                      ? `${cfg.textClass} shadow-sm`
-                      : 'text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {isActive && (
-                    <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
-                  )}
-                  <span className="relative z-10 flex items-center gap-1">
-                    <cfg.icon className="h-3 w-3" />
-                    {cfg.label}
-                  </span>
-                </button>
-              )
-            })}
+          <div className="flex flex-col gap-1.5 w-full max-w-[260px]">
+            {/* Focus modes */}
+            <div className="flex items-center gap-0.5 rounded-lg bg-muted/50 p-0.5">
+              {FOCUS_MODES.map((key) => {
+                const isActive = mode === key
+                const cfg = MODE_CONFIG[key]
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleModeChange(key)}
+                    className={`relative flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-all duration-200 ${
+                      isActive
+                        ? `${cfg.textClass} shadow-sm`
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1">
+                      <cfg.icon className="h-3 w-3" />
+                      <span className="hidden sm:inline">{cfg.shortLabel}</span>
+                      <span className="sm:hidden">
+                        {key === 'focus' ? '25' : key === 'quickFocus' ? '15' : '50'}
+                      </span>
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
+            {/* Break modes */}
+            <div className="flex items-center gap-0.5 rounded-lg bg-muted/50 p-0.5">
+              {BREAK_MODES.map((key) => {
+                const isActive = mode === key
+                const cfg = MODE_CONFIG[key]
+                return (
+                  <button
+                    key={key}
+                    onClick={() => handleModeChange(key)}
+                    className={`relative flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-[11px] font-medium transition-all duration-200 ${
+                      isActive
+                        ? `${cfg.textClass} shadow-sm`
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {isActive && (
+                      <span className="absolute inset-0 rounded-md bg-background/80 dark:bg-background/40" />
+                    )}
+                    <span className="relative z-10 flex items-center gap-1">
+                      <cfg.icon className="h-3 w-3" />
+                      {cfg.shortLabel}
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* ── Controls ── */}
@@ -468,15 +837,70 @@ export function FocusTimerWidget() {
               )}
             </Button>
 
-            {/* Invisible spacer for centering */}
-            <div className="h-9 w-9" />
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-full"
+              onClick={handleSkip}
+              aria-label="Пропустить"
+            >
+              <SkipForward className="h-3.5 w-3.5" />
+            </Button>
           </div>
+
+          {/* ── Today's Stats ── */}
+          <div className="w-full max-w-[260px] space-y-2">
+            {/* Today stat line */}
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <Flame className="h-3.5 w-3.5 text-orange-500" />
+              <span className="tabular-nums font-medium text-foreground">
+                {todaySessions.length} сессий
+              </span>
+              <span>·</span>
+              <span className="tabular-nums font-medium text-foreground">
+                {todayFocusMinutes} минут сегодня
+              </span>
+            </div>
+            {/* Week stat line */}
+            {weekFocusMinutes > 0 && (
+              <div className="text-center text-[11px] text-muted-foreground/70">
+                <span className="tabular-nums">{weekFocusMinutes} минут за неделю</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── Today's Session History Pills ── */}
+          {todayPills.length > 0 && (
+            <div className="w-full max-w-[260px]">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {todayPills.map((session) => (
+                  <span
+                    key={session.id}
+                    className="inline-flex items-center gap-1 rounded-full bg-muted/70 px-2.5 py-1 text-[10px] font-medium text-muted-foreground tabular-nums"
+                  >
+                    <span>{formatTimeShort(session.duration)}</span>
+                    <span className="text-muted-foreground/50">·</span>
+                    <span>{formatTimeHHMM(session.completedAt)}</span>
+                  </span>
+                ))}
+                {todayOverflow > 0 && (
+                  <span className="text-[10px] text-muted-foreground/60">
+                    ещё {todayOverflow}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* ── Bottom info ── */}
           <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground/60">
             <Clock className="h-3 w-3" />
             <span>
-              {isRunning ? 'Таймер работает...' : timeLeft === 0 ? 'Время вышло' : 'Нажмите старт'}
+              {isRunning
+                ? 'Таймер работает...'
+                : timeLeft === 0
+                  ? 'Время вышло'
+                  : 'Нажмите старт'}
             </span>
           </div>
         </div>

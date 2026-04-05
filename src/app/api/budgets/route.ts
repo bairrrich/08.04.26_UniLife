@@ -174,3 +174,89 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// PUT /api/budgets?id=xxx — Update a budget
+export async function PUT(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing required query param: id' },
+        { status: 400 },
+      )
+    }
+
+    const body = await request.json()
+    const { amount } = body
+
+    if (!amount || parseFloat(amount) <= 0) {
+      return NextResponse.json(
+        { error: 'Missing or invalid field: amount (must be > 0)' },
+        { status: 400 },
+      )
+    }
+
+    const existing = await db.budget.findUnique({
+      where: { id },
+    })
+
+    if (!existing || existing.userId !== DEMO_USER_ID) {
+      return NextResponse.json(
+        { error: 'Бюджет не найден' },
+        { status: 404 },
+      )
+    }
+
+    const budget = await db.budget.update({
+      where: { id },
+      data: { amount: parseFloat(amount) },
+      include: { category: true },
+    })
+
+    return NextResponse.json({ success: true, data: budget })
+  } catch (error) {
+    console.error('PUT /api/budgets error:', error)
+    return NextResponse.json(
+      { error: 'Failed to update budget' },
+      { status: 500 },
+    )
+  }
+}
+
+// DELETE /api/budgets?id=xxx — Delete a budget
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Missing required query param: id' },
+        { status: 400 },
+      )
+    }
+
+    const existing = await db.budget.findUnique({
+      where: { id },
+    })
+
+    if (!existing || existing.userId !== DEMO_USER_ID) {
+      return NextResponse.json(
+        { error: 'Бюджет не найден' },
+        { status: 404 },
+      )
+    }
+
+    await db.budget.delete({ where: { id } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('DELETE /api/budgets error:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete budget' },
+      { status: 500 },
+    )
+  }
+}

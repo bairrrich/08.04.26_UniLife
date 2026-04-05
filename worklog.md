@@ -3625,3 +3625,210 @@ Stage Summary:
 - 1 bug fixed (StreaksWidget crash)
 - 4 files deleted (cleanup)
 - All modules verified working correctly
+
+---
+Task ID: 1
+Agent: keyboard-shortcuts-agent
+Task: Make keyboard shortcuts functional
+
+Work Log:
+- Imported `useAppStore` and `AppModule` type from `@/store/use-app-store` into `keyboard-shortcuts-dialog.tsx`
+- Added `setActiveModule` via Zustand store selector for programmatic navigation
+- Created `KEY_MODULE_MAP` constant mapping lowercase keys to AppModule values: d→dashboard, j→diary, f→finance, n→nutrition, w→workout, h→habits, g→goals, c→collections, a→analytics
+- Updated `handleKeyDown` in `useEffect` to check `e.key.toLowerCase()` against `KEY_MODULE_MAP` and call `setActiveModule(targetModule)` + `e.preventDefault()` for matching keys
+- Shortcuts only fire when not focused on INPUT, TEXTAREA, or SELECT elements
+- Navigation shortcuts automatically close the shortcuts dialog via `setOpen(false)`
+- Added `setActiveModule` to `useEffect` dependency array for correctness
+- Added 3 new shortcuts to the dialog: J→Дневник, C→Коллекции, A→Аналитика
+- Updated `NAVIGATION_SHORTCUTS` filter range from `i >= 1 && i <= 6` to `i >= 1 && i <= 9` to include all 9 navigation shortcuts
+- Updated `ACTION_SHORTCUTS` index from `SHORTCUTS[7]` to `SHORTCUTS[10]` for the "?" toggle shortcut
+- Fixed ESLint error: renamed `module` variable to `targetModule` to comply with `@next/next/no-assign-module-variable` rule
+
+Stage Summary:
+- All 9 navigation keyboard shortcuts now functional (D, J, F, N, W, H, G, C, A)
+- 3 new shortcuts added to dialog (J, C, A) alongside existing 6 (D, F, N, W, H, G)
+- ⌘K and ? continue to work as before
+- ESLint: 0 errors, 0 warnings
+
+---
+Task ID: 2
+Agent: quick-notes-agent
+Task: Enhance Quick Notes widget with localStorage persistence
+
+Work Log:
+- Read existing `quick-notes.tsx` — component already had basic localStorage read/write, multiple notes, delete, relative time formatting, cross-tab sync, skeleton loading
+- **Note colors**: Added `NoteColor` type union (`emerald | amber | blue | rose`) with full color style mapping (bg + border, dark mode variants). Each new note gets a random color. Existing notes without color are backfilled on load.
+- **Inline editing**: Click any note card to enter edit mode. Shows a Textarea with the note text, "Отмена" / "Сохранить" buttons, and character count. Enter saves, Escape cancels. Empty notes are deleted on save. Editing card gets a subtle ring highlight.
+- **Debounced save**: While editing, changes are saved to localStorage with a 300ms debounce (using `setTimeout` + `clearTimeout` via ref), preventing excessive writes during typing.
+- **MAX_CHARS increased** from 200 to 500 per note.
+- **Badge for count**: Replaced plain text count with shadcn `Badge` component (`variant="secondary"`) showing note count.
+- **Empty state improved**: Shows "Заметок пока нет" text with "Нажмите кнопку, чтобы создать первую" subtitle and an "Добавить" button with Plus icon.
+- **Compact design**: Notes use `line-clamp-3` for max 3 lines with overflow ellipsis. Note cards use `card-hover` class for hover lift effect.
+- **Stagger animations**: `stagger-children` class on notes list container for animated entrance.
+- **Textarea input**: Replaced `Input` with `Textarea` for new note creation (allows multi-line). Submit via Ctrl+Enter or button click. Shows remaining character count.
+- **Delete on hover**: X button appears on hover in top-right of note card (preserved existing behavior).
+- **Backward compatibility**: Notes loaded from localStorage that lack a `color` field are automatically assigned a random color on mount.
+
+Stage Summary:
+- Enhanced Quick Notes widget with 4-color scheme, inline editing with debounce, 500-char limit, shadcn Badge count, improved empty state
+- All UI labels in Russian
+- ESLint: 0 errors, 0 warnings
+- Export name `QuickNotes` unchanged — dynamic import in dashboard-page.tsx still works
+
+---
+Task ID: 3
+Agent: budget-agent
+Task: Add Budget Management to Finance Module
+
+Work Log:
+- **API Enhancement** (`/src/app/api/budgets/route.ts`):
+  - Existing GET (fetch budgets with spent amounts) and POST (create budget) methods verified working
+  - Added PUT `/api/budgets?id=xxx` — update budget amount with ownership validation
+  - Added DELETE `/api/budgets?id=xxx` — delete budget with ownership validation
+  - Both new methods include proper error handling (400, 404, 500 status codes)
+- **BudgetManager Component** (`/src/components/finance/budget-manager.tsx`):
+  - Created complete budget management component with TypeScript interfaces (BudgetItem, BudgetSummary, BudgetManagerProps)
+  - **Summary cards**: 3-column grid showing total budget (Wallet icon), total spent (TrendingDown icon), remaining/overage (PiggyBank/AlertTriangle icon)
+  - **Budget cards**: Each card shows category icon (with dynamic color), category name, spent/limit text, percentage badge, color-coded progress bar
+  - **Color coding**: emerald progress bar when <70%, amber when 70-90%, rose when >90%; matching badge variants
+  - **Over-budget indicator**: AlertTriangle icon + "Превышение на X ₽" message when spent exceeds limit
+  - **Edit/Delete buttons**: Hover-revealed action buttons on each budget card (Pencil + Trash2 icons)
+  - **Add budget dialog**: Category selector (shadcn Select filtered to EXPENSE categories), monthly limit input, create button
+  - **Edit budget dialog**: Shows current spent info, editable amount input
+  - **Delete confirmation**: shadcn AlertDialog with category name in message
+  - **Empty state**: Gradient icon background, descriptive text, CTA button
+  - **Loading state**: Skeleton loaders for summary cards and budget list
+  - **Styling**: card-hover, stagger-children classes for animations; tabular-nums on amounts
+  - **Toast notifications**: Success/error toasts on all CRUD operations via sonner
+  - **Currency formatting**: Uses shared `formatCurrency()` from `@/lib/format` (Russian RUB format with space thousand separators)
+- **Finance Page Integration** (`/src/components/finance/finance-page.tsx`):
+  - Wrapped existing content in shadcn Tabs with two tabs: "Обзор" (Receipt icon) and "Бюджет" (Wallet icon)
+  - Existing content (summary cards, charts, analytics, transactions) placed under "Обзор" tab
+  - BudgetManager component placed under "Бюджет" tab
+  - Passed `month` and `categories` from useFinance hook to BudgetManager
+  - Added Tabs, TabsList, TabsTrigger, TabsContent imports from shadcn/ui
+  - Added Receipt icon import for overview tab
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All new shadcn/ui components used correctly (Tabs, Dialog, AlertDialog, Select, Progress, Badge, Input, Label, Skeleton, Card, Button)
+- ✅ All UI text in Russian
+- ✅ Currency formatted as RUB with Russian locale (space thousand separators)
+- ✅ Dark mode support via existing Tailwind dark: variants
+- ✅ No breaking changes to existing finance module
+
+Stage Summary:
+- Budget management feature fully implemented with CRUD API + UI
+- New component: BudgetManager with summary cards, budget list, add/edit/delete dialogs
+- New API methods: PUT and DELETE on /api/budgets
+- Finance page now has "Обзор" and "Бюджет" tabs for organized navigation
+- Color-coded progress bars and badges for budget status visualization
+
+---
+Task ID: 5
+Agent: focus-timer-agent
+Task: Enhance Focus Timer widget with session history and localStorage
+
+Work Log:
+- **Session History (localStorage `unilify-focus-sessions`)**: Added FocusSession interface with { id, date, duration, type, completedAt }. Implemented loadSessions/saveSessions/addSession functions with 500-session cap. Completed focus sessions are persisted to localStorage with proper error handling.
+- **Multiple Timer Durations**: Expanded TimerMode to 5 modes: focus (25 min), quickFocus (15 min, sky/blue theme), deepWork (50 min, violet/purple theme), shortBreak (5 min, blue/indigo theme), longBreak (15 min, indigo/blue theme). Each mode has full ModeConfig with unique colors, gradients, icons (Zap, Timer, Brain, Coffee, Sparkles), and category classification (focus/break).
+- **Enhanced Timer Display**: Kept existing SVG circular progress ring (radius=52, circumference=326.7). Added animate-pulse on glow effect behind ring when timer is running. Color coding: emerald for focus, blue/indigo for breaks. Large MM:SS display with tabular-nums in center. Mode-specific icon and short label below time.
+- **Timer Controls**: Added SkipForward skip button (right side of play/pause). Reset button (left side). Play/Pause button centered with gradient background. Skip advances to next session or triggers break suggestion.
+- **Today's Stats**: Compact display below timer showing "X сессий · Y минут сегодня" with Flame icon. Weekly total shown as "Z минут за неделю" when > 0. All values use tabular-nums.
+- **Session History Pills**: Today's completed sessions shown as small rounded pills below stats. Each pill displays "X мин · HH:MM". Maximum 5 pills visible, with "ещё N" overflow indicator.
+- **Auto-break Suggestion**: After completing a focus session, a blue/indigo gradient card appears with "🧘 Время перерыва!" heading. Two action buttons: "5 мин перерыв" (auto-starts short break) and "15 мин перерыв" (shown only when cycle of 4 sessions is complete). Includes "Пропустить" dismiss button.
+- **Streak Counter**: Calculates consecutive days with at least 1 completed session. Displayed as orange badge with Flame icon in card header. Streak starts from today/yesterday and counts backwards.
+- **Sound Toggle**: Volume2/VolumeX icon button in card header toggles completion sound on/off. State persisted in localStorage timer state.
+- **Completion Handling**: Added completionHandledRef to prevent double-completion on tab-away. Sessions saved to history only for focus modes (not breaks). Stats refreshed after each session completion.
+- **Styling**: Uses card-hover class, animate-slide-up entrance animation, gradient backgrounds per mode, all text in Russian. Mode tabs split into two rows: focus modes (top) and break modes (bottom). Responsive with sm: breakpoints for tab labels.
+
+Stage Summary:
+- Focus Timer widget fully enhanced from basic 3-mode timer to comprehensive 5-mode productivity tool
+- Session history persisted in localStorage with streak tracking
+- Auto-break suggestion with Pomodoro cycle awareness (every 4 sessions → long break)
+- Today's stats and session history pills provide at-a-glance productivity overview
+- ESLint: 0 errors, 0 warnings (1 pre-existing warning in search-dialog.tsx unrelated to this task)
+
+---
+Task ID: 6
+Agent: command-palette-agent
+Task: Enhance Search Dialog into Command Palette
+
+Work Log:
+- Rewrote `/src/components/layout/search-dialog.tsx` from simple search dialog into full command palette with 3 modes
+- **Search Mode (Поиск)**: Preserved existing cross-module search functionality with grouped results. Added recent searches feature stored in `unilife-recent-searches` localStorage (max 5). Shows recent searches with Clock icon when input is empty. Click recent search to re-execute. "Очистить" button to clear all recent searches. Quick search suggestion chips preserved.
+- **Navigate Mode (Навигация)**: Lists all 11 modules (Дашборд, Дневник, Финансы, Питание, Тренировки, Привычки, Коллекции, Лента, Цели, Аналитика, Настройки) with icons and descriptions. Each item has icon in rounded-md container, label, and description. Click navigates via `useAppStore setActiveModule` and closes dialog. Filter by typing module name. Recent modules section at top from `unilife-recent-modules` localStorage (max 5). Recent modules tracked when navigating via command palette. Duplicates in recent section indicated with Clock icon.
+- **Actions Mode (Действия)**: 8 quick actions — Новая запись в дневник (PenLine → diary), Добавить транзакцию (Receipt → finance), Записать приём пищи (UtensilsCrossed → nutrition), Начать тренировку (Flame → workout), Добавить привычку (Award → habits), Новая цель (Crosshair → goals), Экспорт данных (Download → settings), Тёмная/Светлая тема (Sun/Moon → theme toggle). Theme toggle uses `useTheme` from `next-themes` to switch between light/dark. All other actions navigate to the target module. Filter by typing action name.
+- **Keyboard Navigation**: Arrow Up/Down navigates results with visual highlight (`bg-accent`). Enter selects current item. Tab cycles modes (Search → Navigate → Actions → Search). Number keys 1/2/3 directly switch modes. Esc closes dialog.
+- **Visual Enhancements**: Mode tabs at top with icons (Search, Compass, Zap) in gradient header area. Active tab highlighted with `bg-primary text-primary-foreground`. Each tab shows number shortcut (1/2/3). Gradient header: `from-emerald-500/10 via-primary/5 to-amber-500/10` with dark mode variants. Dialog wider: `sm:max-w-lg`. Results with hover effect and keyboard focus indicator. Footer with keyboard hints: "Tab сменить режим · ↑↓ навигация · ↵ выбрать". Action items have primary-colored icon backgrounds; theme toggle uses amber accent.
+- **Exports preserved**: `SearchDialog` and `SearchTrigger` exported as before. `SearchTrigger` dispatches Cmd+K event unchanged.
+
+Stage Summary:
+- Search dialog transformed into full command palette with 3 modes (Search, Navigate, Actions)
+- All 11 modules available for quick navigation with icons and descriptions
+- 8 quick actions including dynamic theme toggle
+- Recent searches and recent modules tracked in localStorage
+- Full keyboard navigation (arrows, enter, tab, 1/2/3, esc)
+- Visual enhancements: gradient header, mode tabs, keyboard hints footer
+- ESLint: 0 errors, 0 warnings
+- Build: successful
+- All existing exports and functionality preserved
+
+---
+## Session: Improvements Round (context continuation)
+
+### Task ID: 1 - Keyboard Shortcuts
+**Agent: keyboard-shortcuts-agent**
+- Wired up all navigation keyboard shortcuts (D, F, N, W, H, G, J, C, A) that were displayed but non-functional
+- Added 3 new shortcuts: J→Diary, C→Collections, A→Analytics
+- All shortcuts work globally (not just in sidebar), case-insensitive, skip when in INPUT/TEXTAREA/SELECT
+- Auto-closes shortcuts dialog on navigation
+- ESLint: 0 errors
+
+### Task ID: 2 - Quick Notes Enhancement
+**Agent: quick-notes-agent**
+- Enhanced Quick Notes widget with multiple notes support (max 10)
+- Added localStorage persistence with 300ms debounce
+- 4 color themes (emerald, amber, blue, rose) randomly assigned
+- Inline editing with character count (max 500)
+- Hover-reveal delete button
+- Badge count, empty state, stagger animations
+- ESLint: 0 errors
+
+### Task ID: 3 - Budget Management
+**Agent: budget-agent**
+- Added PUT and DELETE handlers to `/api/budgets/route.ts`
+- Created `/src/components/finance/budget-manager.tsx` - full CRUD budget UI
+- Summary cards (total budget, total spent, remaining)
+- Color-coded progress bars (emerald <70%, amber 70-90%, rose >90%)
+- Integrated into Finance page as new "Бюджет" tab
+- ESLint: 0 errors
+
+### Task ID: 5 - Focus Timer Enhancement
+**Agent: focus-timer-agent**
+- 5 timer modes: Pomodoro 25min, Quick 15min, Deep 50min, Short Break 5min, Long Break 15min
+- SVG circular progress ring with animated pulse when running
+- Session history in localStorage (max 500 sessions)
+- Today's stats (sessions count + minutes), weekly total
+- Session history pills (last 5 completed today)
+- Auto-break suggestion after focus completion
+- Streak counter (consecutive days with sessions)
+- Sound toggle
+- ESLint: 0 errors
+
+### Task ID: 6 - Command Palette
+**Agent: command-palette-agent**
+- Transformed Search Dialog into full Command Palette with 3 modes:
+  - **Поиск** - existing cross-module search + recent searches (localStorage)
+  - **Навигация** - all 11 modules + recently visited (localStorage)
+  - **Действия** - 8 quick actions including theme toggle
+- Full keyboard navigation: ↑↓ navigate, Enter select, Tab switch modes, 1/2/3 jump to mode
+- Recent modules tracking and recent searches tracking
+- Enhanced visual design with gradient header, wider dialog
+- ESLint: 0 errors
+
+### Session Summary
+- 5 features implemented in parallel (2 batches)
+- ESLint: 0 errors across all changes
+- Dev server: running cleanly after .next cache cleanup (368MB → 0)
+- No breaking changes to existing functionality

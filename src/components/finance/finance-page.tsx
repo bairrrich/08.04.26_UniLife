@@ -1,7 +1,8 @@
 'use client'
 
-import { Wallet, Plus, Filter } from 'lucide-react'
+import { Wallet, Plus, Filter, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { SummaryCards } from './summary-cards'
 import { ExpenseChart } from './expense-chart'
@@ -10,12 +11,13 @@ import { TransactionList } from './transaction-list'
 import { AddTransactionDialog, EditTransactionDialog } from './transaction-dialog'
 import { AnalyticsSection } from './analytics-section'
 import { MonthNav } from './month-nav'
+import { BudgetManager } from './budget-manager'
 import { useFinance } from './hooks'
 
 export default function FinancePage() {
   const {
     stats, isLoading, activeTab, setActiveTab,
-    showNewDialog, setShowNewDialog, monthLabel,
+    showNewDialog, setShowNewDialog, monthLabel, month,
     newType, newAmount, newCategoryId, newDescription, newDate, newNote, isSubmitting,
     setNewType, setNewAmount, setNewCategoryId, setNewDescription, setNewDate, setNewNote,
     showEditDialog, setShowEditDialog, editType, editAmount, editCategoryId, editDescription, editDate, editNote, isEditSubmitting,
@@ -23,6 +25,7 @@ export default function FinancePage() {
     chartData, groupedTransactions, filteredCategories, editFilteredCategories,
     spendingInsights, getCategoryForTx,
     handleQuickExpense, navigateMonth, openEditDialog, handleSubmit, handleEditSubmit, handleDelete,
+    categories,
   } = useFinance()
 
   return (
@@ -54,27 +57,44 @@ export default function FinancePage() {
 
       <MonthNav monthLabel={monthLabel} onNavigate={navigateMonth} />
 
-      <SummaryCards stats={stats} isLoading={isLoading} />
+      <Tabs defaultValue="overview">
+        <TabsList>
+          <TabsTrigger value="overview" className="gap-1.5">
+            <Receipt className="h-4 w-4" />Обзор
+          </TabsTrigger>
+          <TabsTrigger value="budget" className="gap-1.5">
+            <Wallet className="h-4 w-4" />Бюджет
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Chart + Category Breakdown */}
-      <div className="grid gap-4 lg:grid-cols-3">
-        <ExpenseChart chartData={chartData} isLoading={isLoading} />
-        <CategoryBreakdown stats={stats} isLoading={isLoading} />
-      </div>
+        <TabsContent value="overview" className="space-y-6">
+          <SummaryCards stats={stats} isLoading={isLoading} />
 
-      {!isLoading && spendingInsights && (
-        <AnalyticsSection spendingInsights={spendingInsights} getCategoryForTx={getCategoryForTx} />
-      )}
+          {/* Chart + Category Breakdown */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <ExpenseChart chartData={chartData} isLoading={isLoading} />
+            <CategoryBreakdown stats={stats} isLoading={isLoading} />
+          </div>
 
-      <TransactionList
-        groupedTransactions={groupedTransactions}
-        activeTab={activeTab}
-        isLoading={isLoading}
-        onTabChange={setActiveTab}
-        onEdit={openEditDialog}
-        onDelete={handleDelete}
-        onAddNew={() => setShowNewDialog(true)}
-      />
+          {!isLoading && spendingInsights && (
+            <AnalyticsSection spendingInsights={spendingInsights} getCategoryForTx={getCategoryForTx} />
+          )}
+
+          <TransactionList
+            groupedTransactions={groupedTransactions}
+            activeTab={activeTab}
+            isLoading={isLoading}
+            onTabChange={setActiveTab}
+            onEdit={openEditDialog}
+            onDelete={handleDelete}
+            onAddNew={() => setShowNewDialog(true)}
+          />
+        </TabsContent>
+
+        <TabsContent value="budget">
+          <BudgetManager month={month} categories={categories} />
+        </TabsContent>
+      </Tabs>
 
       {/* Dialogs */}
       <AddTransactionDialog

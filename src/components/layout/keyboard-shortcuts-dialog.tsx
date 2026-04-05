@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Keyboard } from 'lucide-react'
+import { useAppStore, type AppModule } from '@/store/use-app-store'
 
 interface ShortcutItem {
   keys: string[]
@@ -17,19 +18,35 @@ interface ShortcutItem {
 const SHORTCUTS: ShortcutItem[] = [
   { keys: ['⌘', 'K'], description: 'Глобальный поиск' },
   { keys: ['D'], description: 'Перейти к Дашборду' },
+  { keys: ['J'], description: 'Перейти к Дневнику' },
   { keys: ['F'], description: 'Перейти к Финансам' },
   { keys: ['N'], description: 'Перейти к Питанию' },
   { keys: ['W'], description: 'Перейти к Тренировкам' },
   { keys: ['H'], description: 'Перейти к Привычкам' },
   { keys: ['G'], description: 'Перейти к Целям' },
+  { keys: ['C'], description: 'Перейти к Коллекциям' },
+  { keys: ['A'], description: 'Перейти к Аналитике' },
   { keys: ['?'], description: 'Показать справку по клавишам' },
 ]
 
-const NAVIGATION_SHORTCUTS = SHORTCUTS.filter((_, i) => i >= 1 && i <= 6)
-const ACTION_SHORTCUTS = [SHORTCUTS[0], SHORTCUTS[7]]
+const NAVIGATION_SHORTCUTS = SHORTCUTS.filter((_, i) => i >= 1 && i <= 9)
+const ACTION_SHORTCUTS = [SHORTCUTS[0], SHORTCUTS[10]]
+
+const KEY_MODULE_MAP: Record<string, AppModule> = {
+  d: 'dashboard',
+  j: 'diary',
+  f: 'finance',
+  n: 'nutrition',
+  w: 'workout',
+  h: 'habits',
+  g: 'goals',
+  c: 'collections',
+  a: 'analytics',
+}
 
 export function KeyboardShortcutsDialog() {
   const [open, setOpen] = useState(false)
+  const setActiveModule = useAppStore((s) => s.setActiveModule)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -37,15 +54,27 @@ export function KeyboardShortcutsDialog() {
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
 
-      if (e.key === '?') {
+      const key = e.key.toLowerCase()
+
+      // Toggle shortcuts dialog
+      if (key === '?') {
         e.preventDefault()
         setOpen((prev) => !prev)
+        return
+      }
+
+      // Navigation shortcuts
+      const targetModule = KEY_MODULE_MAP[key]
+      if (targetModule) {
+        e.preventDefault()
+        setActiveModule(targetModule)
+        setOpen(false)
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [setActiveModule])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
