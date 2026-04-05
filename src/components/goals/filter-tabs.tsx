@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 const STATUS_TABS: { key: FilterTab; label: string }[] = [
   { key: 'all', label: 'Все' },
   { key: 'active', label: 'Активные' },
+  { key: 'paused', label: 'На паузе' },
   { key: 'completed', label: 'Завершённые' },
 ]
 

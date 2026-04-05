@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState, useRef } from 'react'
 import {
   Card,
   CardContent,
@@ -8,7 +9,7 @@ import {
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Droplets, RotateCcw } from 'lucide-react'
+import { Droplets, RotateCcw, PartyPopper } from 'lucide-react'
 import type { WaterStats, NutritionGoals } from './types'
 import { DEFAULT_GLASS_ML } from './constants'
 
@@ -21,6 +22,58 @@ interface WaterTrackerProps {
   onResetWater: () => void
 }
 
+// Confetti particle component
+function ConfettiParticles({ active }: { active: boolean }) {
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; color: string; delay: number; size: number }>>([])
+  const hasTriggered = useRef(false)
+
+  useEffect(() => {
+    if (active && !hasTriggered.current) {
+      hasTriggered.current = true
+      const colors = ['#3b82f6', '#60a5fa', '#93c5fd', '#fbbf24', '#34d399', '#a78bfa', '#f472b6']
+      const newParticles = Array.from({ length: 24 }, (_, i) => ({
+        id: i,
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        delay: Math.random() * 0.4,
+        size: 4 + Math.random() * 6,
+      }))
+      // Use setTimeout to avoid synchronous setState in effect
+      const timer = setTimeout(() => setParticles(newParticles), 0)
+      return () => clearTimeout(timer)
+    }
+    if (!active) {
+      hasTriggered.current = false
+      const timer = setTimeout(() => setParticles([]), 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [active])
+
+  if (particles.length === 0) return null
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+      {particles.map((p) => (
+        <div
+          key={p.id}
+          className="absolute animate-water-confetti"
+          style={{
+            left: `${p.x}%`,
+            top: `${p.y}%`,
+            width: `${p.size}px`,
+            height: `${p.size}px`,
+            backgroundColor: p.color,
+            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            animationDelay: `${p.delay}s`,
+            opacity: 0,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
 export function WaterTracker({
   waterStats,
   waterAnimating,
@@ -31,14 +84,27 @@ export function WaterTracker({
 }: WaterTrackerProps) {
   const waterGoal = goals?.dailyWater ?? 2000
   const totalGlasses = Math.ceil(waterGoal / DEFAULT_GLASS_ML)
+  const goalReached = waterStats.percentage >= 100
+
+  // Track which glass is filling — derived from waterAnimating state
+  const fillingGlassIndex = waterAnimating ? waterStats.glasses - 1 : -1
 
   return (
-    <Card className="mb-6">
+    <Card className={`mb-6 relative transition-all duration-700 ${goalReached ? 'ring-2 ring-blue-400/60 shadow-lg shadow-blue-500/20 dark:ring-blue-500/40 dark:shadow-blue-500/10' : ''}`}>
+      {/* Confetti overlay */}
+      <ConfettiParticles active={goalReached} />
+
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Droplets className="size-5 text-blue-500" />
             Вода
+            {goalReached && (
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400">
+                <PartyPopper className="size-3.5" />
+                Цель достигнута!
+              </span>
+            )}
           </CardTitle>
           {waterStats.totalMl > 0 && (
             <Button
@@ -72,10 +138,11 @@ export function WaterTracker({
           </Badge>
         </div>
 
-        {/* Glass grid */}
+        {/* Glass grid with fill animation */}
         <div className="mb-3 grid grid-cols-4 gap-3 sm:grid-cols-8">
           {Array.from({ length: totalGlasses }).map((_, i) => {
             const isFilled = i < waterStats.glasses
+            const isFilling = fillingGlassIndex === i
             return (
               <button
                 key={i}
@@ -83,12 +150,21 @@ export function WaterTracker({
                 className="group flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
               >
                 <div
-                  className={`relative flex size-10 items-center justify-center overflow-hidden rounded-xl border-2 transition-colors ${
+                  className={`relative flex size-10 items-center justify-center overflow-hidden rounded-xl border-2 transition-colors duration-300 ${
                     isFilled
                       ? 'border-blue-400 bg-blue-50 text-blue-500 dark:bg-blue-900/50 dark:border-blue-500'
                       : 'border-muted-foreground/20 bg-muted text-muted-foreground/40 group-hover:border-blue-300 group-hover:text-blue-400'
                   }`}
                 >
+                  {/* Water fill animation layer */}
+                  <div
+                    className={`water-fill-animation absolute bottom-0 left-0 right-0 bg-blue-400/30 rounded-b-[10px] ${
+                      isFilled && !isFilling ? 'h-full' : isFilling ? 'h-full' : 'h-0'
+                    }`}
+                    style={{
+                      transition: isFilling ? 'height 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'height 0.3s ease',
+                    }}
+                  />
                   <svg
                     width="20"
                     height="20"
@@ -98,6 +174,7 @@ export function WaterTracker({
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
+                    className="relative z-10"
                   >
                     <path d="M8 2h8l4 10H4L8 2z" />
                     <path
@@ -105,8 +182,9 @@ export function WaterTracker({
                       fill={isFilled ? 'currentColor' : 'none'}
                     />
                   </svg>
-                  {isFilled && (
-                    <div className="water-wave absolute bottom-0 left-0 right-0 h-3 bg-blue-400/30 rounded-b-lg" />
+                  {/* Goal reached sparkle on last glass */}
+                  {isFilled && goalReached && i === totalGlasses - 1 && (
+                    <div className="goal-sparkle absolute -top-1 -right-1 size-3 rounded-full bg-yellow-400 animate-pulse" />
                   )}
                 </div>
                 <span className="text-[10px] text-muted-foreground">
@@ -124,6 +202,17 @@ export function WaterTracker({
             style={{ width: `${Math.min(waterStats.percentage, 100)}%` }}
           />
         </div>
+
+        {/* Daily progress summary */}
+        <p className="mt-2 text-center text-xs text-muted-foreground">
+          <span className="font-semibold tabular-nums text-foreground">{waterStats.glasses}</span>
+          {' из '}
+          <span className="tabular-nums">{totalGlasses}</span>
+          {' стаканов · '}
+          <span className="font-semibold tabular-nums text-foreground">{waterStats.totalMl}</span>
+          {' мл из '}
+          <span className="tabular-nums">{waterGoal} мл</span>
+        </p>
 
         {/* Quick add button */}
         <div className="mt-3 flex flex-col items-center gap-1">

@@ -17,6 +17,8 @@ import { AddTransactionDialog, EditTransactionDialog } from './transaction-dialo
 import { AnalyticsSection } from './analytics-section'
 import { MonthNav } from './month-nav'
 import { QuickStatsBar } from './quick-stats-bar'
+import { BudgetProgressBar } from './budget-progress-bar'
+import { QuickExpenseBar } from './quick-expense-bar'
 import { BudgetManager } from './budget-manager'
 import { ExportButton } from './export-button'
 import { FinancialHealthScore } from './financial-health-score'
@@ -96,6 +98,17 @@ export default function FinancePage() {
         totalExpense={stats?.totalExpense ?? 0}
         isLoading={isLoading}
       />
+
+      <BudgetProgressBar
+        totalIncome={stats?.totalIncome ?? 0}
+        totalExpense={stats?.totalExpense ?? 0}
+        isLoading={isLoading}
+      />
+
+      <QuickExpenseBar onQuickExpense={(label, amount) => {
+        handleQuickExpense(label, amount)
+        setShowNewDialog(true)
+      }} />
 
       <Tabs defaultValue="overview">
         <TabsList className="w-full overflow-x-auto flex-nowrap no-scrollbar">

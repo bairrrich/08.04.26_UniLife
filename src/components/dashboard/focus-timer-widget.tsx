@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Card,
   CardContent,
@@ -11,6 +12,7 @@ import { Button } from '@/components/ui/button'
 import {
   Timer, Play, Pause, RotateCcw, Clock, Flame, Zap, Coffee,
   Sparkles, Brain, SkipForward, VolumeX, Trophy, Volume1,
+  CloudRain, Building2, Volume2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -130,6 +132,15 @@ const TOTAL_SESSIONS_IN_CYCLE = 4
 const RING_RADIUS = 60
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS
 const RING_SIZE = (RING_RADIUS + 10) * 2
+
+// Ambient Sound Options
+const AMBIENT_SOUNDS = [
+  { id: 'silence', label: 'Тишина', icon: VolumeX, color: 'text-muted-foreground' },
+  { id: 'rain', label: 'Дождь', icon: CloudRain, color: 'text-blue-400' },
+  { id: 'cafe', label: 'Кафе', icon: Building2, color: 'text-amber-400' },
+] as const
+
+type AmbientSound = typeof AMBIENT_SOUNDS[number]['id']
 
 // Motivational messages after session completion
 const MOTIVATIONAL_MESSAGES = [
@@ -364,7 +375,10 @@ export default function FocusTimerWidget() {
   const [todaySessions, setTodaySessions] = useState<FocusSession[]>([])
   const [streak, setStreak] = useState(0)
   const [motivationalMsg, setMotivationalMsg] = useState<string | null>(null)
+  const [ambientSound, setAmbientSound] = useState<AmbientSound>('silence')
+  const [showCelebration, setShowCelebration] = useState(false)
   const motivationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const celebrationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const modeRef = useRef<TimerMode>(mode)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -400,6 +414,11 @@ export default function FocusTimerWidget() {
       }
 
       if (!MODE_CONFIG[currentMode].isBreak) {
+        // Focus session completed — show celebration animation
+        setShowCelebration(true)
+        if (celebrationTimeoutRef.current) clearTimeout(celebrationTimeoutRef.current)
+        celebrationTimeoutRef.current = setTimeout(() => setShowCelebration(false), 2500)
+
         // Focus session completed — save to history
         const newSession = addSession(currentMode, MODE_CONFIG[currentMode].duration)
         const newSessions = currentSessions + 1
@@ -443,6 +462,13 @@ export default function FocusTimerWidget() {
     },
     [refreshStats]
   )
+
+  // Cleanup celebration timeout
+  useEffect(() => {
+    return () => {
+      if (celebrationTimeoutRef.current) clearTimeout(celebrationTimeoutRef.current)
+    }
+  }, [])
 
   // ── Initialize from localStorage ─────────────────────────────────────
   useEffect(() => {
@@ -571,8 +597,57 @@ export default function FocusTimerWidget() {
     setSoundEnabled((prev) => !prev)
   }, [])
 
+  const cycleAmbientSound = useCallback(() => {
+    setAmbientSound((prev) => {
+      const idx = AMBIENT_SOUNDS.findIndex((s) => s.id === prev)
+      return AMBIENT_SOUNDS[(idx + 1) % AMBIENT_SOUNDS.length].id
+    })
+  }, [])
+
   // ── Derived values ───────────────────────────────────────────────────
   const config = MODE_CONFIG[mode]
+
+  // Time-based ring color (green → amber → red)
+  const timeBasedRingColor = useMemo(() => {
+    if (config.isBreak) return config.stroke
+    const fraction = timeLeft / config.duration
+    if (fraction > 0.5) return 'stroke-emerald-500'
+    if (fraction > 0.2) return 'stroke-amber-500'
+    return 'stroke-red-500'
+  }, [timeLeft, config.duration, config.isBreak, config.stroke])
+
+  const timeBasedGlowColor = useMemo(() => {
+    if (config.isBreak) return config.glowClass
+    const fraction = timeLeft / config.duration
+    if (fraction > 0.5) return 'shadow-emerald-500/30'
+    if (fraction > 0.2) return 'shadow-amber-500/30'
+    return 'shadow-red-500/30'
+  }, [timeLeft, config.duration, config.isBreak, config.glowClass])
+
+  const timeBasedGradient = useMemo(() => {
+    if (config.isBreak) return config.ringGradient
+    const fraction = timeLeft / config.duration
+    if (fraction > 0.5) return 'from-emerald-500 to-teal-400'
+    if (fraction > 0.2) return 'from-amber-500 to-orange-400'
+    return 'from-red-500 to-rose-400'
+  }, [timeLeft, config.duration, config.isBreak, config.ringGradient])
+
+  const timeBasedButtonFrom = useMemo(() => {
+    if (config.isBreak) return config.buttonFrom
+    const fraction = timeLeft / config.duration
+    if (fraction > 0.5) return 'from-emerald-500'
+    if (fraction > 0.2) return 'from-amber-500'
+    return 'from-red-500'
+  }, [timeLeft, config.duration, config.isBreak, config.buttonFrom])
+
+  const timeBasedButtonTo = useMemo(() => {
+    if (config.isBreak) return config.buttonTo
+    const fraction = timeLeft / config.duration
+    if (fraction > 0.5) return 'to-teal-500'
+    if (fraction > 0.2) return 'to-orange-500'
+    return 'to-rose-500'
+  }, [timeLeft, config.duration, config.isBreak, config.buttonTo])
+
   const totalDuration = config.duration
   const progress = totalDuration > 0 ? 1 - timeLeft / totalDuration : 0
   const dashOffset = RING_CIRCUMFERENCE * (1 - progress)
@@ -647,22 +722,35 @@ export default function FocusTimerWidget() {
               {streak}
             </span>
           )}
-          {/* Sound toggle */}
-          <button
-            onClick={toggleSound}
-            className={`ml-auto flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 ${
-              soundEnabled
-                ? `${config.iconBg} ${config.iconClass} hover:scale-105 active:scale-95`
-                : 'bg-muted/50 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted'
-            }`}
-            aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
-          >
-            {soundEnabled ? (
-              <Volume1 className="h-3.5 w-3.5" />
-            ) : (
-              <VolumeX className="h-3.5 w-3.5" />
-            )}
-          </button>
+          {/* Sound + Ambient controls */}
+          <div className="ml-auto flex items-center gap-1">
+            <button
+              onClick={cycleAmbientSound}
+              className="flex h-7 items-center gap-1 rounded-lg px-2 text-[10px] font-medium transition-all duration-200 hover:scale-105 active:scale-95 bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted"
+              aria-label="Фоновый звук"
+            >
+              {(() => {
+                const current = AMBIENT_SOUNDS.find((s) => s.id === ambientSound)
+                return current ? <current.icon className={`h-3.5 w-3.5 ${current.color}`} /> : null
+              })()}
+              <span className="hidden sm:inline">{AMBIENT_SOUNDS.find((s) => s.id === ambientSound)?.label}</span>
+            </button>
+            <button
+              onClick={toggleSound}
+              className={`flex h-7 w-7 items-center justify-center rounded-lg transition-all duration-200 ${
+                soundEnabled
+                  ? `${config.iconBg} ${config.iconClass} hover:scale-105 active:scale-95`
+                  : 'bg-muted/50 text-muted-foreground/50 hover:text-muted-foreground hover:bg-muted'
+              }`}
+              aria-label={soundEnabled ? 'Выключить звук' : 'Включить звук'}
+            >
+              {soundEnabled ? (
+                <Volume1 className="h-3.5 w-3.5" />
+              ) : (
+                <VolumeX className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
         </CardTitle>
       </CardHeader>
 
@@ -709,8 +797,41 @@ export default function FocusTimerWidget() {
             </div>
           )}
 
+          {/* ── Celebration Animation ── */}
+          <AnimatePresence>
+            {showCelebration && (
+              <motion.div
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 1.2, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                className="absolute inset-0 z-20 flex items-center justify-center"
+              >
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-emerald-200/60 dark:border-emerald-700/40 bg-background/95 backdrop-blur-sm px-6 py-5 shadow-xl">
+                  <motion.div
+                    initial={{ scale: 0, rotate: -180 }}
+                    animate={{ scale: 1, rotate: 0 }}
+                    transition={{ type: 'spring', stiffness: 400, damping: 15, delay: 0.1 }}
+                    className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/30"
+                  >
+                    <Trophy className="h-7 w-7 text-white" />
+                  </motion.div>
+                  <motion.div
+                    initial={{ y: 10, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="text-center"
+                  >
+                    <p className="text-sm font-bold text-foreground">Сессия завершена!</p>
+                    <p className="text-xs text-muted-foreground">Отличная работа 🎉</p>
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* ── Motivational Message ── */}
-          {motivationalMsg && (
+          {motivationalMsg && !showCelebration && (
             <div className="motivation-enter w-full max-w-[280px] rounded-xl border border-emerald-200/60 dark:border-emerald-700/40 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 px-4 py-2.5 text-center">
               <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
                 <Trophy className="h-4 w-4" />
@@ -785,9 +906,9 @@ export default function FocusTimerWidget() {
                 strokeLinecap="round"
                 strokeDasharray={RING_CIRCUMFERENCE}
                 strokeDashoffset={dashOffset}
-                className={`${config.stroke} transition-[stroke-dashoffset] duration-1000 ease-linear`}
+                className={`${isRunning && !config.isBreak ? timeBasedRingColor : config.stroke} transition-[stroke-dashoffset,stroke] duration-1000 ease-linear`}
                 style={{
-                  filter: isRunning ? `drop-shadow(0 0 6px ${config.stroke.includes('emerald') ? 'oklch(0.55 0.17 155 / 0.5)' : config.stroke.includes('amber') ? 'oklch(0.75 0.15 70 / 0.5)' : config.stroke.includes('violet') ? 'oklch(0.55 0.2 290 / 0.5)' : config.stroke.includes('sky') ? 'oklch(0.55 0.15 230 / 0.5)' : 'oklch(0.55 0.2 30 / 0.5)'})` : 'none',
+                  filter: isRunning ? `drop-shadow(0 0 6px ${timeBasedRingColor.includes('emerald') ? 'oklch(0.55 0.17 155 / 0.5)' : timeBasedRingColor.includes('amber') ? 'oklch(0.75 0.15 70 / 0.5)' : timeBasedRingColor.includes('red') ? 'oklch(0.55 0.2 25 / 0.5)' : config.stroke.includes('violet') ? 'oklch(0.55 0.2 290 / 0.5)' : config.stroke.includes('sky') ? 'oklch(0.55 0.15 230 / 0.5)' : 'oklch(0.55 0.2 30 / 0.5)'})` : 'none',
                 }}
               />
             </svg>
@@ -908,7 +1029,7 @@ export default function FocusTimerWidget() {
 
             <Button
               size="icon"
-              className={`h-14 w-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 bg-gradient-to-br ${config.buttonFrom} ${config.buttonTo} hover:shadow-xl text-white ${config.glowClass}`}
+              className={`h-14 w-14 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 bg-gradient-to-br ${timeBasedButtonFrom} ${timeBasedButtonTo} hover:shadow-xl text-white ${timeBasedGlowColor}`}
               onClick={handleToggle}
               aria-label={isRunning ? 'Пауза' : 'Старт'}
             >

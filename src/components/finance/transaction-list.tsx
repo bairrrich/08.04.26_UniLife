@@ -271,18 +271,20 @@ export function TransactionList({
                         )}
                         <Separator className="mt-1" />
                       </div>
-                      {group.items.map((tx) => {
+                      {group.items.map((tx, txIdx) => {
                         const isIncome = tx.type === 'INCOME'
                         const isTransfer = tx.type === 'TRANSFER'
                         const cat = tx.category || { id: '', name: 'Другое', type: 'EXPENSE', icon: 'circle', color: '#6b7280' } as Category
                         const isExpanded = expandedTxId === tx.id
+                        const isAlt = txIdx % 2 === 1
                         return (
                           <div key={tx.id}>
                             <div
                               className={cn(
                                 'flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer',
                                 isExpanded && 'bg-muted/40',
-                                isTransfer && 'border-l-violet-500'
+                                isTransfer && 'border-l-violet-500',
+                                isAlt && !isExpanded && 'bg-muted/10'
                               )}
                               style={{ borderColor: isTransfer ? undefined : cat.color }}
                               onClick={() => toggleExpanded(tx.id)}

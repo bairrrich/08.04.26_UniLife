@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { Card } from '@/components/ui/card'
 import { formatMacro } from './constants'
 import type { NutritionStats, NutritionGoals } from './types'
@@ -13,6 +14,7 @@ interface MacroRingProps {
   bgColor: string
   darkBgColor: string
   icon: React.ReactNode
+  animated?: boolean
 }
 
 export function MacroRing({
@@ -22,15 +24,34 @@ export function MacroRing({
   label,
   unit,
   icon,
+  animated = true,
 }: MacroRingProps) {
   const pct = Math.min((value / goal) * 100, 100)
   const radius = 18
   const circumference = 2 * Math.PI * radius
-  const offset = circumference - (pct / 100) * circumference
+  const [displayPct, setDisplayPct] = useState(animated ? 0 : pct)
+  const [displayValue, setDisplayValue] = useState(animated ? 0 : value)
   const size = 48
 
+  useEffect(() => {
+    if (!animated) return
+    const duration = 800
+    const startTime = Date.now()
+ const animate = () => {
+      const elapsed = Date.now() - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplayPct(eased * pct)
+      setDisplayValue(eased * value)
+      if (progress < 1) requestAnimationFrame(animate)
+    }
+    requestAnimationFrame(animate)
+  }, [value, pct, animated])
+
+  const offset = circumference - (displayPct / 100) * circumference
+
   return (
-    <Card className="rounded-xl border p-4" style={{ padding: '1rem' }}>
+    <Card className="rounded-xl border p-4 card-hover" style={{ padding: '1rem' }}>
       <div className="flex items-center gap-3">
         <div className="relative shrink-0" style={{ width: size, height: size }}>
           <svg
@@ -63,23 +84,23 @@ export function MacroRing({
               }}
             />
           </svg>
-          <div
-            className="absolute inset-0 flex items-center justify-center"
-            style={{ color }}
-          >
-            {icon}
+          {/* Center percentage text */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[11px] font-bold tabular-nums" style={{ color }}>
+              {Math.round(displayPct)}%
+            </span>
           </div>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className="text-sm font-bold leading-tight">
-            {formatMacro(value, unit)}
+          <p className="text-sm font-bold leading-tight tabular-nums">
+            {formatMacro(displayValue, unit)}
             <span className="ml-1 text-xs font-normal text-muted-foreground">
               / {goal}{unit}
             </span>
           </p>
           <p className="text-xs font-semibold mt-0.5 tabular-nums" style={{ color }}>
-            {Math.round(pct)}%
+            {Math.round(displayPct)}%
           </p>
         </div>
       </div>

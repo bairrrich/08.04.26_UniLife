@@ -1,6 +1,6 @@
 'use client'
 
-import { Library, Plus, ArrowUpDown, Search } from 'lucide-react'
+import { Library, Plus, ArrowUpDown, Search, LayoutGrid, List, SortAsc, Star } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,12 +20,14 @@ import { StatsBar } from './stats-bar'
 import { ItemCard } from './item-card'
 import { AddItemDialog } from './add-item-dialog'
 import { ItemDialog } from './item-dialog'
+import { cn } from '@/lib/utils'
 
 export default function CollectionsPage() {
   const {
     items, loading, activeType, activeStatus, sortBy,
     setActiveType, setActiveStatus, setSortBy,
     searchQuery, setSearchQuery,
+    viewMode, setViewMode,
     dialogOpen, setDialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
     formType, setFormType, formTitle, setFormTitle,
@@ -44,6 +46,8 @@ export default function CollectionsPage() {
     totalCount, completedCount, inProgressCount, averageRating,
     typeCounts,
     formNotes, setFormNotes,
+    getRelatedItems,
+    favorites, toggleFavorite,
   } = useCollections()
 
   return (
@@ -125,7 +129,7 @@ export default function CollectionsPage() {
           ))}
         </div>
 
-        {/* Status filter + Sort */}
+        {/* Status filter + Sort + View Mode */}
         <div className="flex gap-2 mt-4 flex-wrap items-center justify-between">
           <div className="flex gap-2 flex-wrap">
             <Button variant={activeStatus === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus('all')}>
@@ -138,21 +142,49 @@ export default function CollectionsPage() {
             ))}
           </div>
 
-          {/* Sort dropdown */}
           <div className="flex items-center gap-2">
-            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
-              <SelectTrigger className="w-auto text-xs h-8 min-w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {SORT_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {/* Sort dropdown */}
+            <div className="flex items-center gap-2">
+              <SortAsc className="h-3.5 w-3.5 text-muted-foreground" />
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+                <SelectTrigger className="w-auto text-xs h-8 min-w-[140px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SORT_OPTIONS.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Grid/List view toggle */}
+            <div className="hidden sm:flex items-center gap-1 rounded-lg border bg-muted/40 p-0.5">
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'p-1.5 rounded-md transition-colors',
+                  viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Сетка"
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'p-1.5 rounded-md transition-colors',
+                  viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                )}
+                title="Список"
+              >
+                <List className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -206,11 +238,75 @@ export default function CollectionsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 stagger-children">
-              {items.map((item) => (
-                <ItemCard key={item.id} item={item} onClick={openDetail} />
-              ))}
-            </div>
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 stagger-children">
+                {items.map((item) => (
+                  <ItemCard
+                    key={item.id}
+                    item={item}
+                    onClick={openDetail}
+                    isFavorite={favorites.has(item.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3 stagger-children">
+                {items.map((item) => (
+                  <Card
+                    key={item.id}
+                    className="overflow-hidden cursor-pointer group card-hover"
+                    onClick={() => openDetail(item)}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex gap-3">
+                        {/* Cover thumbnail */}
+                        <div
+                          className="h-14 w-14 rounded-lg bg-gradient-to-br shrink-0 flex items-center justify-center overflow-hidden group-hover:scale-[1.05] transition-transform duration-300"
+                          style={{ backgroundColor: 'transparent' }}
+                        >
+                          <div
+                            className={`h-full w-full flex items-center justify-center bg-gradient-to-br ${getCoverGradient(item.id)}`}
+                          >
+                            <div className="text-white/80">
+                              {TYPE_ICONS_LARGE[item.type as CollectionType] && (
+                                <span className="[&>svg]:h-5 [&>svg]:w-5">{TYPE_ICONS_LARGE[item.type as CollectionType]}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-medium line-clamp-1">{item.title}</h3>
+                            <span
+                              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[item.status]}`}
+                            >
+                              {STATUS_LABELS[item.status]}
+                            </span>
+                          </div>
+                          {item.author && (
+                            <p className="text-xs text-muted-foreground truncate">{item.author}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1">
+                            {item.rating && (
+                              <div className="flex items-center gap-0.5">
+                                {Array.from({ length: 5 }).map((_, i) => (
+                                  <Star key={i} className={cn(
+                                    'h-3 w-3 transition-colors',
+                                    i < (item.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30',
+                                  )} />
+                                ))}
+                              </div>
+                            )}
+                            <span className="text-[10px] text-muted-foreground">{formatDaysAgo(item.createdAt)}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )
           )}
         </TabsContent>
       </Tabs>
@@ -231,7 +327,56 @@ export default function CollectionsPage() {
         onSaveEdit={handleEditSave}
         onStatusUpdate={handleStatusUpdate} onDelete={handleDelete}
         onRatingUpdate={handleRatingUpdate}
+        isFavorite={detailItem ? favorites.has(detailItem.id) : false}
+        onToggleFavorite={toggleFavorite}
+        relatedItems={detailItem ? getRelatedItems(detailItem) : []}
+        onOpenRelated={openDetail}
       />
     </div>
   )
+}
+
+// ─── Re-export for list view ────────────────────────────────────────────────────
+
+function getCoverGradient(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const COVER_COLORS = [
+    'from-rose-400 to-pink-500',
+    'from-blue-400 to-indigo-500',
+    'from-emerald-400 to-teal-500',
+    'from-amber-400 to-orange-500',
+    'from-purple-400 to-violet-500',
+    'from-cyan-400 to-sky-500',
+    'from-fuchsia-400 to-pink-500',
+    'from-lime-400 to-green-500',
+  ]
+  return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length]
+}
+
+function formatDaysAgo(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / 86400000)
+  if (diffDays === 0) return 'Добавлено сегодня'
+  if (diffDays === 1) return 'Добавлено вчера'
+  if (diffDays < 21) {
+    const lastDigit = diffDays % 10
+    const lastTwo = diffDays % 100
+    if (lastTwo >= 11 && lastTwo <= 19) return `Добавлено ${diffDays} дней назад`
+    if (lastDigit === 1) return `Добавлено ${diffDays} день назад`
+    if (lastDigit >= 2 && lastDigit <= 4) return `Добавлено ${diffDays} дня назад`
+    return `Добавлено ${diffDays} дней назад`
+  }
+  const diffMonths = Math.floor(diffDays / 30)
+  if (diffMonths === 1) return 'Добавлено 1 месяц назад'
+  if (diffMonths < 5) return `Добавлено ${diffMonths} месяца назад`
+  return `Добавлено ${diffMonths} месяцев назад`
+}
+
+function TYPE_ICONS_LARGE(type: CollectionType): React.ReactNode {
+  return <div />
 }

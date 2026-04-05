@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 import type { Period } from '@/lib/format'
 import { RU_DAYS_SHORT } from '@/lib/format'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 import type { ActivityStats } from './types'
 
 interface ActivityOverviewProps {
@@ -110,7 +111,7 @@ export function ActivityOverview({ loading, activityStats, period }: ActivityOve
               <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-bold tabular-nums leading-tight">{activityStats.totalActions}</p>
+              <p className="text-lg font-bold tabular-nums leading-tight"><AnimatedNumber value={activityStats.totalActions} /></p>
               <p className="text-[11px] text-muted-foreground leading-tight truncate">Всего действий</p>
             </div>
           </div>
@@ -143,7 +144,7 @@ export function ActivityOverview({ loading, activityStats, period }: ActivityOve
               <TrendingUp className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="min-w-0">
-              <p className="text-lg font-bold tabular-nums leading-tight">{activityStats.avgDaily}</p>
+              <p className="text-lg font-bold tabular-nums leading-tight"><AnimatedNumber value={parseFloat(activityStats.avgDaily)} /></p>
               <p className="text-[11px] text-muted-foreground leading-tight truncate">Среднее за день</p>
             </div>
           </div>

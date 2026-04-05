@@ -9,6 +9,7 @@ import {
   ChevronRight,
   CalendarDays,
   List,
+  Flame,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -34,6 +35,8 @@ import { EntryDialog } from './entry-dialog'
 import { WeekMoodBar } from './week-mood-bar'
 import { MoodTrend } from './mood-trend'
 import { WritingStatsWidget } from './writing-stats-widget'
+import { WritingPrompts } from './writing-prompts'
+import { WritingStreakBadge } from './writing-streak-badge'
 
 const emptyForm: EntryFormData = {
   title: '',
@@ -366,9 +369,12 @@ export default function DiaryPage() {
                   {format(today, 'd MMMM, EEEE', { locale: ru })}
                 </span>
               </div>
-              {/* Mood Trend Mini Chart */}
+              {/* Streak Indicator */}
               {!isLoading && entries.length > 0 && (
-                <MoodTrend entries={entries} today={today} className="mt-2" />
+                <div className="mt-2 flex items-center gap-3">
+                  <MoodTrend entries={entries} today={today} className="flex-1" />
+                  <WritingStreakBadge entries={entries} today={today} />
+                </div>
               )}
             </div>
           </div>
@@ -402,6 +408,20 @@ export default function DiaryPage() {
 
       {/* Writing Stats Widget */}
       <WritingStatsWidget className="stagger-children" />
+
+      {/* Writing Prompts */}
+      <WritingPrompts
+        className="card-hover"
+        onPromptClick={(prompt) => {
+          setForm((f) => ({
+            ...emptyForm,
+            date: selectedDate || today,
+            content: prompt,
+          }))
+          setTagInput('')
+          setShowNewDialog(true)
+        }}
+      />
 
       {/* Weekly Calendar Strip */}
       <Card className="rounded-xl border overflow-hidden">

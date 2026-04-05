@@ -15,6 +15,33 @@ export const COLOR_OPTIONS = [
 
 export const DAY_LABELS = RU_DAYS_SHORT
 
+// ─── Habit Categories ────────────────────────────────────────────────────────
+
+export const HABIT_CATEGORIES = [
+  { value: 'health', label: 'Здоровье', emoji: '💪', color: '#ef4444' },
+  { value: 'productivity', label: 'Продуктивность', emoji: '⚡', color: '#f59e0b' },
+  { value: 'study', label: 'Учёба', emoji: '📚', color: '#3b82f6' },
+  { value: 'mindfulness', label: 'Осознанность', emoji: '🧘', color: '#8b5cf6' },
+  { value: 'social', label: 'Общение', emoji: '🤝', color: '#06b6d4' },
+  { value: 'creative', label: 'Творчество', emoji: '🎨', color: '#ec4899' },
+  { value: 'finance', label: 'Финансы', emoji: '💰', color: '#10b981' },
+  { value: 'other', label: 'Другое', emoji: '✨', color: '#6366f1' },
+] as const
+
+export type HabitCategory = typeof HABIT_CATEGORIES[number]['value']
+
+// ─── Frequency Options ───────────────────────────────────────────────────────
+
+export const FREQUENCY_OPTIONS = [
+  { value: 'daily', label: 'Каждый день', shortLabel: 'Ежедневно' },
+  { value: 'weekdays', label: 'Будни (Пн-Пт)', shortLabel: 'Будни' },
+  { value: 'weekends', label: 'Выходные (Сб-Вс)', shortLabel: 'Выходные' },
+  { value: 'weekly', label: 'Раз в неделю', shortLabel: 'Еженедельно' },
+  { value: 'custom', label: 'Выбрать дни', shortLabel: 'Выборочно' },
+] as const
+
+// ─── Motivational Phrases ────────────────────────────────────────────────────
+
 const MOTIVATIONAL_PHRASES = [
   'Маленькие ежедневные действия создают большие результаты.',
   'Дисциплина — это мост между целями и достижениями.',
@@ -37,17 +64,18 @@ export interface HabitPreset {
   name: string
   emoji: string
   color: string
+  category?: string
 }
 
 export const HABIT_PRESETS: HabitPreset[] = [
-  { name: 'Пить воду', emoji: '💧', color: '#06b6d4' },
-  { name: 'Медитация', emoji: '🧘', color: '#8b5cf6' },
-  { name: 'Чтение', emoji: '📖', color: '#3b82f6' },
-  { name: 'Прогулка', emoji: '🚶', color: '#10b981' },
-  { name: 'Сон до 23:00', emoji: '😴', color: '#6366f1' },
-  { name: 'Без соцсетей', emoji: '📵', color: '#ef4444' },
-  { name: 'Утренняя зарядка', emoji: '💪', color: '#f97316' },
-  { name: 'Благодарность', emoji: '🙏', color: '#f59e0b' },
+  { name: 'Пить воду', emoji: '💧', color: '#06b6d4', category: 'health' },
+  { name: 'Медитация', emoji: '🧘', color: '#8b5cf6', category: 'mindfulness' },
+  { name: 'Чтение', emoji: '📖', color: '#3b82f6', category: 'study' },
+  { name: 'Прогулка', emoji: '🚶', color: '#10b981', category: 'health' },
+  { name: 'Сон до 23:00', emoji: '😴', color: '#6366f1', category: 'health' },
+  { name: 'Без соцсетей', emoji: '📵', color: '#ef4444', category: 'productivity' },
+  { name: 'Утренняя зарядка', emoji: '💪', color: '#f97316', category: 'health' },
+  { name: 'Благодарность', emoji: '🙏', color: '#f59e0b', category: 'mindfulness' },
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -90,4 +118,14 @@ export function getMotivationalPhrase(): string {
 export function getDayOfWeekSubtitle(): string {
   const day = new Date().getDay()
   return DAY_SUBTITLES[day] || DAY_SUBTITLES[1]
+}
+
+export function getCategoryLabel(value: string): string {
+  const cat = HABIT_CATEGORIES.find(c => c.value === value)
+  return cat ? cat.label : 'Другое'
+}
+
+export function getCategoryEmoji(value: string): string {
+  const cat = HABIT_CATEGORIES.find(c => c.value === value)
+  return cat ? cat.emoji : '✨'
 }

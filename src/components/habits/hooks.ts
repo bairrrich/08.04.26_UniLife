@@ -15,6 +15,8 @@ interface AddFormState {
   color: string
   frequency: string
   targetCount: string
+  category: string
+  reminderTime: string
 }
 
 interface EditFormState {
@@ -25,15 +27,20 @@ interface EditFormState {
   color: string
   frequency: string
   targetCount: string
+  category: string
+  reminderTime: string
 }
 
 interface UseHabitsReturn {
   // Data
   habits: HabitData[]
+  archivedHabits: HabitData[]
   stats: { totalActive: number; completedToday: number; bestStreak: number }
   loading: boolean
   last7Days: string[]
   weeklyStats: { rate: number; color: 'emerald' | 'amber' | 'red' }
+  categoryFilter: string
+  setCategoryFilter: (v: string) => void
 
   // Add form
   addForm: AddFormState
@@ -46,6 +53,10 @@ interface UseHabitsReturn {
   // Delete confirmation
   deleteConfirmId: string | null
   handleDeleteClick: (habitId: string) => void
+
+  // Archive
+  handleArchive: (habitId: string) => void
+  handleUnarchive: (habitId: string) => void
 
   // Actions
   handleCreate: () => Promise<void>
@@ -62,6 +73,8 @@ const DEFAULT_ADD_FORM: AddFormState = {
   color: '#10b981',
   frequency: 'daily',
   targetCount: '1',
+  category: 'health',
+  reminderTime: '',
 }
 
 const DEFAULT_EDIT_FORM: EditFormState = {
@@ -72,6 +85,8 @@ const DEFAULT_EDIT_FORM: EditFormState = {
   color: '#10b981',
   frequency: 'daily',
   targetCount: '1',
+  category: 'health',
+  reminderTime: '',
 }
 
 export function useHabits(): UseHabitsReturn {
@@ -79,6 +94,7 @@ export function useHabits(): UseHabitsReturn {
   const [habits, setHabits] = useState<HabitData[]>([])
   const [stats, setStats] = useState({ totalActive: 0, completedToday: 0, bestStreak: 0 })
   const [loading, setLoading] = useState(true)
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
   // ─── Dialog state ───────────────────────────────────────────────────────
   const [addForm, setAddForm] = useState<AddFormState>(DEFAULT_ADD_FORM)
@@ -112,11 +128,14 @@ export function useHabits(): UseHabitsReturn {
   // ─── Derived data ───────────────────────────────────────────────────────
   const last7Days = useMemo(() => getLast7Days(), [])
 
+  const archivedHabits = useMemo(() => habits.filter(h => h.archived), [habits])
+
   const weeklyStats = useMemo(() => {
-    if (habits.length === 0) return { rate: 0, color: 'emerald' as const }
+    const activeHabits = habits.filter(h => !h.archived)
+    if (activeHabits.length === 0) return { rate: 0, color: 'emerald' as const }
     let totalCompleted = 0
-    const totalPossible = habits.length * 7
-    for (const habit of habits) {
+    const totalPossible = activeHabits.length * 7
+    for (const habit of activeHabits) {
       for (const day of last7Days) {
         if (habit.last7Days[day]) totalCompleted++
       }
@@ -140,6 +159,7 @@ export function useHabits(): UseHabitsReturn {
         body: JSON.stringify({
           name: addForm.name.trim(), emoji: addForm.emoji, color: addForm.color,
           frequency: addForm.frequency, targetCount: parseInt(addForm.targetCount) || 1,
+          category: addForm.category,
         }),
       })
       const json = await safeJson<{ success: boolean }>(res)
@@ -175,6 +195,8 @@ export function useHabits(): UseHabitsReturn {
       color: habit.color,
       frequency: habit.frequency,
       targetCount: String(habit.targetCount),
+      category: habit.category || 'other',
+      reminderTime: '',
     })
   }, [])
 
@@ -187,6 +209,7 @@ export function useHabits(): UseHabitsReturn {
         body: JSON.stringify({
           name: editForm.name.trim(), emoji: editForm.emoji, color: editForm.color,
           frequency: editForm.frequency, targetCount: parseInt(editForm.targetCount) || 1,
+          category: editForm.category,
         }),
       })
       const json = await safeJson<{ success: boolean }>(res)
@@ -217,6 +240,42 @@ export function useHabits(): UseHabitsReturn {
     }
   }, [fetchHabits])
 
+  const handleArchive = useCallback(async (habitId: string) => {
+    toast.dismiss()
+    try {
+      const res = await fetch(`/api/habits/${habitId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: true }),
+      })
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
+        toast.success('Привычка архивирована'); fetchHabits()
+      } else {
+        toast.error('Ошибка')
+      }
+    } catch {
+      toast.error('Ошибка архивации')
+    }
+  }, [fetchHabits])
+
+  const handleUnarchive = useCallback(async (habitId: string) => {
+    toast.dismiss()
+    try {
+      const res = await fetch(`/api/habits/${habitId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ archived: false }),
+      })
+      const json = await safeJson<{ success: boolean }>(res)
+      if (json && json.success) {
+        toast.success('Привычка восстановлена'); fetchHabits()
+      } else {
+        toast.error('Ошибка')
+      }
+    } catch {
+      toast.error('Ошибка восстановления')
+    }
+  }, [fetchHabits])
+
   const handleDeleteClick = useCallback((habitId: string) => {
     if (deleteConfirmId === habitId) {
       if (deleteTimerRef.current) { clearTimeout(deleteTimerRef.current); deleteTimerRef.current = null }
@@ -229,10 +288,12 @@ export function useHabits(): UseHabitsReturn {
   }, [deleteConfirmId, handleDelete])
 
   return {
-    habits, stats, loading, last7Days, weeklyStats,
+    habits, archivedHabits, stats, loading, last7Days, weeklyStats,
+    categoryFilter, setCategoryFilter,
     addForm, setAddForm,
     editForm, setEditForm,
     deleteConfirmId, handleDeleteClick,
     handleCreate, handleToggle, handleEdit, handleUpdate, handleDelete,
+    handleArchive, handleUnarchive,
   }
 }

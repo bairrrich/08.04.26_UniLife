@@ -1,13 +1,14 @@
 'use client'
 
 import { useMemo } from 'react'
-import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight } from 'lucide-react'
+import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
 import { useGoals } from './hooks'
-import { getMotivationalPhrase } from './constants'
+import { getMotivationalSubtitle, getMotivationalPhrase, getMotivationalQuote } from './constants'
 import { GoalStats } from './goal-stats'
 import { GoalCard } from './goal-card'
 import { GoalDialog } from './goal-dialog'
@@ -43,8 +44,12 @@ export default function GoalsPage() {
     formCurrentValue, setFormCurrentValue, formUnit, setFormUnit,
     formDeadline, setFormDeadline, formStatus, setFormStatus,
     formProgress, setFormProgress,
+    formStartDate, setFormStartDate,
+    formPriority, setFormPriority,
+    formMilestones, setFormMilestones,
     openAddDialog, openEditDialog, handleSubmit,
     handleUpdateProgress, handleComplete, handleDelete,
+    handleMilestoneToggle,
     filteredGoals,
   } = useGoals()
 
@@ -60,6 +65,9 @@ export default function GoalsPage() {
       })
       .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime())
   }, [goals])
+
+  // Motivational quote
+  const quote = useMemo(() => getMotivationalQuote(), [])
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -95,6 +103,9 @@ export default function GoalsPage() {
             formDeadline={formDeadline} setFormDeadline={setFormDeadline}
             formStatus={formStatus} setFormStatus={setFormStatus}
             formProgress={formProgress} setFormProgress={setFormProgress}
+            formStartDate={formStartDate} setFormStartDate={setFormStartDate}
+            formPriority={formPriority} setFormPriority={formPriority}
+            formMilestones={formMilestones} setFormMilestones={setFormMilestones}
             submitting={submitting} onSubmit={handleSubmit}
           />
         </div>
@@ -144,6 +155,27 @@ export default function GoalsPage() {
       ) : (
         <>
           <GoalStats goals={goals} stats={stats} />
+
+          {/* Motivational Quote */}
+          <Card className="overflow-hidden relative card-hover">
+            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+            <CardContent className="relative p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-9 w-9 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
+                  <Quote className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-foreground/90 italic leading-relaxed">
+                    &ldquo;{quote.text}&rdquo;
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                    <Sparkles className="h-3 w-3 text-amber-500" />
+                    — {quote.author}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Overdue Goals Attention Banner */}
           {overdueGoals.length > 0 && (

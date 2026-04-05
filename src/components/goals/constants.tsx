@@ -15,6 +15,9 @@ import {
   XCircle,
   Target,
   Calendar,
+  ArrowUp,
+  Minus,
+  ArrowDown,
 } from 'lucide-react'
 
 // ─── Category Config ─────────────────────────────────────────────────────────
@@ -150,6 +153,38 @@ export const STATUS_CONFIG: Record<string, {
 
 export const DEFAULT_STATUS = STATUS_CONFIG.active
 
+// ─── Priority Config ─────────────────────────────────────────────────────────
+
+export const PRIORITY_CONFIG: Record<string, {
+  label: string
+  color: string
+  bgClass: string
+  borderClass: string
+  icon: React.ReactNode
+}> = {
+  high: {
+    label: 'Высокий',
+    color: 'text-rose-600 dark:text-rose-400',
+    bgClass: 'bg-rose-100 dark:bg-rose-900/30',
+    borderClass: 'border-rose-200 dark:border-rose-800/50',
+    icon: <ArrowUp className="h-3 w-3" />,
+  },
+  medium: {
+    label: 'Средний',
+    color: 'text-amber-600 dark:text-amber-400',
+    bgClass: 'bg-amber-100 dark:bg-amber-900/30',
+    borderClass: 'border-amber-200 dark:border-amber-800/50',
+    icon: <Minus className="h-3 w-3" />,
+  },
+  low: {
+    label: 'Низкий',
+    color: 'text-sky-600 dark:text-sky-400',
+    bgClass: 'bg-sky-100 dark:bg-sky-900/30',
+    borderClass: 'border-sky-200 dark:border-sky-800/50',
+    icon: <ArrowDown className="h-3 w-3" />,
+  },
+}
+
 // ─── Options ─────────────────────────────────────────────────────────────────
 
 export const CATEGORY_OPTIONS = [
@@ -168,12 +203,34 @@ export const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Отменено' },
 ]
 
+export const PRIORITY_OPTIONS = [
+  { value: 'high', label: '🔴 Высокий' },
+  { value: 'medium', label: '🟡 Средний' },
+  { value: 'low', label: '🔵 Низкий' },
+]
+
 const MOTIVATIONAL_PHRASES = [
   'Каждая цель — это шаг к лучшей версии себя.',
   'Великие дела начинаются с малого первого шага.',
   'Дисциплина и настойчивость превращают мечты в реальность.',
   'Тот, кто чётко видит цель, уже на полпути к ней.',
   'Сегодняшние усилия — завтрашние достижения.',
+  'Не бойтесь медленного прогресса, бойтесь стоять на месте.',
+  'Самый лучший момент начать — сейчас.',
+  'Успех — это сумма маленьких усилий, повторяемых день за днём.',
+]
+
+const MOTIVATIONAL_QUOTES = [
+  { text: 'Будущее принадлежит тем, кто верит в красоту своей мечты.', author: 'Элеонора Рузвельт' },
+  { text: 'Путь в тысячу миль начинается с одного шага.', author: 'Лао-цзы' },
+  { text: 'Единственный способ делать великие дела — любить то, что делаешь.', author: 'Стив Джобс' },
+  { text: 'Не жди. Время никогда не будет идеальным.', author: 'Наполеон Хилл' },
+  { text: 'Успех — это не конец, неудача — не фатальна. Значение имеет лишь мужество продолжать.', author: 'Уинстон Черчилль' },
+  { text: 'Начни там, где ты есть. Используй то, что имеешь. Делай то, что можешь.', author: 'Артур Эш' },
+  { text: 'Дисциплина — это мост между целями и достижениями.', author: 'Джим Рон' },
+  { text: 'Чем усерднее ты работаешь, тем удачливее ты становишься.', author: 'Неизвестный автор' },
+  { text: 'Ваши ограничения — это лишь ограничения вашего воображения.', author: 'Неизвестный автор' },
+  { text: 'Всё, что ты можешь вообразить — реально.', author: 'Пабло Пикассо' },
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -181,6 +238,11 @@ const MOTIVATIONAL_PHRASES = [
 export function getMotivationalPhrase(): string {
   const idx = new Date().getDate() % MOTIVATIONAL_PHRASES.length
   return MOTIVATIONAL_PHRASES[idx]
+}
+
+export function getMotivationalQuote(): { text: string; author: string } {
+  const idx = Math.floor((Date.now() / (1000 * 60 * 60 * 6)) % MOTIVATIONAL_QUOTES.length)
+  return MOTIVATIONAL_QUOTES[idx]
 }
 
 export function getDeadlineCountdown(deadline: string | null): string | null {

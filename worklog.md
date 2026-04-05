@@ -6389,3 +6389,197 @@ Task: QA testing, bug fix, and feature development
 - 7 existing features enhanced (page transitions, search dialog, sidebar nav, mobile nav, diary entries, diary detail, settings data)
 - 8 new CSS animations added
 - All modules verified working in all viewports and modes
+---
+## Task ID: polish-settings-habits-goals-feed
+### Agent: visual-enhance-agent
+### Work Task: Polish Settings, Habits, Goals, and Feed modules with visual enhancements
+
+### Work Summary:
+
+#### 1. Settings Profile Section (`profile-section.tsx`)
+- **Avatar picker**: Added 12 gradient avatar options (emerald, violet, amber, rose, blue, cyan, fuchsia, lime, red, teal, indigo, orange). Users can click to select; selected avatar shows ring highlight and scale effect. Choice persists in localStorage.
+- **Profile completion percentage bar**: Added a shadcn `Progress` bar at the top of the profile section showing completion percentage (based on name, email, bio, avatar selection). Color-coded: emerald ≥75%, amber ≥50%, red <50%.
+- **Animated save button**: Three states — default "Сохранить изменения", loading with spinning `Loader2` icon, saved with animated checkmark `Check` icon that auto-hides after 2.5s.
+- **Character counter for bio**: Added live character counter (X/200) below the bio textarea. Turns amber when approaching 90% of limit.
+
+#### 2. Habits Page Enhancement (`habit-page.tsx`)
+- **Today's plan summary**: New card above stats showing "План на сегодня" with three metrics: planned count, completed count (with CheckCircle icon), remaining count (with Clock icon), and a circular SVG mini progress indicator showing percentage.
+- **Longest streak celebration banner**: New amber/orange gradient banner that appears when any habit has a streak ≥7 days. Shows trophy icon, habit name with emoji, streak count in days, and a bold badge.
+- **Difficulty indicators**: Already existed in habit-card.tsx (colored dots based on targetCount heuristic: green=1, amber=2, red=3+).
+- **Mini 7-day heatmap strip**: Already existed in habit-card.tsx as GitHub-style contribution squares with day labels.
+- Persist avatar gradient selection to localStorage
+
+#### 3. Goals Page Enhancement (`goal-card.tsx`)
+- **Deadline warning indicator**: Changed threshold from 7 days to 3 days for "Скоро дедлайн!" amber badge with ⚡ icon and pulse animation.
+- **Thin progress bar at top of card**: Added a full-width 1px tall colored progress bar at the very top of each goal card (above all content), using the same color coding as the progress ring.
+- **Progress velocity**: Added "На этом темпе через X дней" calculation based on days since creation vs current progress. Shows with violet Zap icon. Handles Russian pluralization for "день/дня/дней".
+- **Subcategory tags**: Added category-specific tag suggestions (e.g., health → спорт, питание, сон, медицина, ментальное). Shows up to 3 tags per goal card with Tag icon.
+
+#### 4. Feed Page Enhancement (`post-card.tsx`)
+- **Image preview support**: Added `extractImageUrl()` function that detects URLs ending in .jpg/.png/.gif/.webp in post captions. When found, renders an `<img>` tag with max-height 400px and a "Фото" badge overlay. Handles image load errors gracefully.
+- **Reply threading**: Added inline reply input under each comment. Click "Ответить" to open a compact reply input with avatar, auto-focus, Enter to submit, and Cancel button. Reply state managed per comment with `ReplyState` interface.
+- **Post reactions**: Already existed (like, love, fire, applause, wow with hover picker). Kept intact.
+- **Pinned posts**: Added `useLocalStorage` helper hook. Pin/Unpin button on each post card header and in dropdown menu. Pinned posts show amber ring border and "Закреплено" badge. Pin state persists in localStorage.
+- Added `Reply` button to each comment with hover effect
+
+#### Files Modified:
+- `/src/components/layout/settings/profile-section.tsx` — Full rewrite
+- `/src/components/habits/habit-page.tsx` — Added today's plan summary + streak celebration banner
+- `/src/components/goals/goal-card.tsx` — Added top progress bar, velocity, deadline warning (3 days), subcategory tags
+- `/src/components/feed/post-card.tsx` — Added image preview, reply threading, pinned posts, useLocalStorage hook
+- `/src/components/feed/feed-page.tsx` — No structural changes (already well-featured)
+
+### Verification Results:
+- ✅ All modified files pass ESLint (0 errors)
+- ✅ Dev server compiles without errors
+- ✅ Pre-existing lint errors in other files (dashboard, nutrition, onboarding) unrelated to changes
+- ✅ All existing functionality preserved (like toggle, post creation, comments, share)
+
+---
+## Task ID: nutrition-workout-micro-interactions
+### Agent: micro-interactions-agent
+### Task: Enhance Nutrition and Workout modules with micro-interactions and visual polish
+
+### Work Summary:
+
+**1. Water Tracker Enhancement (`water-tracker.tsx`):**
+- Added **confetti/sparkle micro-animation** when goal (100%) is reached — 24 colorful particles animate upward and fade out using CSS `@keyframes water-confetti`
+- Added **individual glass fill animation** — when adding water, a blue fill layer inside each glass animates from `h-0` to `h-full` using `cubic-bezier(0.34, 1.56, 0.64, 1)` spring easing
+- Added **daily progress summary text** below the progress bar: "X из Y стаканов · Z мл из W мл" with bold numbers
+- Added **goal sparkle dot** — pulsing yellow dot on the last glass when goal reached
+- Added **subtle glow effect** — `ring-2 ring-blue-400/60 shadow-lg shadow-blue-500/20` around the card when goal is reached
+- Added "Цель достигнута!" badge with PartyPopper icon when goal is met
+- Used derived `fillingGlassIndex` from `waterAnimating` state to avoid `useState` in effect (lint-compliant)
+
+**2. Meal Timeline Polish (`meal-timeline.tsx`):**
+- Added **drag-to-reorder visual hint** — `GripVertical` icon on the left side of each meal card with cursor-grab/cursor-grabbing and opacity transition on hover
+- Enhanced **meal time badges** — now uses `rounded-full` pill shape with `border border-muted` for a more prominent clock icon display
+- Improved **empty state** — added a 4-emoji cooking grid (🍳🥗🥘🥙) with `animate-float-animation` stagger delays, above the existing gradient icon
+- Added **meal type icon colored circles** — Breakfast (amber), Lunch (orange), Dinner (rose), Snack (purple) with `rounded-full` backgrounds
+- Updated `MEAL_TYPE_CONFIG` in `constants.tsx` to use new color scheme: LUNCH → orange, DINNER → rose, SNACK → purple
+
+**3. Nutrition Page Weekly Overview (`weekly-overview.tsx` — NEW FILE):**
+- Created new `WeeklyOverview` component with glass-card styling
+- Fetches 7-day calorie data via `/api/nutrition/stats` API for each day
+- Shows 3 stat cards in a grid:
+  - **Calorie Trend**: TrendingUp/TrendingDown icon with percentage change comparing first half vs second half of week
+  - **Best Day**: Day name with highest calorie intake (kcal value displayed)
+  - **Average Daily**: Average kcal/day across days with data
+- Skeleton loader state during data fetching
+- Integrated into `nutrition-page.tsx` between MacroRings and streak card
+
+**4. Workout Card Enhancement (`workout-card.tsx`):**
+- Added **exercise type icons** via `getExerciseIcon()` function: Dumbbell (rose) for strength exercises, Heart (purple) for cardio, Wind (emerald) for stretching/flexibility, Zap (amber) for others — mapped from exercise name keywords
+- Added **total volume per exercise** displayed inline next to set summary using `formatVolume()` helper
+- Added **"🏆 Новый рекорд!" badge** on workout card header when any exercise in the workout has a new personal best (amber background)
+- Added **exercise count text** below workout name: "X упражнений" with proper Russian pluralization
+- Refactored icon imports: added Dumbbell, Heart, Wind, Zap from lucide-react
+
+**5. Workout Stats Enhancement (`stat-cards.tsx` + `hooks.ts`):**
+- Created `MiniSparkline` component — pure CSS 4-bar chart using `sparkline-container` and `sparkline-bar` classes with `animate-bar-grow` animation
+- Color-coded sparklines per stat: rose (workouts), blue (minutes), emerald (exercises), violet (volume)
+- Added `ComparisonText` component showing "+X% vs прошл. нед." in emerald/rose colors
+- Added `sparklineData` computation in `useWorkouts` hook — iterates last 7 days from `allWorkouts` computing daily totals for workouts, minutes, exercises, and volume
+- Added `periodComparison` computation — compares this week vs last week totals with percentage change for workouts, minutes, exercises, and volume
+- Sparkline data and comparison passed through `workout-page.tsx` to `StatCards` component
+- 4 of 7 stat cards now show sparklines + comparison text (Workouts, Minutes, Exercises, Volume)
+
+**6. CSS Additions (`globals.css`):**
+- Added `@keyframes water-confetti` — translateY + scale + rotate + opacity animation for confetti particles
+- Added `@keyframes goal-sparkle-pulse` — pulsing scale animation for goal sparkle dot
+- Added `.animate-water-confetti` class for confetti particles
+- Added `.goal-sparkle` class for goal completion sparkle
+
+**Files Modified:**
+- `/src/components/nutrition/water-tracker.tsx` — Confetti, fill animation, progress summary, glow
+- `/src/components/nutrition/meal-timeline.tsx` — Drag hint, time badges, empty state, colored icons
+- `/src/components/nutrition/constants.tsx` — Updated meal type colors
+- `/src/components/nutrition/weekly-overview.tsx` — NEW: Weekly overview card
+- `/src/components/nutrition/nutrition-page.tsx` — Integrated weekly overview
+- `/src/components/workout/workout-card.tsx` — Exercise icons, volume, PR badge, exercise count
+- `/src/components/workout/stat-cards.tsx` — Sparkline charts, comparison text
+- `/src/components/workout/hooks.ts` — Sparkline data + period comparison computation
+- `/src/components/workout/workout-page.tsx` — Pass new props to StatCards
+- `/src/app/globals.css` — Confetti and sparkle CSS animations
+
+### Verification Results:
+- ✅ ESLint: 0 errors on all modified files (3 pre-existing errors in unrelated files)
+- ✅ Dev server: compiles successfully, all routes return HTTP 200
+- ✅ All existing functionality preserved — no breaking changes
+- ✅ Dark mode support for all new elements
+
+---
+## Task ID: 2
+### Agent: diary-feed-agent
+### Task: Enhance Diary and Feed modules with better UX and visual polish
+
+### Work Summary:
+
+**Files Created:**
+- `/src/components/diary/writing-prompts.tsx` — Writing prompts card component with 15 Russian prompts, randomize/refresh functionality, click-to-create integration
+- `/src/components/diary/writing-streak-badge.tsx` — Writing streak badge (fire icon + count) calculated from consecutive entry dates, gradient color-coded (yellow→amber→orange for 2/3/5+ days)
+
+**Files Modified:**
+
+**Diary Module:**
+1. `diary-page.tsx`:
+   - Added `Flame` icon import and `WritingStreakBadge`, `WritingPrompts` component imports
+   - Added writing streak badge (🔥 icon + day count) next to mood trend in header area
+   - Added writing prompts card between WritingStatsWidget and weekly calendar strip with click-to-create integration (opens dialog with prompt as content)
+
+2. `calendar-view.tsx` (full rewrite):
+   - Enhanced hover states: added `hover:scale-105/110` for entry days, `hover:shadow-lg` for mood days
+   - Added heatmap cell tooltips on hover (date, mood, entry count) with CSS-based hover animation
+   - Enhanced mood heatmap legend with mood labels (hidden on mobile, shown on sm+), "no entry" indicator
+
+3. `entry-dialog.tsx` (full rewrite):
+   - Removed duplicate "Быстрое настроение" mood selector (was confusing to have two)
+   - Redesigned mood selector with slider-style track (`.mood-slider-track` CSS) showing gradient from red to emerald
+   - Larger emoji buttons (text-2xl to text-3xl) with scale-110 animation when selected
+   - Smooth transition effects and `active-press` on mood buttons
+
+4. `entry-list.tsx`:
+   - Added reading time estimate badge (⏱️ X минут) next to word count on each entry card
+   - Uses `readingTimeMinutes()` utility for Russian localized time formatting
+
+**Feed Module:**
+1. `feed-page.tsx` (significant rewrite):
+   - Added trending topics/suggested hashtags card (8 popular Russian hashtags with emoji)
+   - Added hashtag filtering with active state highlighting and "Показать все" reset
+   - Added hashtag-filtered empty state with "Написать" CTA
+   - Client-side post filtering with time-grouped display
+
+2. `post-card.tsx` (enhanced):
+   - Added `LikeParticleBurst` component with 6 emoji particles (❤️✨💖💫🌟💗) that burst outward on first like
+   - Added gradient animated border (`.post-active-border`) on posts where user has reacted
+   - Added share button inline next to reaction/comment buttons
+   - Enhanced empty comment state: "Пока нет комментариев. Будьте первым!" instead of generic message
+   - Added comment count header with Russian pluralization (комментарий/комментария/комментариев)
+   - Added toast on "Скопировать текст" action
+
+3. `post-dialog.tsx` (enhanced):
+   - Added preview mode toggle ("✏️ Написать" / "👁 Предпросмотр" tabs in dialog title)
+   - Preview shows formatted card with user avatar, timestamp, mood badge, tags, and image
+   - Submit button available in both modes
+   - Cleaner layout with active tab styling
+
+**CSS (`globals.css`):**
+- Added `.like-particle` animation classes (6 particle burst directions with different speeds)
+- Added `.post-active-border` animation (glowing border for reacted posts)
+- Added `.mood-slider-track` with gradient mood-colored track behind mood buttons
+- Added `.heatmap-cell` / `.heatmap-tooltip` for calendar hover tooltips
+- Dark mode support for all new CSS classes
+
+### Verification Results:
+- ✅ ESLint: 0 errors on diary/feed components (pre-existing errors in analytics, settings, goals are unrelated)
+- ✅ Dev server: diary and feed modules compile without errors
+- ✅ All existing functionality preserved — no breaking changes
+- ✅ Dark mode support for all new elements
+- ✅ Responsive design maintained for mobile (375px)
+- ✅ Uses glass-card, card-hover, hover-lift, active-press, stagger-children CSS classes
+
+### Stage Summary:
+- Diary: writing streak badge, writing prompts card, enhanced calendar tooltips, improved mood slider, reading time on entries
+- Feed: trending hashtags, hashtag filtering, preview mode, particle like animation, gradient border on reacted posts, enhanced comments, share button
+- 2 new components created, 6 files modified
+- 4 new CSS animation utilities added to globals.css

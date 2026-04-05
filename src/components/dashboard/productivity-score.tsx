@@ -121,7 +121,7 @@ export const ProductivityScore = memo(function ProductivityScore({
   const dashOffset = circumference * (1 - score / 100)
 
   return (
-    <Card className="rounded-xl border">
+    <Card className="card-hover rounded-xl border">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <Zap className="h-4 w-4 text-emerald-500" />

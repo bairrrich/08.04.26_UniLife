@@ -15,7 +15,7 @@ import {
   SelectItem,
 } from '@/components/ui/select'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { EMOJI_OPTIONS, COLOR_OPTIONS, HABIT_PRESETS } from './constants'
+import { EMOJI_OPTIONS, COLOR_OPTIONS, HABIT_PRESETS, HABIT_CATEGORIES } from './constants'
 import { cn } from '@/lib/utils'
 
 interface HabitDialogProps {
@@ -32,6 +32,8 @@ interface HabitDialogProps {
   setFrequency: (v: string) => void
   targetCount: string
   setTargetCount: (v: string) => void
+  category?: string
+  setCategory?: (v: string) => void
   submitLabel: string
   onSubmit: () => void
   onReset?: () => void
@@ -44,9 +46,10 @@ function EmojiPicker({ value, onChange }: { value: string; onChange: (v: string)
         <button
           key={emoji} type="button"
           onClick={() => onChange(emoji)}
-          className={`h-9 w-9 rounded-lg text-lg flex items-center justify-center transition-all ${
+          className={cn(
+            'h-9 w-9 rounded-lg text-lg flex items-center justify-center transition-all',
             value === emoji ? 'bg-primary/10 ring-2 ring-primary scale-110' : 'bg-muted hover:bg-muted/80'
-          }`}
+          )}
         >
           {emoji}
         </button>
@@ -62,9 +65,10 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (v: string)
         <button
           key={color} type="button"
           onClick={() => onChange(color)}
-          className={`h-8 w-8 rounded-full transition-all ${
+          className={cn(
+            'h-8 w-8 rounded-full transition-all',
             value === color ? 'ring-2 ring-offset-2 ring-primary scale-110' : ''
-          }`}
+          )}
           style={{ backgroundColor: color }}
         />
       ))}
@@ -74,10 +78,11 @@ function ColorPicker({ value, onChange }: { value: string; onChange: (v: string)
 
 function FrequencyPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const options = [
-    { key: 'daily', label: 'Ежедневно' },
+    { key: 'daily', label: 'Каждый день' },
     { key: 'weekdays', label: 'Будни' },
     { key: 'weekends', label: 'Выходные' },
     { key: 'weekly', label: 'Еженедельно' },
+    { key: 'custom', label: 'Выбрать дни' },
   ]
   return (
     <div className="grid grid-cols-2 gap-2">
@@ -86,34 +91,8 @@ function FrequencyPicker({ value, onChange }: { value: string; onChange: (v: str
           key={key} type="button"
           onClick={() => onChange(key)}
           className={cn(
-            'rounded-lg px-3 py-2 text-sm font-medium transition-all',
+            'rounded-lg px-3 py-2 text-xs font-medium transition-all',
             value === key ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function DifficultySelector({ value, onChange }: { value: string; onChange: (v: string) => void }) {
-  const levels = [
-    { key: 'easy', label: '🟢 Лёгкая', color: 'text-emerald-600 dark:text-emerald-400' },
-    { key: 'medium', label: '🟡 Средняя', color: 'text-amber-600 dark:text-amber-400' },
-    { key: 'hard', label: '🔴 Сложная', color: 'text-red-600 dark:text-red-400' },
-  ]
-  return (
-    <div className="flex gap-2">
-      {levels.map(({ key, label, color }) => (
-        <button
-          key={key} type="button"
-          onClick={() => onChange(key)}
-          className={cn(
-            'flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all border',
-            value === key
-              ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
-              : 'border-transparent bg-muted hover:bg-muted/80'
           )}
         >
           {label}
@@ -151,7 +130,7 @@ function ReminderTimeSelector({ value, onChange }: { value: string; onChange: (v
 function PresetChips({
   onSelect,
 }: {
-  onSelect: (name: string, emoji: string, color: string) => void
+  onSelect: (name: string, emoji: string, color: string, category?: string) => void
 }) {
   return (
     <div className="space-y-2">
@@ -163,8 +142,8 @@ function PresetChips({
           <button
             key={preset.name}
             type="button"
-            onClick={() => onSelect(preset.name, preset.emoji, preset.color)}
-            className="active-press flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium transition-all hover:bg-muted/60 hover:border-muted-foreground/30"
+            onClick={() => onSelect(preset.name, preset.emoji, preset.color, preset.category)}
+            className="active-press inline-flex items-center gap-1.5 rounded-full border bg-background px-3 py-1.5 text-xs font-medium transition-all hover:bg-muted/60 hover:border-muted-foreground/30"
           >
             <span>{preset.emoji}</span>
             <span>{preset.name}</span>
@@ -178,12 +157,14 @@ function PresetChips({
 export function HabitDialog({
   open, onOpenChange, title, name, setName, emoji, setEmoji,
   color, setColor, frequency, setFrequency, targetCount, setTargetCount,
+  category = 'health', setCategory,
   submitLabel, onSubmit,
 }: HabitDialogProps) {
-  const handlePresetSelect = (presetName: string, presetEmoji: string, presetColor: string) => {
+  const handlePresetSelect = (presetName: string, presetEmoji: string, presetColor: string, presetCategory?: string) => {
     setName(presetName)
     setEmoji(presetEmoji)
     setColor(presetColor)
+    if (setCategory && presetCategory) setCategory(presetCategory)
   }
 
   return (
@@ -209,6 +190,32 @@ export function HabitDialog({
               <label className="text-sm font-medium">Цвет</label>
               <ColorPicker value={color} onChange={setColor} />
             </div>
+
+            {/* Category */}
+            {setCategory && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Категория</label>
+                <div className="flex flex-wrap gap-2">
+                  {HABIT_CATEGORIES.map((cat) => (
+                    <button
+                      key={cat.value}
+                      type="button"
+                      onClick={() => setCategory(cat.value)}
+                      className={cn(
+                        'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border transition-all active-press',
+                        category === cat.value
+                          ? 'border-primary bg-primary/10 shadow-sm'
+                          : 'border-transparent bg-muted/50 hover:bg-muted',
+                      )}
+                    >
+                      <span>{cat.emoji}</span>
+                      <span>{cat.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Частота</label>
               <FrequencyPicker value={frequency} onChange={setFrequency} />
@@ -216,11 +223,6 @@ export function HabitDialog({
             <div className="space-y-2">
               <label className="text-sm font-medium">Цель (раз в день)</label>
               <Input type="number" min="1" max="99" value={targetCount} onChange={(e) => setTargetCount(e.target.value)} className="w-24" />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Сложность</label>
-              <DifficultySelector value="easy" onChange={() => {}} />
-              <p className="text-[10px] text-muted-foreground/60">Определяется автоматически по целевому количеству</p>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">⏰ Напоминание</label>

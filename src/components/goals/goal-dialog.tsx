@@ -3,6 +3,7 @@
 import { useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -17,9 +18,15 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { CATEGORY_OPTIONS, STATUS_OPTIONS } from './constants'
-import { Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap } from 'lucide-react'
+import { CATEGORY_OPTIONS, STATUS_OPTIONS, PRIORITY_OPTIONS } from './constants'
+import { Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+interface MilestoneItem {
+  id: string
+  title: string
+  completed: boolean
+}
 
 interface GoalDialogProps {
   open: boolean
@@ -39,10 +46,16 @@ interface GoalDialogProps {
   setFormUnit: (v: string) => void
   formDeadline: string
   setFormDeadline: (v: string) => void
+  formStartDate?: string
+  setFormStartDate?: (v: string) => void
+  formPriority?: string
+  setFormPriority?: (v: string) => void
   formStatus: string
   setFormStatus: (v: string) => void
   formProgress: string
   setFormProgress: (v: string) => void
+  formMilestones?: string
+  setFormMilestones?: (v: string) => void
   submitting: boolean
   onSubmit: () => void
 }
@@ -109,13 +122,52 @@ export function GoalDialog({
   setFormUnit,
   formDeadline,
   setFormDeadline,
+  formStartDate = '',
+  setFormStartDate,
+  formPriority = 'medium',
+  setFormPriority,
   formStatus,
   setFormStatus,
   formProgress,
   setFormProgress,
+  formMilestones = '[]',
+  setFormMilestones,
   submitting,
   onSubmit,
 }: GoalDialogProps) {
+
+  const isEditing = !!editingGoal
+
+  // Milestone management
+  const milestones: MilestoneItem[] = (() => {
+    try { return JSON.parse(formMilestones || '[]') } catch { return [] }
+  })()
+
+  const addMilestone = () => {
+    const newMs: MilestoneItem = {
+      id: Date.now().toString(36),
+      title: '',
+      completed: false,
+    }
+    setFormMilestones?.(JSON.stringify([...milestones, newMs]))
+  }
+
+  const updateMilestone = (index: number, title: string) => {
+    const updated = [...milestones]
+    updated[index] = { ...updated[index], title }
+    setFormMilestones?.(JSON.stringify(updated))
+  }
+
+  const removeMilestone = (index: number) => {
+    const updated = milestones.filter((_, i) => i !== index)
+    setFormMilestones?.(JSON.stringify(updated))
+  }
+
+  const toggleMilestone = (index: number) => {
+    const updated = [...milestones]
+    updated[index] = { ...updated[index], completed: !updated[index].completed }
+    setFormMilestones?.(JSON.stringify(updated))
+  }
 
   const handleTemplateClick = (template: typeof GOAL_TEMPLATES[number]) => {
     setFormTitle(template.title)
@@ -125,9 +177,8 @@ export function GoalDialog({
     setFormCurrentValue(template.currentValue)
     setFormUnit(template.unit)
     setFormProgress('0')
+    setFormPriority('medium')
   }
-
-  const isEditing = !!editingGoal
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -214,6 +265,28 @@ export function GoalDialog({
             </div>
           </div>
 
+          {/* Priority */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Приоритет</label>
+            <div className="grid grid-cols-3 gap-2">
+              {PRIORITY_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setFormPriority?.(opt.value)}
+                  className={cn(
+                    'rounded-lg px-3 py-2 text-sm font-medium transition-all border',
+                    (formPriority || 'medium') === opt.value
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                      : 'border-transparent bg-muted hover:bg-muted/80',
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Target value row */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-2">
@@ -241,10 +314,61 @@ export function GoalDialog({
             />
           </div>
 
-          {/* Deadline */}
+          {/* Dates row */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Дата начала</label>
+              <Input type="date" value={formStartDate} onChange={(e) => setFormStartDate?.(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Дедлайн</label>
+              <Input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)} />
+            </div>
+          </div>
+
+          {/* Milestones */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Дедлайн</label>
-            <Input type="date" value={formDeadline} onChange={(e) => setFormDeadline(e.target.value)} />
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Этапы</label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={addMilestone}
+              >
+                <Plus className="h-3 w-3" />
+                Добавить этап
+              </Button>
+            </div>
+            {milestones.length > 0 && (
+              <div className="space-y-2 rounded-lg border border-muted/50 bg-muted/20 p-3">
+                {milestones.map((ms, idx) => (
+                  <div key={ms.id || idx} className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={ms.completed}
+                      onChange={() => toggleMilestone(idx)}
+                      className="h-4 w-4 rounded border-muted-foreground/30 accent-primary"
+                    />
+                    <Input
+                      value={ms.title}
+                      onChange={(e) => updateMilestone(idx, e.target.value)}
+                      placeholder="Название этапа..."
+                      className="h-8 text-sm flex-1"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeMilestone(idx)}
+                      className="h-8 w-8 flex items-center justify-center rounded-md text-muted-foreground hover:text-destructive transition-colors shrink-0"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="text-[10px] text-muted-foreground/60">Этапы помогают разбить цель на управляемые части</p>
           </div>
 
           <Button className="w-full" onClick={onSubmit} disabled={!formTitle.trim() || submitting}>

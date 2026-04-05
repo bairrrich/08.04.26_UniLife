@@ -106,7 +106,7 @@ export function EntryDialog({
                     key={tmpl.label}
                     type="button"
                     onClick={() => onApplyTemplate(tmpl)}
-                    className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+                    className="inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors active-press"
                   >
                     <span>{tmpl.emoji}</span>
                     {tmpl.label}
@@ -159,29 +159,32 @@ export function EntryDialog({
             />
           </div>
 
-          {/* Mood selector — bigger, more visual */}
+          {/* Mood selector — slider-style with track */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Настроение</label>
-            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none">
+            <div className="mood-slider-track px-1 py-2">
               {[1, 2, 3, 4, 5].map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => onMoodClick(m)}
                   className={cn(
-                    'flex flex-col items-center gap-0.5 rounded-xl p-1.5 sm:p-2.5 transition-all border-2 flex-1 min-w-[52px] sm:min-w-0',
+                    'flex flex-col items-center gap-0.5 rounded-xl p-2 sm:p-2.5 transition-all flex-1 min-w-[52px]',
                     form.mood === m
-                      ? cn('border-primary bg-primary/5 scale-105', MOOD_COLORS[m])
-                      : 'border-transparent hover:bg-muted/50'
+                      ? cn('scale-110', MOOD_COLORS[m], 'shadow-sm')
+                      : 'hover:bg-muted/50'
                   )}
                 >
                   <span className={cn(
-                    'text-2xl transition-transform',
+                    'text-2xl sm:text-3xl transition-transform duration-200',
                     form.mood === m && 'scale-110'
                   )}>
                     {MOOD_EMOJI[m]}
                   </span>
-                  <span className="text-[10px] text-muted-foreground font-medium">
+                  <span className={cn(
+                    'text-[10px] font-medium transition-colors',
+                    form.mood === m ? 'text-foreground' : 'text-muted-foreground'
+                  )}>
                     {MOOD_LABELS[m]}
                   </span>
                 </button>
@@ -228,29 +231,6 @@ export function EntryDialog({
                 <FileText className="h-3 w-3" />
                 {countWords(form.content)} слов
               </span>
-            </div>
-          </div>
-
-          {/* Compact writing mood selector */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Быстрое настроение</label>
-            <div className="flex items-center justify-center gap-3">
-              {[1, 2, 3, 4, 5].map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => onMoodClick(m)}
-                  className={cn(
-                    'h-9 w-9 rounded-full flex items-center justify-center text-lg transition-all border-2',
-                    form.mood === m
-                      ? cn('border-primary bg-primary/5 scale-110 shadow-sm')
-                      : 'border-transparent hover:bg-muted/50'
-                  )}
-                  title={MOOD_LABELS[m]}
-                >
-                  {MOOD_EMOJI[m]}
-                </button>
-              ))}
             </div>
           </div>
 
@@ -315,7 +295,7 @@ export function EntryDialog({
                         onFormChange((f) => ({ ...f, tags: [...f.tags, tag] }))
                       }}
                       className={cn(
-                        'text-xs rounded-full px-2.5 py-0.5 border border-dashed transition-all hover:border-solid hover:opacity-80',
+                        'text-xs rounded-full px-2.5 py-0.5 border border-dashed transition-all hover:border-solid hover:opacity-80 active-press',
                         TAG_COLORS[hashTagColor(tag)]
                       )}
                     >

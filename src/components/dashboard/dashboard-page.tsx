@@ -85,6 +85,7 @@ const DailyGoalsBanner = dynamic(() => import('./daily-goals-banner'), { ssr: fa
 const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, loading: widgetLoad })
 const QuickNotesWidget = dynamic(() => import('./quick-notes-widget'), { ssr: false, loading: widgetLoad })
 const DailyProgressWidget = dynamic(() => import('./daily-progress-widget'), { ssr: false, loading: widgetLoad })
+const MoodWeatherIndicator = dynamic(() => import('./mood-weather-indicator'), { ssr: false, loading: () => <div className="h-[56px] w-[280px] skeleton-shimmer rounded-xl" /> })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -465,24 +466,28 @@ export default function DashboardPage() {
       />
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background via-muted/20 to-background p-5 sm:p-6">
+        {/* Dot pattern background */}
+        <div className="pointer-events-none absolute inset-0 dot-pattern opacity-30" />
         <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl" />
         <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl" />
 
-        <div className="relative flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
+        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {getGreeting()}, {userName}! 👋
+              {getGreeting()}, <span className="text-gradient-emerald">{userName}</span>! 👋
             </h1>
             <p className="mt-1 text-sm capitalize text-muted-foreground">
               {formatDate(now)}
             </p>
           </div>
+          {/* Weather-like Mood Indicator */}
           {!loading && (
-            <p className="text-sm text-muted-foreground">
-              Настроение: {todayMood ? moodEmojis[todayMood] : ' ещё не отмечено'} ·{' '}
-              {weekEntryCount} записей на этой неделе
-            </p>
+            <MoodWeatherIndicator
+              todayMood={todayMood}
+              recentMoods={recentMoods}
+              weekEntryCount={weekEntryCount}
+            />
           )}
         </div>
 

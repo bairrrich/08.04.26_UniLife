@@ -1,5 +1,11 @@
 // ─── Goals Types ─────────────────────────────────────────────────────────────
 
+export interface Milestone {
+  id: string
+  title: string
+  completed: boolean
+}
+
 export interface GoalData {
   id: string
   title: string
@@ -9,8 +15,11 @@ export interface GoalData {
   currentValue: number
   unit: string | null
   deadline: string | null
+  startDate: string | null
+  priority: string | null
   status: string
   progress: number
+  milestones: string | null  // JSON string of Milestone[]
   createdAt: string
   updatedAt: string
 }
@@ -25,6 +34,6 @@ export interface GoalsResponse {
   }
 }
 
-export type FilterTab = 'all' | 'active' | 'completed'
+export type FilterTab = 'all' | 'active' | 'completed' | 'paused'
 
 export type CategoryFilter = 'all' | 'personal' | 'health' | 'finance' | 'career' | 'learning'

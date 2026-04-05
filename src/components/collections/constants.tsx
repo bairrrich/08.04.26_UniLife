@@ -177,6 +177,7 @@ export const SORT_OPTIONS = [
   { value: 'date', label: 'По дате добавления' },
   { value: 'rating', label: 'По рейтингу' },
   { value: 'name', label: 'По названию' },
+  { value: 'status', label: 'По статусу' },
 ] as const
 
 export type SortOption = (typeof SORT_OPTIONS)[number]['value']

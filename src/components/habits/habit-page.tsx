@@ -1,42 +1,73 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Target, Calendar, Flame, Eye, EyeOff } from 'lucide-react'
+import { Plus, Target, Calendar, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, RotateCcw, Tag } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
-import { getTodayDateBadge, getMotivationalPhrase, getDayOfWeekSubtitle, HABIT_PRESETS } from './constants'
+import { Separator } from '@/components/ui/separator'
+import { getTodayDateBadge, getMotivationalPhrase, getDayOfWeekSubtitle, HABIT_PRESETS, HABIT_CATEGORIES } from './constants'
 import { useHabits } from './hooks'
 import { HabitStats } from './habit-stats'
 import { WeeklyProgress } from './weekly-progress'
 import { BestStreakCard } from './best-streak-card'
 import { StreakRecords } from './streak-records'
-import { HabitCard } from './habit-card'
+import { HabitCard, ArchivedHabitCard } from './habit-card'
 import { HabitDialog } from './habit-dialog'
 import { HabitHeatmap } from './habit-heatmap'
 import type { HabitPreset } from './constants'
+import { cn } from '@/lib/utils'
 
 export default function HabitsPage() {
   const {
-    habits, stats, loading, last7Days, weeklyStats,
+    habits, archivedHabits, stats, loading, last7Days, weeklyStats,
+    categoryFilter, setCategoryFilter,
     addForm, setAddForm,
     editForm, setEditForm,
     deleteConfirmId, handleDeleteClick,
     handleCreate, handleToggle, handleEdit, handleUpdate,
+    handleArchive, handleUnarchive,
   } = useHabits()
 
   // Toggle for hiding completed habits
   const [showCompleted, setShowCompleted] = useState(true)
 
+  // Toggle for archived section
+  const [showArchived, setShowArchived] = useState(false)
+
   // Check if any habit has streak > 3
   const hasStreakFlame = useMemo(() => habits.some(h => h.streak > 3), [habits])
 
-  // Filter habits based on toggle
+  // Filter active habits (non-archived)
+  const activeHabits = useMemo(() => habits.filter(h => !h.archived), [habits])
+
+  // Filter by category
+  const categoryFiltered = useMemo(() => {
+    if (categoryFilter === 'all') return activeHabits
+    return activeHabits.filter(h => h.category === categoryFilter)
+  }, [activeHabits, categoryFilter])
+
+  // Filter habits based on completed toggle
   const filteredHabits = useMemo(() => {
-    if (showCompleted) return habits
-    return habits.filter(h => !h.todayCompleted)
-  }, [habits, showCompleted])
+    if (showCompleted) return categoryFiltered
+    return categoryFiltered.filter(h => !h.todayCompleted)
+  }, [categoryFiltered, showCompleted])
+
+  // Today's plan summary
+  const todaySummary = useMemo(() => {
+    const planned = activeHabits.length
+    const completed = activeHabits.filter(h => h.todayCompleted).length
+    const remaining = planned - completed
+    return { planned, completed, remaining }
+  }, [activeHabits])
+
+  // Longest streak celebration
+  const longestStreakHabit = useMemo(() => {
+    if (activeHabits.length === 0) return null
+    const best = activeHabits.reduce((a, b) => (a.streak > b.streak ? a : b))
+    return best.streak >= 7 ? best : null
+  }, [activeHabits])
 
   // Handle preset quick-add from empty state
   const handlePresetQuickAdd = (preset: HabitPreset) => {
@@ -47,6 +78,8 @@ export default function HabitsPage() {
       color: preset.color,
       frequency: 'daily',
       targetCount: '1',
+      category: preset.category || 'other',
+      reminderTime: '',
     })
   }
 
@@ -82,11 +115,12 @@ export default function HabitsPage() {
 
       {/* Habit Dialogs */}
       <HabitDialog
-        open={addForm.dialogOpen} onOpenChange={(open) => { setAddForm(f => ({ ...f, dialogOpen: open })); if (!open) setAddForm({ dialogOpen: false, name: '', emoji: '✅', color: '#10b981', frequency: 'daily', targetCount: '1' }) }}
+        open={addForm.dialogOpen} onOpenChange={(open) => { setAddForm(f => ({ ...f, dialogOpen: open })); if (!open) setAddForm({ dialogOpen: false, name: '', emoji: '✅', color: '#10b981', frequency: 'daily', targetCount: '1', category: 'health', reminderTime: '' }) }}
         title="Новая привычка" name={addForm.name} setName={(v) => setAddForm(f => ({ ...f, name: v }))}
         emoji={addForm.emoji} setEmoji={(v) => setAddForm(f => ({ ...f, emoji: v }))} color={addForm.color} setColor={(v) => setAddForm(f => ({ ...f, color: v }))}
         frequency={addForm.frequency} setFrequency={(v) => setAddForm(f => ({ ...f, frequency: v }))}
         targetCount={addForm.targetCount} setTargetCount={(v) => setAddForm(f => ({ ...f, targetCount: v }))}
+        category={addForm.category} setCategory={(v) => setAddForm(f => ({ ...f, category: v }))}
         submitLabel="Создать привычку" onSubmit={handleCreate}
       />
 
@@ -96,6 +130,7 @@ export default function HabitsPage() {
         emoji={editForm.emoji} setEmoji={(v) => setEditForm(f => ({ ...f, emoji: v }))} color={editForm.color} setColor={(v) => setEditForm(f => ({ ...f, color: v }))}
         frequency={editForm.frequency} setFrequency={(v) => setEditForm(f => ({ ...f, frequency: v }))}
         targetCount={editForm.targetCount} setTargetCount={(v) => setEditForm(f => ({ ...f, targetCount: v }))}
+        category={editForm.category} setCategory={(v) => setEditForm(f => ({ ...f, category: v }))}
         submitLabel="Сохранить изменения" onSubmit={handleUpdate}
       />
 
@@ -119,7 +154,6 @@ export default function HabitsPage() {
         <Card className="animate-slide-up overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
           <CardContent className="relative py-12 text-center px-6">
-            {/* Gradient Icon */}
             <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
               <Target className="h-10 w-10 text-white" />
             </div>
@@ -131,7 +165,6 @@ export default function HabitsPage() {
               &ldquo;{getMotivationalPhrase()}&rdquo;
             </p>
 
-            {/* Step-by-step guide */}
             <div className="max-w-sm mx-auto mb-6">
               <div className="flex items-start gap-3 text-left mb-3">
                 <div className="shrink-0 h-6 w-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600 dark:text-emerald-400">1</div>
@@ -147,7 +180,6 @@ export default function HabitsPage() {
               </div>
             </div>
 
-            {/* Preset Quick-Add Buttons */}
             <div className="flex flex-wrap justify-center gap-2 mb-6">
               {HABIT_PRESETS.map((preset) => (
                 <button
@@ -171,20 +203,157 @@ export default function HabitsPage() {
         </Card>
       ) : (
         <>
+          {/* Today's Plan Summary */}
+          <Card className="overflow-hidden relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+            <CardContent className="relative p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                    <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold">План на сегодня</h3>
+                    <div className="flex items-center gap-3 mt-1">
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span className="font-medium tabular-nums text-foreground">{todaySummary.planned}</span> запланировано
+                      </span>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle className="h-3 w-3" />
+                        <span className="font-medium tabular-nums">{todaySummary.completed}</span> выполнено
+                      </span>
+                      <span className="text-muted-foreground/30">·</span>
+                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                        <Clock className="h-3 w-3" />
+                        <span className="font-medium tabular-nums">{todaySummary.remaining}</span> осталось
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                {/* Circular mini progress */}
+                <div className="relative h-12 w-12 shrink-0">
+                  <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
+                    <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3" className="stroke-muted/40" />
+                    <circle
+                      cx="24" cy="24" r="20" fill="none" strokeWidth="3" strokeLinecap="round"
+                      stroke={todaySummary.remaining === 0 ? '#10b981' : todaySummary.completed > 0 ? '#3b82f6' : '#94a3b8'}
+                      strokeDasharray={125.66}
+                      strokeDashoffset={125.66 * (1 - (todaySummary.planned > 0 ? todaySummary.completed / todaySummary.planned : 0))}
+                      className="transition-all duration-700 ease-out"
+                    />
+                  </svg>
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums">
+                    {todaySummary.planned > 0 ? Math.round((todaySummary.completed / todaySummary.planned) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Stats */}
-          <HabitStats stats={stats} habits={habits} />
+          <HabitStats stats={stats} habits={activeHabits} />
+
+          {/* Longest streak celebration banner */}
+          {longestStreakHabit && (
+            <div className="relative overflow-hidden rounded-xl border border-amber-200 dark:border-amber-800/50 animate-slide-up">
+              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 pointer-events-none" />
+              <div className="relative flex items-center gap-3 p-4">
+                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/25">
+                  <Trophy className="h-6 w-6 text-white" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                    Рекордная серия!
+                    <span className="text-base">🔥</span>
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    <span className="font-medium text-foreground">{longestStreakHabit.emoji} {longestStreakHabit.name}</span>
+                    {' '}— {longestStreakHabit.streak} дней подряд!
+                  </p>
+                </div>
+                <Badge className="shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 text-xs font-bold tabular-nums px-2.5">
+                  {longestStreakHabit.streak}д
+                </Badge>
+              </div>
+            </div>
+          )}
 
           {/* Heatmap Calendar */}
-          <HabitHeatmap habits={habits} />
+          <HabitHeatmap habits={activeHabits} />
 
           {/* Best Streak */}
-          <BestStreakCard habits={habits} />
+          <BestStreakCard habits={activeHabits} />
 
           {/* Weekly Progress */}
           <WeeklyProgress rate={weeklyStats.rate} color={weeklyStats.color} />
 
           {/* Streak Records */}
-          <StreakRecords habits={habits} />
+          <StreakRecords habits={activeHabits} />
+
+          {/* Category Filter */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tag className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold">Категории</h3>
+              </div>
+              {archivedHabits.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowArchived(!showArchived)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showArchived ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
+                  <Archive className="h-3.5 w-3.5" />
+                  {showArchived ? 'Скрыть архив' : `Архив (${archivedHabits.length})`}
+                </button>
+              )}
+            </div>
+
+            <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+              <button
+                type="button"
+                onClick={() => setCategoryFilter('all')}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border transition-all whitespace-nowrap active-press',
+                  categoryFilter === 'all'
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-transparent bg-muted/50 text-muted-foreground hover:bg-muted',
+                )}
+              >
+                Все
+              </button>
+              {HABIT_CATEGORIES.map((cat) => {
+                const count = activeHabits.filter(h => h.category === cat.value).length
+                return (
+                  <button
+                    key={cat.value}
+                    type="button"
+                    onClick={() => setCategoryFilter(cat.value)}
+                    className={cn(
+                      'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium border transition-all whitespace-nowrap active-press',
+                      categoryFilter === cat.value
+                        ? 'border-primary bg-primary/10 text-primary shadow-sm'
+                        : 'border-transparent bg-muted/50 text-muted-foreground hover:bg-muted',
+                      count === 0 && categoryFilter !== cat.value && 'opacity-40',
+                    )}
+                  >
+                    <span>{cat.emoji}</span>
+                    <span>{cat.label}</span>
+                    {count > 0 && (
+                      <span className={cn(
+                        'inline-flex items-center justify-center min-w-[16px] h-4 rounded-full text-[9px] font-bold px-1 tabular-nums',
+                        categoryFilter === cat.value ? 'bg-primary/20' : 'bg-muted-foreground/10',
+                      )}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
           {/* "All habits" toggle + Habit List */}
           <div className="space-y-3">
@@ -192,7 +361,7 @@ export default function HabitsPage() {
               <h3 className="text-sm font-semibold flex items-center gap-2">
                 {showCompleted ? 'Все привычки' : 'Невыполненные'}
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums">
-                  {filteredHabits.length}/{habits.length}
+                  {filteredHabits.length}/{activeHabits.length}
                 </Badge>
               </h3>
               <div className="flex items-center gap-2">
@@ -218,11 +387,12 @@ export default function HabitsPage() {
                   key={habit.id} habit={habit} last7Days={last7Days}
                   onToggle={handleToggle} onEdit={handleEdit}
                   onDeleteClick={handleDeleteClick} deleteConfirmId={deleteConfirmId}
+                  onArchive={handleArchive}
                 />
               ))}
             </div>
 
-            {filteredHabits.length === 0 && (
+            {filteredHabits.length === 0 && categoryFiltered.length > 0 && (
               <Card className="py-8 text-center">
                 <p className="text-sm text-muted-foreground">
                   Все привычки на сегодня выполнены! 🎉
@@ -238,6 +408,33 @@ export default function HabitsPage() {
               </Card>
             )}
           </div>
+
+          {/* Archived Section */}
+          {showArchived && archivedHabits.length > 0 && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Archive className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="text-sm font-semibold text-muted-foreground">Архивированные</h3>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums">
+                    {archivedHabits.length}
+                  </Badge>
+                </div>
+                <div className="space-y-2">
+                  {archivedHabits.map((habit) => (
+                    <ArchivedHabitCard
+                      key={habit.id}
+                      habit={habit}
+                      onUnarchive={handleUnarchive}
+                      onDeleteClick={handleDeleteClick}
+                      deleteConfirmId={deleteConfirmId}
+                    />
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </>
       )}
     </div>

@@ -1,5 +1,5 @@
-import { Heart, MessageCircle, ThumbsUp, Clock, Share2, Bookmark, BookmarkCheck, Send, Trash2, MoreHorizontal, EyeOff, Link2, Copy } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Heart, MessageCircle, ThumbsUp, Clock, Share2, Bookmark, BookmarkCheck, Send, Trash2, MoreHorizontal, EyeOff, Copy, Pin, PinOff, Image as ImageIcon, Reply } from 'lucide-react'
+import { useRef, useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { Card, CardContent } from '@/components/ui/card'
 import {
@@ -16,6 +16,57 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import type { FeedPost, FeedComment, ReactionType, ReactionCounts } from './types'
 import { ENTITY_COLORS, ENTITY_ICONS, ENTITY_BORDER, ENTITY_LABELS, ENTITY_ICON_BG, REACTION_EMOJI, REACTION_OPTIONS, formatRelativeTime, MAX_COMMENT_LENGTH, parsePostTags } from './constants'
+
+// ─── useLocalStorage helper ──────────────────────────────────────────────────
+function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+  const [value, setValue] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key)
+      return stored ? JSON.parse(stored) : defaultValue
+    } catch {
+      return defaultValue
+    }
+  })
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(value))
+    } catch { /* ignore */ }
+  }, [key, value])
+
+  return [value, setValue]
+}
+
+// ─── Image URL extractor ─────────────────────────────────────────────────────
+function extractImageUrl(text: string): string | null {
+  if (!text) return null
+  const urlMatch = text.match(/https?:\/\/[^\s]+\.(?:jpg|jpeg|png|gif|webp)(?:\?[^\s]*)?/i)
+  return urlMatch ? urlMatch[0] : null
+}
+
+// ─── Reply threading state interface ─────────────────────────────────────────
+interface ReplyState {
+  parentId: string | null
+  text: string
+  sending: boolean
+}
+
+// ─── Particle burst component ────────────────────────────────────────────────
+const PARTICLE_EMOJIS = ['❤️', '✨', '💖', '💫', '🌟', '💗']
+
+function LikeParticleBurst() {
+  const particles = useMemo(() =>
+    PARTICLE_EMOJIS.map((emoji, i) => ({ emoji, id: i }))
+  , [])
+
+  return (
+    <span className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-visible">
+      {particles.map((p) => (
+        <span key={p.id} className="like-particle">{p.emoji}</span>
+      ))}
+    </span>
+  )
+}
 
 interface PostCardProps {
   post: FeedPost
@@ -54,6 +105,41 @@ export function PostCard({
   const [deleteConfirming, setDeleteConfirming] = useState(false)
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
+  const [showParticles, setShowParticles] = useState(false)
+
+  // ─── Pinned posts (localStorage) ────────────────────────────────────────
+  const [pinnedPosts, setPinnedPosts] = useLocalStorage<string[]>('unilife-pinned-posts', [])
+  const isPinned = pinnedPosts.includes(post.id)
+
+  const togglePin = () => {
+    setPinnedPosts((prev) =>
+      prev.includes(post.id)
+        ? prev.filter((id) => id !== post.id)
+        : [post.id, ...prev]
+    )
+    toast.success(isPinned ? 'Запись откреплена' : 'Запись закреплена 📌')
+  }
+
+  // ─── Reply threading state ───────────────────────────────────────────────
+  const [replyState, setReplyState] = useState<ReplyState>({
+    parentId: null,
+    text: '',
+    sending: false,
+  })
+
+  const handleReplyTo = (commentId: string, userName?: string) => {
+    setReplyState({ parentId: commentId, text: '', sending: false })
+    // Also open comment section if not already open
+    if (!showCommentSection) onToggleCommentSection(post.id)
+  }
+
+  const handleReplySubmit = () => {
+    if (!replyState.text.trim() || replyState.sending) return
+    // Use the parent comment submit handler
+    onCommentTextChange(post.id, replyState.text)
+    onCommentSubmit(post.id)
+    setReplyState({ parentId: null, text: '', sending: false })
+  }
 
   const handleDeleteClick = () => {
     if (deleteConfirming) {
@@ -70,6 +156,15 @@ export function PostCard({
     }
   }
 
+  // Like with particle burst
+  const handleLikeClick = () => {
+    if (!isLiked) {
+      setShowParticles(true)
+      setTimeout(() => setShowParticles(false), 700)
+    }
+    onToggleLike(post.id)
+  }
+
   const likeCount = isLiked ? Math.max(post._count.likes, 1) : post._count.likes
   const tags = parsePostTags(post.tags || '[]')
   const isCaptionLong = (post.caption || '').length > 180
@@ -84,8 +179,16 @@ export function PostCard({
     ? (REACTION_OPTIONS.filter((r) => (reactions[r.type] || 0) > 0).sort((a, b) => reactions[b.type] - reactions[a.type]).slice(0, 3))
     : []
 
+  // Image preview from caption URLs
+  const imageUrl = useMemo(() => extractImageUrl(post.caption || ''), [post.caption])
+
   return (
-    <Card className={`card-hover rounded-xl border-l-4 ${ENTITY_BORDER[post.entityType]} transition hover:bg-muted/50`}>
+    <Card className={cn(
+      'card-hover rounded-xl border-l-4 transition hover:bg-muted/50 relative',
+      ENTITY_BORDER[post.entityType],
+      isPinned && 'ring-1 ring-amber-300/50 dark:ring-amber-700/30',
+      userReaction && 'post-active-border',
+    )}>
       <CardContent className="p-4 space-y-3">
         {/* Post header */}
         <div className="flex items-center gap-3">
@@ -104,7 +207,15 @@ export function PostCard({
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium">{post.user.name || 'Пользователь'}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-medium">{post.user.name || 'Пользователь'}</p>
+              {isPinned && (
+                <Badge className="text-[9px] h-4 px-1.5 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 gap-0.5">
+                  <Pin className="h-2.5 w-2.5" />
+                  Закреплено
+                </Badge>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0 text-[10px] font-medium ${ENTITY_COLORS[post.entityType]}`}>
                 {ENTITY_ICONS[post.entityType]}
@@ -117,6 +228,15 @@ export function PostCard({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {/* Pin button */}
+            <Button
+              variant="ghost" size="icon"
+              className={cn('h-8 w-8 transition-colors', isPinned && 'text-amber-500')}
+              onClick={togglePin}
+              title={isPinned ? 'Открепить' : 'Закрепить'}
+            >
+              {isPinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+            </Button>
             {onDelete && (
               <Button
                 variant="ghost" size="icon"
@@ -144,9 +264,14 @@ export function PostCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   navigator.clipboard?.writeText(post.caption || '')
+                  toast.success('Текст скопирован')
                 }}>
                   <Copy className="h-4 w-4 mr-2" />
                   Скопировать текст
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={togglePin}>
+                  {isPinned ? <PinOff className="h-4 w-4 mr-2" /> : <Pin className="h-4 w-4 mr-2" />}
+                  {isPinned ? 'Открепить' : 'Закрепить запись'}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onToggleBookmark(post.id)}>
                   {isBookmarked ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
@@ -200,6 +325,29 @@ export function PostCard({
           </div>
         )}
 
+        {/* Image preview from URL */}
+        {imageUrl && (
+          <div className="relative rounded-lg overflow-hidden border bg-muted/20">
+            <img
+              src={imageUrl}
+              alt="Превью изображения"
+              className="w-full max-h-[400px] object-cover"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+                const parent = target.parentElement
+                if (parent) parent.style.display = 'none'
+              }}
+            />
+            <div className="absolute top-2 right-2">
+              <Badge variant="secondary" className="text-[9px] h-5 gap-1 bg-black/50 text-white border-0">
+                <ImageIcon className="h-2.5 w-2.5" />
+                Фото
+              </Badge>
+            </div>
+          </div>
+        )}
+
         {/* Tags */}
         {tags.length > 0 && (
           <div className="flex gap-1.5 flex-wrap">
@@ -217,21 +365,23 @@ export function PostCard({
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {/* Reaction picker */}
+          {/* Reaction picker with particle burst */}
           <div className="relative">
             <button
-              className={`flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1 ${
+              className={cn(
+                'flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1 relative',
                 userReaction
                   ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
                   : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20'
-              }`}
+              )}
               onClick={() => onToggleReaction?.(post.id, userReaction || 'like')}
               onMouseEnter={() => setShowReactionPicker(true)}
               onMouseLeave={() => setTimeout(() => setShowReactionPicker(false), 200)}
             >
+              {showParticles && <LikeParticleBurst />}
               <span className={cn(
                 'transition-transform duration-200',
-                reactionAnimating && 'scale-125'
+                (reactionAnimating || isAnimating) && 'scale-125'
               )}>
                 {userReaction ? REACTION_EMOJI[userReaction] : '👍'}
               </span>
@@ -286,13 +436,23 @@ export function PostCard({
           )}
 
           <button
-            className={`flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1 ${
+            className={cn(
+              'flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1',
               showCommentSection ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-muted-foreground hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'
-            }`}
+            )}
             onClick={() => onToggleCommentSection(post.id)}
           >
             <MessageCircle className="h-4 w-4" />
             <span className="text-xs font-medium">{post.comments.length > 0 ? post.comments.length : ''}</span>
+          </button>
+
+          {/* Share button */}
+          <button
+            className="flex items-center gap-1.5 text-sm transition-colors rounded-full px-2 py-1 text-muted-foreground hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
+            onClick={() => onShare(post)}
+            title="Поделиться"
+          >
+            <Share2 className="h-4 w-4" />
           </button>
 
           <div className="ml-auto">
@@ -302,19 +462,76 @@ export function PostCard({
           </div>
         </div>
 
-        {/* Comments section */}
+        {/* Comments section with reply threading */}
         {showCommentSection && (
           <>
             {post.comments.length === 0 && !expandedComments ? (
               <div className="text-center py-3">
-                <p className="text-xs text-muted-foreground/60 italic">Комментарии скоро появятся</p>
+                <p className="text-xs text-muted-foreground/60 italic">Пока нет комментариев. Будьте первым!</p>
               </div>
             ) : (
               <>
                 <Separator />
+                {/* Reply count */}
+                {post.comments.length > 0 && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <MessageCircle className="h-3.5 w-3.5 text-muted-foreground/50" />
+                    <span className="text-xs text-muted-foreground/60 font-medium tabular-nums">
+                      {post.comments.length} {post.comments.length === 1 ? 'комментарий' : post.comments.length < 5 ? 'комментария' : 'комментариев'}
+                    </span>
+                  </div>
+                )}
                 <div className="space-y-2">
                   {(expandedComments ? post.comments : post.comments.slice(0, 2)).map((comment) => (
-                    <CommentItem key={comment.id} comment={comment} />
+                    <div key={comment.id}>
+                      <CommentItem
+                        comment={comment}
+                        isReplying={replyState.parentId === comment.id}
+                        onReply={() => handleReplyTo(comment.id, comment.user.name || undefined)}
+                      />
+                      {/* Inline reply input when replying to this comment */}
+                      {replyState.parentId === comment.id && (
+                        <div className="flex items-center gap-2 pl-9 mt-1.5">
+                          <Avatar className="h-5 w-5 shrink-0">
+                            <AvatarFallback className="text-[8px]">А</AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
+                            <input
+                              type="text"
+                              placeholder={`Ответить ${comment.user.name || ''}...`}
+                              value={replyState.text}
+                              onChange={(e) => setReplyState(prev => ({ ...prev, text: e.target.value }))}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault()
+                                  handleReplySubmit()
+                                }
+                              }}
+                              className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={handleReplySubmit}
+                              disabled={!replyState.text.trim()}
+                              className={cn(
+                                'transition-colors shrink-0',
+                                replyState.text.trim() ? 'text-primary' : 'text-muted-foreground/30'
+                              )}
+                            >
+                              <Send className="h-3 w-3" />
+                            </button>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setReplyState({ parentId: null, text: '', sending: false })}
+                            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            Отмена
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {post.comments.length > 2 && (
                     <button
@@ -331,7 +548,7 @@ export function PostCard({
               </>
             )}
 
-            {/* Comment input area */}
+            {/* Main comment input area */}
             <div className="flex items-center gap-2 pt-1">
               <Avatar className="h-7 w-7 shrink-0">
                 <AvatarFallback className="text-[10px]">А</AvatarFallback>
@@ -339,7 +556,7 @@ export function PostCard({
               <div className="flex-1 flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
                 <input
                   type="text"
-                  placeholder="Написать комментарий..."
+                  placeholder={replyState.parentId ? 'Пишите комментарий...' : 'Написать комментарий...'}
                   maxLength={MAX_COMMENT_LENGTH}
                   value={commentText}
                   onChange={(e) => onCommentTextChange(post.id, e.target.value)}
@@ -374,7 +591,7 @@ export function PostCard({
   )
 }
 
-function CommentItem({ comment }: { comment: FeedComment }) {
+function CommentItem({ comment, isReplying, onReply }: { comment: FeedComment; isReplying: boolean; onReply: () => void }) {
   return (
     <div className="flex gap-2.5">
       <Avatar className="h-7 w-7 shrink-0">
@@ -392,6 +609,18 @@ function CommentItem({ comment }: { comment: FeedComment }) {
           </span>
         </div>
         <p className="text-xs text-muted-foreground mt-0.5">{comment.content}</p>
+        {/* Reply button */}
+        <button
+          type="button"
+          onClick={onReply}
+          className={cn(
+            'flex items-center gap-1 text-[10px] mt-1 transition-colors',
+            isReplying ? 'text-primary font-medium' : 'text-muted-foreground/50 hover:text-muted-foreground'
+          )}
+        >
+          <Reply className="h-2.5 w-2.5" />
+          Ответить
+        </button>
       </div>
     </div>
   )

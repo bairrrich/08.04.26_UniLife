@@ -10,9 +10,13 @@ import { MacroRings } from './macro-ring'
 import { WaterTracker } from './water-tracker'
 import { MealTimeline } from './meal-timeline'
 import { AddMealDialog, EditMealDialog } from './meal-dialog'
+import type { MealFormItem } from './meal-dialog'
 import { TimeIndicator } from './time-indicator'
 import { NutritionGoalsDialog } from './nutrition-goals-dialog'
 import { WeeklyNutritionChart } from './weekly-nutrition-chart'
+import { WeeklyOverview } from './weekly-overview'
+import { DailyNutritionScore } from './daily-nutrition-score'
+import { QuickFoodBar } from './quick-food-bar'
 
 export default function NutritionPage() {
   const {
@@ -78,6 +82,18 @@ export default function NutritionPage() {
         </div>
 
         <MacroRings stats={stats} goals={goals} />
+
+        {/* Daily Nutrition Score */}
+        <DailyNutritionScore stats={stats} goals={goals} />
+
+        {/* Quick Food Presets */}
+        <QuickFoodBar onAddFood={(item: MealFormItem) => {
+          setMealItems([item])
+          setShowNewMealDialog(true)
+        }} />
+
+        {/* Weekly Overview Card */}
+        <WeeklyOverview goals={goals} />
 
         {/* Nutrition Streak Card */}
         {nutritionStreak > 0 && (

@@ -38,10 +38,10 @@ const Footer = memo(function Footer() {
   const isLoading = Object.keys(counts).length === 0
 
   return (
-    <footer className="mt-auto border-t bg-muted/30 hidden md:block">
+    <footer className="mt-auto border-t bg-muted/30">
       {/* Gradient accent bar */}
       <div className="h-0.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500" />
-      <div className="grid grid-cols-4 divide-x divide-border">
+      <div className="hidden md:grid md:grid-cols-4 divide-x divide-border">
         {/* Brand column */}
         <div className="px-6 py-5">
           <div className="flex items-center gap-2">
@@ -129,7 +129,29 @@ const Footer = memo(function Footer() {
           )}
         </div>
       </div>
-      <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
+      {/* Mobile footer - compact */}
+      <div className="md:hidden border-t px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
+            <span className="text-[8px] font-bold leading-none">U</span>
+          </div>
+          <span className="text-xs font-bold">UniLife</span>
+        </div>
+        <div className="flex items-center gap-3">
+          {STATS_ITEMS.slice(0, 3).map((stat) => {
+            const Icon = stat.icon
+            return (
+              <span key={stat.key} className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Icon className={cn('h-3 w-3', stat.iconColor)} />
+                <span className="tabular-nums font-medium">{counts[stat.key] ?? 0}</span>
+              </span>
+            )
+          })}
+        </div>
+        <p className="text-[10px] text-muted-foreground/50">© 2026</p>
+      </div>
+      {/* Desktop footer - full */}
+      <div className="hidden md:block border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
         <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
           <span className="text-[9px] font-bold leading-none">U</span>
         </div>

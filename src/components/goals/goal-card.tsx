@@ -5,13 +5,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star } from 'lucide-react'
-import type { GoalData } from './types'
+import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star, Tag, Zap, ChevronRight, Flag } from 'lucide-react'
+import type { GoalData, Milestone } from './types'
 import {
   CATEGORY_CONFIG,
   DEFAULT_CATEGORY,
   STATUS_CONFIG,
   DEFAULT_STATUS,
+  PRIORITY_CONFIG,
   getDeadlineCountdown,
   getDeadlineDaysLeft,
   getDeadlineBadgeClass,
@@ -41,8 +42,48 @@ const MILESTONES = [
   { threshold: 100, emoji: '🏆', label: 'Достигнуто!' },
 ]
 
+// Predefined subcategory tags
+const SUBCATEGORY_TAGS: Record<string, string[]> = {
+  personal: ['здоровье', 'саморазвитие', 'хобби', 'отношения', 'путешествия'],
+  health: ['спорт', 'питание', 'сон', 'медицина', 'ментальное'],
+  finance: ['накопления', 'инвестиции', 'экономия', 'доход', 'бюджет'],
+  career: ['навыки', 'нетворкинг', 'проекты', 'повышение', 'портфолио'],
+  learning: ['языки', 'программирование', 'чтение', 'курсы', 'сертификация'],
+}
+
 function getMilestone(progress: number) {
   return MILESTONES.find((m) => progress >= m.threshold && progress < m.threshold + 5) || null
+}
+
+// Calculate progress velocity (days to complete at current rate)
+function calculateVelocity(goal: GoalData): string | null {
+  if (goal.status === 'completed' || goal.progress === 0) return null
+
+  const created = new Date(goal.createdAt)
+  const now = new Date()
+  const daysElapsed = Math.max(1, Math.ceil((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+  const progressPerDay = goal.progress / daysElapsed
+  const remaining = 100 - goal.progress
+
+  if (progressPerDay <= 0.1) return null
+
+  const daysNeeded = Math.ceil(remaining / progressPerDay)
+
+  if (daysNeeded <= 0) return 'Цель достигнута! 🎉'
+
+  // Russian pluralization
+  const lastDigit = daysNeeded % 10
+  const lastTwo = daysNeeded % 100
+  let plural = 'дней'
+  if (lastTwo >= 11 && lastTwo <= 19) {
+    plural = 'дней'
+  } else if (lastDigit === 1) {
+    plural = 'день'
+  } else if (lastDigit >= 2 && lastDigit <= 4) {
+    plural = 'дня'
+  }
+
+  return `На этом темпе через ${daysNeeded} ${plural}`
 }
 
 export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete }: GoalCardProps) {
@@ -51,7 +92,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
   const daysLeft = getDeadlineDaysLeft(goal.deadline)
   const countdown = getDeadlineCountdown(goal.deadline)
   const isOverdue = daysLeft !== null && daysLeft < 0 && goal.status !== 'completed'
-  const isApproaching = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7 && goal.status !== 'completed'
+  const isApproaching = daysLeft !== null && daysLeft >= 0 && daysLeft <= 3 && goal.status !== 'completed'
 
   // ─── Animated progress ring ───────────────────────────────────────────────
   const [animatedProgress, setAnimatedProgress] = useState(0)
@@ -66,6 +107,9 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
 
   // ─── Milestone celebration badge ──────────────────────────────────────────
   const milestone = useMemo(() => getMilestone(goal.progress), [goal.progress])
+
+  // ─── Progress velocity ────────────────────────────────────────────────────
+  const velocityText = useMemo(() => calculateVelocity(goal), [goal])
 
   // ─── Inline delete confirmation ───────────────────────────────────────────
   const [deleteConfirming, setDeleteConfirming] = useState(false)
@@ -107,6 +151,24 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
 
   const isCompleted = goal.status === 'completed'
 
+  // ─── Suggested tags based on category ─────────────────────────────────────
+  const suggestedTags = SUBCATEGORY_TAGS[goal.category] || []
+
+  // ─── Priority badge ──────────────────────────────────────────────────────
+  const priorityConfig = goal.priority ? PRIORITY_CONFIG[goal.priority] : null
+
+  // ─── Milestones parsing ────────────────────────────────────────────────────
+  const milestonesData = useMemo(() => {
+    try {
+      return JSON.parse(goal.milestones || '[]') as Milestone[]
+    } catch {
+      return []
+    }
+  }, [goal.milestones])
+
+  const completedMilestones = milestonesData.filter(m => m.completed).length
+  const totalMilestones = milestonesData.length
+
   return (
     <Card
       ref={cardRef}
@@ -115,12 +177,23 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
         'hover:scale-[1.01]',
         catConfig.hoverGlow,
         isCompleted && statusConfig.borderClass && 'border',
-        // Pulsing amber border glow for approaching deadlines
+        // Pulsing amber border glow for approaching deadlines (within 3 days)
         isApproaching && !isCompleted && 'animate-pulse-soft ring-2 ring-amber-400/30 ring-offset-2 ring-offset-background dark:ring-offset-card',
         // Red border for overdue
         isOverdue && 'ring-2 ring-rose-400/40 ring-offset-2 ring-offset-background dark:ring-offset-card',
       )}
     >
+      {/* ─── Thin full-width progress bar at very top ─────────────────────── */}
+      <div className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl overflow-hidden">
+        <div
+          className="h-full transition-all duration-1000 ease-out rounded-t-xl"
+          style={{
+            width: `${animatedProgress}%`,
+            backgroundColor: isCompleted ? '#10b981' : getProgressRingColor(goal.progress),
+          }}
+        />
+      </div>
+
       {/* Subtle category-specific gradient background */}
       <div className={categoryGradientClass} />
 
@@ -135,7 +208,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
         <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 pointer-events-none" />
       )}
 
-      <CardContent className="relative p-4 space-y-3">
+      <CardContent className="relative p-4 space-y-3 pt-5">
         {/* Top row: Category icon+badge + Status + Deadline Badge + Progress Ring */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap gap-y-1">
@@ -155,6 +228,17 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </span>
             </div>
 
+            {/* Priority badge */}
+            {priorityConfig && (
+              <span className={cn(
+                'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium border',
+                priorityConfig.bgClass, priorityConfig.borderClass, priorityConfig.color,
+              )}>
+                <priorityConfig.icon />
+                {priorityConfig.label}
+              </span>
+            )}
+
             {/* Deadline countdown badge */}
             {countdown && !isCompleted && (
               <Badge
@@ -170,10 +254,10 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </Badge>
             )}
 
-          {/* Warning badge for approaching deadlines */}
-            {getDeadlineWarning(goal.deadline) && goal.status === 'active' && !isOverdue && daysLeft !== null && daysLeft > 3 && (
-              <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft hidden sm:inline-flex">
-                ⚠️ Скоро
+            {/* Warning badge for approaching deadlines within 3 days */}
+            {isApproaching && !isCompleted && daysLeft !== null && (
+              <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft">
+                ⚡ Скоро дедлайн!
               </Badge>
             )}
           </div>
@@ -292,7 +376,23 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           </div>
         </div>
 
-        {/* Info row: Target + Deadline (simpler, only when no badge shown above) */}
+        {/* Subcategory tags */}
+        {suggestedTags.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <Tag className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+            {suggestedTags.slice(0, 3).map((tag) => (
+              <Badge
+                key={tag}
+                variant="secondary"
+                className="text-[9px] px-1.5 py-0 h-4 font-normal bg-muted/50"
+              >
+                {tag}
+              </Badge>
+            ))}
+          </div>
+        )}
+
+        {/* Info row: Target + Deadline + Velocity */}
         <div className="flex items-center gap-4 flex-wrap">
           {goal.targetValue != null && goal.targetValue > 0 && (
             <div className="flex items-center gap-1.5">
@@ -308,7 +408,54 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               <span className="text-xs tabular-nums">{countdown}</span>
             </div>
           )}
+          {/* Progress velocity */}
+          {velocityText && !isCompleted && (
+            <div className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400">
+              <Zap className="h-3 w-3" />
+              <span className="text-[10px]">{velocityText}</span>
+            </div>
+          )}
         </div>
+
+        {/* Milestones substeps */}
+        {totalMilestones > 0 && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-medium text-muted-foreground flex items-center gap-1">
+                <Flag className="h-3 w-3" />
+                Этапы
+              </span>
+              <span className="text-[10px] text-muted-foreground tabular-nums">
+                {completedMilestones}/{totalMilestones}
+              </span>
+            </div>
+            <div className="space-y-1">
+              {milestonesData.map((ms, idx) => (
+                <div
+                  key={ms.id || idx}
+                  className="flex items-center gap-2 rounded-md px-2 py-1 transition-colors"
+                >
+                  <div
+                    className={cn(
+                      'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all cursor-pointer',
+                      ms.completed
+                        ? 'bg-emerald-500 border-emerald-500'
+                        : 'border-muted-foreground/30 hover:border-muted-foreground/50',
+                    )}
+                  >
+                    {ms.completed && <CheckCircle className="h-3 w-3 text-white" />}
+                  </div>
+                  <span className={cn(
+                    'text-[11px] flex-1 truncate',
+                    ms.completed && 'line-through text-muted-foreground',
+                  )}>
+                    {ms.title}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions — more prominent on hover */}
         <div className="flex items-center gap-1 pt-1 transition-opacity duration-200 group-hover:opacity-100 opacity-80">

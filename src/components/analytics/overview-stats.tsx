@@ -14,9 +14,11 @@ import {
   Flame,
   Smile,
   Sparkles,
+  Minus,
 } from 'lucide-react'
 import { MOOD_EMOJI, formatCurrency, RU_DAYS_SHORT, toDateStr } from '@/lib/format'
 import { SkeletonCard } from './skeleton-components'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 import type { DiaryEntry, Transaction } from './types'
 
 interface PeriodComparison {
@@ -47,14 +49,19 @@ interface OverviewStatsProps {
 
 function PeriodChangeBadge({ change, label }: { change: number | null; label: string }) {
   if (change === null) return null
-  const isPositive = change >= 0
+  const isPositive = change > 0
+  const isStable = change === 0
   return (
     <span className={`inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-medium tabular-nums ${
-      isPositive
-        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
-        : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400'
+      isStable
+        ? 'bg-slate-50 text-slate-600 dark:bg-slate-950/40 dark:text-slate-400'
+        : isPositive
+          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400'
+          : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400'
     }`}>
-      {isPositive ? (
+      {isStable ? (
+        <Minus className="h-2.5 w-2.5" />
+      ) : isPositive ? (
         <TrendingUp className="h-2.5 w-2.5" />
       ) : (
         <TrendingDown className="h-2.5 w-2.5" />
@@ -169,7 +176,7 @@ export function OverviewStats({
             </CardHeader>
             <CardContent className="pt-0">
               <div className="flex items-end justify-between gap-2">
-                <p className="text-xl font-bold tabular-nums">{diaryCount}</p>
+                <p className="text-xl font-bold tabular-nums"><AnimatedNumber value={diaryCount} /></p>
                 <Sparkline data={diarySparkline} color="#10b981" />
               </div>
               <div className="mt-1 flex items-center gap-1">
@@ -235,13 +242,13 @@ export function OverviewStats({
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-xl font-bold tabular-nums">{workoutCount}</p>
+              <p className="text-xl font-bold tabular-nums"><AnimatedNumber value={workoutCount} /></p>
               <div className="mt-1 flex items-center gap-1">
                 <Flame className="h-3 w-3 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
                   Всего минут:{' '}
                   <span className="font-medium tabular-nums text-blue-600 dark:text-blue-400">
-                    {totalMinutes}
+                    <AnimatedNumber value={totalMinutes} />
                   </span>
                 </p>
               </div>
@@ -260,7 +267,7 @@ export function OverviewStats({
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-xl font-bold tabular-nums">{habitsRate}%</p>
+              <p className="text-xl font-bold tabular-nums"><AnimatedNumber value={habitsRate} /></p>
               <div className="mt-1 flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">

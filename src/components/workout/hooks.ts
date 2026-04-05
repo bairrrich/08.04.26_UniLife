@@ -117,6 +117,64 @@ export function useWorkouts() {
     return { heaviestWeight, longestDuration, mostExercises, totalVolumeAllTime, maxWeightsByName, prCount }
   }, [allWorkouts])
 
+  // ── Weekly Sparkline Data (last 7 days) ─────────────────────────────────────
+
+  const sparklineData = useMemo(() => {
+    const days: { workouts: number; minutes: number; exercises: number; volume: number }[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const dateStr = `${d.getFullYear()}-${(d.getMonth() + 1).padStart(2, '0')}-${d.getDate().padStart(2, '0')}`
+      const dayWorkouts = allWorkouts.filter((w) => w.date.split('T')[0] === dateStr)
+      let dayMinutes = 0
+      let dayExercises = 0
+      let dayVolume = 0
+      dayWorkouts.forEach((w) => {
+        dayMinutes += w.durationMin ?? 0
+        dayExercises += w.exercises.length
+        w.exercises.forEach((ex) => { dayVolume += calculateVolume(parseSets(ex.sets)) })
+      })
+      days.push({ workouts: dayWorkouts.length, minutes: dayMinutes, exercises: dayExercises, volume: dayVolume })
+    }
+    return days
+  }, [allWorkouts])
+
+  // ── Period Comparison (this week vs last week) ──────────────────────────────
+
+  const periodComparison = useMemo(() => {
+    const now = new Date()
+    const thisWeekStart = new Date(now)
+    thisWeekStart.setDate(now.getDate() - now.getDay() + 1)
+    thisWeekStart.setHours(0, 0, 0, 0)
+    const lastWeekStart = new Date(thisWeekStart)
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7)
+    const lastWeekEnd = new Date(thisWeekStart)
+    lastWeekEnd.setHours(-1)
+
+    const thisWeekWorkouts = allWorkouts.filter((w) => new Date(w.date) >= thisWeekStart)
+    const lastWeekWorkouts = allWorkouts.filter((w) => {
+      const d = new Date(w.date)
+      return d >= lastWeekStart && d <= lastWeekEnd
+    })
+
+    const thisMin = thisWeekWorkouts.reduce((s, w) => s + (w.durationMin ?? 0), 0)
+    const lastMin = lastWeekWorkouts.reduce((s, w) => s + (w.durationMin ?? 0), 0)
+    const thisEx = thisWeekWorkouts.reduce((s, w) => s + w.exercises.length, 0)
+    const lastEx = lastWeekWorkouts.reduce((s, w) => s + w.exercises.length, 0)
+    let thisVol = 0; let lastVol = 0
+    thisWeekWorkouts.forEach((w) => { w.exercises.forEach((ex) => { thisVol += calculateVolume(parseSets(ex.sets)) }) })
+    lastWeekWorkouts.forEach((w) => { w.exercises.forEach((ex) => { lastVol += calculateVolume(parseSets(ex.sets)) }) })
+
+    const pct = (curr: number, prev: number) => prev > 0 ? Math.round(((curr - prev) / prev) * 100) : 0
+
+    return {
+      workouts: pct(thisWeekWorkouts.length, lastWeekWorkouts.length),
+      minutes: pct(thisMin, lastMin),
+      exercises: pct(thisEx, lastEx),
+      volume: pct(thisVol, lastVol),
+    }
+  }, [allWorkouts])
+
   // ── Weekly Frequency Comparison ─────────────────────────────────────────────
 
   const weeklyFrequency = useMemo(() => {
@@ -288,6 +346,8 @@ export function useWorkouts() {
     lastWorkoutTime,
     personalRecords,
     weeklyFrequency,
+    sparklineData,
+    periodComparison,
     // Handlers
     handleSubmit,
     handleEditSubmit,

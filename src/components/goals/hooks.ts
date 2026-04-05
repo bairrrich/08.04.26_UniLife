@@ -22,8 +22,11 @@ export function useGoals() {
   const [formCurrentValue, setFormCurrentValue] = useState('0')
   const [formUnit, setFormUnit] = useState('')
   const [formDeadline, setFormDeadline] = useState('')
+  const [formStartDate, setFormStartDate] = useState('')
+  const [formPriority, setFormPriority] = useState('medium')
   const [formStatus, setFormStatus] = useState('active')
   const [formProgress, setFormProgress] = useState('0')
+  const [formMilestones, setFormMilestones] = useState<string>('[]')
   const [submitting, setSubmitting] = useState(false)
 
   const fetchGoals = useCallback(async () => {
@@ -44,10 +47,10 @@ export function useGoals() {
   const filteredGoals = useMemo(() => goals.filter((g) => {
     if (filterTab === 'active') return g.status === 'active'
     if (filterTab === 'completed') return g.status === 'completed'
+    if (filterTab === 'paused') return g.status === 'paused'
     return true
   }).filter((g) => {
     if (categoryFilter === 'all') return true
-    // Map category filter to goal categories
     if (categoryFilter === 'learning') return g.category === 'learning' || g.category === 'education'
     return g.category === categoryFilter
   }), [goals, filterTab, categoryFilter])
@@ -57,7 +60,8 @@ export function useGoals() {
   const resetForm = () => {
     setFormTitle(''); setFormDescription(''); setFormCategory('personal')
     setFormTargetValue(''); setFormCurrentValue('0'); setFormUnit('')
-    setFormDeadline(''); setFormStatus('active'); setFormProgress('0')
+    setFormDeadline(''); setFormStartDate(''); setFormPriority('medium')
+    setFormStatus('active'); setFormProgress('0'); setFormMilestones('[]')
     setEditingGoal(null)
   }
 
@@ -69,7 +73,10 @@ export function useGoals() {
     setFormTargetValue(goal.targetValue != null ? String(goal.targetValue) : '')
     setFormCurrentValue(String(goal.currentValue)); setFormUnit(goal.unit || '')
     setFormDeadline(goal.deadline ? goal.deadline.split('T')[0] : '')
+    setFormStartDate(goal.startDate ? goal.startDate.split('T')[0] : '')
+    setFormPriority(goal.priority || 'medium')
     setFormStatus(goal.status); setFormProgress(String(goal.progress))
+    setFormMilestones(goal.milestones || '[]')
     setDialogOpen(true)
   }
 
@@ -87,7 +94,10 @@ export function useGoals() {
         category: formCategory, targetValue: formTargetValue ? Number(formTargetValue) : null,
         currentValue: Number(formCurrentValue) || 0, unit: formUnit.trim() || null,
         deadline: formDeadline ? new Date(formDeadline).toISOString() : null,
+        startDate: formStartDate ? new Date(formStartDate).toISOString() : null,
+        priority: formPriority,
         status: formStatus, progress: Math.min(100, Math.max(0, Number(formProgress) || 0)),
+        milestones: formMilestones,
       }
       if (editingGoal) {
         const res = await fetch(`/api/goals/${editingGoal.id}`, {
@@ -163,6 +173,33 @@ export function useGoals() {
     }
   }
 
+  // ─── Milestone Toggle ────────────────────────────────────────────────────
+
+  const handleMilestoneToggle = async (goalId: string, milestoneIndex: number) => {
+    toast.dismiss()
+    try {
+      const goal = goals.find(g => g.id === goalId)
+      if (!goal) return
+      let milestones: Array<{ id: string; title: string; completed: boolean }> = []
+      try {
+        milestones = JSON.parse(goal.milestones || '[]')
+      } catch { /* ignore */ }
+      if (milestones[milestoneIndex]) {
+        milestones[milestoneIndex].completed = !milestones[milestoneIndex].completed
+      }
+      const res = await fetch(`/api/goals/${goalId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ milestones: JSON.stringify(milestones) }),
+      })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await safeJson(res)
+      if (!json || !json.success) return
+      fetchGoals()
+    } catch {
+      toast.error('Ошибка обновления этапа')
+    }
+  }
+
   return {
     // state
     goals, stats, loading, filterTab, setFilterTab, categoryFilter, setCategoryFilter,
@@ -175,11 +212,15 @@ export function useGoals() {
     formCurrentValue, setFormCurrentValue,
     formUnit, setFormUnit,
     formDeadline, setFormDeadline,
+    formStartDate, setFormStartDate,
+    formPriority, setFormPriority,
     formStatus, setFormStatus,
     formProgress, setFormProgress,
+    formMilestones, setFormMilestones,
     // handlers
     openAddDialog, openEditDialog, handleSubmit,
     handleUpdateProgress, handleComplete, handleDelete,
+    handleMilestoneToggle,
     // computed
     filteredGoals,
   }

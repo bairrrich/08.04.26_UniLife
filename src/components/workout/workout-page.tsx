@@ -15,6 +15,10 @@ import { WorkoutDialog } from './workout-dialog'
 import { MonthNav } from './month-nav'
 import { WorkoutVolumeChart } from './volume-chart'
 import { PersonalRecords } from './personal-records'
+import { WorkoutTemplates } from './workout-templates'
+import { WarmUpReminder } from './warm-up-reminder'
+import { PerExerciseRecords } from './per-exercise-records'
+import type { ExerciseData } from './types'
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
@@ -32,6 +36,8 @@ export function WorkoutPage() {
     handleSubmit, handleEditSubmit, handleApplyPreset,
     openEditDialog, toggleExpand, changeMonth, closeEditDialog,
     totalHours,
+    sparklineData,
+    periodComparison,
   } = useWorkouts()
 
   const formProps = {
@@ -78,6 +84,8 @@ export function WorkoutPage() {
         totalVolume={totalVolume}
         prCount={personalRecords.prCount}
         weeklyFrequency={weeklyFrequency}
+        sparklineData={sparklineData}
+        periodComparison={periodComparison}
       />
 
       {/* Exercise Type Badges + Duration Row */}
@@ -102,6 +110,17 @@ export function WorkoutPage() {
 
       <MonthNav month={month} onChange={changeMonth} />
 
+      {/* Workout Templates */}
+      <WorkoutTemplates
+        onLoadTemplate={(name, duration, exercises) => {
+          handleApplyPreset({ label: name, name, duration, exercises })
+          setDialogOpen(true)
+        }}
+      />
+
+      {/* Warm-up Reminder */}
+      <WarmUpReminder workoutCount={workouts.length} />
+
       {/* Personal Records */}
       {!loading && workouts.length > 0 && (
         <PersonalRecords
@@ -110,6 +129,11 @@ export function WorkoutPage() {
           mostExercises={personalRecords.mostExercises}
           totalVolumeAllTime={personalRecords.totalVolumeAllTime}
         />
+      )}
+
+      {/* Per-Exercise Records */}
+      {!loading && workouts.length > 1 && (
+        <PerExerciseRecords workouts={workouts} />
       )}
 
       {/* Volume Chart */}

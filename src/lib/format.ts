@@ -71,13 +71,24 @@ export function getRelativeTime(dateStr: string): string {
   const date = new Date(dateStr)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
+  const diffSecs = Math.floor(diffMs / 1000)
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
-  if (diffMins < 1) return 'только что'
+
+  if (diffSecs < 5) return 'только что'
+  if (diffSecs < 60) return `${diffSecs} сек назад`
+  if (diffMins < 5) return '5 минут назад'
+  if (diffMins < 10) return '10 минут назад'
+  if (diffMins < 30) return '30 минут назад'
   if (diffMins < 60) return `${diffMins} мин назад`
-  if (diffHours < 24) return `${diffHours} ч назад`
-  if (diffDays < 7) return `${diffDays} д назад`
+  if (diffHours === 1) return '1 час назад'
+  if (diffHours < 5) return `${diffHours} часа назад`
+  if (diffHours < 12) return `${diffHours} часов назад`
+  if (diffHours < 24) return 'вчера'
+  if (diffDays === 1) return 'вчера'
+  if (diffDays === 2) return 'позавчера'
+  if (diffDays < 7) return `${diffDays} дней назад`
   return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
 }
 

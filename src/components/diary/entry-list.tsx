@@ -8,7 +8,7 @@ import { BookOpen, Plus, Sparkles, Eye, EyeOff, FileText, Clock } from 'lucide-r
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, getRelativeTime, countWords } from '@/lib/format'
+import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, getRelativeTime, countWords, readingTimeMinutes } from '@/lib/format'
 import { DiaryEntry } from './types'
 import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
@@ -135,6 +135,8 @@ export function EntryList({
           const moodGrad = entry.mood ? MOOD_GRADIENT[entry.mood] : ''
           const isExpanded = expandedEntries.has(entry.id)
           const isLongContent = entry.content.length > 150
+          const wordCount = countWords(entry.content)
+          const readTime = readingTimeMinutes(wordCount)
 
           return (
             <Card
@@ -234,11 +236,15 @@ export function EntryList({
                       </div>
                     )}
 
-                    {/* Word count badge */}
+                    {/* Word count + reading time badge */}
                     <div className="flex items-center gap-2 mt-2.5">
                       <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
                         <FileText className="h-2.5 w-2.5" />
-                        {countWords(entry.content)} слов
+                        {wordCount} слов
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
+                        <Clock className="h-2.5 w-2.5" />
+                        {readTime}
                       </Badge>
                     </div>
                   </div>

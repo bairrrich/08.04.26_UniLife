@@ -3,7 +3,7 @@
 import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
-import { RU_DAYS_SHORT, MOOD_DOT_COLORS, MOOD_EMOJI } from '@/lib/format'
+import { RU_DAYS_SHORT, MOOD_DOT_COLORS, MOOD_EMOJI, MOOD_LABELS } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
 import { DiaryEntry, CalendarCell } from './types'
 import { getDaysInMonth, getFirstDayOfMonth, formatDateKey } from './helpers'
@@ -106,17 +106,21 @@ export function CalendarView({
                 onClick={() => onDayClick(cell)}
                 className={cn(
                   'h-10 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm relative transition-all duration-200',
+                  'heatmap-cell',
                   !isCurrentMonth && 'text-muted-foreground/40',
-                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent',
-                  isCurrentMonth && !isSelected && hasEntries && 'hover:bg-primary/10 hover:scale-105 hover:shadow-md',
-                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-md',
+                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent hover:scale-105',
+                  isCurrentMonth && !isSelected && hasEntries && 'hover:bg-primary/10 hover:scale-110 hover:shadow-lg',
+                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-lg',
                   isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background font-semibold',
                   hasEntries && !isSelected && 'bg-accent/50'
                 )}
               >
                 <span className="text-sm">{cell.day}</span>
                 {primaryMood && (
-                  <span className="text-[10px] sm:text-xs leading-none mt-0.5">
+                  <span className={cn(
+                    'text-[10px] sm:text-xs leading-none mt-0.5 transition-transform',
+                    hasEntries && !isSelected && 'group-hover:scale-125'
+                  )}>
                     {MOOD_EMOJI[primaryMood]}
                   </span>
                 )}
@@ -132,19 +136,43 @@ export function CalendarView({
                     {dayEntries!.length}
                   </Badge>
                 )}
+
+                {/* Hover tooltip */}
+                {hasEntries && !isSelected && (
+                  <div className="heatmap-tooltip">
+                    <div className="bg-popover border rounded-lg shadow-lg px-3 py-2 text-left">
+                      <p className="text-xs font-medium">{cell.day} {MOOD_EMOJI[primaryMood!]} {MOOD_LABELS[primaryMood!]}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {dayEntries!.length} {dayEntries!.length === 1 ? 'запись' : dayEntries!.length < 5 ? 'записи' : 'записей'}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </button>
             )
           })}
         </div>
 
-        {/* Legend */}
-        <div className="flex items-center justify-center gap-2 sm:gap-3 mt-3 pt-3 border-t">
-          {[1, 2, 3, 4, 5].map((m) => (
-            <div key={m} className="flex items-center gap-1">
-              <div className={cn('h-2 w-2 rounded-full', MOOD_DOT_COLORS[m])} />
-              <span className="text-xs text-muted-foreground">{MOOD_EMOJI[m]}</span>
-            </div>
-          ))}
+        {/* Enhanced mood heatmap legend */}
+        <div className="flex items-center justify-center gap-2 sm:gap-4 mt-3 pt-3 border-t">
+          <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Настроение:</span>
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {[1, 2, 3, 4, 5].map((m) => (
+              <div key={m} className="flex items-center gap-1">
+                <div className={cn(
+                  'h-3 w-3 rounded-sm',
+                  MOOD_DOT_COLORS[m]
+                )} />
+                <span className="text-[10px] text-muted-foreground hidden sm:inline">
+                  {MOOD_LABELS[m]}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="flex items-center gap-1 ml-2 sm:ml-4 pl-2 sm:pl-4 border-l">
+            <div className="h-3 w-3 rounded-sm bg-muted border border-border" />
+            <span className="text-[10px] text-muted-foreground">Нет записи</span>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -1,12 +1,28 @@
 'use client'
 
-import { Rss, Plus } from 'lucide-react'
+import { Rss, Plus, TrendingUp, RefreshCw } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { PostCard } from './post-card'
 import { PostDialog } from './post-dialog'
 import { FeedEmptyState } from './empty-state'
 import { useFeed } from './hooks'
+import { getTimeGroup } from './constants'
+import { useState, useMemo } from 'react'
+import { cn } from '@/lib/utils'
+
+// Suggested hashtags for the feed header
+const SUGGESTED_HASHTAGS = [
+  { tag: 'достижения', emoji: '🏆' },
+  { tag: 'тренировка', emoji: '💪' },
+  { tag: 'мысли', emoji: '💭' },
+  { tag: 'рецепт', emoji: '🍳' },
+  { tag: 'книги', emoji: '📚' },
+  { tag: 'мотивация', emoji: '🔥' },
+  { tag: 'учёба', emoji: '✏️' },
+  { tag: 'отдых', emoji: '🌅' },
+]
 
 export default function FeedPage() {
   const {
@@ -25,6 +41,41 @@ export default function FeedPage() {
     handleSubmit, handleDeletePost,
   } = useFeed()
 
+  const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null)
+
+  // Filter posts by selected hashtag
+  const filteredPosts = useMemo(() => {
+    if (!selectedHashtag) return posts
+    return posts.filter((p) => {
+      try {
+        const tags = JSON.parse(p.tags || '[]')
+        return tags.some((t: string) => t.toLowerCase().includes(selectedHashtag.toLowerCase()))
+      } catch {
+        return false
+      }
+    })
+  }, [posts, selectedHashtag])
+
+  // Regenerate grouped posts from filtered
+  const displayGroups = useMemo(() => {
+    const groups: Record<string, typeof filteredPosts> = {}
+    const order: string[] = []
+
+    for (const post of filteredPosts) {
+      const group = getTimeGroup(post.createdAt)
+      if (!groups[group]) {
+        groups[group] = []
+        order.push(group)
+      }
+      groups[group].push(post)
+    }
+
+    const canonicalOrder = ['Сегодня', 'Вчера', 'На этой неделе', 'Ранее']
+    return canonicalOrder
+      .filter((g) => groups[g]?.length)
+      .map((g) => ({ label: g, posts: groups[g] }))
+  }, [filteredPosts])
+
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
@@ -40,6 +91,49 @@ export default function FeedPage() {
         </Button>
       </div>
 
+      {/* Trending Topics */}
+      <Card className="rounded-xl border overflow-hidden">
+        <CardContent className="p-3 sm:p-4">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-primary" />
+              <span className="text-xs font-semibold text-foreground">Популярные темы</span>
+            </div>
+            {selectedHashtag && (
+              <button
+                type="button"
+                onClick={() => setSelectedHashtag(null)}
+                className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium transition-colors"
+              >
+                <RefreshCw className="h-3 w-3" />
+                Показать все
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {SUGGESTED_HASHTAGS.map((item) => {
+              const isActive = selectedHashtag === item.tag
+              return (
+                <button
+                  key={item.tag}
+                  type="button"
+                  onClick={() => setSelectedHashtag(isActive ? null : item.tag)}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all active-press',
+                    isActive
+                      ? 'bg-primary text-primary-foreground shadow-sm'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  <span className="text-xs">{item.emoji}</span>
+                  #{item.tag}
+                </button>
+              )
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
       <PostDialog
         open={dialogOpen} onOpenChange={setDialogOpen}
         formEntityType={formEntityType} setFormEntityType={setFormEntityType}
@@ -54,7 +148,6 @@ export default function FeedPage() {
           Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="rounded-xl border-l-4 border-l-blue-200 dark:border-l-blue-800">
               <CardContent className="p-4 space-y-3">
-                {/* Header: avatar + name + badge + time */}
                 <div className="flex items-center gap-3">
                   <div className="skeleton-shimmer h-10 w-10 rounded-full shrink-0" />
                   <div className="flex-1 space-y-1.5">
@@ -69,13 +162,11 @@ export default function FeedPage() {
                     <div className="skeleton-shimmer h-8 w-8 rounded-md" />
                   </div>
                 </div>
-                {/* Caption area */}
                 <div className="space-y-1.5">
                   <div className="skeleton-shimmer h-4 rounded w-full" />
                   <div className="skeleton-shimmer h-4 rounded w-4/5" />
                   <div className="skeleton-shimmer h-4 rounded w-2/3" />
                 </div>
-                {/* Action buttons */}
                 <div className="flex items-center gap-4">
                   <div className="skeleton-shimmer h-5 rounded w-12" />
                   <div className="skeleton-shimmer h-5 rounded w-12" />
@@ -84,12 +175,37 @@ export default function FeedPage() {
               </CardContent>
             </Card>
           ))
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 && !selectedHashtag ? (
           <FeedEmptyState onOpenDialog={() => setDialogOpen(true)} />
+        ) : filteredPosts.length === 0 && selectedHashtag ? (
+          <div className="text-center py-12">
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center">
+              <Badge variant="outline" className="text-2xl font-normal border-0 bg-transparent">
+                #{selectedHashtag}
+              </Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Пока нет записей с тегом <span className="font-medium text-foreground">#{selectedHashtag}</span>
+            </p>
+            <p className="text-xs text-muted-foreground/60 mt-1">
+              Станьте первым, кто напишет об этом!
+            </p>
+            <Button
+              size="sm"
+              className="mt-4"
+              onClick={() => {
+                setSelectedHashtag(null)
+                setFormTags(selectedHashtag)
+                setDialogOpen(true)
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1.5" />
+              Написать
+            </Button>
+          </div>
         ) : (
-          groupedPosts.map((group) => (
+          displayGroups.map((group) => (
             <div key={group.label} className="space-y-3">
-              {/* Time group header */}
               <div className="flex items-center gap-3">
                 <h3 className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
                   {group.label}
@@ -100,7 +216,6 @@ export default function FeedPage() {
                 </span>
               </div>
 
-              {/* Posts in this group */}
               <div className="space-y-3">
                 {group.posts.map((post) => (
                   <PostCard
