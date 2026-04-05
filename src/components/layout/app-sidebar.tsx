@@ -1,6 +1,7 @@
 'use client'
 
 import { LucideIcon, icons, Bell, Menu } from 'lucide-react'
+import { NotificationsPanel } from '@/components/notifications/notifications-panel'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { navItems } from '@/lib/nav-items'
@@ -16,6 +17,19 @@ import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { motion } from 'framer-motion'
 import { memo, useEffect } from 'react'
 import { useUserPrefs } from '@/lib/use-user-prefs'
+
+// ─── Notifications Panel connector (uses zustand for open state) ────────
+function NotificationsPanelConnector() {
+  const notificationsOpen = useAppStore((s) => s.notificationsOpen)
+  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
+
+  return (
+    <NotificationsPanel
+      open={notificationsOpen}
+      onOpenChange={setNotificationsOpen}
+    />
+  )
+}
 
 // ─── Module-specific accent colors for the active dot indicator ───────
 const MODULE_ACCENT_COLORS: Record<string, string> = {
@@ -68,13 +82,13 @@ const MemoizedNavBadge = memo(NavBadge)
 
 function MobileNotificationBell() {
   const notificationCount = useAppStore((s) => s.notificationCount)
-  const setActiveModule = useAppStore((s) => s.setActiveModule)
+  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
 
   return (
     <button
       className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
       aria-label="Уведомления"
-      onClick={() => setActiveModule('dashboard')}
+      onClick={() => setNotificationsOpen(true)}
     >
       <Bell className={cn('h-4.5 w-4.5', notificationCount > 0 && 'bell-pulse')} />
       {notificationCount > 0 && (
@@ -90,6 +104,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
   const activeModule = useAppStore((s) => s.activeModule)
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const notificationCount = useAppStore((s) => s.notificationCount)
+  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
   const moduleCounts = useModuleCounts()
   const { userName } = useUserPrefs()
 
@@ -197,7 +212,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления" onClick={() => setActiveModule('dashboard')}>
+            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления" onClick={() => setNotificationsOpen(true)}>
               <Bell className={cn('h-4 w-4', notificationCount > 0 && 'bell-pulse')} />
               {notificationCount > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
@@ -263,6 +278,9 @@ export function AppSidebar() {
 
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog />
+
+      {/* Notifications Panel */}
+      <NotificationsPanelConnector />
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">

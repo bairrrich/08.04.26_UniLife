@@ -4,17 +4,27 @@ import { useState, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { BookOpen, Plus, Sparkles, Eye, EyeOff, FileText, Clock } from 'lucide-react'
+import { BookOpen, Plus, Sparkles, Eye, EyeOff, FileText, Clock, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, getRelativeTime, countWords, readingTimeMinutes } from '@/lib/format'
+import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, MOOD_DOT_COLORS, getRelativeTime, countWords, readingTimeMinutes } from '@/lib/format'
 import { DiaryEntry } from './types'
 import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
 import { parseEntryDate } from './helpers'
 import { SearchFilter } from './search-filter'
 import { ExportEntry } from './export-entry'
+
+// ─── Mood top border colors ──────────────────────────────────────────────────
+
+const MOOD_TOP_BORDER_COLORS: Record<number, string> = {
+  1: '#f43f5e', // rose-500
+  2: '#f59e0b', // amber-500
+  3: '#94a3b8', // slate-400
+  4: '#84cc16', // lime-500
+  5: '#10b981', // emerald-500
+}
 
 interface EntryListProps {
   entries: DiaryEntry[]
@@ -119,11 +129,17 @@ export function EntryList({
 
       {/* No results after filtering */}
       {filteredEntries.length === 0 && entries.length > 0 && (
-        <div className="text-center py-8">
-          <p className="text-sm text-muted-foreground">
-            Ничего не найдено по выбранным фильтрам
-          </p>
-        </div>
+        <Card className="card-hover rounded-xl overflow-hidden animate-fade-in">
+          <CardContent className="relative flex flex-col items-center justify-center py-10 text-center">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-slate-300/60 to-slate-400/60 dark:from-slate-700/60 dark:to-slate-600/60 flex items-center justify-center mx-auto mb-4">
+              <CalendarDays className="h-8 w-8 text-muted-foreground/60" />
+            </div>
+            <h3 className="text-sm font-semibold mb-1 text-muted-foreground">Нет записей за этот период</h3>
+            <p className="text-xs text-muted-foreground/60 max-w-[200px] mx-auto">
+              Попробуйте изменить фильтры или выбрать другой период
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Entry cards */}
@@ -142,11 +158,12 @@ export function EntryList({
             <Card
               key={entry.id}
               className={cn(
-                'card-hover rounded-xl border bg-card hover:shadow-sm transition cursor-pointer overflow-hidden',
+                'card-hover rounded-xl border bg-card hover:shadow-sm transition cursor-pointer overflow-hidden relative',
                 moodBorder,
                 selectedEntry?.id === entry.id && 'ring-2 ring-primary/40'
               )}
               onClick={() => onEntryClick(entry)}
+              style={{ borderTopWidth: '4px', borderTopColor: entry.mood ? MOOD_TOP_BORDER_COLORS[entry.mood] : 'transparent' }}
             >
               {/* Subtle mood gradient background */}
               {entry.mood && (
@@ -171,12 +188,19 @@ export function EntryList({
                         </span>
                       )}
                     </div>
-                    {/* Time ago */}
-                    <div className="flex items-center gap-1 mb-1.5">
-                      <Clock className="h-3 w-3 text-muted-foreground/50" />
-                      <span className="text-[11px] text-muted-foreground/60">
-                        {getRelativeTime(entry.createdAt)}
-                      </span>
+                    {/* Time display: relative + creation time */}
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 text-muted-foreground/50" />
+                        <span className="text-[11px] text-muted-foreground/60">
+                          {getRelativeTime(entry.createdAt)}
+                        </span>
+                      </div>
+                      {entry.createdAt && (
+                        <span className="text-[11px] text-muted-foreground/40 tabular-nums">
+                          {format(new Date(entry.createdAt), 'HH:mm')}
+                        </span>
+                      )}
                     </div>
 
                     {/* Title */}
@@ -242,7 +266,7 @@ export function EntryList({
                     <div className="flex items-center gap-2 mt-2.5">
                       <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
                         <FileText className="h-2.5 w-2.5" />
-                        {wordCount} слов
+                        ~{wordCount} слов
                       </Badge>
                       <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
                         <BookOpen className="h-2.5 w-2.5" />

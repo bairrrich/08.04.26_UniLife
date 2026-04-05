@@ -28,6 +28,8 @@ import { InvestmentsManager } from './investments-manager'
 import { AccountsManager } from './accounts-manager'
 import { SavingsGoalsManager } from './savings-goals-manager'
 import { RecurringManager } from './recurring-manager'
+import { CategoryBars } from './category-bars'
+import { SavingsBalanceBar } from './savings-balance-bar'
 import { useFinance } from './hooks'
 
 export default function FinancePage() {
@@ -135,6 +137,12 @@ export default function FinancePage() {
         <TabsContent value="overview" className="space-y-6">
           <SummaryCards stats={stats} isLoading={isLoading} transactions={transactions} previousMonthStats={previousMonthStats} />
 
+          <SavingsBalanceBar
+            totalIncome={stats?.totalIncome ?? 0}
+            totalExpense={stats?.totalExpense ?? 0}
+            isLoading={isLoading}
+          />
+
           <SavingsGoal
             totalIncome={stats?.totalIncome ?? 0}
             totalExpense={stats?.totalExpense ?? 0}
@@ -150,6 +158,8 @@ export default function FinancePage() {
           <IncomeBreakdown transactions={transactions} isLoading={isLoading} />
 
           <CashFlowTrend chartData={chartData} stats={stats} monthLabel={monthLabel} isLoading={isLoading} />
+
+          <CategoryBars transactions={transactions} isLoading={isLoading} />
 
           {/* Health Score + Forecast + Month Comparison */}
           <div className="grid gap-4 lg:grid-cols-3">

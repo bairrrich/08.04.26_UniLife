@@ -37,6 +37,7 @@ import { MoodTrend } from './mood-trend'
 import { WritingStatsWidget } from './writing-stats-widget'
 import { WritingPrompts } from './writing-prompts'
 import { WritingStreakBadge } from './writing-streak-badge'
+import { WritingStreakCard } from './writing-streak-card'
 
 const emptyForm: EntryFormData = {
   title: '',
@@ -405,6 +406,9 @@ export default function DiaryPage() {
           </div>
         </div>
       </div>
+
+      {/* Writing Streak Card */}
+      <WritingStreakCard entries={entries} today={today} isLoading={isLoading} className="card-hover" />
 
       {/* Writing Stats Widget */}
       <WritingStatsWidget className="stagger-children" />
