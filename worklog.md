@@ -6583,3 +6583,19 @@ Task: QA testing, bug fix, and feature development
 - Feed: trending hashtags, hashtag filtering, preview mode, particle like animation, gradient border on reacted posts, enhanced comments, share button
 - 2 new components created, 6 files modified
 - 4 new CSS animation utilities added to globals.css
+
+---
+## Task ID: build-fix-goals-page
+### Agent: main
+### Task: Fix build error — getMotivationalSubtitle defined multiple times in goals-page.tsx
+
+### Work Log:
+- **Build Error**: `goals-page.tsx:25` — `the name 'getMotivationalSubtitle' is defined multiple times`
+- **Root Cause**: Line 11 imported `getMotivationalSubtitle` from `'./constants'`, but `constants.tsx` does not export this function. Line 25 also defined it locally. The import created a duplicate binding in the module scope.
+- **Fix**: Removed `getMotivationalSubtitle` from the import statement on line 11. The local definition (lines 18-28) with `MOTIVATIONAL_SUBTITLES` array remains as the sole implementation.
+- **Verification**: `bun run lint` — 0 errors. Dev server returns HTTP 200. All API endpoints responding normally.
+
+### Stage Summary:
+- Build error fixed by removing non-existent import
+- `quick-notes-widget.tsx` previously reported error (notes variable duplicate) was already resolved
+- Cron job #64297 created for ongoing 15-min QA cycle
