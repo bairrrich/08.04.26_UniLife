@@ -162,14 +162,14 @@ export function EntryDialog({
           {/* Mood selector — bigger, more visual */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Настроение</label>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-none">
               {[1, 2, 3, 4, 5].map((m) => (
                 <button
                   key={m}
                   type="button"
                   onClick={() => onMoodClick(m)}
                   className={cn(
-                    'flex flex-col items-center gap-0.5 rounded-xl p-2.5 transition-all border-2 flex-1',
+                    'flex flex-col items-center gap-0.5 rounded-xl p-1.5 sm:p-2.5 transition-all border-2 flex-1 min-w-[52px] sm:min-w-0',
                     form.mood === m
                       ? cn('border-primary bg-primary/5 scale-105', MOOD_COLORS[m])
                       : 'border-transparent hover:bg-muted/50'

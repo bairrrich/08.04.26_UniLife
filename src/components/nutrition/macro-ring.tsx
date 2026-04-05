@@ -46,7 +46,7 @@ export function MacroRing({
               fill="none"
               stroke="currentColor"
               strokeWidth="4"
-              className="text-muted/40"
+              className="text-muted-foreground/40"
             />
             <circle
               cx={size / 2}

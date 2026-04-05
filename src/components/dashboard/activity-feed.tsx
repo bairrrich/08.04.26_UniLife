@@ -53,7 +53,7 @@ export default function ActivityFeed({ loading, feedPosts, getTimeAgo, onNavigat
             {feedPosts.map((post) => (
               <div
                 key={post.id}
-                className={`flex items-start gap-3 rounded-xl border-l-4 p-3 transition-colors hover:bg-muted/50 ${getEntityBorderColor(post.entityType)}`}
+                className={`flex min-h-[44px] items-start gap-3 rounded-xl border-l-4 p-3 transition-colors hover:bg-muted/50 ${getEntityBorderColor(post.entityType)}`}
               >
                 <Image
                   src="/unilife-logo.png"

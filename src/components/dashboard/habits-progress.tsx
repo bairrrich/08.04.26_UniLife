@@ -124,7 +124,7 @@ export const HabitsProgress = memo(function HabitsProgress({
                     <button
                       key={habit.id}
                       onClick={() => onNavigate('habits')}
-                      className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/60"
+                      className="flex min-h-[44px] w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-sm transition-colors hover:bg-muted/60"
                     >
                       <span className="text-base">{habit.emoji}</span>
                       <span className="flex-1">{habit.name}</span>

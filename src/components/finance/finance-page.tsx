@@ -58,8 +58,8 @@ export default function FinancePage() {
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 blur-3xl" />
         <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
               <Wallet className="h-5 w-5" />
             </div>
@@ -73,10 +73,10 @@ export default function FinancePage() {
               <p className="text-sm text-muted-foreground">Учёт доходов, расходов и инвестиций</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <ExportButton transactions={transactions} monthLabel={monthLabel} />
             <Button size="sm" className="gap-1.5" onClick={() => setShowNewDialog(true)}>
-              <Plus className="h-4 w-4" />Добавить
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
             </Button>
           </div>
         </div>
@@ -90,24 +90,24 @@ export default function FinancePage() {
       />
 
       <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview" className="gap-1.5">
-            <Receipt className="h-4 w-4" />Обзор
+        <TabsList className="w-full overflow-x-auto flex-nowrap no-scrollbar">
+          <TabsTrigger value="overview" className="gap-1.5 shrink-0">
+            <Receipt className="h-4 w-4" /><span className="hidden sm:inline">Обзор</span>
           </TabsTrigger>
-          <TabsTrigger value="accounts" className="gap-1.5">
-            <Wallet className="h-4 w-4" />Счёта
+          <TabsTrigger value="accounts" className="gap-1.5 shrink-0">
+            <Wallet className="h-4 w-4" /><span className="hidden sm:inline">Счёта</span>
           </TabsTrigger>
-          <TabsTrigger value="investments" className="gap-1.5">
-            <Wallet className="h-4 w-4" />Инвестиции
+          <TabsTrigger value="investments" className="gap-1.5 shrink-0">
+            <Wallet className="h-4 w-4" /><span className="hidden sm:inline">Инвестиции</span>
           </TabsTrigger>
-          <TabsTrigger value="savings" className="gap-1.5">
-            <PiggyBank className="h-4 w-4" />Сбережения
+          <TabsTrigger value="savings" className="gap-1.5 shrink-0">
+            <PiggyBank className="h-4 w-4" /><span className="hidden sm:inline">Сбережения</span>
           </TabsTrigger>
-          <TabsTrigger value="budget" className="gap-1.5">
-            <Wallet className="h-4 w-4" />Бюджет
+          <TabsTrigger value="budget" className="gap-1.5 shrink-0">
+            <Wallet className="h-4 w-4" /><span className="hidden sm:inline">Бюджет</span>
           </TabsTrigger>
-          <TabsTrigger value="recurring" className="gap-1.5">
-            <RefreshCw className="h-4 w-4" />Повторяющиеся
+          <TabsTrigger value="recurring" className="gap-1.5 shrink-0">
+            <RefreshCw className="h-4 w-4" /><span className="hidden sm:inline">Повторяющиеся</span>
           </TabsTrigger>
         </TabsList>
 

@@ -116,7 +116,7 @@ export default function RecentDiaryWidget({ loading, diaryEntries }: RecentDiary
               <button
                 key={entry.id}
                 onClick={() => setActiveModule('diary')}
-                className={`flex w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted/50 active-press ${getMoodGradient(entry.mood)}`}
+                className={`flex min-h-[44px] w-full items-start gap-3 rounded-xl p-2.5 text-left transition-colors hover:bg-muted/50 active-press ${getMoodGradient(entry.mood)}`}
               >
                 {/* Mood emoji */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-muted/80 text-lg">

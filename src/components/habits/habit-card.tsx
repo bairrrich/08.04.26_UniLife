@@ -82,16 +82,17 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
             <button
               onClick={handleToggle}
               className="shrink-0 transition-transform hover:scale-110 active:scale-95"
+              aria-label={habit.todayCompleted ? 'Отменить выполнение' : 'Отметить выполненным'}
             >
               {habit.todayCompleted ? (
                 <div
-                  className="h-8 w-8 rounded-full flex items-center justify-center text-white"
+                  className="h-11 w-11 rounded-full flex items-center justify-center text-white"
                   style={{ backgroundColor: habit.color }}
                 >
-                  <Check className="h-4.5 w-4.5" />
+                  <Check className="h-5 w-5" />
                 </div>
               ) : (
-                <div className="h-8 w-8 rounded-full border-2 border-muted-foreground/30 flex items-center justify-center" />
+                <div className="h-11 w-11 rounded-full border-2 border-muted-foreground/30 dark:border-muted-foreground/50 flex items-center justify-center" />
               )}
             </button>
             <CompletionSparkle show={showSparkle} color={habit.color} />
@@ -136,7 +137,7 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
                     >
                       <div
                         className={`h-5 w-5 rounded-sm transition-all ${
-                          completed ? 'scale-100 shadow-sm' : 'border border-muted-foreground/15'
+                          completed ? 'scale-100 shadow-sm' : 'border border-muted-foreground/15 dark:border-muted-foreground/25'
                         } ${isToday ? 'ring-2 ring-offset-1 ring-background' : ''}`}
                         style={{
                           backgroundColor: completed ? habit.color : 'transparent',
@@ -183,7 +184,7 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
           <div className="flex items-center gap-1 shrink-0">
             <Button
               variant="ghost" size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-9 w-9 text-muted-foreground hover:text-foreground"
               onClick={() => onEdit(habit)}
             >
               <Edit2 className="h-3.5 w-3.5" />
@@ -191,14 +192,14 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
             {deleteConfirmId === habit.id ? (
               <button
                 onClick={() => onDeleteClick(habit.id)}
-                className="flex h-8 items-center rounded-lg bg-destructive/10 px-2.5 text-xs font-medium text-destructive transition-all hover:bg-destructive/20"
+                className="flex h-9 items-center rounded-lg bg-destructive/10 px-2.5 text-xs font-medium text-destructive transition-all hover:bg-destructive/20"
               >
                 Удалить?
               </button>
             ) : (
               <Button
                 variant="ghost" size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                className="h-9 w-9 text-muted-foreground hover:text-destructive"
                 onClick={() => onDeleteClick(habit.id)}
               >
                 <Trash2 className="h-3.5 w-3.5" />

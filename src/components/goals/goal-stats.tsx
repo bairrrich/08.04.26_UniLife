@@ -259,7 +259,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
       </Card>
 
       {/* Stats Row — Enhanced with color coding */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 stagger-children">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 stagger-children">
         {/* Total Goals */}
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5" />
@@ -394,7 +394,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         </Card>
 
         {/* Progress Speed */}
-        <Card className="card-hover overflow-hidden relative col-span-2 md:col-span-1">
+        <Card className="card-hover overflow-hidden relative col-span-2 sm:col-span-1">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
             <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">

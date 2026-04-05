@@ -93,7 +93,7 @@ export function ItemCard({ item, onClick, isFavorite }: ItemCardProps) {
                   'h-3.5 w-3.5 transition-colors',
                   i < item.rating!
                     ? 'fill-amber-400 text-amber-400'
-                    : 'text-gray-300 dark:text-gray-600'
+                    : 'text-muted-foreground/30'
                 )}
               />
             ))}

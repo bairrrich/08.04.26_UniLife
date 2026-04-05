@@ -138,19 +138,19 @@ export function AddItemDialog({
             </div>
             <div className="space-y-2">
               <Label>Рейтинг</Label>
-              <div className="flex gap-1 h-9 items-center">
+              <div className="flex gap-1.5 h-10 items-center">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     key={star}
                     type="button"
                     onClick={() => setFormRating(formRating === star ? 0 : star)}
-                    className="p-0.5"
+                    className="p-1 -m-1"
                   >
                     <Star
-                      className={`h-5 w-5 transition ${
+                      className={`h-6 w-6 sm:h-5 sm:w-5 transition ${
                         star <= formRating
                           ? 'fill-amber-400 text-amber-400'
-                          : 'text-gray-300 dark:text-gray-600'
+                          : 'text-muted-foreground/30'
                       }`}
                     />
                   </button>

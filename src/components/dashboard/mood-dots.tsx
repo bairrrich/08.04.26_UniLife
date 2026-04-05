@@ -29,14 +29,14 @@ export default function MoodDots({ recentMoods, diaryStreak, now }: MoodDotsProp
               <p className="text-[11px] text-muted-foreground">Текущая серия: <span className="font-semibold text-rose-500 dark:text-rose-400">{diaryStreak} дн.</span></p>
             </div>
           </div>
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-1.5 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 scrollbar-none">
             {recentMoods.map((m, i) => {
               const moodColor = m.mood === 1 ? 'bg-red-500 dark:bg-red-400'
                 : m.mood === 2 ? 'bg-orange-500 dark:bg-orange-400'
                 : m.mood === 3 ? 'bg-yellow-400 dark:bg-yellow-300'
                 : m.mood === 4 ? 'bg-green-500 dark:bg-green-400'
                 : m.mood === 5 ? 'bg-emerald-500 dark:bg-emerald-400'
-                : 'bg-gray-200 dark:bg-gray-700'
+                : 'bg-muted dark:bg-muted-foreground/20'
               const dayLabel = dayNamesShort[(now.getDay() - (6 - i) + 7) % 7] || dayNamesShort[i]
               return (
                 <div key={i} className="flex flex-col items-center gap-1">

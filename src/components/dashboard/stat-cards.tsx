@@ -131,7 +131,7 @@ export const StatCards = memo(function StatCards({
                     backgroundColor:
                       todayKcal > kcalGoal
                         ? 'hsl(var(--destructive))'
-                        : '#f97316',
+                        : 'hsl(var(--chart-1))',
                   }}
                 />
               </div>

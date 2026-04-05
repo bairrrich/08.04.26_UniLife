@@ -61,7 +61,7 @@ export default function QuickActions({ onNavigate }: QuickActionsProps) {
             <button
               key={action.module}
               onClick={() => onNavigate(action.module)}
-              className="group flex items-center gap-2.5 rounded-xl border bg-accent px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.03] hover:bg-accent/80 hover:shadow-md active:scale-[0.98] hover-glow"
+              className="group flex min-h-[44px] items-center gap-2.5 rounded-xl border bg-accent px-4 py-3 text-sm font-medium transition-all duration-200 hover:scale-[1.03] hover:bg-accent/80 hover:shadow-md active:scale-[0.98] hover-glow"
             >
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 ${action.iconBg}`}

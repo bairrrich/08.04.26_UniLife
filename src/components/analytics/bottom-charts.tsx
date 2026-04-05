@@ -83,7 +83,7 @@ export function NutritionChart({ loading, nutritionSummary }: NutritionChartProp
             {/* Horizontal BarChart */}
             <ChartContainer config={nutritionChartConfig} className="h-[180px] w-full">
               <BarChart data={nutritionData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
                 <XAxis
                   type="number"
                   tickLine={false}
@@ -205,7 +205,7 @@ export function WorkoutDistributionChart({ loading, workoutDistribution, workout
           </div>
         ) : (
           <div className="flex flex-col items-center gap-2 sm:flex-row sm:items-start sm:gap-4">
-            <ChartContainer config={workoutPieConfig} className="h-[200px] w-[200px] shrink-0">
+          <ChartContainer config={workoutPieConfig} className="h-[160px] sm:h-[200px] w-[160px] sm:w-[200px] shrink-0">
               <PieChart>
                 <Pie
                   data={workoutDistribution}
@@ -277,7 +277,7 @@ export function TopCategoriesChart({ loading, topCategories }: TopCategoriesChar
         ) : (
           <ChartContainer config={categoryBarConfig} className="h-[250px] w-full">
             <BarChart data={topCategories} layout="vertical" margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+              <CartesianGrid strokeDasharray="3 3" horizontal={false} className="stroke-muted" />
               <XAxis
                 type="number"
                 tickLine={false}

@@ -28,15 +28,15 @@ export default function FeedPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Rss className="h-6 w-6" />Лента
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Rss className="h-5 w-5 sm:h-6 sm:w-6" />Лента
           </h2>
-          <p className="text-muted-foreground text-sm mt-1">Делитесь достижениями и моментами</p>
+          <p className="text-muted-foreground text-xs sm:text-sm mt-1 truncate">Делитесь достижениями и моментами</p>
         </div>
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />Опубликовать
+        <Button onClick={() => setDialogOpen(true)} size="sm" className="shrink-0 sm:size-default">
+          <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Опубликовать</span>
         </Button>
       </div>
 

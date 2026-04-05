@@ -50,7 +50,7 @@ function StarDisplay({ rating }: { rating: number }) {
             'h-3 w-3',
             star <= Math.round(rating)
               ? 'fill-amber-400 text-amber-400'
-              : 'text-gray-300 dark:text-gray-600'
+              : 'text-muted-foreground/30'
           )}
         />
       ))}

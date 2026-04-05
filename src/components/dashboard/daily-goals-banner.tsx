@@ -82,7 +82,7 @@ export default function DailyGoalsBanner() {
           <button
             key={goal.id}
             onClick={() => setActiveModule(goal.module)}
-            className={`group flex items-center gap-2.5 rounded-lg border bg-gradient-to-r px-3.5 py-2.5 transition-all duration-200 hover:scale-[1.03] hover:shadow-md active:scale-[0.98] ${goal.gradient} ${goal.border}`}
+            className={`group flex min-h-[44px] items-center gap-2.5 rounded-lg border bg-gradient-to-r px-3.5 py-2.5 transition-all duration-200 hover:scale-[1.03] hover:shadow-md active:scale-[0.98] ${goal.gradient} ${goal.border}`}
           >
             <span className={`flex h-7 w-7 items-center justify-center rounded-md ${goal.iconBg} ${goal.iconColor} transition-transform group-hover:scale-110`}>
               {goal.icon}

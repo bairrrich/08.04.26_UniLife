@@ -308,7 +308,7 @@ export default function WeeklyMoodChart({ loading, moodData }: WeeklyMoodChartPr
                   cy={cy}
                   r={3}
                   fill={color}
-                  stroke="white"
+                  stroke="currentColor"
                   strokeWidth={1.5}
                   className="stroke-background"
                 />

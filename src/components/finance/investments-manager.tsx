@@ -350,7 +350,7 @@ function InvestmentCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-5 w-5 text-muted-foreground opacity-0 group-hover/tx:opacity-100 hover:text-red-500 transition-opacity shrink-0"
+                  className="h-5 w-5 text-muted-foreground sm:opacity-0 sm:group-hover/tx:opacity-100 hover:text-red-500 transition-opacity shrink-0"
                   onClick={(e) => { e.stopPropagation(); onDeleteTx(investment.id, tx.id) }}
                 >
                   <Trash2 className="h-3 w-3" />

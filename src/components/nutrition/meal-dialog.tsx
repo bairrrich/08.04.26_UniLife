@@ -163,21 +163,21 @@ function MealItemsForm({
                 />
               </div>
 
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div>
-                  <label className="mb-0.5 block text-[10px] font-medium text-orange-600 uppercase tracking-wider">Ккал</label>
+                  <label className="mb-0.5 block text-[10px] font-medium text-orange-600 dark:text-orange-400 uppercase tracking-wider">Ккал</label>
                   <Input type="number" placeholder="0" value={item.kcal} onChange={(e) => updateItem(index, 'kcal', e.target.value)} className="h-8 text-center" />
                 </div>
                 <div>
-                  <label className="mb-0.5 block text-[10px] font-medium text-blue-600 uppercase tracking-wider">Белки</label>
+                  <label className="mb-0.5 block text-[10px] font-medium text-blue-600 dark:text-blue-400 uppercase tracking-wider">Белки</label>
                   <Input type="number" placeholder="0" value={item.protein} onChange={(e) => updateItem(index, 'protein', e.target.value)} className="h-8 text-center" />
                 </div>
                 <div>
-                  <label className="mb-0.5 block text-[10px] font-medium text-amber-600 uppercase tracking-wider">Жиры</label>
+                  <label className="mb-0.5 block text-[10px] font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider">Жиры</label>
                   <Input type="number" placeholder="0" value={item.fat} onChange={(e) => updateItem(index, 'fat', e.target.value)} className="h-8 text-center" />
                 </div>
                 <div>
-                  <label className="mb-0.5 block text-[10px] font-medium text-green-600 uppercase tracking-wider">Углев.</label>
+                  <label className="mb-0.5 block text-[10px] font-medium text-green-600 dark:text-green-400 uppercase tracking-wider">Углев.</label>
                   <Input type="number" placeholder="0" value={item.carbs} onChange={(e) => updateItem(index, 'carbs', e.target.value)} className="h-8 text-center" />
                 </div>
               </div>

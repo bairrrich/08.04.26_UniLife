@@ -76,11 +76,11 @@ export const TYPE_ICONS_LARGE: Record<CollectionType, React.ReactNode> = {
 // ─── Type Colors ──────────────────────────────────────────────────────────────
 
 export const TYPE_COLORS: Record<CollectionType, string> = {
-  BOOK: 'bg-amber-50 text-amber-600',
-  MOVIE: 'bg-purple-50 text-purple-600',
-  RECIPE: 'bg-rose-50 text-rose-600',
-  SUPPLEMENT: 'bg-cyan-50 text-cyan-600',
-  PRODUCT: 'bg-emerald-50 text-emerald-600',
+  BOOK: 'bg-amber-50 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300',
+  MOVIE: 'bg-purple-50 text-purple-600 dark:bg-purple-900/40 dark:text-purple-300',
+  RECIPE: 'bg-rose-50 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300',
+  SUPPLEMENT: 'bg-cyan-50 text-cyan-600 dark:bg-cyan-900/40 dark:text-cyan-300',
+  PRODUCT: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/40 dark:text-emerald-300',
 }
 
 export const TYPE_ICON_BG: Record<CollectionType, string> = {

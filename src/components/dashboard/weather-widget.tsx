@@ -20,9 +20,9 @@ const WEATHER_CODE_MAP: Record<number, { emoji: string; label: string; icon: typ
   0: { emoji: '☀️', label: 'Ясно', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20', gradient: 'from-amber-400/15 via-orange-300/5 to-yellow-400/10', iconGradient: 'from-amber-400 to-orange-500', glowClass: 'shadow-amber-500/20' },
   1: { emoji: '⛅', label: 'Малооблачно', icon: Sun, color: 'text-amber-500', bg: 'bg-amber-50 dark:bg-amber-950/20', gradient: 'from-amber-400/15 via-sky-300/5 to-yellow-400/10', iconGradient: 'from-amber-400 to-sky-500', glowClass: 'shadow-amber-500/20' },
   2: { emoji: '⛅', label: 'Переменная облачность', icon: Cloud, color: 'text-sky-500', bg: 'bg-sky-50 dark:bg-sky-950/20', gradient: 'from-sky-400/15 via-blue-300/5 to-indigo-400/10', iconGradient: 'from-sky-400 to-blue-500', glowClass: 'shadow-sky-500/20' },
-  3: { emoji: '⛅', label: 'Облачно', icon: Cloud, color: 'text-gray-500', bg: 'bg-gray-50 dark:bg-gray-950/20', gradient: 'from-gray-400/10 via-slate-300/5 to-gray-400/10', iconGradient: 'from-gray-400 to-slate-500', glowClass: 'shadow-gray-500/20' },
-  45: { emoji: '🌫️', label: 'Туман', icon: CloudFog, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-950/20', gradient: 'from-gray-400/10 via-slate-300/5 to-gray-400/10', iconGradient: 'from-gray-400 to-slate-500', glowClass: 'shadow-gray-500/20' },
-  48: { emoji: '🌫️', label: 'Изморозь', icon: CloudFog, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-950/20', gradient: 'from-gray-400/10 via-slate-300/5 to-gray-400/10', iconGradient: 'from-gray-400 to-slate-500', glowClass: 'shadow-gray-500/20' },
+  3: { emoji: '⛅', label: 'Облачно', icon: Cloud, color: 'text-slate-500', bg: 'bg-slate-50 dark:bg-slate-950/20', gradient: 'from-slate-400/10 via-slate-300/5 to-slate-400/10', iconGradient: 'from-slate-400 to-slate-500', glowClass: 'shadow-slate-500/20' },
+  45: { emoji: '🌫️', label: 'Туман', icon: CloudFog, color: 'text-slate-400', bg: 'bg-slate-50 dark:bg-slate-950/20', gradient: 'from-slate-400/10 via-slate-300/5 to-slate-400/10', iconGradient: 'from-slate-400 to-slate-500', glowClass: 'shadow-slate-500/20' },
+  48: { emoji: '🌫️', label: 'Изморозь', icon: CloudFog, color: 'text-slate-400', bg: 'bg-slate-50 dark:bg-slate-950/20', gradient: 'from-slate-400/10 via-slate-300/5 to-slate-400/10', iconGradient: 'from-slate-400 to-slate-500', glowClass: 'shadow-slate-500/20' },
   51: { emoji: '🌧️', label: 'Морось', icon: CloudDrizzle, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/20', gradient: 'from-blue-400/15 via-indigo-300/5 to-cyan-400/10', iconGradient: 'from-blue-400 to-indigo-500', glowClass: 'shadow-blue-500/20' },
   53: { emoji: '🌧️', label: 'Морось', icon: CloudDrizzle, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/20', gradient: 'from-blue-400/15 via-indigo-300/5 to-cyan-400/10', iconGradient: 'from-blue-400 to-indigo-500', glowClass: 'shadow-blue-500/20' },
   55: { emoji: '🌧️', label: 'Сильная морось', icon: CloudDrizzle, color: 'text-blue-500', bg: 'bg-blue-50 dark:bg-blue-950/20', gradient: 'from-blue-400/15 via-indigo-300/5 to-cyan-400/10', iconGradient: 'from-blue-400 to-indigo-500', glowClass: 'shadow-blue-500/20' },
@@ -101,12 +101,12 @@ function WeatherError({ onRetry }: { onRetry: () => void }) {
   return (
     <Card className="glass-card overflow-hidden rounded-xl border animate-slide-up relative">
       <CardContent className="relative p-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-400/10 via-slate-300/5 to-gray-400/10" />
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-400/10 via-slate-300/5 to-slate-400/10" />
         <div className="relative p-4 flex flex-col items-center justify-center text-center py-6 space-y-2">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-gray-400 to-slate-500 shadow-lg shadow-gray-500/20">
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-slate-400 to-slate-500 shadow-lg shadow-slate-500/20">
             <Cloud className="h-5 w-5 text-white" />
           </div>
-          <p className="text-sm font-medium">Не удалось загрузить</p>
+          <p className="text-sm font-medium text-foreground">Не удалось загрузить</p>
           <button
             type="button"
             onClick={onRetry}

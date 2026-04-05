@@ -43,7 +43,7 @@ export default function StreakWidget({ loading, streakItems, maxStreak }: Streak
             {streakItems.map((item) => (
               <div
                 key={item.name}
-                className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
+                className="flex min-h-[44px] items-center gap-3 rounded-xl bg-muted/40 px-4 py-3 transition-colors hover:bg-muted/70"
               >
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-background shadow-sm">
                   {item.icon}

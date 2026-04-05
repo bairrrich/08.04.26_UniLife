@@ -170,14 +170,14 @@ export function DataStatsSection() {
               return (
                 <div key={mod.key} className="flex items-center gap-3">
                   <span className="text-sm w-6 text-center">{mod.emoji}</span>
-                  <span className="text-sm font-medium w-28 shrink-0">{mod.label}</span>
+                  <span className="text-sm font-medium w-20 sm:w-28 shrink-0 truncate">{mod.label}</span>
                   <div className="flex-1 h-6 bg-muted/50 rounded-md overflow-hidden">
                     <div
                       className="h-full bg-gradient-to-r from-primary/60 to-primary/40 rounded-md transition-all duration-500"
                       style={{ width: `${Math.max(percentage, count > 0 ? 4 : 0)}%` }}
                     />
                   </div>
-                  <span className="text-sm font-semibold tabular-nums w-10 text-right">
+          <span className="text-sm font-semibold tabular-nums w-8 sm:w-10 text-right shrink-0">
                     {count}
                   </span>
                 </div>

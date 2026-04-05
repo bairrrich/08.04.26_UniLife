@@ -187,7 +187,7 @@ export default function BudgetOverview({ loading, budgetData, onNavigateToFinanc
                 <div className="flex items-center gap-2">
                   <div
                     className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: budget.categoryColor || '#6b7280' }}
+                    style={{ backgroundColor: budget.categoryColor || 'hsl(var(--muted-foreground))' }}
                   />
                   <span className="text-sm font-medium">{budget.categoryName}</span>
                 </div>

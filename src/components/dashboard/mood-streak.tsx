@@ -79,7 +79,7 @@ export default function MoodStreak({ loading, recentMoods, streak, todayMood }: 
     <Card className="rounded-xl border card-hover animate-slide-up py-3">
       <CardContent className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Last 7 days mood circles */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 scrollbar-none">
           {recentMoods.map((item) => {
             const mood = item.mood
 

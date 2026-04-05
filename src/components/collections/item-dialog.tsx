@@ -88,19 +88,19 @@ function StatusActionIcon({ status }: { status: CollectionStatus }) {
 
 function StarRating({ rating, onRate }: { rating: number; onRate?: (r: number) => void }) {
   return (
-    <div className="flex gap-1">
+    <div className="flex gap-1.5">
       {[1, 2, 3, 4, 5].map((star) => (
         <button
           key={star}
           type="button"
           onClick={onRate ? () => onRate(rating === star ? 0 : star) : undefined}
-          className={onRate ? 'p-0.5' : 'p-0.5 cursor-default'}
+          className={onRate ? 'p-1 -m-1' : 'p-1 -m-1 cursor-default'}
         >
           <Star
-            className={`h-5 w-5 transition ${
+            className={`h-6 w-6 sm:h-5 sm:w-5 transition ${
               star <= rating
                 ? 'fill-amber-400 text-amber-400'
-                : 'text-gray-300 dark:text-gray-600'
+                : 'text-muted-foreground/30'
             }`}
           />
         </button>

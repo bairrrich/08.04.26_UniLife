@@ -131,7 +131,7 @@ export function GoalDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingGoal ? 'Редактировать цель' : 'Новая цель'}</DialogTitle>
         </DialogHeader>
@@ -189,7 +189,7 @@ export function GoalDialog({
           </div>
 
           {/* Category + Status row */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Категория</label>
               <Select value={formCategory} onValueChange={setFormCategory}>
@@ -215,7 +215,7 @@ export function GoalDialog({
           </div>
 
           {/* Target value row */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="space-y-2">
               <label className="text-sm font-medium">Целевое</label>
               <Input type="number" placeholder="100" value={formTargetValue} onChange={(e) => setFormTargetValue(e.target.value)} />

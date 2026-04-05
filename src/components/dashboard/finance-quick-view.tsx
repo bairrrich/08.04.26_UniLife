@@ -112,7 +112,7 @@ export default function FinanceQuickView({
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${percentage}%`,
-                        backgroundColor: category.color || '#059669',
+                        backgroundColor: category.color || 'hsl(var(--chart-1))',
                       }}
                     />
                   </div>

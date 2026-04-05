@@ -131,7 +131,7 @@ export function HabitHeatmap({ habits }: HabitHeatmapProps) {
             </div>
           </div>
           {/* Legend */}
-          <div className="flex items-center gap-1.5">
+          <div className="hidden sm:flex items-center gap-1.5">
             <span className="text-[10px] text-muted-foreground mr-1">Менее</span>
             <div className="h-3 w-3 rounded-sm bg-emerald-100 dark:bg-emerald-950/40" />
             <div className="h-3 w-3 rounded-sm bg-emerald-300 dark:bg-emerald-700/60" />
@@ -142,27 +142,27 @@ export function HabitHeatmap({ habits }: HabitHeatmapProps) {
         </div>
 
         {/* Heatmap Grid */}
-        <div className="overflow-x-auto">
-          <div className="flex gap-1 min-w-[260px]">
+        <div className="overflow-x-auto scrollbar-none">
+          <div className="flex gap-[3px] sm:gap-1 min-w-0">
             {/* Weekday labels */}
-            <div className="flex flex-col gap-1 shrink-0">
+            <div className="flex flex-col gap-[3px] sm:gap-1 shrink-0">
               {WEEKDAY_LABELS.map((label) => (
                 <div
                   key={label}
-                  className="h-[18px] flex items-center justify-end pr-1"
+                  className="h-4 sm:h-[18px] flex items-center justify-end pr-1"
                 >
-                  <span className="text-[9px] text-muted-foreground leading-none">{label}</span>
+                  <span className="text-[8px] sm:text-[9px] text-muted-foreground leading-none">{label}</span>
                 </div>
               ))}
             </div>
 
             {/* Week columns */}
             {weeks.map((week, weekIdx) => (
-              <div key={weekIdx} className="flex flex-col gap-1">
+              <div key={weekIdx} className="flex flex-col gap-[3px] sm:gap-1">
                 {week.map((cell, dayIdx) => (
                   <div
                     key={dayIdx}
-                    className={`h-[18px] w-[18px] rounded-[3px] transition-all duration-150 ${getHeatColor(cell.intensity)} ${getHeatRing(cell.intensity)} ${cell.day > 0 && cell.hasData ? 'hover:scale-125 cursor-pointer' : ''}`}
+                    className={`h-4 w-4 sm:h-[18px] sm:w-[18px] rounded-[3px] transition-all duration-150 ${getHeatColor(cell.intensity)} ${getHeatRing(cell.intensity)} ${cell.day > 0 && cell.hasData ? 'hover:scale-125 cursor-pointer' : ''}`}
                     title={tooltipText(cell)}
                   />
                 ))}

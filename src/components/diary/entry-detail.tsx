@@ -188,7 +188,7 @@ export function EntryDetail({
 
               {/* Actions */}
               <Separator />
-              <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                 <Button
                   size="sm"
                   variant="outline"

@@ -200,7 +200,7 @@ export function WeeklyNutritionChart({ goals }: WeeklyNutritionChartProps) {
                         {d.kcal} <span className="text-xs font-normal text-muted-foreground">ккал</span>
                       </p>
                       {d.kcal > 0 && (
-                        <p className={`text-xs font-medium ${d.kcal <= goalKcal ? 'text-emerald-600' : 'text-red-500'}`}>
+                        <p className={`text-xs font-medium ${d.kcal <= goalKcal ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'}`}>
                           {d.kcal <= goalKcal ? '✓ В пределах нормы' : `+${d.kcal - goalKcal} сверх нормы`}
                         </p>
                       )}
@@ -240,15 +240,15 @@ export function WeeklyNutritionChart({ goals }: WeeklyNutritionChartProps) {
             </div>
             <div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
               <span className="text-[10px] text-muted-foreground">В норме</span>
-              <span className="text-sm font-bold tabular-nums text-emerald-600">{stats.daysOnTarget}</span>
+              <span className="text-sm font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{stats.daysOnTarget}</span>
               <span className="text-[10px] text-muted-foreground">из {stats.daysWithData} дней</span>
             </div>
             <div className="flex flex-col items-center rounded-lg bg-muted/50 p-2">
               <span className="text-[10px] text-muted-foreground">Тренд</span>
               {stats.trend > 50 ? (
-                <TrendingUp className="size-4 text-red-500" />
+                <TrendingUp className="size-4 text-red-500 dark:text-red-400" />
               ) : stats.trend < -50 ? (
-                <TrendingDown className="size-4 text-emerald-500" />
+                <TrendingDown className="size-4 text-emerald-500 dark:text-emerald-400" />
               ) : (
                 <Minus className="size-4 text-muted-foreground" />
               )}

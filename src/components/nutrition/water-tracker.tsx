@@ -57,7 +57,7 @@ export function WaterTracker({
         {/* Prominent total ml display */}
         <div className="mb-3 flex items-center justify-between">
           <p className="text-lg font-bold tabular-nums">
-            <span className={waterStats.percentage >= 100 ? 'text-blue-600' : 'text-foreground'}>
+            <span className={waterStats.percentage >= 100 ? 'text-blue-600 dark:text-blue-400' : 'text-foreground'}>
               {waterStats.totalMl}
             </span>
             <span className="text-sm font-normal text-muted-foreground">
@@ -85,8 +85,8 @@ export function WaterTracker({
                 <div
                   className={`relative flex size-10 items-center justify-center overflow-hidden rounded-xl border-2 transition-colors ${
                     isFilled
-                      ? 'border-blue-400 bg-blue-50 text-blue-500'
-                      : 'border-gray-200 bg-gray-50 text-gray-300 group-hover:border-blue-200 group-hover:text-blue-300'
+                      ? 'border-blue-400 bg-blue-50 text-blue-500 dark:bg-blue-900/50 dark:border-blue-500'
+                      : 'border-muted-foreground/20 bg-muted text-muted-foreground/40 group-hover:border-blue-300 group-hover:text-blue-400'
                   }`}
                 >
                   <svg
@@ -118,7 +118,7 @@ export function WaterTracker({
         </div>
 
         {/* Water progress bar */}
-        <div className="h-2.5 w-full overflow-hidden rounded-full bg-blue-100">
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-blue-100 dark:bg-blue-900/40">
           <div
             className="h-full rounded-full bg-blue-500 transition-all duration-500"
             style={{ width: `${Math.min(waterStats.percentage, 100)}%` }}
@@ -131,7 +131,7 @@ export function WaterTracker({
             variant="outline"
             size="sm"
             onClick={onAddWater}
-            className={`gap-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-transform duration-200 ${waterAnimating ? 'scale-110' : 'hover:scale-[1.02]'}`}
+            className={`gap-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300 transition-transform duration-200 ${waterAnimating ? 'scale-110' : 'hover:scale-[1.02]'}`}
           >
             <Droplets className="size-4" />
             Добавить воду ({waterStats.glasses}/{totalGlasses})
@@ -167,9 +167,9 @@ export function WaterTracker({
                           day.isToday
                             ? reachedGoal
                               ? 'bg-emerald-500'
-                              : 'bg-blue-400'
+                              : 'bg-blue-400 dark:bg-blue-500'
                             : reachedGoal
-                              ? 'bg-emerald-400/80'
+                              ? 'bg-emerald-400/80 dark:bg-emerald-500/80'
                               : 'bg-muted-foreground/25'
                         }`}
                         style={{

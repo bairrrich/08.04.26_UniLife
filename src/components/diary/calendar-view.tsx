@@ -74,7 +74,7 @@ export function CalendarView({
           {RU_DAYS_SHORT.map((day) => (
             <div
               key={day}
-              className="h-8 flex items-center justify-center text-xs font-medium text-muted-foreground"
+              className="h-6 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs font-medium text-muted-foreground"
             >
               {day}
             </div>
@@ -105,7 +105,7 @@ export function CalendarView({
                 type="button"
                 onClick={() => onDayClick(cell)}
                 className={cn(
-                  'h-12 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-sm relative transition-all duration-200',
+                  'h-10 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm relative transition-all duration-200',
                   !isCurrentMonth && 'text-muted-foreground/40',
                   isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent',
                   isCurrentMonth && !isSelected && hasEntries && 'hover:bg-primary/10 hover:scale-105 hover:shadow-md',
@@ -116,14 +116,14 @@ export function CalendarView({
               >
                 <span className="text-sm">{cell.day}</span>
                 {primaryMood && (
-                  <span className="text-xs leading-none mt-0.5">
+                  <span className="text-[10px] sm:text-xs leading-none mt-0.5">
                     {MOOD_EMOJI[primaryMood]}
                   </span>
                 )}
                 {hasEntries && dayEntries!.length > 1 && (
                   <Badge
                     className={cn(
-                      'absolute -top-1.5 -right-1.5 text-[9px] font-bold rounded-full h-4 min-w-4 px-1 flex items-center justify-center border-0',
+                      'absolute -top-1 -right-1 sm:-top-1.5 sm:-right-1.5 text-[8px] sm:text-[9px] font-bold rounded-full h-3.5 sm:h-4 min-w-[14px] sm:min-w-4 px-1 flex items-center justify-center border-0',
                       isSelected
                         ? 'bg-primary-foreground text-primary'
                         : 'bg-primary text-primary-foreground shadow-sm'
@@ -138,7 +138,7 @@ export function CalendarView({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center justify-center gap-3 mt-3 pt-3 border-t">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mt-3 pt-3 border-t">
           {[1, 2, 3, 4, 5].map((m) => (
             <div key={m} className="flex items-center gap-1">
               <div className={cn('h-2 w-2 rounded-full', MOOD_DOT_COLORS[m])} />

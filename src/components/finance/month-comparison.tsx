@@ -243,9 +243,9 @@ export function MonthComparison({
                 </div>
 
                 {/* Amounts + Bars */}
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                   {/* Current Amount */}
-                  <div className="min-w-[80px] text-right">
+                  <div className="sm:min-w-[80px] sm:text-right">
                     <p className="text-xs text-muted-foreground">Текущий</p>
                     <p className="text-sm font-bold tabular-nums">
                       {formatCurrency(row.current)}
@@ -260,7 +260,7 @@ export function MonthComparison({
                   />
 
                   {/* Previous Amount */}
-                  <div className="min-w-[80px]">
+                  <div className="sm:min-w-[80px]">
                     <p className="text-xs text-muted-foreground">Прошлый</p>
                     <p className="text-sm font-bold tabular-nums text-muted-foreground">
                       {formatCurrency(row.previous)}

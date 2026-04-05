@@ -40,15 +40,15 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, exerciseMax
       onClick={onToggle}
     >
       <CardHeader className="pb-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 min-w-0">
             <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${typeConfig.iconBg}`}>
               <span className={typeConfig.iconColor}>{typeConfig.icon}</span>
             </div>
-            <CardTitle className="text-base">{workout.name}</CardTitle>
-            <Badge variant="secondary" className="text-xs">{workout.exercises.length} упр.</Badge>
+            <CardTitle className="text-sm sm:text-base truncate">{workout.name}</CardTitle>
+            <Badge variant="secondary" className="text-xs hidden sm:inline-flex">{workout.exercises.length} упр.</Badge>
           </div>
-          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 sm:gap-3 text-sm text-muted-foreground shrink-0">
             {workout.durationMin && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
@@ -61,7 +61,7 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, exerciseMax
                 {workoutVolume >= 1000 ? `${(workoutVolume / 1000).toFixed(1)}т` : `${workoutVolume}кг`}
               </span>
             )}
-            <span>{formatDate(workout.date)}</span>
+            <span className="hidden sm:inline">{formatDate(workout.date)}</span>
             <Button
               variant="ghost"
               size="icon"
@@ -107,7 +107,7 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, exerciseMax
                             <div
                               key={idx}
                               className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-xs ${
-                                set.completed ? 'bg-emerald-100 text-emerald-700' : 'bg-background text-muted-foreground'
+                                set.completed ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : 'bg-background text-muted-foreground'
                               }`}
                             >
                               <span className="font-medium tabular-nums">{idx + 1}</span>

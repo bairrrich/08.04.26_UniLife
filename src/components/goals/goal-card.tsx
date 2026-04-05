@@ -138,7 +138,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
       <CardContent className="relative p-4 space-y-3">
         {/* Top row: Category icon+badge + Status + Deadline Badge + Progress Ring */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+          <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap gap-y-1">
             {/* Category icon inside colored circle */}
             <div className={cn('h-7 w-7 rounded-full flex items-center justify-center shrink-0', catConfig.iconBgClass)}>
               {catConfig.icon}
@@ -170,9 +170,9 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </Badge>
             )}
 
-            {/* Warning badge for approaching deadlines */}
+          {/* Warning badge for approaching deadlines */}
             {getDeadlineWarning(goal.deadline) && goal.status === 'active' && !isOverdue && daysLeft !== null && daysLeft > 3 && (
-              <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft">
+              <Badge className="shrink-0 text-[10px] bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 animate-pulse-soft hidden sm:inline-flex">
                 ⚠️ Скоро
               </Badge>
             )}
@@ -198,8 +198,8 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           )}
 
           {/* Large Progress Ring */}
-          <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center">
-            <svg className="h-[72px] w-[72px] -rotate-90" viewBox="0 0 72 72">
+          <div className="relative flex h-[56px] sm:h-[72px] w-[56px] sm:w-[72px] shrink-0 items-center justify-center">
+            <svg className="h-[56px] sm:h-[72px] w-[56px] sm:w-[72px] -rotate-90" viewBox="0 0 72 72">
               <defs>
                 <linearGradient id={`ring-grad-${goal.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor={getProgressRingColor(goal.progress)} />
@@ -219,9 +219,9 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
                 }}
               />
             </svg>
-            <span className={cn('absolute font-bold text-sm tabular-nums', getProgressTextColor(goal.progress))}>
+              <p className={cn('absolute font-bold text-xs sm:text-sm tabular-nums', getProgressTextColor(goal.progress))}>
               {Math.round(animatedProgress)}%
-            </span>
+            </p>
           </div>
         </div>
 

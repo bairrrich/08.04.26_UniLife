@@ -96,7 +96,7 @@ export function MealTimeline({
                   </span>
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 font-mono text-xs border-0">
+                  <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-100 dark:bg-orange-900/50 dark:text-orange-300 dark:hover:bg-orange-900/50 font-mono text-xs border-0">
                     <Flame className="mr-1 size-3 text-orange-500" />
                     {Math.round(totalKcal)} ккал
                   </Badge>
@@ -145,14 +145,14 @@ export function MealTimeline({
                 {meal.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between rounded-lg bg-muted/50 px-3 py-2"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2.5 rounded-lg bg-muted/50 px-3 py-2"
                   >
-                    <span className="text-sm font-medium">{item.name}</span>
+                    <span className="text-sm font-medium truncate">{item.name}</span>
                     <div className="flex items-center gap-2.5 text-xs">
-                      <span className="font-semibold text-orange-600">{Math.round(item.kcal)} ккал</span>
-                      <span className="text-blue-600">Б {Math.round(item.protein)}г</span>
-                      <span className="text-amber-600">Ж {Math.round(item.fat)}г</span>
-                      <span className="text-green-600">У {Math.round(item.carbs)}г</span>
+                      <span className="font-semibold text-orange-600 dark:text-orange-400">{Math.round(item.kcal)} ккал</span>
+                      <span className="text-blue-600 dark:text-blue-400">Б {Math.round(item.protein)}г</span>
+                      <span className="text-amber-600 dark:text-amber-400">Ж {Math.round(item.fat)}г</span>
+                      <span className="text-green-600 dark:text-green-400">У {Math.round(item.carbs)}г</span>
                     </div>
                   </div>
                 ))}

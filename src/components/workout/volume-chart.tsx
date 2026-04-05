@@ -161,12 +161,12 @@ export function WorkoutVolumeChart() {
                       cy={cy}
                       r={payload.volume > 0 ? 3 : 0}
                       fill={payload.isToday ? '#8b5cf6' : '#a78bfa'}
-                      stroke="#fff"
+                      stroke="hsl(var(--background))"
                       strokeWidth={1.5}
                     />
                   )
                 }}
-                activeDot={{ r: 5, fill: '#8b5cf6', stroke: '#fff', strokeWidth: 2 }}
+                activeDot={{ r: 5, fill: '#8b5cf6', stroke: 'hsl(var(--background))', strokeWidth: 2 }}
               />
             </AreaChart>
           </ResponsiveContainer>

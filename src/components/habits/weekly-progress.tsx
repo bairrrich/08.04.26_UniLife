@@ -91,10 +91,11 @@ export function WeeklyProgress({ rate, color }: WeeklyProgressProps) {
                 className={cn(
                   'h-6 w-6 rounded-sm transition-all',
                   day.isFuture && 'opacity-20',
-                  day.completed && 'shadow-sm'
+                  day.completed && 'shadow-sm',
+                  !day.completed && !day.isFuture && 'bg-muted'
                 )}
                 style={{
-                  backgroundColor: day.completed ? (color === 'emerald' ? '#10b981' : color === 'amber' ? '#f59e0b' : '#ef4444') : day.isFuture ? undefined : '#e5e7eb',
+                  backgroundColor: day.completed ? (color === 'emerald' ? '#10b981' : color === 'amber' ? '#f59e0b' : '#ef4444') : undefined,
                 }}
                 title={`${day.label}: ${day.completed ? 'Выполнено' : day.isFuture ? 'Будущий день' : 'Не выполнено'}`}
               />

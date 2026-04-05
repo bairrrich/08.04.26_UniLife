@@ -189,7 +189,7 @@ export default function RecentGoalsWidget({ loading: externalLoading }: RecentGo
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div
-                      className={`h-2 w-2 shrink-0 rounded-full ${CATEGORY_COLORS[goal.category] || 'bg-gray-400'}`}
+                      className={`h-2 w-2 shrink-0 rounded-full ${CATEGORY_COLORS[goal.category] || 'bg-muted-foreground'}`}
                     />
                     <p className="text-sm font-medium truncate">{goal.title}</p>
                   </div>

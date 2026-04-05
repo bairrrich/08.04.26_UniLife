@@ -184,7 +184,7 @@ export default function NotificationCenter(props: NotificationCenterProps) {
             <button
               key={reminder.id}
               onClick={reminder.onClick}
-              className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/60 ${reminder.onClick ? 'cursor-pointer' : 'cursor-default'}`}
+              className={`flex min-h-[44px] w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-muted/60 ${reminder.onClick ? 'cursor-pointer' : 'cursor-default'}`}
             >
               <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${reminder.color}`}>
                 {reminder.icon}

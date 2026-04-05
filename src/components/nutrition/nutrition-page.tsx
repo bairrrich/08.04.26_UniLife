@@ -54,7 +54,7 @@ export default function NutritionPage() {
   } = useNutrition()
 
   return (
-    <div className="animate-slide-up min-h-screen bg-gradient-to-b from-orange-50/40 to-white">
+    <div className="animate-slide-up min-h-screen bg-gradient-to-b from-orange-50/40 to-background dark:from-orange-950/10">
       <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">

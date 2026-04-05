@@ -114,7 +114,7 @@ export function ChartsRow({ loading, moodChartData, spendingChartData, period }:
                       <stop offset="95%" stopColor="#10b981" stopOpacity={0.02} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                   <XAxis
                     dataKey="label"
                     tickLine={false}
@@ -172,7 +172,7 @@ export function ChartsRow({ loading, moodChartData, spendingChartData, period }:
             ) : (
               <ChartContainer config={spendingChartConfig} className="h-[250px] w-full">
                 <BarChart data={spendingChartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
                   <XAxis
                     dataKey="label"
                     tickLine={false}

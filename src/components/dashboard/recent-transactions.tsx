@@ -64,7 +64,7 @@ export default function RecentTransactions({
             {transactions.map((txn) => {
               const isIncome = txn.type === 'INCOME'
               return (
-                <div key={txn.id} className="flex items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
+                <div key={txn.id} className="flex min-h-[44px] items-center gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/50">
                   <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                     isIncome
                       ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400'
