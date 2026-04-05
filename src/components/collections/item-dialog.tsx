@@ -1,4 +1,4 @@
-import { Star, CalendarDays, Pencil, Save, X, ExternalLink } from 'lucide-react'
+import { Star, CalendarDays, Pencil, Save, X, ExternalLink, Copy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -64,6 +64,7 @@ interface ItemDialogProps {
   onCancelEdit: () => void
   onSaveEdit: () => void
   onDelete: (item: CollectionItem) => void
+  onDuplicate: (item: CollectionItem) => void
   onRatingUpdate: (item: CollectionItem, rating: number) => void
   isFavorite?: boolean
   onToggleFavorite?: (itemId: string) => void
@@ -124,6 +125,7 @@ export function ItemDialog({
   onCancelEdit,
   onSaveEdit,
   onDelete,
+  onDuplicate,
   onRatingUpdate,
   isFavorite,
   onToggleFavorite,
@@ -348,17 +350,21 @@ export function ItemDialog({
               <Separator />
 
               <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" className="flex-1 min-w-[120px]">
+                <Button variant="outline" className="flex-1 min-w-[100px]">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Открыть
                 </Button>
-                <Button variant="outline" onClick={onStartEdit} className="flex-1 min-w-[120px]">
+                <Button variant="outline" onClick={onStartEdit} className="flex-1 min-w-[100px]">
                   <Pencil className="h-4 w-4 mr-2" />
-                  Редактировать
+                  Изменить
+                </Button>
+                <Button variant="outline" onClick={() => onDuplicate(item)} className="flex-1 min-w-[100px]">
+                  <Copy className="h-4 w-4 mr-2" />
+                  Дублировать
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-destructive hover:text-destructive flex-1 min-w-[120px]"
+                  className="text-destructive hover:text-destructive flex-1 min-w-[100px]"
                   onClick={() => onDelete(item)}
                 >
                   Удалить

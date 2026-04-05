@@ -90,7 +90,13 @@ export function useCollections() {
     // Sort
     switch (sortBy) {
       case 'rating':
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        filtered.sort((a, b) => {
+          // Push null ratings to bottom
+          if (a.rating == null && b.rating == null) return 0
+          if (a.rating == null) return 1
+          if (b.rating == null) return -1
+          return b.rating - a.rating
+        })
         break
       case 'name':
         filtered.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
@@ -121,6 +127,13 @@ export function useCollections() {
       counts[i.type] = (counts[i.type] || 0) + 1
     })
     return counts
+  }, [items])
+
+  // ── Recently added (top 4 by date, all types) ──────────────────────────
+  const recentlyAdded = useMemo(() => {
+    return [...items]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 4)
   }, [items])
 
   // ── Related items (same type, different items) ────────────────────────────
@@ -302,9 +315,36 @@ export function useCollections() {
 
   const cancelEdit = () => setIsEditing(false)
 
+  // ── Duplicate item ──────────────────────────────────────────────────────────
+  const handleDuplicate = useCallback((item: CollectionItem) => {
+    closeDetail(false)
+    resetForm()
+    setFormType(item.type as CollectionType)
+    setFormTitle(`${item.title} (копия)`)
+    setFormAuthor(item.author || '')
+    setFormDescription(item.description || '')
+    setFormRating(item.rating || 0)
+    setFormTags(parseTags(item.tags).join(', '))
+    setFormNotes(item.notes || '')
+    setFormCoverUrl(item.coverUrl || '')
+    // Parse details JSON into formDetails
+    try {
+      const parsed = JSON.parse(item.details || '{}')
+      const stringDetails: Record<string, string> = {}
+      for (const [k, v] of Object.entries(parsed)) {
+        if (v !== null && v !== undefined) stringDetails[k] = String(v)
+      }
+      setFormDetails(stringDetails)
+    } catch {
+      setFormDetails({})
+    }
+    setDialogOpen(true)
+  }, [closeDetail])
+
   return {
     // state
     items: sortedItems,
+    recentlyAdded,
     loading, activeType, sortBy,
     searchQuery, viewMode, favorites,
     dialogOpen, detailItem, detailOpen,
@@ -331,7 +371,7 @@ export function useCollections() {
     editDetails, setEditDetails,
 
     // handlers
-    handleSubmit, handleDelete,
+    handleSubmit, handleDelete, handleDuplicate,
     handleRatingUpdate, openDetail, startEditing,
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
 

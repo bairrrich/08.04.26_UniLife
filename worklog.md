@@ -7873,3 +7873,97 @@ Completely rewrite the Collections module to remove statuses and add type-specif
 4. **PWA Support** — Service worker + manifest for mobile install
 5. **Image Upload** — Photo support for collection item covers
 
+---
+## Task ID: qa-round-4
+### Agent: cron-review-coordinator
+### Task: QA testing, styling improvements, new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 9+ modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Settings, Goals) rendering correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data now covers all 9 collection types with type-specific details
+- **Lint**: 0 errors, 0 warnings
+- **Dev Server**: Compiles and serves HTTP 200 on all endpoints; no console errors
+- **Collections Module**: Recently enhanced with "Recently Added" section, count badges, duplicate functionality, type-specific empty states, keyboard shortcut, and improved rating sort
+
+### Completed This Round:
+
+#### 1. Seed Data Verification & Enhancement
+- Verified that books (7), movies (6), recipes (5), supplements (5) already have proper type-specific `details` JSON in seed data
+- Added 5 new collection type seed data groups with proper type-specific details:
+  - **Anime** (4 items): Магическая битва, Атака титанов, Клинок рассекающий демонов, Ванпанчмен — with genre, episodes, studio, year
+  - **Series** (4 items): Во все тяжкие, Очень странные дела, Черное зеркало, Игра престолов — with genre, seasons, episodes, platform, year
+  - **Music** (4 items): Bohemian Rhapsody, Stairway to Heaven, Hotel California, Shape of You — with artist, album, genre, year
+  - **Products** (3 items): MacBook Pro 14", Sony WH-1000XM5, Kindle Paperwhite — with brand, price, store, category, url
+  - **Places** (3 items): Парк Горького, Третьяковская галерея, Белуга — with address, category, url
+- Total seed collection items: now ~42 (up from ~23), all with proper type-specific details
+
+#### 2. "Recently Added" Section (Collections Page)
+- Added horizontal scrollable row at top of items list showing 4 most recently added items
+- Uses `motion.div` from Framer Motion for smooth staggered entrance animation
+- Mini card variants showing: type icon + title + author + star rating
+- Hidden scrollbar CSS (`scrollbarWidth: none`, `msOverflowStyle: none`)
+- Left/right arrow buttons for scroll navigation
+- Only shown when viewing "All" types and no search query active
+- Uses `recentlyAdded` computed property from `useCollections` hook (sorted by date, top 4)
+
+#### 3. Item Count Badges on Type Tabs
+- Added `Badge` component with item count next to each type label in filter tabs
+- "Все (42)" shows total count, each type shows its own count (e.g., "Книги (7)")
+- Uses `typeCounts` from `useCollections` hook
+- Badges hidden when count is 0
+- Styled with `variant="secondary"`, `tabular-nums` for clean number alignment
+
+#### 4. "Duplicate Item" Functionality
+- Added `handleDuplicate` function in `hooks.ts` that:
+  - Closes detail dialog
+  - Resets add form
+  - Pre-fills form with item data: type, title (with " (копия)" suffix), author, description, rating, tags, notes, coverUrl
+  - Parses item details JSON and populates `formDetails`
+  - Opens add dialog
+- Added "Дублировать" button in `item-dialog.tsx` view mode action buttons (next to Edit and Delete)
+- Added `onDuplicate` prop to `ItemDialogProps` interface
+- Imported `Copy` icon from lucide-react
+
+#### 5. Type-Specific Empty State
+- Added `EMPTY_STATE_MESSAGES` constant with per-type messages in Russian:
+  - BOOK: "Добавьте первую книгу в вашу библиотеку"
+  - MOVIE: "Добавьте первый фильм в свою коллекцию"
+  - ANIME: "Добавьте первое аниме для отслеживания"
+  - SERIES: "Добавьте первый сериал в свой список"
+  - MUSIC: "Добавьте первый трек или альбом"
+  - RECIPE: "Добавьте первый рецепт для кулинарного вдохновения"
+  - SUPPLEMENT: "Добавьте первую добавку для отслеживания приёма"
+  - PRODUCT: "Добавьте первый продукт в список желаний"
+  - PLACE: "Добавьте первое интересное место"
+- Empty state icon uses `TYPE_EMOJIS` for type-specific emoji illustration
+- Custom title and description per type
+
+#### 6. Keyboard Shortcut "N" for Adding Items
+- Added `useEffect` with `keydown` event listener in `collections-page.tsx`
+- Pressing "N" (or "а" on Russian layout) opens the add dialog
+- Guards against triggering when: typing in INPUT/TEXTAREA/SELECT, contentEditable, dialog already open
+- Added `<kbd>` hint showing "N" next to the "Добавить" button in header
+
+#### 7. Fix: Sort by Rating (Null Ratings Last)
+- Updated rating sort in `hooks.ts` to push items with `null` rating to the bottom
+- Previous: `filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))` — null ratings treated as 0, sorted to top
+- Fixed: Explicit null checks — null ratings always sort after rated items, regardless of direction
+- Affects "По рейтингу" sort option
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings (after all changes)
+- ✅ Dev server: compiles cleanly, all routes return HTTP 200
+- ✅ No console errors in dev log
+- ✅ All existing collections functionality preserved (CRUD, filtering, rating, type-specific forms)
+
+### Unresolved Issues / Next Phase Priorities:
+1. **Re-seed Database** — Call POST /api/seed to populate the new type-specific seed data (anime, series, music, products, places)
+2. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+3. **PWA Support** — Service worker + manifest for mobile install
+4. **Image Upload** — Photo support for collection item covers
+5. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+6. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+7. **Offline Support** — Service worker caching for offline usage
+8. **Notifications** — Push notifications for reminders (water, workout, diary)
+9. **Localization** — i18n support for multiple languages beyond Russian
+10. **Data Import Enhancement** — CSV import support in addition to JSON

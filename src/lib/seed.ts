@@ -437,6 +437,39 @@ export async function seed() {
     { title: 'Креатин', author: 'MyProtein', rating: null, details: JSON.stringify({ brand: 'MyProtein', dosage: '5 г', frequency: 'Ежедневно', courseDays: 60, purpose: 'Сила, выносливость' }) },
   ]
 
+  const anime = [
+    { title: 'Магическая битва', author: 'MAPPA', rating: 5, details: JSON.stringify({ genre: 'Сёнэн', episodes: 24, studio: 'MAPPA', year: 2020 }) },
+    { title: 'Атака титанов', author: 'WIT Studio / MAPPA', rating: 5, details: JSON.stringify({ genre: 'Экшен', episodes: 87, studio: 'WIT Studio', year: 2013 }) },
+    { title: 'Клинок, рассекающий демонов', author: 'ufotable', rating: 4, details: JSON.stringify({ genre: 'Сёнэн', episodes: 44, studio: 'ufotable', year: 2019 }) },
+    { title: 'Ванпанчмен', author: 'Madhouse', rating: null, details: JSON.stringify({ genre: 'Комедия', episodes: 12, studio: 'Madhouse', year: 2015 }) },
+  ]
+
+  const series = [
+    { title: 'Во все тяжкие', author: 'Винс Гиллиган', rating: 5, details: JSON.stringify({ genre: 'Драма', seasons: 5, episodes: 62, platform: 'Netflix', year: 2008 }) },
+    { title: 'Очень странные дела', author: 'Братья Даффер', rating: 4, details: JSON.stringify({ genre: 'Фантастика', seasons: 4, episodes: 34, platform: 'Netflix', year: 2016 }) },
+    { title: 'Черное зеркало', author: 'Чарли Брукер', rating: 4, details: JSON.stringify({ genre: 'Антиутопия', seasons: 6, episodes: 22, platform: 'Netflix', year: 2011 }) },
+    { title: 'Игра престолов', author: 'Дэвид Бениофф', rating: null, details: JSON.stringify({ genre: 'Фэнтези', seasons: 8, episodes: 73, platform: 'HBO', year: 2011 }) },
+  ]
+
+  const music = [
+    { title: 'Bohemian Rhapsody', author: 'Queen', rating: 5, details: JSON.stringify({ artist: 'Queen', album: 'A Night at the Opera', genre: 'Рок', year: 1975 }) },
+    { title: 'Stairway to Heaven', author: 'Led Zeppelin', rating: 5, details: JSON.stringify({ artist: 'Led Zeppelin', album: 'Led Zeppelin IV', genre: 'Рок', year: 1971 }) },
+    { title: 'Hotel California', author: 'Eagles', rating: 4, details: JSON.stringify({ artist: 'Eagles', album: 'Hotel California', genre: 'Рок', year: 1977 }) },
+    { title: 'Shape of You', author: 'Ed Sheeran', rating: null, details: JSON.stringify({ artist: 'Ed Sheeran', album: '÷ (Divide)', genre: 'Поп', year: 2017 }) },
+  ]
+
+  const products = [
+    { title: 'MacBook Pro 14"', author: 'Apple', rating: 5, details: JSON.stringify({ brand: 'Apple', price: 249990, store: 'DNS', category: 'Электроника', url: 'https://apple.com' }) },
+    { title: 'Sony WH-1000XM5', author: 'Sony', rating: 4, details: JSON.stringify({ brand: 'Sony', price: 29990, store: 'Яндекс Маркет', category: 'Аудио', url: 'https://sony.com' }) },
+    { title: 'Kindle Paperwhite', author: 'Amazon', rating: 4, details: JSON.stringify({ brand: 'Amazon', price: 14990, store: 'Ozon', category: 'Электроника', url: 'https://amazon.com' }) },
+  ]
+
+  const places = [
+    { title: 'Парк Горького', author: null, rating: null, details: JSON.stringify({ address: 'ул. Крымский Вал, 9, Москва', category: 'Парк', url: 'https://park-gorkogo.com' }) },
+    { title: 'Третьяковская галерея', author: null, rating: 5, details: JSON.stringify({ address: 'Лаврушинский пер., 10, Москва', category: 'Музей', url: 'https://tretyakovgallery.ru' }) },
+    { title: 'Белуга', author: null, rating: 4, details: JSON.stringify({ address: 'ул. Большая Дмитровка, 7/5, стр. 1, Москва', category: 'Ресторан', url: 'https://white-rabbit-cafe.ru' }) },
+  ]
+
   for (const book of books) {
     await db.collectionItem.create({
       data: { userId: USER_ID, type: 'BOOK', ...book, tags: JSON.stringify(['чтение']) },
@@ -455,6 +488,31 @@ export async function seed() {
   for (const sup of supplements) {
     await db.collectionItem.create({
       data: { userId: USER_ID, type: 'SUPPLEMENT', ...sup, tags: JSON.stringify(['здоровье']) },
+    })
+  }
+  for (const a of anime) {
+    await db.collectionItem.create({
+      data: { userId: USER_ID, type: 'ANIME', ...a, tags: JSON.stringify(['аниме']) },
+    })
+  }
+  for (const s of series) {
+    await db.collectionItem.create({
+      data: { userId: USER_ID, type: 'SERIES', ...s, tags: JSON.stringify(['сериалы']) },
+    })
+  }
+  for (const m of music) {
+    await db.collectionItem.create({
+      data: { userId: USER_ID, type: 'MUSIC', ...m, tags: JSON.stringify(['музыка']) },
+    })
+  }
+  for (const p of products) {
+    await db.collectionItem.create({
+      data: { userId: USER_ID, type: 'PRODUCT', ...p, tags: JSON.stringify(['покупки']) },
+    })
+  }
+  for (const pl of places) {
+    await db.collectionItem.create({
+      data: { userId: USER_ID, type: 'PLACE', ...pl, tags: JSON.stringify(['места']) },
     })
   }
 

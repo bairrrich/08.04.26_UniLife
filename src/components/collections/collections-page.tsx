@@ -1,6 +1,7 @@
 'use client'
 
-import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star } from 'lucide-react'
+import { useEffect, useRef } from 'react'
+import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,9 +13,11 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
+import { motion } from 'framer-motion'
 import type { CollectionType } from './types'
 import type { SortOption } from './constants'
-import { TYPE_LABELS, SORT_OPTIONS, QUICK_ADD_TEMPLATES, TYPE_ICONS_LARGE, getCoverGradient, formatDaysAgo, TYPE_COLORS } from './constants'
+import { TYPE_LABELS, TYPE_EMOJIS, SORT_OPTIONS, QUICK_ADD_TEMPLATES, TYPE_ICONS_LARGE, TYPE_COLORS, getCoverGradient, formatDaysAgo } from './constants'
 import { useCollections } from './hooks'
 import { StatsBar } from './stats-bar'
 import { ItemCard } from './item-card'
@@ -22,7 +25,23 @@ import { AddItemDialog } from './add-item-dialog'
 import { ItemDialog } from './item-dialog'
 import { cn } from '@/lib/utils'
 
+// Empty state messages per type
+const EMPTY_STATE_MESSAGES: Record<string, { title: string; description: string }> = {
+  all: { title: 'Коллекция пуста', description: 'Добавьте книги, фильмы, рецепты и другие элементы в свою коллекцию' },
+  BOOK: { title: 'Библиотека пуста', description: 'Добавьте первую книгу в вашу библиотеку' },
+  MOVIE: { title: 'Нет фильмов', description: 'Добавьте первый фильм в свою коллекцию' },
+  ANIME: { title: 'Нет аниме', description: 'Добавьте первое аниме для отслеживания' },
+  SERIES: { title: 'Нет сериалов', description: 'Добавьте первый сериал в свой список' },
+  MUSIC: { title: 'Нет музыки', description: 'Добавьте первый трек или альбом' },
+  RECIPE: { title: 'Нет рецептов', description: 'Добавьте первый рецепт для кулинарного вдохновения' },
+  SUPPLEMENT: { title: 'Нет БАДов', description: 'Добавьте первую добавку для отслеживания приёма' },
+  PRODUCT: { title: 'Нет продуктов', description: 'Добавьте первый продукт в список желаний' },
+  PLACE: { title: 'Нет мест', description: 'Добавьте первое интересное место' },
+}
+
 export default function CollectionsPage() {
+  const scrollRef = useRef<HTMLDivElement>(null)
+
   const {
     items, loading, activeType, sortBy,
     setActiveType, setSortBy,
@@ -45,14 +64,50 @@ export default function CollectionsPage() {
     setEditType, setEditTags,
     setEditNotes, setEditRating,
     setEditDetails,
-    handleSubmit, handleDelete,
+    handleSubmit, handleDelete, handleDuplicate,
     handleRatingUpdate, openDetail, startEditing,
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
     totalCount, averageRating,
     typeCounts,
     getRelatedItems,
     favorites, toggleFavorite,
+    recentlyAdded,
   } = useCollections()
+
+  // ── Keyboard shortcut: N to open add dialog ────────────────────────────────
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'n' || e.key === 'N' || e.key === 'а' || e.key === 'А') {
+        // Ignore if user is typing in input, textarea, or dialog is open
+        const target = e.target as HTMLElement
+        if (
+          target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable ||
+          detailOpen ||
+          dialogOpen
+        ) return
+        e.preventDefault()
+        setDialogOpen(true)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [setDialogOpen, detailOpen, dialogOpen])
+
+  // ── Scroll helpers for Recently Added ──────────────────────────────────────
+  const scrollRecentlyAdded = (direction: 'left' | 'right') => {
+    if (!scrollRef.current) return
+    const scrollAmount = 200
+    scrollRef.current.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth',
+    })
+  }
+
+  const emptyState = EMPTY_STATE_MESSAGES[activeType] || EMPTY_STATE_MESSAGES.all
+  const emptyEmoji = activeType === 'all' ? '📚' : (TYPE_EMOJIS[activeType as CollectionType] || '📚')
 
   return (
     <div className="animate-slide-up space-y-6">
@@ -73,6 +128,9 @@ export default function CollectionsPage() {
             </div>
           </div>
           <div className="flex items-center gap-2 shrink-0">
+            <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+              N
+            </kbd>
             <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
             </Button>
@@ -107,9 +165,23 @@ export default function CollectionsPage() {
       {/* Type Tabs */}
       <Tabs value={activeType} onValueChange={setActiveType}>
         <TabsList className="flex-wrap h-auto gap-1 [&_[data-state=active]]:border-b-2 [&_[data-state=active]]:border-primary [&_[data-state=active]]:shadow-none">
-          <TabsTrigger value="all">Все</TabsTrigger>
+          <TabsTrigger value="all">
+            Все
+            {totalCount > 0 && (
+              <Badge variant="secondary" className="ml-1.5 h-4 min-w-[18px] px-1 text-[10px] tabular-nums">
+                {totalCount}
+              </Badge>
+            )}
+          </TabsTrigger>
           {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(([key, label]) => (
-            <TabsTrigger key={key} value={key}>{label}</TabsTrigger>
+            <TabsTrigger key={key} value={key}>
+              {label}
+              {(typeCounts[key] ?? 0) > 0 && (
+                <Badge variant="secondary" className="ml-1.5 h-4 min-w-[18px] px-1 text-[10px] tabular-nums">
+                  {typeCounts[key]}
+                </Badge>
+              )}
+            </TabsTrigger>
           ))}
         </TabsList>
 
@@ -217,13 +289,13 @@ export default function CollectionsPage() {
                 {/* Subtle gradient card background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
                 <div className="relative flex flex-col items-center justify-center py-12 text-center">
-                  {/* Gradient icon circle */}
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 to-violet-500 shadow-lg shadow-purple-500/25">
-                    <Library className="h-10 w-10 text-white" />
+                  {/* Gradient icon circle with type emoji */}
+                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 to-violet-500 shadow-lg shadow-purple-500/25 text-3xl">
+                    {emptyEmoji}
                   </div>
-                  <h3 className="mt-5 text-lg font-semibold">Коллекция пуста</h3>
+                  <h3 className="mt-5 text-lg font-semibold">{emptyState.title}</h3>
                   <p className="mt-1.5 text-sm text-muted-foreground max-w-xs mx-auto">
-                    Добавьте книги, фильмы, рецепты и другие элементы в свою коллекцию
+                    {emptyState.description}
                   </p>
                   <Button
                     onClick={() => setDialogOpen(true)}
@@ -236,75 +308,159 @@ export default function CollectionsPage() {
               </CardContent>
             </Card>
           ) : (
-            viewMode === 'grid' ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 stagger-children">
-                {items.map((item) => (
-                  <ItemCard
-                    key={item.id}
-                    item={item}
-                    onClick={openDetail}
-                    isFavorite={favorites.has(item.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3 stagger-children">
-                {items.map((item) => (
-                  <Card
-                    key={item.id}
-                    className="overflow-hidden cursor-pointer group card-hover"
-                    onClick={() => openDetail(item)}
+            <>
+              {/* Recently Added — horizontal scrollable row */}
+              {!searchQuery.trim() && activeType === 'all' && recentlyAdded.length > 0 && (
+                <div className="mb-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-muted-foreground">Недавно добавленные</h3>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => scrollRecentlyAdded('left')}
+                        className="p-1 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => scrollRecentlyAdded('right')}
+                        className="p-1 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    ref={scrollRef}
+                    className="flex gap-3 overflow-x-auto scroll-smooth pb-2"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
                   >
-                    <CardContent className="p-4">
-                      <div className="flex gap-3">
-                        {/* Cover thumbnail */}
-                        <div
-                          className="h-14 w-14 rounded-lg bg-gradient-to-br shrink-0 flex items-center justify-center overflow-hidden group-hover:scale-[1.05] transition-transform duration-300"
-                          style={{ backgroundColor: 'transparent' }}
+                    {recentlyAdded.map((item, idx) => (
+                      <motion.div
+                        key={item.id}
+                        initial={{ opacity: 0, y: 12 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.06, duration: 0.3 }}
+                        className="shrink-0 w-[160px] sm:w-[180px]"
+                      >
+                        <Card
+                          className="overflow-hidden cursor-pointer group hover-lift active-press"
+                          onClick={() => openDetail(item)}
                         >
-                          <div
-                            className={`h-full w-full flex items-center justify-center bg-gradient-to-br ${getCoverGradient(item.id)}`}
-                          >
-                            <div className="text-white/80">
-                              {TYPE_ICONS_LARGE[item.type as CollectionType] && (
-                                <span className="[&>svg]:h-5 [&>svg]:w-5">{TYPE_ICONS_LARGE[item.type as CollectionType]}</span>
+                          <CardContent className="p-0">
+                            {/* Mini cover gradient */}
+                            <div
+                              className={`h-20 w-full bg-gradient-to-br ${getCoverGradient(item.id)} flex items-center justify-center relative`}
+                            >
+                              <div className="text-white/80 group-hover:scale-110 transition-transform duration-300">
+                                {TYPE_ICONS_LARGE[item.type as CollectionType] && (
+                                  <span className="[&>svg]:h-6 [&>svg]:w-6">{TYPE_ICONS_LARGE[item.type as CollectionType]}</span>
+                                )}
+                              </div>
+                              {/* Type badge */}
+                              <span
+                                className={`absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium bg-white/20 backdrop-blur-sm text-white border border-white/30`}
+                              >
+                                {TYPE_EMOJIS[item.type as CollectionType]}
+                              </span>
+                            </div>
+                            {/* Content */}
+                            <div className="p-2.5">
+                              <p className="text-xs font-medium line-clamp-1">{item.title}</p>
+                              {item.author && (
+                                <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.author}</p>
                               )}
+                              {item.rating && (
+                                <div className="flex items-center gap-0.5 mt-1">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star key={i} className={cn(
+                                      'h-2.5 w-2.5',
+                                      i < (item.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30',
+                                    )} />
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Main grid/list view */}
+              {viewMode === 'grid' ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 stagger-children">
+                  {items.map((item) => (
+                    <ItemCard
+                      key={item.id}
+                      item={item}
+                      onClick={openDetail}
+                      isFavorite={favorites.has(item.id)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3 stagger-children">
+                  {items.map((item) => (
+                    <Card
+                      key={item.id}
+                      className="overflow-hidden cursor-pointer group card-hover"
+                      onClick={() => openDetail(item)}
+                    >
+                      <CardContent className="p-4">
+                        <div className="flex gap-3">
+                          {/* Cover thumbnail */}
+                          <div
+                            className="h-14 w-14 rounded-lg bg-gradient-to-br shrink-0 flex items-center justify-center overflow-hidden group-hover:scale-[1.05] transition-transform duration-300"
+                            style={{ backgroundColor: 'transparent' }}
+                          >
+                            <div
+                              className={`h-full w-full flex items-center justify-center bg-gradient-to-br ${getCoverGradient(item.id)}`}
+                            >
+                              <div className="text-white/80">
+                                {TYPE_ICONS_LARGE[item.type as CollectionType] && (
+                                  <span className="[&>svg]:h-5 [&>svg]:w-5">{TYPE_ICONS_LARGE[item.type as CollectionType]}</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          {/* Content */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="text-sm font-medium line-clamp-1">{item.title}</h3>
+                              <span
+                                className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[item.type as CollectionType]}`}
+                              >
+                                {item.type}
+                              </span>
+                            </div>
+                            {item.author && (
+                              <p className="text-xs text-muted-foreground truncate">{item.author}</p>
+                            )}
+                            <div className="flex items-center gap-3 mt-1">
+                              {item.rating && (
+                                <div className="flex items-center gap-0.5">
+                                  {Array.from({ length: 5 }).map((_, i) => (
+                                    <Star key={i} className={cn(
+                                      'h-3 w-3 transition-colors',
+                                      i < (item.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30',
+                                    )} />
+                                  ))}
+                                </div>
+                              )}
+                              <span className="text-[10px] text-muted-foreground">{formatDaysAgo(item.createdAt)}</span>
                             </div>
                           </div>
                         </div>
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-sm font-medium line-clamp-1">{item.title}</h3>
-                            <span
-                              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[item.type as CollectionType]}`}
-                            >
-                              {item.type}
-                            </span>
-                          </div>
-                          {item.author && (
-                            <p className="text-xs text-muted-foreground truncate">{item.author}</p>
-                          )}
-                          <div className="flex items-center gap-3 mt-1">
-                            {item.rating && (
-                              <div className="flex items-center gap-0.5">
-                                {Array.from({ length: 5 }).map((_, i) => (
-                                  <Star key={i} className={cn(
-                                    'h-3 w-3 transition-colors',
-                                    i < (item.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30',
-                                  )} />
-                                ))}
-                              </div>
-                            )}
-                            <span className="text-[10px] text-muted-foreground">{formatDaysAgo(item.createdAt)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </TabsContent>
       </Tabs>
@@ -326,6 +482,7 @@ export default function CollectionsPage() {
         onStartEdit={startEditing} onCancelEdit={cancelEdit}
         onSaveEdit={handleEditSave}
         onDelete={handleDelete}
+        onDuplicate={handleDuplicate}
         onRatingUpdate={handleRatingUpdate}
         isFavorite={detailItem ? favorites.has(detailItem.id) : false}
         onToggleFavorite={toggleFavorite}
