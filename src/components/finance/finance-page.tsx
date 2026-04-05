@@ -1,6 +1,6 @@
 'use client'
 
-import { Wallet, Plus, Filter, Receipt } from 'lucide-react'
+import { Wallet, Plus, Filter, Receipt, PiggyBank } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCurrentMonthStr } from '@/lib/format'
@@ -21,6 +21,8 @@ import { FinancialHealthScore } from './financial-health-score'
 import { SpendingForecast } from './spending-forecast'
 import { MonthComparison } from './month-comparison'
 import { InvestmentsManager } from './investments-manager'
+import { AccountsManager } from './accounts-manager'
+import { SavingsGoalsManager } from './savings-goals-manager'
 import { useFinance } from './hooks'
 
 export default function FinancePage() {
@@ -85,8 +87,14 @@ export default function FinancePage() {
           <TabsTrigger value="overview" className="gap-1.5">
             <Receipt className="h-4 w-4" />Обзор
           </TabsTrigger>
+          <TabsTrigger value="accounts" className="gap-1.5">
+            <Wallet className="h-4 w-4" />Счёта
+          </TabsTrigger>
           <TabsTrigger value="investments" className="gap-1.5">
             <Wallet className="h-4 w-4" />Инвестиции
+          </TabsTrigger>
+          <TabsTrigger value="savings" className="gap-1.5">
+            <PiggyBank className="h-4 w-4" />Сбережения
           </TabsTrigger>
           <TabsTrigger value="budget" className="gap-1.5">
             <Wallet className="h-4 w-4" />Бюджет
@@ -150,8 +158,16 @@ export default function FinancePage() {
           />
         </TabsContent>
 
+        <TabsContent value="accounts">
+          <AccountsManager />
+        </TabsContent>
+
         <TabsContent value="investments">
           <InvestmentsManager isLoading={isLoading} />
+        </TabsContent>
+
+        <TabsContent value="savings">
+          <SavingsGoalsManager />
         </TabsContent>
 
         <TabsContent value="budget">

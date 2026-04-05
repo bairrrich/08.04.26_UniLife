@@ -4417,3 +4417,95 @@ Stage Summary:
 - ✅ ESLint: 0 errors, 0 warnings
 - ✅ Dev server compiles successfully (HTTP 200)
 - ✅ All API endpoints verified working
+
+---
+## Task ID: finance-enhance
+### Agent: finance-enhance-agent
+### Task: Enhance finance module with Savings Goals (CRUD), Accounts Management UI, and Savings Goals UI
+
+### Work Summary:
+
+**Feature 1 — Savings Goals CRUD:**
+- Added `SavingsGoal` model to Prisma schema with fields: id, userId, name, targetAmount, currentAmount, icon, color, deadline, description, createdAt, updatedAt
+- Added `savingsGoals SavingsGoal[]` relation to User model
+- Added `@@index([userId])` for query performance
+- Pushed schema to SQLite database with `bun run db:push`
+- Created `/src/app/api/finance/savings-goals/route.ts` — GET (list all, ordered by createdAt desc) + POST (create with name/targetAmount validation)
+- Created `/src/app/api/finance/savings-goals/[id]/route.ts` — PUT (update any field) + DELETE (with ownership check)
+
+**Feature 2 — Accounts Manager UI:**
+- Created `/src/components/finance/accounts-manager.tsx` — full accounts management component
+- Displays accounts in responsive grid (1 col mobile, 2 md, 3 lg) with card-hover and stagger-children
+- Each account card shows: icon (via getAccountIcon from constants), name, type badge (via ACCOUNT_TYPE_LABELS), balance (tabular-nums), default star indicator
+- Summary card showing total balance across all accounts
+- "Create account" dialog with: name input, type select (CASH/BANK/SAVINGS/INVESTMENT/CRYPTO), icon select, color picker (10 preset colors), initial balance
+- Delete account with AlertDialog confirmation
+- Empty state with gradient icon + CTA text
+- Uses `useFinance` hook's existing accounts, createAccount, deleteAccount functions
+
+**Feature 3 — Savings Goals Manager UI:**
+- Created `/src/components/finance/savings-goals-manager.tsx` — full savings goals component
+- Summary cards: Total target (blue), Total saved (emerald), Overall progress % (violet)
+- Goals displayed in responsive grid with progress bars, percentage, amounts, deadline with days remaining
+- "Add funds" dialog to increment currentAmount with toast feedback
+- Edit dialog for name, target amount, deadline, description
+- Delete with AlertDialog confirmation
+- Create dialog with: name, target amount, deadline, description, emoji icon picker (16 presets), color picker (10 presets)
+- Empty state with gradient PiggyBank icon + CTA button
+- Completed goals (100%+) get emerald border and "Достигнуто" badge
+- Deadline color coding: red if overdue, amber if <7 days, muted otherwise
+
+**Integration:**
+- Updated `/src/components/finance/finance-page.tsx`:
+  - Added "Счёта" tab with Wallet icon
+  - Added "Сбережения" tab with PiggyBank icon
+  - Tabs order: Обзор, Счёта, Инвестиции, Сбережения, Бюджет
+  - Imported and rendered AccountsManager and SavingsGoalsManager
+- Updated `/src/components/finance/hooks.ts`:
+  - Added SavingsGoal type import
+  - Added savingsGoals state array
+  - Added fetchSavingsGoals, createSavingsGoal, updateSavingsGoal, deleteSavingsGoal, addFundsToSavingsGoal functions
+  - fetchSavingsGoals called in fetchData callback
+- Updated `/src/components/finance/types.ts`:
+  - Added SavingsGoal interface with all required fields
+
+### Files Created:
+1. `/src/app/api/finance/savings-goals/route.ts` — GET/POST API
+2. `/src/app/api/finance/savings-goals/[id]/route.ts` — PUT/DELETE API
+3. `/src/components/finance/accounts-manager.tsx` — Accounts management UI
+4. `/src/components/finance/savings-goals-manager.tsx` — Savings goals UI
+
+### Files Modified:
+1. `/prisma/schema.prisma` — Added SavingsGoal model + User relation
+2. `/src/components/finance/types.ts` — Added SavingsGoal interface
+3. `/src/components/finance/hooks.ts` — Added savings goals state + 5 CRUD functions
+4. `/src/components/finance/finance-page.tsx` — Added 2 new tabs (Счёта, Сбережения)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, no console errors
+- ✅ All existing finance module functionality preserved
+- ✅ No breaking changes to existing components
+
+---
+Task ID: finance-enhance
+Agent: main-agent
+Task: Add Savings Goals, Accounts Management UI, and enhance Finance module
+
+Work Log:
+- Added `SavingsGoal` model to Prisma schema (id, userId, name, targetAmount, currentAmount, icon, color, deadline, description, timestamps)
+- Ran `bun run db:push` to sync schema
+- Created `/api/finance/savings-goals` API route (GET list, POST create)
+- Created `/api/finance/savings-goals/[id]` API route (PUT update, DELETE)
+- Created `accounts-manager.tsx` component: account grid, total balance, create dialog (name/type/icon/color/balance), delete confirmation
+- Created `savings-goals-manager.tsx` component: summary cards (target/saved/progress%), goal cards with progress bars, deadline tracking, add funds dialog, edit dialog, emoji/color pickers, delete confirmation, completed goal highlighting
+- Updated `useFinance` hook: added savingsGoals state, fetchSavingsGoals, createSavingsGoal, updateSavingsGoal, deleteSavingsGoal, addFundsToSavingsGoal
+- Updated `finance-page.tsx`: added 2 new tabs "Счёта" and "Сбережения" (tab order: Обзор, Счёта, Инвестиции, Сбережения, Бюджет)
+- Added `SavingsGoal` interface to types.ts
+- All API endpoints verified: savings-goals 200, accounts 200, finance routes 200
+
+Stage Summary:
+- 3 new features: Savings Goals CRUD, Accounts Management UI, enhanced tab navigation
+- 4 files created, 4 files modified
+- ESLint: 0 errors
+- All APIs return HTTP 200 with correct data

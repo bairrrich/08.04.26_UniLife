@@ -99,3 +99,18 @@ export interface InvestmentsResponse {
   totalReturned: number
   totalProfit: number
 }
+
+// ─── Savings Goal Types ─────────────────────────────────────────────────
+
+export interface SavingsGoal {
+  id: string
+  name: string
+  targetAmount: number
+  currentAmount: number
+  icon: string
+  color: string
+  deadline?: string | null
+  description?: string | null
+  createdAt: string
+  updatedAt: string
+}

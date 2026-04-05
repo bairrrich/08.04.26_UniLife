@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { getCurrentMonthStr } from '@/lib/format'
 import { toast } from 'sonner'
 
-import type { Transaction, Category, Account, StatsResponse, ChartDataPoint, Investment, InvestmentsResponse } from './types'
+import type { Transaction, Category, Account, StatsResponse, ChartDataPoint, Investment, InvestmentsResponse, SavingsGoal } from './types'
 
 export interface SpendingInsights {
   avgDaily: number
@@ -22,6 +22,7 @@ export function useFinance() {
   const [stats, setStats] = useState<StatsResponse | null>(null)
   const [previousMonthStats, setPreviousMonthStats] = useState<StatsResponse | null>(null)
   const [investmentsData, setInvestmentsData] = useState<InvestmentsResponse | null>(null)
+  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([])
   const [showNewDialog, setShowNewDialog] = useState(false)
   const [month, setMonth] = useState(getCurrentMonthStr())
   const [isLoading, setIsLoading] = useState(true)
@@ -73,6 +74,9 @@ export function useFinance() {
       // Fetch investments
       const invRes = await fetch('/api/finance/investments')
       if (invRes.ok) { const d = await invRes.json(); setInvestmentsData(d.data || null) }
+
+      // Fetch savings goals
+      await fetchSavingsGoals()
 
       // Fetch previous month stats for % change comparison
       const [prevYear, prevMon] = month.split('-').map(Number)
@@ -334,6 +338,60 @@ export function useFinance() {
     } catch { toast.error('Ошибка'); return null }
   }
 
+  // ─── Savings Goal Actions ─────────────────────────────────────
+  const fetchSavingsGoals = async () => {
+    try {
+      const res = await fetch('/api/finance/savings-goals')
+      if (res.ok) { const d = await res.json(); setSavingsGoals(d.data || []) }
+    } catch (err) { console.error('Failed to fetch savings goals:', err) }
+  }
+
+  const createSavingsGoal = async (data: { name: string; targetAmount: number; icon?: string; color?: string; deadline?: string; description?: string }) => {
+    try {
+      const res = await fetch('/api/finance/savings-goals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Цель накопления создана'); fetchSavingsGoals(); return await res.json() }
+      else { toast.error('Ошибка создания цели'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }
+
+  const updateSavingsGoal = async (id: string, data: Partial<SavingsGoal>) => {
+    try {
+      const res = await fetch(`/api/finance/savings-goals/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Цель обновлена'); fetchSavingsGoals(); return await res.json() }
+      else { toast.error('Ошибка обновления цели'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }
+
+  const deleteSavingsGoal = async (id: string) => {
+    try {
+      const res = await fetch(`/api/finance/savings-goals/${id}`, { method: 'DELETE' })
+      if (res.ok) { toast.success('Цель удалена'); fetchSavingsGoals() }
+      else { toast.error('Ошибка удаления цели') }
+    } catch { toast.error('Ошибка') }
+  }
+
+  const addFundsToSavingsGoal = async (id: string, amount: number) => {
+    try {
+      const goal = savingsGoals.find(g => g.id === id)
+      if (!goal) return
+      const res = await fetch(`/api/finance/savings-goals/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentAmount: goal.currentAmount + amount }),
+      })
+      if (res.ok) { toast.success(`+${amount.toLocaleString('ru-RU')} ₽ добавлено`); fetchSavingsGoals() }
+      else { toast.error('Ошибка пополнения') }
+    } catch { toast.error('Ошибка') }
+  }
+
   const deleteInvestmentTx = async (investmentId: string, txId: string) => {
     // Since we don't have a dedicated delete route for investment transactions,
     // we'll refetch to keep the UI in sync
@@ -395,5 +453,12 @@ export function useFinance() {
     deleteInvestment,
     addInvestmentTx,
     deleteInvestmentTx,
+    // Savings goal actions
+    savingsGoals,
+    fetchSavingsGoals,
+    createSavingsGoal,
+    updateSavingsGoal,
+    deleteSavingsGoal,
+    addFundsToSavingsGoal,
   }
 }
