@@ -1,6 +1,6 @@
 'use client'
 
-import { Plus, Settings2, Flame } from 'lucide-react'
+import { Plus, Settings2, Flame, UtensilsCrossed, CalendarDays } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -58,18 +58,28 @@ export default function NutritionPage() {
   } = useNutrition()
 
   return (
-    <div className="animate-slide-up min-h-screen bg-gradient-to-b from-orange-50/40 to-background dark:from-orange-950/10">
-      <div className="mx-auto max-w-2xl px-4 pb-24 pt-6">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Питание</h1>
-            <p className="text-sm text-muted-foreground">Отслеживай своё питание и воду</p>
+    <div className="space-y-6 animate-slide-up">
+      {/* Header — standard pattern with gradient blobs and icon */}
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-orange-400/20 to-amber-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/15 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400">
+              <UtensilsCrossed className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-bold">Питание</h1>
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                  <CalendarDays className="h-3 w-3" />
+                  {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">Отслеживай питание, макронутриенты и воду</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-xs font-normal">
-              {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-            </Badge>
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="icon"
@@ -78,84 +88,87 @@ export default function NutritionPage() {
             >
               <Settings2 className="size-4 text-muted-foreground" />
             </Button>
+            <Button size="sm" className="gap-1.5" onClick={() => setShowNewMealDialog(true)}>
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
+            </Button>
           </div>
         </div>
-
-        <MacroRings stats={stats} goals={goals} />
-
-        {/* Daily Nutrition Score */}
-        <DailyNutritionScore stats={stats} goals={goals} />
-
-        {/* Quick Food Presets */}
-        <QuickFoodBar onAddFood={(item: MealFormItem) => {
-          setMealItems([item])
-          setShowNewMealDialog(true)
-        }} />
-
-        {/* Weekly Overview Card */}
-        <WeeklyOverview goals={goals} />
-
-        {/* Nutrition Streak Card */}
-        {nutritionStreak > 0 && (
-          <Card className="mb-6 overflow-hidden card-hover">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-orange-500/5 pointer-events-none" />
-            <CardContent className="relative flex items-center gap-4 py-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 shadow-md shadow-orange-500/20">
-                <Flame className="h-6 w-6 text-white" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium">Серия отслеживания</p>
-                <p className="text-xs text-muted-foreground">
-                  {nutritionStreak === 1
-                    ? 'Вчера ты начал(а) отслеживать питание'
-                    : nutritionStreak < 7
-                      ? `Отличное начало — продолжай в том же духе!`
-                      : nutritionStreak < 30
-                        ? `Невероятная дисциплина — так держать!`
-                        : `Месяц непрерывного отслеживания!`}
-                </p>
-              </div>
-              <div className="text-right shrink-0">
-                <p className="text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{nutritionStreak}</p>
-                <p className="text-xs text-muted-foreground">
-                  {nutritionStreak === 1 ? 'день' : nutritionStreak < 5 ? 'дня' : 'дней'} подряд
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        <WaterTracker
-          waterStats={waterStats}
-          waterAnimating={waterAnimating}
-          waterChartDays={waterChartDays}
-          goals={goals}
-          onAddWater={handleAddWater}
-          onResetWater={handleResetWater}
-        />
-
-        {/* Weekly Nutrition Chart */}
-        <div className="mb-6">
-          <WeeklyNutritionChart goals={goals} />
-        </div>
-
-        {/* Meal Timeline */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Приёмы пищи</h2>
-          <Badge variant="secondary">{meals.length} записей</Badge>
-        </div>
-
-        <TimeIndicator stats={stats} />
-        <MealTimeline
-          meals={meals}
-          expandedMealId={expandedMealId}
-          deletingMealId={deletingMealId}
-          onToggleExpand={toggleExpandMeal}
-          onEdit={openEditDialog}
-          onDelete={handleDeleteMeal}
-          onAddNew={() => setShowNewMealDialog(true)}
-        />
       </div>
+
+      {/* Macro Rings + Daily Score — side by side on desktop */}
+      <div className="grid gap-4 lg:grid-cols-2 stagger-children">
+        <MacroRings stats={stats} goals={goals} />
+        <DailyNutritionScore stats={stats} goals={goals} />
+      </div>
+
+      {/* Quick Food Presets */}
+      <QuickFoodBar onAddFood={(item: MealFormItem) => {
+        setMealItems([item])
+        setShowNewMealDialog(true)
+      }} />
+
+      {/* Weekly Overview Card */}
+      <WeeklyOverview goals={goals} />
+
+      {/* Nutrition Streak Card */}
+      {nutritionStreak > 0 && (
+        <Card className="overflow-hidden card-hover">
+          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-orange-500/5 pointer-events-none" />
+          <CardContent className="relative flex items-center gap-4 py-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 shadow-md shadow-orange-500/20">
+              <Flame className="h-6 w-6 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium">Серия отслеживания</p>
+              <p className="text-xs text-muted-foreground">
+                {nutritionStreak === 1
+                  ? 'Вчера ты начал(а) отслеживать питание'
+                  : nutritionStreak < 7
+                    ? `Отличное начало — продолжай в том же духе!`
+                    : nutritionStreak < 30
+                      ? `Невероятная дисциплина — так держать!`
+                      : `Месяц непрерывного отслеживания!`}
+              </p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{nutritionStreak}</p>
+              <p className="text-xs text-muted-foreground">
+                {nutritionStreak === 1 ? 'день' : nutritionStreak < 5 ? 'дня' : 'дней'} подряд
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Water Tracker */}
+      <WaterTracker
+        waterStats={waterStats}
+        waterAnimating={waterAnimating}
+        waterChartDays={waterChartDays}
+        goals={goals}
+        onAddWater={handleAddWater}
+        onResetWater={handleResetWater}
+      />
+
+      {/* Weekly Nutrition Chart */}
+      <WeeklyNutritionChart goals={goals} />
+
+      {/* Meal Timeline */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Приёмы пищи</h2>
+        <Badge variant="secondary">{meals.length} записей</Badge>
+      </div>
+
+      <TimeIndicator stats={stats} />
+      <MealTimeline
+        meals={meals}
+        expandedMealId={expandedMealId}
+        deletingMealId={deletingMealId}
+        onToggleExpand={toggleExpandMeal}
+        onEdit={openEditDialog}
+        onDelete={handleDeleteMeal}
+        onAddNew={() => setShowNewMealDialog(true)}
+      />
 
       {/* Add Meal Dialog */}
       <AddMealDialog
@@ -188,14 +201,6 @@ export default function NutritionPage() {
         goals={goals}
         onGoalsSaved={handleGoalsSaved}
       />
-
-      {/* FAB Button */}
-      <button
-        className="fixed bottom-6 right-6 z-50 flex size-14 items-center justify-center rounded-full bg-orange-500 text-white shadow-lg shadow-orange-500/30 transition-all hover:bg-orange-600 hover:shadow-xl hover:shadow-orange-500/40 active:scale-95"
-        onClick={() => setShowNewMealDialog(true)}
-      >
-        <Plus className="size-6" />
-      </button>
     </div>
   )
 }

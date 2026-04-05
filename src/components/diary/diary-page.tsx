@@ -347,7 +347,7 @@ export default function DiaryPage() {
   // ─── Main Render ───────────────────────────────────────────────────────
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 animate-slide-up">
+    <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 blur-3xl" />

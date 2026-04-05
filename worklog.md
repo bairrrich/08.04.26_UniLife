@@ -7031,3 +7031,33 @@ Enhanced Diary and Feed modules with word count/reading time badges, tag improve
 6. **Budget System** — Budget creation, tracking, threshold alerts
 7. **CSV Data Import** — Support CSV format in addition to JSON
 8. **Advanced Charts** — Comparison charts (month-over-month)
+
+---
+Task ID: style-unify
+Agent: style-consistency-agent
+Task: Compare all module pages for style inconsistencies and unify them to one standard pattern
+
+### Work Log:
+- Analyzed all 10 module pages (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics) for style consistency
+- Identified 3 modules with inconsistent styles:
+  - **Nutrition Page**: Used `max-w-2xl` (672px), own `bg-gradient-to-b from-orange-50/40`, own `px-4 pb-24 pt-6` padding, no header icon, no gradient blobs, had FAB button
+  - **Diary Page**: Used `w-full max-w-5xl mx-auto` (1024px) — narrower than full width
+  - **Feed Page**: Header lacked gradient blobs and colored icon box (inconsistent with Finance, Workout, Habits, Goals, Collections, Analytics)
+- Established "standard module pattern" from most common existing style:
+  - Container: `<div className="space-y-6 animate-slide-up">` (full parent width)
+  - Header: decorative gradient blobs + colored icon box + title + subtitle + action buttons
+  - No custom max-width, no custom page background, no custom padding
+- **Nutrition Page**: Rewrote to match standard pattern — removed `min-h-screen`, `bg-gradient-to-b`, `max-w-2xl` inner wrapper, own padding; added standard header with `UtensilsCrossed` icon in orange-colored box, gradient blobs, date badge, add button + goals settings button; removed FAB button; placed MacroRings and DailyNutritionScore side by side on desktop (2-column grid)
+- **Diary Page**: Removed `w-full max-w-5xl mx-auto` — now uses full parent width like other modules
+- **Feed Page**: Updated header from plain flex layout to standard pattern with rose-colored gradient blobs, `Rss` icon in rose-colored box, consistent button styling
+- Verified no sub-components within nutrition or diary modules have residual custom widths
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: HTTP 200
+- ✅ All 10 modules now follow consistent styling pattern
+
+### Stage Summary:
+- All module pages now share a unified visual style with consistent headers, widths, and spacing
+- Nutrition module completely redesigned to match standard pattern (no longer the outlier)
+- Diary and Feed headers updated for consistency

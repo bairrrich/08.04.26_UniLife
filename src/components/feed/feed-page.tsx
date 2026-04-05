@@ -78,17 +78,24 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <h2 className="text-xl sm:text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Rss className="h-5 w-5 sm:h-6 sm:w-6" />Лента
-          </h2>
-          <p className="text-muted-foreground text-xs sm:text-sm mt-1 truncate">Делитесь достижениями и моментами</p>
+      {/* Header — standard pattern with gradient blobs and icon */}
+      <div className="relative overflow-hidden">
+        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-rose-400/20 to-pink-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+              <Rss className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Лента</h1>
+              <p className="text-sm text-muted-foreground">Делитесь достижениями и моментами</p>
+            </div>
+          </div>
+          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Опубликовать</span>
+          </Button>
         </div>
-        <Button onClick={() => setDialogOpen(true)} size="sm" className="shrink-0 sm:size-default">
-          <Plus className="h-4 w-4 sm:mr-2" /><span className="hidden sm:inline">Опубликовать</span>
-        </Button>
       </div>
 
       {/* Trending Topics */}
