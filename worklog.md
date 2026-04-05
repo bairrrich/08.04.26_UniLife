@@ -4140,3 +4140,143 @@ Stage Summary:
 - 6 existing files modified (summary-cards, hooks, finance-page, transaction-list, transaction-dialog, constants, globals.css)
 - No breaking changes to existing functionality
 - Full dark mode support throughout
+
+---
+## Task ID: finance-widgets
+### Agent: finance-widgets-agent
+### Task: Create financial health score, spending forecast, and month comparison widgets
+
+### Work Log:
+- Created `/src/components/finance/financial-health-score.tsx` — composite score widget (0-100) based on 3 weighted factors:
+  - Savings rate (40% weight): `savingsRate >= 30%` → full points, 0% → 0 points
+  - Budget discipline (30% weight): percentage of budgets not exceeded
+  - Spending consistency (30% weight): coefficient of variation of daily expenses
+  - SVG circular progress ring (radius=48, stroke=7) with color coding (emerald ≥70, amber ≥40, rose <40)
+  - 3 mini progress bars showing each factor's contribution
+  - Motivational text: "Отлично! 🎉" ≥80, "Хорошо 👍" ≥60, "Нормально" ≥40, "Есть что улучшить" <40
+  - Full loading skeleton state
+- Created `/src/components/finance/spending-forecast.tsx` — end-of-month spending prediction widget:
+  - Calculates current day, days remaining, average daily spend
+  - Predicted month-end total = avgDailySpend × daysInMonth
+  - Predicted savings = income - predictedExpense
+  - 3 horizontal comparison bars (income, current spend, predicted) with dynamic widths
+  - Warning message when predicted exceeds income, positive message when saving
+  - Daily stats: average spend/day and days remaining
+  - Full loading skeleton state
+- Created `/src/components/finance/month-comparison.tsx` — current vs previous month visual comparison:
+  - 3 comparison rows: Доходы, Расходы, Баланс
+  - Each row shows current amount, dual horizontal bars, previous amount, and % change badge
+  - Badge colors: green for positive (income/balance) or negative (expenses), rose for inverse
+  - Graceful empty states: no current data, no previous data
+  - Full loading skeleton state
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, HTTP 200
+- ✅ All components follow existing patterns (card-hover, tabular-nums, dark mode, shadcn/ui)
+- ✅ All 3 components exported as named exports
+
+### Stage Summary:
+- 3 new finance widgets ready for integration into finance-page.tsx
+- FinancialHealthScore, SpendingForecast, MonthComparison components created
+- All components use formatCurrency, cn, Card, Skeleton, lucide-react icons consistently
+---
+## Task ID: finance-enhancements
+### Agent: finance-enhance-agent
+### Task: Add today button, duplicate, income breakdown, export CSV
+
+### Work Log:
+- Enhanced `month-nav.tsx` with "Сегодня" (Today) button: added `onToday` and `showToday` props, conditional display when not on current month, styled as ghost button with CalendarDays icon and text-xs h-7
+- Added duplicate button (Copy icon) to `transaction-list.tsx`: new `onDuplicate` prop, Copy button added to both mobile (always visible) and desktop (hover-reveal) button groups, matching edit/delete button styling
+- Created `income-breakdown.tsx` widget: filters INCOME transactions, groups by category, shows total income, category icon + name + amount + percentage, emerald horizontal progress bars, empty state for no income, skeleton loader, uses `getCategoryIcon` from constants
+- Created `export-button.tsx` for CSV export: Download icon button with "Экспорт CSV" label, generates CSV with BOM (UTF-8), columns: Дата/Тип/Категория/Описание/Сумма/Заметка, Russian date format (dd.mm.yyyy), type labels (Доход/Расход/Перевод), proper CSV escaping, triggers download as `finances-{month}.csv`, toast.success on export
+- Added `handleDuplicate` and `goToToday` functions to `hooks.ts`: handleDuplicate pre-fills new transaction dialog with copied values + "(копия)" suffix, goToToday resets month to current; both exported in return object
+- Wired all new features in `finance-page.tsx`: imported IncomeBreakdown + ExportButton + getCurrentMonthStr, passed goToToday and showToday to MonthNav, added ExportButton next to "Добавить" button, added IncomeBreakdown between CategoryBreakdown and CashFlowTrend, passed onDuplicate to TransactionList, added TODO comment for future FinancialHealthScore/SpendingForecast/MonthComparison widgets
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly
+
+### Stage Summary:
+- 4 new finance enhancements implemented and integrated
+- 2 new files created (income-breakdown.tsx, export-button.tsx)
+- 4 existing files modified (month-nav.tsx, transaction-list.tsx, hooks.ts, finance-page.tsx)
+- All features use existing UI patterns (shadcn/ui, lucide-react icons, dark mode support)
+---
+## Task ID: finance-module-enhancements
+### Agent: main-coordinator
+### Task: Major finance module improvements — 7 new features and widgets
+
+### Work Log:
+
+**New Widget 1 — Financial Health Score (`financial-health-score.tsx`):**
+- Composite score (0-100) from 3 weighted factors: Savings (40%), Budget Discipline (30%), Spending Consistency (30%)
+- Large SVG circular progress ring with animated dashoffset
+- Color coding: emerald ≥70, amber ≥40, rose <40
+- 3 mini progress bars for individual factor scores
+- Motivational text in Russian with emoji indicators
+- Full skeleton loading state
+
+**New Widget 2 — Spending Forecast (`spending-forecast.tsx`):**
+- Predicts end-of-month spending from average daily rate × days in month
+- Shows predicted expenses and predicted savings
+- 3 horizontal comparison bars (income, current spend, predicted)
+- Warning message if predicted exceeds income (⚠️) or positive message (✅)
+- Daily stats: average spend/day + days remaining
+- Full skeleton loading state
+
+**New Widget 3 — Month Comparison (`month-comparison.tsx`):**
+- Side-by-side comparison of current vs previous month
+- 3 rows: Доходы, Расходы, Баланс
+- Dual proportional bars for visual comparison
+- Color-coded % change badges (green for positive income/balance, green for *decreasing* expenses)
+- Graceful empty state when no previous month data
+- Full skeleton loading state
+
+**New Widget 4 — Income Breakdown (`income-breakdown.tsx`):**
+- Shows income grouped by category with emerald progress bars
+- Category icon in colored circle + name + amount + percentage badge
+- Total income displayed in header
+- ScrollArea for long lists
+- Empty state for periods with no income
+
+**New Feature 5 — CSV Export (`export-button.tsx`):**
+- Button with Download icon, text hidden on mobile
+- Generates UTF-8 CSV with BOM for Russian character support
+- Columns: Дата, Тип, Категория, Описание, Сумма, Заметка
+- Proper CSV escaping for commas/quotes/newlines
+- Toast notification on success
+
+**New Feature 6 — Transaction Duplicate (`hooks.ts` + `transaction-list.tsx`):**
+- `handleDuplicate` pre-fills new transaction dialog with copied values + "(копия)" suffix
+- Copy button (Copy icon) added to both mobile and desktop edit button groups
+- Opens add dialog with today's date
+
+**New Feature 7 — Month Navigation "Today" Button (`month-nav.tsx`):**
+- `goToToday` function in hooks resets to current month
+- "Сегодня" button with CalendarDays icon, shown only when not on current month
+- Ghost button style, text-xs, h-7
+
+### Files Modified:
+- `/src/components/finance/finance-page.tsx` — Integrated all new widgets and features
+- `/src/components/finance/hooks.ts` — Added `handleDuplicate` and `goToToday`
+- `/src/components/finance/month-nav.tsx` — Added "Today" button
+- `/src/components/finance/transaction-list.tsx` — Added duplicate button + `onDuplicate` prop
+
+### Files Created:
+- `/src/components/finance/financial-health-score.tsx`
+- `/src/components/finance/spending-forecast.tsx`
+- `/src/components/finance/month-comparison.tsx`
+- `/src/components/finance/income-breakdown.tsx`
+- `/src/components/finance/export-button.tsx`
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles cleanly
+- ✅ All finance API endpoints return HTTP 200
+- ✅ Dark mode support for all new components
+- ✅ All existing functionality preserved
+
+### Stage Summary:
+- 7 new features/widgets added to the finance module
+- Finance module now has: 5 summary cards, savings goal, expense chart, category breakdown, income breakdown, cash flow trend, financial health score, spending forecast, month comparison, analytics section, full transaction list with search/edit/delete/duplicate, budget manager, CSV export, month navigation with today button

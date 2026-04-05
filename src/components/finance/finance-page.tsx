@@ -3,17 +3,23 @@
 import { Wallet, Plus, Filter, Receipt } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { getCurrentMonthStr } from '@/lib/format'
 
 import { SummaryCards } from './summary-cards'
 import { SavingsGoal } from './savings-goal'
 import { ExpenseChart } from './expense-chart'
 import { CashFlowTrend } from './cash-flow-trend'
 import { CategoryBreakdown } from './category-breakdown'
+import { IncomeBreakdown } from './income-breakdown'
 import { TransactionList } from './transaction-list'
 import { AddTransactionDialog, EditTransactionDialog } from './transaction-dialog'
 import { AnalyticsSection } from './analytics-section'
 import { MonthNav } from './month-nav'
 import { BudgetManager } from './budget-manager'
+import { ExportButton } from './export-button'
+import { FinancialHealthScore } from './financial-health-score'
+import { SpendingForecast } from './spending-forecast'
+import { MonthComparison } from './month-comparison'
 import { useFinance } from './hooks'
 
 export default function FinancePage() {
@@ -27,9 +33,12 @@ export default function FinancePage() {
     setEditType, setEditAmount, setEditCategoryId, setEditDescription, setEditDate, setEditNote,
     chartData, groupedTransactions, filteredCategories, editFilteredCategories,
     spendingInsights, getCategoryForTx,
-    handleQuickExpense, navigateMonth, openEditDialog, handleSubmit, handleEditSubmit, handleDelete,
+    handleQuickExpense, navigateMonth, goToToday, openEditDialog, handleSubmit, handleEditSubmit, handleDelete, handleDuplicate,
     categories,
   } = useFinance()
+
+  const currentMonthStr = getCurrentMonthStr()
+  const isNotCurrentMonth = month !== currentMonthStr
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -39,7 +48,7 @@ export default function FinancePage() {
         <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
               <Wallet className="h-5 w-5" />
             </div>
             <div>
@@ -52,13 +61,21 @@ export default function FinancePage() {
               <p className="text-sm text-muted-foreground">Учёт доходов и расходов</p>
             </div>
           </div>
-          <Button size="sm" className="gap-1.5" onClick={() => setShowNewDialog(true)}>
-            <Plus className="h-4 w-4" />Добавить
-          </Button>
+          <div className="flex items-center gap-2">
+            <ExportButton transactions={transactions} monthLabel={monthLabel} />
+            <Button size="sm" className="gap-1.5" onClick={() => setShowNewDialog(true)}>
+              <Plus className="h-4 w-4" />Добавить
+            </Button>
+          </div>
         </div>
       </div>
 
-      <MonthNav monthLabel={monthLabel} onNavigate={navigateMonth} />
+      <MonthNav
+        monthLabel={monthLabel}
+        onNavigate={navigateMonth}
+        onToday={goToToday}
+        showToday={isNotCurrentMonth}
+      />
 
       <Tabs defaultValue="overview">
         <TabsList>
@@ -85,7 +102,31 @@ export default function FinancePage() {
             <CategoryBreakdown stats={stats} isLoading={isLoading} />
           </div>
 
+          <IncomeBreakdown transactions={transactions} isLoading={isLoading} />
+
           <CashFlowTrend chartData={chartData} stats={stats} monthLabel={monthLabel} isLoading={isLoading} />
+
+          {/* Health Score + Forecast + Month Comparison */}
+          <div className="grid gap-4 lg:grid-cols-3">
+            <FinancialHealthScore
+              savingsRate={stats?.savingsRate ?? 0}
+              chartData={chartData}
+              isLoading={isLoading}
+            />
+            <SpendingForecast
+              totalExpense={stats?.totalExpense ?? 0}
+              totalIncome={stats?.totalIncome ?? 0}
+              chartData={chartData}
+              monthLabel={monthLabel}
+              isLoading={isLoading}
+            />
+            <MonthComparison
+              currentStats={stats}
+              previousStats={previousMonthStats}
+              monthLabel={monthLabel}
+              isLoading={isLoading}
+            />
+          </div>
 
           {!isLoading && spendingInsights && (
             <AnalyticsSection spendingInsights={spendingInsights} getCategoryForTx={getCategoryForTx} />
@@ -98,6 +139,7 @@ export default function FinancePage() {
             onTabChange={setActiveTab}
             onEdit={openEditDialog}
             onDelete={handleDelete}
+            onDuplicate={handleDuplicate}
             onAddNew={() => setShowNewDialog(true)}
           />
         </TabsContent>

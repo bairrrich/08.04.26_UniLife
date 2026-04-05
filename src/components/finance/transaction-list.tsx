@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX } from 'lucide-react'
+import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { getCategoryIcon } from './constants'
 import { cn } from '@/lib/utils'
@@ -31,6 +31,7 @@ interface TransactionListProps {
   onTabChange: (tab: string) => void
   onEdit: (tx: Transaction) => void
   onDelete: (txId: string) => void
+  onDuplicate: (tx: Transaction) => void
   onAddNew: () => void
 }
 
@@ -83,6 +84,7 @@ export function TransactionList({
   onTabChange,
   onEdit,
   onDelete,
+  onDuplicate,
   onAddNew,
 }: TransactionListProps) {
   const [deleteTarget, setDeleteTarget] = useState<Transaction | null>(null)
@@ -304,6 +306,14 @@ export function TransactionList({
                                     variant="ghost"
                                     size="icon"
                                     className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                    onClick={(e) => { e.stopPropagation(); onDuplicate(tx) }}
+                                  >
+                                    <Copy className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
                                     onClick={(e) => { e.stopPropagation(); onEdit(tx) }}
                                   >
                                     <Pencil className="h-3 w-3" />
@@ -319,6 +329,14 @@ export function TransactionList({
                                 </div>
                                 {/* Desktop: hover-reveal buttons */}
                                 <div className="hidden md:flex items-center gap-0.5 group-hover:opacity-100 opacity-0 transition-opacity">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                                    onClick={(e) => { e.stopPropagation(); onDuplicate(tx) }}
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </Button>
                                   <Button
                                     variant="ghost"
                                     size="icon"

@@ -192,6 +192,20 @@ export function useFinance() {
     finally { setIsEditSubmitting(false) }
   }
 
+  const handleDuplicate = (tx: Transaction) => {
+    setNewType(tx.type as 'INCOME' | 'EXPENSE')
+    setNewAmount(tx.amount.toString())
+    setNewCategoryId(tx.categoryId)
+    setNewDescription(tx.description ? `${tx.description} (копия)` : 'Копия')
+    setNewDate(new Date().toISOString().split('T')[0])
+    setNewNote(tx.note ?? '')
+    setShowNewDialog(true)
+  }
+
+  const goToToday = () => {
+    setMonth(getCurrentMonthStr())
+  }
+
   const handleDelete = async (txId: string) => {
     toast.dismiss()
     try {
@@ -234,9 +248,11 @@ export function useFinance() {
     handleSubmit,
     handleQuickExpense,
     navigateMonth,
+    goToToday,
     openEditDialog,
     handleEditSubmit,
     handleDelete,
+    handleDuplicate,
     resetForm,
   }
 }
