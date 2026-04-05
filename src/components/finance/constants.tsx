@@ -14,6 +14,8 @@ import {
   MoreHorizontal,
   DollarSign,
   Briefcase,
+  CreditCard,
+  Cookie,
 } from 'lucide-react'
 
 // ─── Category Icon Map ──────────────────────────────────────────────────────
@@ -47,6 +49,8 @@ export const QUICK_EXPENSES = [
   { label: 'Обед', amount: 500, icon: <UtensilsCrossed className="h-3.5 w-3.5" /> },
   { label: 'Такси', amount: 300, icon: <Car className="h-3.5 w-3.5" /> },
   { label: 'Проезд', amount: 50, icon: <TrainFront className="h-3.5 w-3.5" /> },
+  { label: 'Подписка', amount: 500, icon: <CreditCard className="h-3.5 w-3.5" /> },
+  { label: 'Снек', amount: 150, icon: <Cookie className="h-3.5 w-3.5" /> },
 ]
 
 // ─── Chart Config ───────────────────────────────────────────────────────────

@@ -19,6 +19,7 @@ export function useFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [stats, setStats] = useState<StatsResponse | null>(null)
+  const [previousMonthStats, setPreviousMonthStats] = useState<StatsResponse | null>(null)
   const [showNewDialog, setShowNewDialog] = useState(false)
   const [month, setMonth] = useState(getCurrentMonthStr())
   const [isLoading, setIsLoading] = useState(true)
@@ -58,6 +59,13 @@ export function useFinance() {
 
       const statsRes = await fetch(`/api/finance/stats?month=${month}`)
       if (statsRes.ok) { const d = await statsRes.json(); setStats(d.data || null) }
+
+      // Fetch previous month stats for % change comparison
+      const [prevYear, prevMon] = month.split('-').map(Number)
+      const prevDate = new Date(prevYear, prevMon - 2, 1)
+      const prevMonthStr = `${prevDate.getFullYear()}-${(prevDate.getMonth() + 1).toString().padStart(2, '0')}`
+      const prevStatsRes = await fetch(`/api/finance/stats?month=${prevMonthStr}`)
+      if (prevStatsRes.ok) { const d = await prevStatsRes.json(); setPreviousMonthStats(d.data || null) } else { setPreviousMonthStats(null) }
     } catch (err) {
       console.error('Failed to fetch finance data:', err)
     } finally {
@@ -198,6 +206,7 @@ export function useFinance() {
     transactions,
     categories,
     stats,
+    previousMonthStats,
     showNewDialog,
     setShowNewDialog,
     month,

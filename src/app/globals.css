@@ -436,13 +436,16 @@
 .sparkline-container {
   display: inline-flex;
   align-items: flex-end;
-  gap: 1px;
-  height: 20px;
+  gap: 1.5px;
+  height: 24px;
+  position: relative;
 }
 .sparkline-bar {
-  width: 3px;
-  border-radius: 1px;
+  width: 2px;
+  border-radius: 1px 1px 0 0;
   transition: height 0.3s ease;
+  position: relative;
+  min-height: 2px;
 }
 
 /* ── Hover glow effect (emerald tinted) ─────────────────── */

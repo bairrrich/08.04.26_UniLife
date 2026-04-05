@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 import { SummaryCards } from './summary-cards'
+import { SavingsGoal } from './savings-goal'
 import { ExpenseChart } from './expense-chart'
+import { CashFlowTrend } from './cash-flow-trend'
 import { CategoryBreakdown } from './category-breakdown'
 import { TransactionList } from './transaction-list'
 import { AddTransactionDialog, EditTransactionDialog } from './transaction-dialog'
@@ -18,6 +20,7 @@ export default function FinancePage() {
   const {
     stats, isLoading, activeTab, setActiveTab,
     showNewDialog, setShowNewDialog, monthLabel, month,
+    transactions, previousMonthStats,
     newType, newAmount, newCategoryId, newDescription, newDate, newNote, isSubmitting,
     setNewType, setNewAmount, setNewCategoryId, setNewDescription, setNewDate, setNewNote,
     showEditDialog, setShowEditDialog, editType, editAmount, editCategoryId, editDescription, editDate, editNote, isEditSubmitting,
@@ -68,13 +71,21 @@ export default function FinancePage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <SummaryCards stats={stats} isLoading={isLoading} />
+          <SummaryCards stats={stats} isLoading={isLoading} transactions={transactions} previousMonthStats={previousMonthStats} />
+
+          <SavingsGoal
+            totalIncome={stats?.totalIncome ?? 0}
+            totalExpense={stats?.totalExpense ?? 0}
+            isLoading={isLoading}
+          />
 
           {/* Chart + Category Breakdown */}
           <div className="grid gap-4 lg:grid-cols-3">
             <ExpenseChart chartData={chartData} isLoading={isLoading} />
             <CategoryBreakdown stats={stats} isLoading={isLoading} />
           </div>
+
+          <CashFlowTrend chartData={chartData} stats={stats} monthLabel={monthLabel} isLoading={isLoading} />
 
           {!isLoading && spendingInsights && (
             <AnalyticsSection spendingInsights={spendingInsights} getCategoryForTx={getCategoryForTx} />

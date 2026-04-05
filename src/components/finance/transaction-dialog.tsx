@@ -2,7 +2,9 @@
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -19,7 +21,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { ArrowUpRight, ArrowDownRight, Plus, UtensilsCrossed, Car, TrainFront, Coffee } from 'lucide-react'
 import { QUICK_EXPENSES } from './constants'
+import { cn } from '@/lib/utils'
 import type { Category } from './types'
+
+// ─── Amount Presets ──────────────────────────────────────────────────────────
+
+const AMOUNT_PRESETS = [100, 500, 1000, 3000, 5000, 10000]
 
 // ─── Transaction Dialog Form (shared logic) ─────────────────────────────────
 
@@ -93,7 +100,7 @@ function TransactionForm({
       {showQuickExpenses && txType === 'EXPENSE' && onQuickExpense && (
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Быстрый расход</Label>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {QUICK_EXPENSES.map((preset) => (
               <Button
                 key={preset.label}
@@ -115,7 +122,25 @@ function TransactionForm({
       {/* Amount */}
       <div className="space-y-2">
         <Label>Сумма</Label>
-        <Input type="number" placeholder="0" min="0" step="0.01" value={amount} onChange={(e) => onAmountChange(e.target.value)} />
+        <Input type="number" placeholder="0" min="0" step="0.01" value={amount} onChange={(e) => onAmountChange(e.target.value)} autoFocus />
+        {/* Amount Preset Chips */}
+        <div className="flex flex-wrap gap-1.5">
+          {AMOUNT_PRESETS.map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => onAmountChange(preset.toString())}
+              className={cn(
+                "rounded-full px-2.5 py-1 text-[11px] font-medium tabular-nums transition-colors",
+                amount === preset.toString()
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/80"
+              )}
+            >
+              {preset.toLocaleString('ru-RU')}₽
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Category */}
@@ -212,6 +237,7 @@ export function AddTransactionDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Новая транзакция</DialogTitle>
+          <DialogDescription>Добавьте доход или расход для текущего месяца</DialogDescription>
         </DialogHeader>
         <TransactionForm
           txType={newType}
@@ -284,6 +310,7 @@ export function EditTransactionDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Редактирование транзакции</DialogTitle>
+          <DialogDescription>Измените данные выбранной транзакции</DialogDescription>
         </DialogHeader>
         <TransactionForm
           txType={editType}

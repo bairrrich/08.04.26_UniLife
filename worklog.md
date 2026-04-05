@@ -3992,3 +3992,151 @@ Stage Summary:
 - 2 new files created (daily-checklist.tsx, scroll-to-top.tsx)
 - 4 existing files modified (dashboard-page.tsx, quick-add-menu.tsx, goal-card.tsx, goal-stats.tsx, constants.tsx, page.tsx)
 - No breaking changes to existing functionality
+
+---
+## Task ID: enhance-finance-tx-list
+### Agent: finance-tx-list-agent
+### Task: Enhance Finance Transaction List with search, daily totals, expandable details, count badge, empty states, and mobile actions
+
+### Work Summary:
+
+**File modified:** `/home/z/my-project/src/components/finance/transaction-list.tsx`
+
+**Enhancement 1 — Search Bar:**
+- Added `Search` icon (lucide-react) positioned absolutely inside an `Input` component
+- Placeholder text: "Поиск транзакций..."
+- Debounced at 300ms using `useEffect` + `useRef` timer pattern
+- Clear button (`X` icon) appears when search query is non-empty
+- Filters transactions by description, category name, and subcategory name (case-insensitive)
+
+**Enhancement 2 — Daily Totals:**
+- Under each date group header, displays income/expense totals for that day
+- Format: "Доходы: +X₽" (emerald) and "Расходы: -X₽" (red)
+- Uses `tabular-nums` class for aligned numbers
+- Dark mode support with `dark:text-emerald-400` and `dark:text-red-400`
+- Only shown when values are > 0
+
+**Enhancement 3 — Expandable Transaction Details:**
+- Click on any transaction row to expand/collapse details
+- Only one transaction expanded at a time (accordion pattern)
+- Shows: full date (DD MMMM YYYY), category with colored dot, note (italic), truncated transaction ID
+- Uses `max-h-40 opacity-100` / `max-h-0 opacity-0` with `transition-all duration-200` for smooth animation
+- ChevronDown/ChevronUp icon rotates based on expand state
+
+**Enhancement 4 — Transaction Count Badge:**
+- Badge with `variant="secondary"` in card header showing total transaction count
+- Russian plural forms via `getTxCountWord()` function handling mod10/mod100 rules
+
+**Enhancement 5 — Improved Empty State:**
+- When search has text but no results: shows SearchX icon, "Ничего не найдено" message, and "Очистить поиск" button
+- When no transactions exist at all: keeps original Wallet icon and "Добавить транзакцию" CTA
+- Distinct visual treatment for each empty state
+
+**Enhancement 6 — Mobile Action Buttons:**
+- On mobile (`md:hidden`): edit/delete buttons are always visible but smaller (h-7 w-7, icon h-3 w-3)
+- On desktop (`hidden md:flex`): buttons use hover-reveal pattern (`opacity-0 group-hover:opacity-100`)
+
+**New imports:** `useMemo`, `useEffect`, `useRef`, `useCallback` from React; `Search`, `X`, `ChevronDown`, `ChevronUp`, `SearchX` from lucide-react; `Input` from `@/components/ui/input`; `cn` from `@/lib/utils`
+
+**New helper functions:** `formatDateFull()` for DD MMMM YYYY format; `getTxCountWord()` for Russian plural forms
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, all routes return HTTP 200
+- ✅ All existing functionality preserved (edit, delete, tabs, AlertDialog)
+
+
+---
+## Task ID: finance-summary-enhance
+### Agent: finance-summary-agent
+### Task: Enhance Finance Summary Cards with real sparkline data, % change badges, 5th card, and improved visuals
+
+### Work Log:
+
+**1. Updated hooks.ts (`/src/components/finance/hooks.ts`):**
+- Added `previousMonthStats` state (`useState<StatsResponse | null>(null)`)
+- In `fetchData`, after fetching current month stats, added fetch for previous month stats using date arithmetic (`prevYear, prevMon - 2`)
+- Exported `previousMonthStats` from the hook return object
+
+**2. Updated finance-page.tsx (`/src/components/finance/finance-page.tsx`):**
+- Destructured `transactions` and `previousMonthStats` from `useFinance()`
+- Passed both new props to `<SummaryCards>` component
+
+**3. Updated globals.css (`/src/app/globals.css`):**
+- Improved `.sparkline-container`: increased height to 24px, gap to 1.5px, added `position: relative`
+- Improved `.sparkline-bar`: reduced width to 2px, added `border-radius: 1px 1px 0 0` (rounded tops), added `min-height: 2px`, added `position: relative`
+
+**4. Rewrote summary-cards.tsx (`/src/components/finance/summary-cards.tsx`):**
+- Added helper functions for computing real daily aggregated data from transactions:
+  - `computeDailyData(transactions, type, days)` — daily income/expense sums
+  - `computeBalanceData(transactions, days)` — cumulative daily balance
+  - `computeCountData(transactions, days)` — daily transaction counts
+  - `computeSavingsData(transactions, days)` — daily savings rate
+- **MiniSparkline** now accepts real data arrays (`{ label: string; value: number }[]`), renders bars with proper height normalization, opacity gradient, and hover interaction (highlighted bar + tooltip showing date and value)
+- **ChangeBadge** component: shows % change vs previous month as a pill badge with `TrendingUp`/`TrendingDown` icons. Green for positive (or for expenses going down), red for negative (or for expenses going up). Uses `invertGoodBad` prop for expense card. Supports `unit="%"` for savings rate percentage points difference
+- **5th card "Транзакций"**: Shows total transaction count with `Receipt` icon, slate/gray color scheme, and its own sparkline showing daily transaction count. Uses `border-l-slate-400`/`dark:border-l-slate-500`
+- Updated grid from `lg:grid-cols-4` to `lg:grid-cols-5` for 5-card layout
+- Skeleton loader updated to 5 placeholders
+- All numbers use `tabular-nums`, dark mode support with `dark:` variants throughout
+- Kept existing `card-hover` and `stagger-children` classes
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, no console errors
+- ✅ All existing finance functionality preserved
+
+---
+## Task ID: finance-enhance
+### Agent: coordinator
+### Task: Comprehensive Finance module improvements
+
+### Work Log:
+- **Task 1 — Summary Cards Enhancement** (`summary-cards.tsx` + `hooks.ts`):
+  - Real sparkline data computed from actual transactions (last 10 days)
+  - % change badges comparing vs previous month (green/red TrendingUp/TrendingDown)
+  - 5th card added: "Транзакций" showing monthly count
+  - 5-column grid layout (lg:grid-cols-5)
+  - Previous month stats fetched in useFinance hook
+  - Sparkline hover tooltips with date and value
+  - Enhanced sparkline CSS in globals.css
+
+- **Task 2 — Cash Flow Trend Chart** (`cash-flow-trend.tsx`):
+  - New AreaChart component with income/expense gradient fills
+  - Cumulative balance line (indigo dashed) overlay
+  - Day/Week view toggle
+  - Summary row with avg daily expense, peak expense, total income
+  - ChartContainer/ChartTooltip from shadcn/ui
+  - Loading skeleton state
+
+- **Task 3 — Transaction List Enhancement** (`transaction-list.tsx`):
+  - Search bar with 300ms debounce, clear button
+  - Daily totals under each date group header (income/expense)
+  - Expandable transaction details (note, full date, category, ID)
+  - Transaction count badge with Russian plural forms
+  - Separate empty states for filtered vs general
+  - Mobile: always-visible action buttons; Desktop: hover-reveal
+
+- **Task 4 — Transaction Dialog Enhancement** (`transaction-dialog.tsx` + `constants.tsx`):
+  - 6 amount preset chips (100₽ to 10 000₽) with active highlighting
+  - 2 new quick expense presets: "Подписка" and "Снек"
+  - Auto-focus on amount input
+  - DialogDescription for accessibility
+
+- **Task 5 — Savings Goal Widget** (`savings-goal.tsx`):
+  - SVG circular progress ring (animated dashoffset)
+  - Color coding: emerald ≥30%, amber ≥20%, rose <0%
+  - Projected annual savings calculation
+  - Motivational messages based on savings rate
+  - Placed after SummaryCards in Overview tab
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles in ~9.3s, HTTP 200
+- ✅ All API endpoints respond correctly
+- ✅ Dashboard, Finance module render correctly
+
+### Stage Summary:
+- 2 new files created (cash-flow-trend.tsx, savings-goal.tsx)
+- 6 existing files modified (summary-cards, hooks, finance-page, transaction-list, transaction-dialog, constants, globals.css)
+- No breaking changes to existing functionality
+- Full dark mode support throughout
