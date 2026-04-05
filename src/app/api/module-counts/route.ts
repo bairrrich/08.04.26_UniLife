@@ -68,11 +68,10 @@ export async function GET() {
           progress: { gte: 80 },
         },
       }),
-      // Collections: in-progress items
+      // Collections: total items
       db.collectionItem.count({
         where: {
           userId: USER_ID,
-          status: 'IN_PROGRESS',
         },
       }),
       // Feed: posts from last 24 hours (as proxy for "new")

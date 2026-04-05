@@ -182,7 +182,7 @@ export async function POST(request: NextRequest) {
         description: (item.description as string) || null,
         coverUrl: (item.coverUrl as string) || null,
         rating: item.rating != null ? Number(item.rating) : null,
-        status: (item.status as string) || 'WANT',
+        details: item.details ? JSON.stringify(item.details) : '{}',
         date: item.date ? new Date(item.date as string) : null,
         tags: (item.tags as string) || '[]',
         notes: (item.notes as string) || null,

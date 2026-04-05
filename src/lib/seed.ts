@@ -403,38 +403,38 @@ export async function seed() {
 
   // Seed collections
   const books = [
-    { title: 'Атомные привычки', author: 'Джеймс Клир', status: 'COMPLETED', rating: 5 },
-    { title: 'Думай медленно, решай быстро', author: 'Даниэль Канеман', status: 'IN_PROGRESS', rating: 4 },
-    { title: 'Sapiens', author: 'Юваль Ной Харари', status: 'COMPLETED', rating: 5 },
-    { title: 'Код да Винчи', author: 'Дэн Браун', status: 'COMPLETED', rating: 3 },
-    { title: 'Мастер и Маргарита', author: 'Михаил Булгаков', status: 'IN_PROGRESS', rating: 5 },
-    { title: '1984', author: 'Джордж Оруэлл', status: 'WANT', rating: null },
-    { title: 'СовременныйJavaScript', author: 'Кайл Симпсон', status: 'IN_PROGRESS', rating: 4 },
+    { title: 'Атомные привычки', author: 'Джеймс Клир', rating: 5, details: JSON.stringify({ genre: 'Саморазвитие', pages: 320, year: 2018, language: 'Русский' }) },
+    { title: 'Думай медленно, решай быстро', author: 'Даниэль Канеман', rating: 4, details: JSON.stringify({ genre: 'Психология', pages: 499, year: 2011, language: 'Русский' }) },
+    { title: 'Sapiens', author: 'Юваль Ной Харари', rating: 5, details: JSON.stringify({ genre: 'Наука', pages: 464, year: 2015, language: 'Русский' }) },
+    { title: 'Код да Винчи', author: 'Дэн Браун', rating: 3, details: JSON.stringify({ genre: 'Детектив', pages: 597, year: 2003, language: 'Русский' }) },
+    { title: 'Мастер и Маргарита', author: 'Михаил Булгаков', rating: 5, details: JSON.stringify({ genre: 'Классика', pages: 480, year: 1967, language: 'Русский' }) },
+    { title: '1984', author: 'Джордж Оруэлл', rating: null, details: JSON.stringify({ genre: 'Антиутопия', pages: 328, year: 1949, language: 'Русский' }) },
+    { title: 'СовременныйJavaScript', author: 'Кайл Симпсон', rating: 4, details: JSON.stringify({ genre: 'Программирование', pages: 278, year: 2015, language: 'English' }) },
   ]
 
   const movies = [
-    { title: 'Начало', author: 'Кристофер Нолан', status: 'COMPLETED', rating: 5 },
-    { title: 'Интерстеллар', author: 'Кристофер Нолан', status: 'COMPLETED', rating: 5 },
-    { title: 'Матрица', author: 'Лана и Лилли Вачовски', status: 'COMPLETED', rating: 5 },
-    { title: 'Оппенгеймер', author: 'Кристофер Нолан', status: 'WANT', rating: null },
-    { title: 'Дюна 2', author: 'Дени Вильнёв', status: 'COMPLETED', rating: 4 },
-    { title: 'Побег из Шоушенка', author: 'Фрэнк Дарабонт', status: 'COMPLETED', rating: 5 },
+    { title: 'Начало', author: 'Кристофер Нолан', rating: 5, details: JSON.stringify({ genre: 'Фантастика', year: 2010, durationMin: 148, platform: 'Кинопоиск' }) },
+    { title: 'Интерстеллар', author: 'Кристофер Нолан', rating: 5, details: JSON.stringify({ genre: 'Фантастика', year: 2014, durationMin: 169, platform: 'Кинопоиск' }) },
+    { title: 'Матрица', author: 'Лана и Лилли Вачовски', rating: 5, details: JSON.stringify({ genre: 'Фантастика', year: 1999, durationMin: 136, platform: 'Кинопоиск' }) },
+    { title: 'Оппенгеймер', author: 'Кристофер Нолан', rating: null, details: JSON.stringify({ genre: 'Драма', year: 2023, durationMin: 180, platform: 'Кинопоиск' }) },
+    { title: 'Дюна 2', author: 'Дени Вильнёв', rating: 4, details: JSON.stringify({ genre: 'Фантастика', year: 2024, durationMin: 166, platform: 'Кинопоиск' }) },
+    { title: 'Побег из Шоушенка', author: 'Фрэнк Дарабонт', rating: 5, details: JSON.stringify({ genre: 'Драма', year: 1994, durationMin: 142, platform: 'Кинопоиск' }) },
   ]
 
   const recipes = [
-    { title: 'Паста Карбонара', author: 'Итальянская кухня', status: 'COMPLETED', rating: 5 },
-    { title: 'Борщ', author: 'Русская кухня', status: 'COMPLETED', rating: 4 },
-    { title: 'Том Ям', author: 'Тайская кухня', status: 'IN_PROGRESS', rating: null },
-    { title: 'Суши', author: 'Японская кухня', status: 'WANT', rating: null },
-    { title: 'Тирамису', author: 'Итальянская кухня', status: 'COMPLETED', rating: 5 },
+    { title: 'Паста Карбонара', author: 'Итальянская кухня', rating: 5, details: JSON.stringify({ servings: 4, cookTimeMin: 25, difficulty: 'Средне', calories: 480, ingredients: 'Спагетти, бекон, яйца, пармезан, чёрный перец' }) },
+    { title: 'Борщ', author: 'Русская кухня', rating: 4, details: JSON.stringify({ servings: 6, cookTimeMin: 90, difficulty: 'Средне', calories: 350, ingredients: 'Свёкла, капуста, картофель, говядина, морковь' }) },
+    { title: 'Том Ям', author: 'Тайская кухня', rating: null, details: JSON.stringify({ servings: 3, cookTimeMin: 30, difficulty: 'Сложно', calories: 220, ingredients: 'Креветки, грибы, лемонграсс, кокосовое молоко' }) },
+    { title: 'Суши', author: 'Японская кухня', rating: null, details: JSON.stringify({ servings: 4, cookTimeMin: 60, difficulty: 'Сложно', calories: 300, ingredients: 'Рис, нори, лосось, авокадо, огурец' }) },
+    { title: 'Тирамису', author: 'Итальянская кухня', rating: 5, details: JSON.stringify({ servings: 8, cookTimeMin: 40, difficulty: 'Средне', calories: 380, ingredients: 'Маскарпоне, савоярди, кофе, какао' }) },
   ]
 
   const supplements = [
-    { title: 'Витамин D3', author: null, status: 'COMPLETED', rating: null },
-    { title: 'Омега-3', author: null, status: 'COMPLETED', rating: null },
-    { title: 'Магний', author: null, status: 'IN_PROGRESS', rating: null },
-    { title: 'Протеин сывороточный', author: 'Optimum Nutrition', status: 'COMPLETED', rating: 4 },
-    { title: 'Креатин', author: 'MyProtein', status: 'WANT', rating: null },
+    { title: 'Витамин D3', author: 'Solgar', rating: null, details: JSON.stringify({ brand: 'Solgar', dosage: '2000 МЕ', frequency: '1 раз в день', courseDays: 90, purpose: 'Иммунитет, кости' }) },
+    { title: 'Омега-3', author: 'Now Foods', rating: null, details: JSON.stringify({ brand: 'Now Foods', dosage: '1000 мг', frequency: '2 раза в день', courseDays: 60, purpose: 'Сердце, мозг' }) },
+    { title: 'Магний', author: 'Doctor\'s Best', rating: null, details: JSON.stringify({ brand: "Doctor's Best", dosage: '400 мг', frequency: '1 раз в день', courseDays: 30, purpose: 'Нервная система, мышцы' }) },
+    { title: 'Протеин сывороточный', author: 'Optimum Nutrition', rating: 4, details: JSON.stringify({ brand: 'Optimum Nutrition', dosage: '30 г', frequency: 'После тренировки', courseDays: 0, purpose: 'Восстановление, рост мышц' }) },
+    { title: 'Креатин', author: 'MyProtein', rating: null, details: JSON.stringify({ brand: 'MyProtein', dosage: '5 г', frequency: 'Ежедневно', courseDays: 60, purpose: 'Сила, выносливость' }) },
   ]
 
   for (const book of books) {

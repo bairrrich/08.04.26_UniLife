@@ -108,10 +108,10 @@ export async function POST() {
     }
 
     const cols = [
-      { type: 'BOOK', title: 'Атомные привычки', author: 'Джеймс Клир', status: 'COMPLETED', rating: 5 },
-      { type: 'BOOK', title: 'Sapiens', author: 'Юваль Харари', status: 'COMPLETED', rating: 5 },
-      { type: 'MOVIE', title: 'Интерстеллар', author: 'Нолан', status: 'COMPLETED', rating: 5 },
-      { type: 'RECIPE', title: 'Паста Карбонара', author: 'Итальянская', status: 'COMPLETED', rating: 5 },
+      { type: 'BOOK', title: 'Атомные привычки', author: 'Джеймс Клир', rating: 5 },
+      { type: 'BOOK', title: 'Sapiens', author: 'Юваль Харари', rating: 5 },
+      { type: 'MOVIE', title: 'Интерстеллар', author: 'Нолан', rating: 5 },
+      { type: 'RECIPE', title: 'Паста Карбонара', author: 'Итальянская', rating: 5 },
     ]
     for (const c of cols) {
       await db.collectionItem.create({ data: { userId: USER_ID, ...c, tags: JSON.stringify([]) } })

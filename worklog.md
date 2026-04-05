@@ -85,12 +85,14 @@
    - Add workout dialog with dynamic exercises
 
 9. **Collections Module** — Library with:
-   - Type filter tabs (Books, Movies, Recipes, Supplements, Products)
-   - Status filter (Want, In Progress, Completed)
-   - Responsive grid layout
-   - Item cards with cover gradient, status badge, star rating
-   - Detail dialog with status cycling
-   - Add item dialog
+   - 9 types: Книги, Фильмы, Аниме, Сериалы, Музыка, Рецепты, БАДы, Продукты, Места
+   - Type-specific fields per type (genre, year, pages, episodes, etc.)
+   - Common fields: title, author (label changes per type), description, rating, tags, notes
+   - Type filter tabs, search, sort by date/rating/name/type
+   - Responsive grid/list view toggle
+   - Item cards with cover gradient, type badge, star rating
+   - Detail dialog with type-specific details display/edit
+   - Favorites with localStorage persistence
 
 10. **Feed Module** — Social feed with:
     - Post cards with entity type badges
@@ -7821,3 +7823,53 @@ Completely rewrite the Collections module to remove statuses and add type-specif
 - 9 collection types with unique form fields working
 - Type-specific details stored as JSON in `details` field
 - Dark mode support maintained throughout
+
+---
+## Task ID: collections-redesign
+### Agent: main-coordinator
+### Task: Remove statuses from Collections, add type-specific forms
+
+### Current Project Status:
+- **Overall Health**: ✅ Stable — all 9+ modules rendering correctly after collections redesign
+- **Database**: SQLite via Prisma with 15+ models; CollectionItem schema updated (status removed, details JSON added)
+- **Lint**: 0 errors, 0 warnings
+- **Dev Server**: Compiles and serves HTTP 200 on all endpoints
+
+### Completed This Round:
+
+#### Collections Module Complete Redesign
+1. **Prisma Schema**: Removed `status` field, added `details` JSON field for type-specific data, expanded types from 5 to 9
+2. **types.ts**: Removed `CollectionStatus`, updated `CollectionType` to 9 types, added 9 type-specific detail interfaces
+3. **constants.tsx**: Removed ALL status constants (STATUS_LABELS, STATUS_COLORS, STATUS_BUTTON_STYLES, STATUS_TRANSITIONS), added TYPE_FIELD_DEFINITIONS (per-type form fields), TYPE_AUTHOR_LABEL (dynamic author labels), getDetailDisplayLabel/formatDetailValue helpers, expanded to 9 types with unique colors/emojis/icons
+4. **hooks.ts**: Removed status state/handlers, added formDetails/editDetails state, type sort support, details in submit handlers
+5. **add-item-dialog.tsx**: Dynamic type-specific form based on TYPE_FIELD_DEFINITIONS, 3×3 emoji type selector, dynamic author label per type
+6. **item-card.tsx**: Removed status badge, replaced with type badge
+7. **item-dialog.tsx**: Removed status cycling, added type-specific details display in view mode, dynamic fields in edit mode
+8. **stats-bar.tsx**: Removed status pipeline, shows total items + average rating + per-type badges
+9. **collections-page.tsx**: Removed status filter section, all status references
+
+#### Bug Fixes
+1. **module-counts API**: Fixed Prisma error — removed `status: "IN_PROGRESS"` query that crashed the dashboard
+2. **seed.ts**: Updated seed data with type-specific details (genre, pages, year for books; genre, duration, platform for movies; etc.)
+3. **seed-lite API**: Removed status references from collection seed data
+4. **settings/import API**: Changed `status` to `details` in import handler
+
+#### API Routes Updated
+- `/api/collections` GET: removed status filtering, supports 9 types
+- `/api/collections` POST: accepts details JSON object
+- `/api/collections/[id]` PUT: supports details updates
+- `/api/module-counts` GET: removed status-based collection count
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, all routes return HTTP 200
+- ✅ No Prisma errors
+- ✅ All 9 collection types defined with unique form fields
+
+### Unresolved Issues / Next Phase Priorities:
+1. **Seed Data**: Current 69 items have empty details `{}` — consider re-seeding for richer demo data
+2. **Collections UI QA**: Verify type-specific forms render correctly for all 9 types in browser
+3. **User Authentication** — NextAuth.js for multi-user support
+4. **PWA Support** — Service worker + manifest for mobile install
+5. **Image Upload** — Photo support for collection item covers
+
