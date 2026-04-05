@@ -284,7 +284,7 @@ export default function Home() {
       <WelcomeScreen />
       <AppSidebar />
       <main className="md:ml-60 min-h-screen flex flex-col">
-        <div className="flex-1 p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-6 max-w-7xl mx-auto w-full">
+        <div className="p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
           <AnimatePresence mode="wait">
             <motion.div
               key={activeModule}

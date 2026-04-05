@@ -4280,3 +4280,22 @@ Stage Summary:
 ### Stage Summary:
 - 7 new features/widgets added to the finance module
 - Finance module now has: 5 summary cards, savings goal, expense chart, category breakdown, income breakdown, cash flow trend, financial health score, spending forecast, month comparison, analytics section, full transaction list with search/edit/delete/duplicate, budget manager, CSV export, month navigation with today button
+
+---
+Task ID: fix-footer-overlap
+Agent: main-agent
+Task: Fix transactions overlapping footer in finance module
+
+Work Log:
+- Diagnosed the issue: content wrapper div had `flex-1` in a flex-column layout, which constrained the content area's allocated height. When the finance module had lots of content (summary cards, charts, analytics, transaction list), the actual content overflowed the flex-allocated space and visually layered over the footer
+- Fixed by removing `flex-1` from the content wrapper div in `src/app/page.tsx` (line 287)
+- Increased desktop bottom padding from `md:pb-6` (24px) to `md:pb-10` (40px) for better visual separation before footer
+- The content div now auto-sizes to its actual content height, naturally pushing the footer below
+- `mt-auto` on the Footer still works correctly: footer sticks to viewport bottom when content is short, flows below content when tall
+- ESLint: 0 errors, 0 warnings
+- Dev server compiles successfully
+
+Stage Summary:
+- Root cause: `flex-1` (flex-shrink:1, flex-basis:0%) constrained content height in flex-col container, causing overflow over footer
+- Fix: Removed `flex-1`, increased `md:pb-10`
+- Footer now always appears below all content, regardless of page length
