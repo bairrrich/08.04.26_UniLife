@@ -18,7 +18,7 @@ import {
   PopoverContent,
 } from '@/components/ui/popover'
 import { Calendar } from '@/components/ui/calendar'
-import { CalendarDays, Plus, Edit, Sparkles, X } from 'lucide-react'
+import { CalendarDays, Plus, Edit, Sparkles, X, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -202,8 +202,56 @@ export function EntryDialog({
               value={form.content}
               onChange={(e) => onFormChange((f) => ({ ...f, content: e.target.value }))}
               rows={5}
-              className="resize-none focus-glow"
+              maxLength={5000}
+              className={cn(
+                'resize-none focus-glow',
+                form.content.length > 4500 && form.content.length < 4900 && 'border-amber-400 focus-visible:ring-amber-400',
+                form.content.length >= 4900 && 'border-red-400 focus-visible:ring-red-400'
+              )}
             />
+            {/* Character limit warning */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {form.content.length > 4500 && form.content.length < 4900 && (
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-medium tabular-nums">
+                    Осталось {5000 - form.content.length} символов
+                  </span>
+                )}
+                {form.content.length >= 4900 && (
+                  <span className="text-xs text-red-600 dark:text-red-400 font-medium tabular-nums animate-pulse-soft">
+                    Осталось {5000 - form.content.length} символов
+                  </span>
+                )}
+              </div>
+              {/* Live word counter */}
+              <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                {countWords(form.content)} слов
+              </span>
+            </div>
+          </div>
+
+          {/* Compact writing mood selector */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Быстрое настроение</label>
+            <div className="flex items-center justify-center gap-3">
+              {[1, 2, 3, 4, 5].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => onMoodClick(m)}
+                  className={cn(
+                    'h-9 w-9 rounded-full flex items-center justify-center text-lg transition-all border-2',
+                    form.mood === m
+                      ? cn('border-primary bg-primary/5 scale-110 shadow-sm')
+                      : 'border-transparent hover:bg-muted/50'
+                  )}
+                  title={MOOD_LABELS[m]}
+                >
+                  {MOOD_EMOJI[m]}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tags */}

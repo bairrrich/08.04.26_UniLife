@@ -263,8 +263,12 @@ export function MobileNav() {
   }, [])
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
-      <div className="flex items-stretch h-16">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-t-transparent bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <div className="relative">
+        <div className="absolute top-0 left-0 right-0 h-[2px] overflow-hidden">
+          <div className="w-full h-full bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+        </div>
+        <div className="flex items-stretch h-16">
         {MAIN_NAV_ITEMS.map((item) => (
           <NavItem
             key={item.id}
@@ -275,6 +279,7 @@ export function MobileNav() {
           />
         ))}
         <MoreSheet activeModule={activeModule} onNavigate={setActiveModule} hasNewFeedPosts={hasNewFeedPosts} />
+        </div>
       </div>
       {/* Safe area inset for iPhone notch */}
       <div className="h-[env(safe-area-inset-bottom)]" />

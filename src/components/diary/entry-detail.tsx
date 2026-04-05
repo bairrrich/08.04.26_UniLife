@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CalendarDays, BookOpen, Plus, Edit, Trash2, Tag, Clock, Share2 } from 'lucide-react'
+import { CalendarDays, BookOpen, Plus, Edit, Trash2, Tag, Clock, Copy, FileText } from 'lucide-react'
+import { AnimatedNumber } from '@/components/ui/animated-number'
 import { toast } from 'sonner'
 import { getRelativeTime } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -114,18 +115,24 @@ export function EntryDetail({
                       <Clock className="h-3 w-3" />
                       {readingTimeMinutes(wordCount)} чтения
                     </span>
+                    <span className="text-xs text-muted-foreground/50">•</span>
+                    <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
+                      <FileText className="h-3 w-3" />
+                      <AnimatedNumber value={wordCount} duration={400} className="text-xs" />
+                      {' слов'}
+                    </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {entry.mood && (
-                    <span
+                    <div
                       className={cn(
-                        'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-medium',
+                        'h-10 w-10 rounded-full flex items-center justify-center text-2xl shadow-sm',
                         moodClass
                       )}
                     >
                       {MOOD_EMOJI[entry.mood]}
-                    </span>
+                    </div>
                   )}
                   <Button
                     size="sm"
@@ -195,11 +202,16 @@ export function EntryDetail({
                   className="text-xs"
                   onClick={(e) => {
                     e.stopPropagation()
-                    toast.info('Ссылка скопирована в буфер обмена')
+                    const text = entry.content
+                    navigator.clipboard.writeText(text).then(() => {
+                      toast.success('Текст скопирован в буфер обмена')
+                    }).catch(() => {
+                      toast.error('Не удалось скопировать текст')
+                    })
                   }}
                 >
-                  <Share2 className="h-3.5 w-3.5 mr-1.5" />
-                  Поделиться
+                  <Copy className="h-3.5 w-3.5 mr-1.5" />
+                  Копировать текст
                 </Button>
                 <div className="flex items-center gap-2">
                   <Button

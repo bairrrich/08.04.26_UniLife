@@ -1,6 +1,6 @@
 'use client'
 
-import { LucideIcon, icons, Bell } from 'lucide-react'
+import { LucideIcon, icons, Bell, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { navItems } from '@/lib/nav-items'
@@ -13,10 +13,24 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { SearchTrigger } from './search-dialog'
 import { SearchDialog } from './search-dialog'
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
-import { Menu } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { memo, useEffect } from 'react'
 import { useUserPrefs } from '@/lib/use-user-prefs'
+
+// ─── Module-specific accent colors for the active dot indicator ───────
+const MODULE_ACCENT_COLORS: Record<string, string> = {
+  dashboard: 'bg-emerald-500',
+  diary: 'bg-amber-500',
+  finance: 'bg-blue-500',
+  nutrition: 'bg-orange-500',
+  workout: 'bg-red-500',
+  collections: 'bg-violet-500',
+  feed: 'bg-pink-500',
+  habits: 'bg-cyan-500',
+  goals: 'bg-indigo-500',
+  analytics: 'bg-teal-500',
+  settings: 'bg-zinc-400',
+}
 
 function getIcon(iconName: string): LucideIcon {
   return icons[iconName as keyof typeof icons] || icons.Circle
@@ -62,7 +76,7 @@ function MobileNotificationBell() {
       aria-label="Уведомления"
       onClick={() => setActiveModule('dashboard')}
     >
-      <Bell className="h-4.5 w-4.5" />
+      <Bell className={cn('h-4.5 w-4.5', notificationCount > 0 && 'bell-pulse')} />
       {notificationCount > 0 && (
         <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
           {notificationCount > 9 ? '9+' : notificationCount}
@@ -121,10 +135,10 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
               key={item.id}
               onClick={() => handleNavClick(item.id)}
               className={cn(
-                'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
+                'relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 nav-hover-shine',
                 isActive
                   ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground hover:scale-[1.02] active:scale-[0.98]'
               )}
             >
               {/* Animated active indicator */}
@@ -140,7 +154,16 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
                 />
               )}
               <Icon className="h-4.5 w-4.5 shrink-0" />
-              <span>{item.label}</span>
+              <span className="flex items-center gap-1.5">{item.label}</span>
+              {/* Active module colored dot indicator */}
+              {isActive && (
+                <span
+                  className={cn(
+                    'h-[5px] w-[5px] rounded-full shrink-0',
+                    MODULE_ACCENT_COLORS[item.id] || 'bg-primary'
+                  )}
+                />
+              )}
               {!NO_BADGE_MODULES.has(item.id) && (
                 <MemoizedNavBadge
                   count={moduleCounts[item.id] || 0}
@@ -175,7 +198,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
           </div>
           <div className="flex items-center gap-1">
             <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления" onClick={() => setActiveModule('dashboard')}>
-              <Bell className="h-4 w-4" />
+              <Bell className={cn('h-4 w-4', notificationCount > 0 && 'bell-pulse')} />
               {notificationCount > 0 && (
                 <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
                   {notificationCount > 9 ? '9+' : notificationCount}
@@ -247,7 +270,7 @@ export function AppSidebar() {
       </aside>
 
       {/* Mobile Header + Sheet */}
-      <header className="md:hidden sticky top-0 z-40 flex items-center gap-3 border-b bg-background/80 backdrop-blur-xl shadow-sm px-4 py-3">
+      <header className="md:hidden sticky top-0 z-40 flex items-center gap-3 border-b border-b-transparent bg-background/80 backdrop-blur-xl shadow-sm px-4 py-3 mobile-header-gradient-line">
         <Sheet>
           <SheetTrigger asChild>
             <Button variant="ghost" size="icon" className="shrink-0">

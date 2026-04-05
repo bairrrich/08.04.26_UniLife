@@ -234,7 +234,7 @@ function AnimatedModule({ activeModule }: { activeModule: string }) {
       const swapTimer = setTimeout(() => {
         setCurrentModule(activeModule)
         setVisible(true)
-      }, 150)
+      }, 200)
       return () => {
         clearTimeout(fadeTimer)
         clearTimeout(swapTimer)
@@ -246,7 +246,13 @@ function AnimatedModule({ activeModule }: { activeModule: string }) {
   const PageComponent = mod.component
 
   return (
-    <div className={`transition-all duration-150 ${visible ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+    <div
+      className={`transition-all duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] ${
+        visible
+          ? 'opacity-100 translate-y-0 scale-100 blur-0'
+          : 'opacity-0 -translate-y-2 scale-[0.99] blur-sm'
+      }`}
+    >
       <ModuleErrorBoundary moduleName={mod.label}>
         <PageComponent />
       </ModuleErrorBoundary>

@@ -16,6 +16,7 @@ import { TransactionList } from './transaction-list'
 import { AddTransactionDialog, EditTransactionDialog } from './transaction-dialog'
 import { AnalyticsSection } from './analytics-section'
 import { MonthNav } from './month-nav'
+import { QuickStatsBar } from './quick-stats-bar'
 import { BudgetManager } from './budget-manager'
 import { ExportButton } from './export-button'
 import { FinancialHealthScore } from './financial-health-score'
@@ -87,6 +88,13 @@ export default function FinancePage() {
         onNavigate={navigateMonth}
         onToday={goToToday}
         showToday={isNotCurrentMonth}
+      />
+
+      <QuickStatsBar
+        transactions={transactions}
+        totalIncome={stats?.totalIncome ?? 0}
+        totalExpense={stats?.totalExpense ?? 0}
+        isLoading={isLoading}
       />
 
       <Tabs defaultValue="overview">

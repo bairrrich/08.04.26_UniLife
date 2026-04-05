@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import { toast } from 'sonner'
 import {
@@ -16,6 +16,7 @@ import {
   Newspaper,
   Database,
   HardDrive,
+  Clock,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -64,10 +65,20 @@ const MODULE_DISPLAY: { key: keyof ModuleStats; label: string; emoji: string; ic
   { key: 'likes', label: 'Лайки', emoji: '❤️', icon: Database },
 ]
 
+// Module colors for the mini bar chart
+const MODULE_BAR_COLORS: { key: keyof ModuleStats; label: string; color: string; darkColor: string }[] = [
+  { key: 'diary', label: 'Дневник', color: '#10b981', darkColor: '#34d399' },
+  { key: 'transactions', label: 'Финансы', color: '#f59e0b', darkColor: '#fbbf24' },
+  { key: 'meals', label: 'Питание', color: '#f97316', darkColor: '#fb923c' },
+  { key: 'workouts', label: 'Тренировки', color: '#3b82f6', darkColor: '#60a5fa' },
+  { key: 'collections', label: 'Коллекции', color: '#8b5cf6', darkColor: '#a78bfa' },
+]
+
 export function DataStatsSection() {
   const [stats, setStats] = useState<StatsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [clearing, setClearing] = useState(false)
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
 
   const fetchStats = useCallback(async () => {
     try {
@@ -75,6 +86,7 @@ export function DataStatsSection() {
       const json = await safeJson(res)
       if (json && json.data) {
         setStats(json.data)
+        setLastUpdated(new Date())
       }
     } catch {
       // silently fail
@@ -132,8 +144,40 @@ export function DataStatsSection() {
     ? Math.max(...Object.values(stats.modules), 1)
     : 1
 
+  // Mini bar chart data
+  const barChartData = useMemo(() => {
+    if (!stats) return []
+    const maxBar = Math.max(...MODULE_BAR_COLORS.map(m => stats.modules[m.key]), 1)
+    return MODULE_BAR_COLORS.map(m => ({
+      ...m,
+      count: stats.modules[m.key],
+      percentage: Math.round((stats.modules[m.key] / maxBar) * 100),
+    }))
+  }, [stats])
+
+  // Storage estimate display
+  const storageDisplay = useMemo(() => {
+    if (!stats) return '—'
+    if (stats.storageEstimateKB > 1024) {
+      return `${(stats.storageEstimateKB / 1024).toFixed(1)} МБ`
+    }
+    return `${stats.storageEstimateKB} КБ`
+  }, [stats])
+
+  // Storage bar percentage (relative to 1MB)
+  const storagePercentage = useMemo(() => {
+    if (!stats) return 0
+    return Math.min(Math.round((stats.storageEstimateKB / 1024) * 100), 100)
+  }, [stats])
+
+  // Last updated text
+  const lastUpdatedText = useMemo(() => {
+    if (!lastUpdated) return '—'
+    return lastUpdated.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+  }, [lastUpdated])
+
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
@@ -155,7 +199,40 @@ export function DataStatsSection() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Module counts */}
+        {/* Mini bar chart — CSS only, vertical bars */}
+        {loading ? (
+          <div className="h-[120px] rounded-xl bg-muted/30 animate-pulse" />
+        ) : stats && barChartData.length > 0 ? (
+          <div className="rounded-xl bg-muted/20 p-4">
+            <div className="flex items-end justify-between gap-2 h-[100px]">
+              {barChartData.map((bar) => (
+                <div key={bar.key} className="flex flex-col items-center gap-1.5 flex-1">
+                  {/* Bar */}
+                  <div className="w-full flex flex-col items-center justify-end h-[70px]">
+                    <span className="text-[10px] font-semibold tabular-nums text-muted-foreground mb-1">
+                      {bar.count > 0 ? bar.count : ''}
+                    </span>
+                    <div
+                      className="w-full max-w-[40px] rounded-t-md transition-all duration-700 ease-out animate-bar-grow"
+                      style={{
+                        height: `${Math.max(bar.percentage, bar.count > 0 ? 6 : 0)}%`,
+                        backgroundColor: bar.color,
+                        opacity: 0.85,
+                        minHeight: bar.count > 0 ? '4px' : '0px',
+                      }}
+                    />
+                  </div>
+                  {/* Label */}
+                  <span className="text-[10px] text-muted-foreground leading-tight text-center truncate w-full">
+                    {bar.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Module counts list */}
         <div className="grid gap-2">
           {loading ? (
             <div className="grid gap-2">
@@ -167,17 +244,25 @@ export function DataStatsSection() {
             MODULE_DISPLAY.map((mod) => {
               const count = stats.modules[mod.key]
               const percentage = maxCount > 0 ? Math.round((count / maxCount) * 100) : 0
+              // Get bar color for the 5 main modules
+              const barColor = MODULE_BAR_COLORS.find(b => b.key === mod.key)
+              const barStyle = barColor
+                ? { background: `linear-gradient(to right, ${barColor.color}99, ${barColor.color}55)` }
+                : { background: undefined }
               return (
-                <div key={mod.key} className="flex items-center gap-3">
+                <div key={mod.key} className="flex items-center gap-3 group">
                   <span className="text-sm w-6 text-center">{mod.emoji}</span>
                   <span className="text-sm font-medium w-20 sm:w-28 shrink-0 truncate">{mod.label}</span>
                   <div className="flex-1 h-6 bg-muted/50 rounded-md overflow-hidden">
                     <div
-                      className="h-full bg-gradient-to-r from-primary/60 to-primary/40 rounded-md transition-all duration-500"
-                      style={{ width: `${Math.max(percentage, count > 0 ? 4 : 0)}%` }}
+                      className="h-full rounded-md transition-all duration-700 ease-out"
+                      style={{
+                        width: `${Math.max(percentage, count > 0 ? 4 : 0)}%`,
+                        ...(barStyle.background ? { background: barStyle.background } : { background: 'linear-gradient(to right, var(--primary)aa, var(--primary)66)' }),
+                      }}
                     />
                   </div>
-          <span className="text-sm font-semibold tabular-nums w-8 sm:w-10 text-right shrink-0">
+                  <span className="text-sm font-semibold tabular-nums w-8 sm:w-10 text-right shrink-0">
                     {count}
                   </span>
                 </div>
@@ -190,15 +275,15 @@ export function DataStatsSection() {
           )}
         </div>
 
-        {/* Summary cards */}
+        {/* Summary cards — 3 column */}
         {stats && (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl bg-muted/30 p-3 text-center">
               <div className="flex items-center justify-center gap-1.5 mb-1">
                 <Database className="h-4 w-4 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Всего записей</span>
+                <span className="text-xs text-muted-foreground">Всего</span>
               </div>
-              <span className="text-2xl font-bold tabular-nums number-highlight">
+              <span className="text-xl font-bold tabular-nums number-highlight">
                 {stats.totalRecords}
               </span>
             </div>
@@ -207,10 +292,24 @@ export function DataStatsSection() {
                 <HardDrive className="h-4 w-4 text-muted-foreground" />
                 <span className="text-xs text-muted-foreground">Хранилище</span>
               </div>
-              <span className="text-2xl font-bold tabular-nums number-highlight">
-                {stats.storageEstimateKB > 1024
-                  ? `${(stats.storageEstimateKB / 1024).toFixed(1)} МБ`
-                  : `${stats.storageEstimateKB} КБ`}
+              <span className="text-lg font-bold tabular-nums number-highlight">
+                {storageDisplay}
+              </span>
+              {/* Storage usage bar */}
+              <div className="mt-1.5 h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                  style={{ width: `${Math.max(storagePercentage, 2)}%` }}
+                />
+              </div>
+            </div>
+            <div className="rounded-xl bg-muted/30 p-3 text-center">
+              <div className="flex items-center justify-center gap-1.5 mb-1">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Обновлено</span>
+              </div>
+              <span className="text-lg font-bold tabular-nums number-highlight">
+                {lastUpdatedText}
               </span>
             </div>
           </div>

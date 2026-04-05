@@ -286,6 +286,21 @@ function clearRecentSearches(): void {
 
 // ─── Search Dialog (Command Palette) ────────────────────────────────────────
 
+// ─── Category filter config ─────────────────────────────────────────────────
+
+const CATEGORY_FILTERS: Array<{ key: string; label: string; moduleKey?: keyof SearchResponse['data'] }> = [
+  { key: 'all', label: 'Все' },
+  { key: 'diary', label: 'Дневник', moduleKey: 'diary' },
+  { key: 'finance', label: 'Финансы', moduleKey: 'finance' },
+  { key: 'nutrition', label: 'Питание', moduleKey: 'nutrition' },
+  { key: 'workout', label: 'Тренировки', moduleKey: 'workout' },
+  { key: 'habits', label: 'Привычки' },
+  { key: 'collections', label: 'Коллекции', moduleKey: 'collections' },
+  { key: 'feed', label: 'Лента', moduleKey: 'feed' },
+]
+
+// ─── Search Dialog (Command Palette) ────────────────────────────────────────
+
 export function SearchDialog() {
   const [open, setOpen] = useState(false)
   const [mode, setMode] = useState<PaletteMode>('search')
@@ -294,6 +309,7 @@ export function SearchDialog() {
   const [loading, setLoading] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
+  const [activeCategory, setActiveCategory] = useState('all')
   const inputRef = useRef<HTMLInputElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { resolvedTheme, setTheme } = useTheme()
@@ -318,6 +334,7 @@ export function SearchDialog() {
       setResults(null)
       setLoading(false)
       setSelectedIndex(-1)
+      setActiveCategory('all')
       setRecentSearches(getRecentSearches())
       const timer = setTimeout(() => {
         inputRef.current?.focus()
@@ -434,9 +451,22 @@ export function SearchDialog() {
     )
   }, [query, allActions])
 
+  // Build category-filtered search results
+  const filteredGroupedResults: SearchGroup[] = useMemo(() => {
+    if (activeCategory === 'all') return groupedResults
+    const filter = CATEGORY_FILTERS.find((c) => c.key === activeCategory)
+    if (!filter || !filter.moduleKey) return groupedResults
+    return groupedResults.filter((g) => g.key === filter.moduleKey)
+  }, [groupedResults, activeCategory])
+
+  const filteredTotalResults = filteredGroupedResults.reduce(
+    (sum, group) => sum + group.items.length,
+    0
+  )
+
   // Build flat list of items for keyboard navigation based on mode
   const flatItems = useMemo(() => {
-    const items: Array<{ module?: AppModule; action?: QuickAction; navItem?: NavItem; index: number }> = []
+    const items: Array<{ module?: AppModule; action?: QuickAction; navItem?: NavItem; _recentSearch?: string; _recentModule?: boolean; index: number }> = []
 
     if (mode === 'search') {
       // Recent searches (when no query)
@@ -445,8 +475,8 @@ export function SearchDialog() {
           items.push({ index: items.length, _recentSearch: rs })
         }
       }
-      // Search results
-      for (const group of groupedResults) {
+      // Search results (use category-filtered)
+      for (const group of filteredGroupedResults) {
         for (const _item of group.items) {
           items.push({ module: group.module, index: items.length })
         }
@@ -469,12 +499,12 @@ export function SearchDialog() {
     }
 
     return items
-  }, [mode, groupedResults, recentSearches, recentModules, filteredNavItems, filteredActions, query])
+  }, [mode, filteredGroupedResults, recentSearches, recentModules, filteredNavItems, filteredActions, query])
 
   // Reset selected index when list changes
   useEffect(() => {
     setSelectedIndex(-1)
-  }, [mode, results, totalResults, query])
+  }, [mode, results, filteredTotalResults, query, activeCategory])
 
   const handleNavigate = useCallback((direction: 'up' | 'down') => {
     setSelectedIndex((prev) => {
@@ -494,6 +524,7 @@ export function SearchDialog() {
     setMode(modes[nextIdx])
     setQuery('')
     setResults(null)
+    setActiveCategory('all')
   }, [mode])
 
   const handleSelectCurrent = useCallback(() => {
@@ -513,7 +544,7 @@ export function SearchDialog() {
       // Click a search result
       const adjustedIdx = selectedIndex - recentCount
       let counter = 0
-      for (const group of groupedResults) {
+      for (const group of filteredGroupedResults) {
         if (adjustedIdx < counter + group.items.length) {
           setActiveModule(group.module)
           setOpen(false)
@@ -553,7 +584,7 @@ export function SearchDialog() {
         }
       }
     }
-  }, [selectedIndex, flatItems.length, mode, recentSearches, groupedResults, recentModules, filteredNavItems, filteredActions, setActiveModule, setTheme, resolvedTheme, performSearch, query])
+  }, [selectedIndex, flatItems.length, mode, recentSearches, filteredGroupedResults, recentModules, filteredNavItems, filteredActions, setActiveModule, setTheme, resolvedTheme, performSearch, query])
 
   // Handle global keyboard events
   useEffect(() => {
@@ -610,7 +641,7 @@ export function SearchDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-lg p-0 gap-0 overflow-hidden top-[15%]"
+        className="sm:max-w-lg p-0 gap-0 overflow-hidden top-[15%] search-gradient-border rounded-xl"
       >
         <DialogTitle className="sr-only">
           {mode === 'search' ? 'Поиск' : mode === 'navigate' ? 'Навигация' : 'Действия'}
@@ -619,8 +650,8 @@ export function SearchDialog() {
           Палитра команд UniLife
         </DialogDescription>
 
-        {/* Gradient header area */}
-        <div className="relative bg-gradient-to-r from-emerald-500/10 via-primary/5 to-amber-500/10 dark:from-emerald-500/5 dark:via-primary/3 dark:to-amber-500/5">
+        {/* Gradient header area with animated gradient */}
+        <div className="relative search-header-gradient">
           {/* Mode tabs */}
           <div className="flex items-center gap-1 px-3 pt-3 pb-1">
             {MODE_TABS.map((tab, idx) => {
@@ -704,7 +735,30 @@ export function SearchDialog() {
             <>
               {loading && <SearchSkeleton />}
 
-              {!loading && query.trim().length >= 2 && totalResults === 0 && (
+              {/* Category filter pills */}
+              {mode === 'search' && (query.trim().length >= 2 || (results && totalResults > 0)) && (
+                <div className="flex items-center gap-1.5 px-4 py-2 overflow-x-auto scrollbar-none">
+                  {CATEGORY_FILTERS.map((cat) => {
+                    const isActive = activeCategory === cat.key
+                    return (
+                      <button
+                        key={cat.key}
+                        onClick={() => setActiveCategory(cat.key)}
+                        className={cn(
+                          'shrink-0 text-xs px-2.5 py-1 rounded-full font-medium transition-all duration-200',
+                          isActive
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'bg-muted text-muted-foreground hover:bg-accent hover:text-foreground'
+                        )}
+                      >
+                        {cat.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {!loading && query.trim().length >= 2 && filteredTotalResults === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 px-4 text-center">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted mb-3">
                     <Search className="h-5 w-5 text-muted-foreground" />
@@ -716,10 +770,10 @@ export function SearchDialog() {
                 </div>
               )}
 
-              {!loading && results && totalResults > 0 && (
+              {!loading && results && filteredTotalResults > 0 && (
                 <ScrollArea className="h-[50vh]">
                   <div className="py-2">
-                    {groupedResults.map((group) => (
+                    {filteredGroupedResults.map((group) => (
                       <div key={group.key} className="mb-1">
                         <div className="flex items-center gap-2 px-4 py-1.5">
                           <group.icon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -736,7 +790,7 @@ export function SearchDialog() {
                           const recentCount = 0 // no recents when results shown
                           const itemIndex = (() => {
                             let idx = recentCount
-                            for (const g of groupedResults) {
+                            for (const g of filteredGroupedResults) {
                               for (const i of g.items) {
                                 if (i.id === item.id && g.key === group.key) return idx
                                 idx++

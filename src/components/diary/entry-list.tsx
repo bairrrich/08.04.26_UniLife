@@ -4,17 +4,16 @@ import { useState, useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { BookOpen, Plus, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { BookOpen, Plus, Sparkles, Eye, EyeOff, FileText, Clock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI } from '@/lib/format'
+import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, getRelativeTime, countWords } from '@/lib/format'
 import { DiaryEntry } from './types'
 import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
 import { parseEntryDate } from './helpers'
 import { SearchFilter } from './search-filter'
-import { WordCount } from './word-count'
 import { ExportEntry } from './export-entry'
 
 interface EntryListProps {
@@ -155,7 +154,7 @@ export function EntryList({
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     {/* Date & mood */}
-                    <div className="flex items-center gap-2 mb-1.5">
+                    <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-medium text-muted-foreground tabular-nums">
                         {format(entryDate, 'd MMMM, EEEE', { locale: ru })}
                       </span>
@@ -169,6 +168,13 @@ export function EntryList({
                           {MOOD_EMOJI[entry.mood]} {entry.mood}/5
                         </span>
                       )}
+                    </div>
+                    {/* Time ago */}
+                    <div className="flex items-center gap-1 mb-1.5">
+                      <Clock className="h-3 w-3 text-muted-foreground/50" />
+                      <span className="text-[11px] text-muted-foreground/60">
+                        {getRelativeTime(entry.createdAt)}
+                      </span>
                     </div>
 
                     {/* Title */}
@@ -212,13 +218,13 @@ export function EntryList({
 
                     {/* Tags */}
                     {entry.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
+                      <div className="flex flex-wrap gap-1.5 mt-2.5">
                         {entry.tags.map((tag) => (
                           <Badge
                             key={tag}
                             variant="secondary"
                             className={cn(
-                              'text-xs rounded-full px-2.5 py-0 border-0',
+                              'text-xs rounded-full px-2.5 py-0.5 border-0 font-medium shadow-sm',
                               TAG_COLORS[hashTagColor(tag)]
                             )}
                           >
@@ -228,12 +234,12 @@ export function EntryList({
                       </div>
                     )}
 
-                    {/* Word count badge & reading time */}
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 tabular-nums">
-                        {entry.content.trim().split(/\s+/).filter(Boolean).length} слов
+                    {/* Word count badge */}
+                    <div className="flex items-center gap-2 mt-2.5">
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
+                        <FileText className="h-2.5 w-2.5" />
+                        {countWords(entry.content)} слов
                       </Badge>
-                      <WordCount content={entry.content} />
                     </div>
                   </div>
 

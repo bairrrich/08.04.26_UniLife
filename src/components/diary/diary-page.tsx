@@ -33,6 +33,7 @@ import { EntryDetail } from './entry-detail'
 import { EntryDialog } from './entry-dialog'
 import { WeekMoodBar } from './week-mood-bar'
 import { MoodTrend } from './mood-trend'
+import { WritingStatsWidget } from './writing-stats-widget'
 
 const emptyForm: EntryFormData = {
   title: '',
@@ -398,6 +399,9 @@ export default function DiaryPage() {
           </div>
         </div>
       </div>
+
+      {/* Writing Stats Widget */}
+      <WritingStatsWidget className="stagger-children" />
 
       {/* Weekly Calendar Strip */}
       <Card className="rounded-xl border overflow-hidden">

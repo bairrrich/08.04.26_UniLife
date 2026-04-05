@@ -107,6 +107,19 @@ export function useFinance() {
   }, [transactions, activeTab])
 
   const groupedTransactions = useMemo(() => {
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const yesterday = new Date(now)
+    yesterday.setDate(now.getDate() - 1)
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+    // Start of this week (Monday)
+    const dayOfWeek = now.getDay()
+    const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+    const monday = new Date(now)
+    monday.setDate(now.getDate() - mondayOffset)
+    monday.setHours(0, 0, 0, 0)
+    const mondayStr = monday.toISOString().split('T')[0]
+
     const groups: { date: string; label: string; items: Transaction[] }[] = []
     const map = new Map<string, Transaction[]>()
     filteredTransactions.forEach((tx) => {
@@ -114,14 +127,68 @@ export function useFinance() {
       if (!map.has(dateKey)) map.set(dateKey, [])
       map.get(dateKey)!.push(tx)
     })
-    map.forEach((items, dateKey) => {
-      groups.push({
+
+    // Sort date keys newest first
+    const sortedKeys = Array.from(map.keys()).sort((a, b) => b.localeCompare(a))
+
+    // Group into relative buckets: Сегодня, Вчера, Эта неделя, Ранее
+    // But we need to preserve exact dates within each bucket for sub-grouping
+    // So we'll assign a bucket label and keep the date
+    interface DateGroup {
+      date: string
+      label: string
+      items: Transaction[]
+      bucketSort: number // 0 = today, 1 = yesterday, 2 = this week, 3 = earlier; within bucket, sort by date desc
+    }
+    const dateGroups: DateGroup[] = []
+
+    sortedKeys.forEach((dateKey) => {
+      let label: string
+      let bucketSort: number
+      if (dateKey === todayStr) {
+        label = 'Сегодня'
+        bucketSort = 0
+      } else if (dateKey === yesterdayStr) {
+        label = 'Вчера'
+        bucketSort = 1
+      } else if (dateKey >= mondayStr) {
+        label = 'Эта неделя'
+        bucketSort = 2
+      } else {
+        label = new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateKey))
+        bucketSort = 3
+      }
+      dateGroups.push({
         date: dateKey,
-        label: new Intl.DateTimeFormat('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(dateKey)),
-        items: items.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        label,
+        items: map.get(dateKey)!.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+        bucketSort,
       })
     })
-    return groups
+
+    // Merge consecutive dates within the same bucket
+    const merged: { date: string; label: string; items: Transaction[] }[] = []
+    let i = 0
+    while (i < dateGroups.length) {
+      const current = dateGroups[i]
+      if (current.bucketSort < 3) {
+        // Merge all consecutive items with the same bucketSort (e.g., multiple days in "Эта неделя")
+        const allItems = [...current.items]
+        let j = i + 1
+        while (j < dateGroups.length && dateGroups[j].bucketSort === current.bucketSort) {
+          allItems.push(...dateGroups[j].items)
+          j++
+        }
+        merged.push({ date: current.date, label: current.label, items: allItems })
+        i = j
+      } else {
+        // Earlier dates keep their own groups
+        merged.push({ date: current.date, label: current.label, items: current.items })
+        i++
+      }
+    }
+
+    return merged
   }, [filteredTransactions])
 
   const chartData = useMemo((): ChartDataPoint[] => {

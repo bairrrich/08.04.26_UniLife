@@ -192,13 +192,15 @@
   animation: slide-up 0.3s ease-out both;
 }
 .stagger-children > *:nth-child(1) { animation-delay: 0ms; }
-.stagger-children > *:nth-child(2) { animation-delay: 50ms; }
-.stagger-children > *:nth-child(3) { animation-delay: 100ms; }
-.stagger-children > *:nth-child(4) { animation-delay: 150ms; }
-.stagger-children > *:nth-child(5) { animation-delay: 200ms; }
-.stagger-children > *:nth-child(6) { animation-delay: 250ms; }
-.stagger-children > *:nth-child(7) { animation-delay: 300ms; }
-.stagger-children > *:nth-child(8) { animation-delay: 350ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 180ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 240ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 360ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 540ms; }
 
 /* ── Transition defaults ───────────────────────────────────────────── */
 
@@ -781,4 +783,171 @@
 .animate-sparkle {
   animation: sparkle-out 0.6s ease-out forwards;
   pointer-events: none;
+}
+
+/* ── Page transition enter ────────────────────────────── */
+@keyframes page-transition-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.99);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+.page-transition-enter {
+  animation: page-transition-enter 200ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* ── Search gradient border (animated top border) ─────── */
+@keyframes search-gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.search-gradient-border {
+  position: relative;
+  border-top: 2px solid transparent;
+  border-image: linear-gradient(
+    90deg,
+    oklch(0.55 0.17 155),
+    oklch(0.65 0.15 145),
+    oklch(0.75 0.12 80),
+    oklch(0.55 0.17 155)
+  ) 1;
+  animation: search-gradient-shift 4s ease-in-out infinite;
+  background-size: 200% 100%;
+}
+.dark .search-gradient-border {
+  border-image: linear-gradient(
+    90deg,
+    oklch(0.65 0.17 155),
+    oklch(0.75 0.15 145),
+    oklch(0.70 0.12 80),
+    oklch(0.65 0.17 155)
+  ) 1;
+}
+
+/* ── Nav hover shine effect ───────────────────────────── */
+@keyframes nav-shine {
+  0% { left: -75%; }
+  100% { left: 125%; }
+}
+.nav-hover-shine {
+  position: relative;
+  overflow: hidden;
+}
+.nav-hover-shine::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(1 0 0 / 0.08),
+    transparent
+  );
+  transition: none;
+  pointer-events: none;
+  z-index: 1;
+}
+.nav-hover-shine:hover::before {
+  animation: nav-shine 0.6s ease-in-out;
+}
+.dark .nav-hover-shine::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(1 0 0 / 0.04),
+    transparent
+  );
+}
+
+/* ── Bell pulse animation ─────────────────────────────── */
+@keyframes bell-pulse {
+  0%, 100% { transform: scale(1); }
+  25% { transform: scale(1.15); }
+  50% { transform: scale(1); }
+  75% { transform: scale(1.1); }
+}
+.bell-pulse {
+  animation: bell-pulse 1.5s ease-in-out infinite;
+}
+
+/* ── Animated gradient for search header ──────────────── */
+@keyframes header-gradient-flow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.search-header-gradient {
+  background: linear-gradient(
+    135deg,
+    oklch(0.55 0.17 155 / 0.1),
+    oklch(0.65 0.15 145 / 0.06),
+    oklch(0.75 0.15 70 / 0.08),
+    oklch(0.55 0.17 155 / 0.1)
+  );
+  background-size: 300% 300%;
+  animation: header-gradient-flow 6s ease-in-out infinite;
+}
+.dark .search-header-gradient {
+  background: linear-gradient(
+    135deg,
+    oklch(0.65 0.17 155 / 0.08),
+    oklch(0.75 0.15 145 / 0.04),
+    oklch(0.75 0.15 70 / 0.05),
+    oklch(0.65 0.17 155 / 0.08)
+  );
+  background-size: 300% 300%;
+}
+
+/* ── Mobile header gradient line ──────────────────────── */
+.mobile-header-gradient-line {
+  position: relative;
+}
+.mobile-header-gradient-line::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(0.55 0.17 155 / 0.5),
+    oklch(0.65 0.15 145 / 0.3),
+    oklch(0.75 0.12 80 / 0.3),
+    oklch(0.55 0.17 155 / 0.5),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: header-gradient-flow 4s ease-in-out infinite;
+}
+.dark .mobile-header-gradient-line::after {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(0.65 0.17 155 / 0.4),
+    oklch(0.75 0.15 145 / 0.2),
+    oklch(0.70 0.12 80 / 0.2),
+    oklch(0.65 0.17 155 / 0.4),
+    transparent
+  );
+  background-size: 200% 100%;
+}
+
+/* ── Bar grow animation (for settings data viz) ────── */
+@keyframes bar-grow {
+  from { height: 0%; }
+}
+.animate-bar-grow {
+  animation: bar-grow 0.7s ease-out;
 }

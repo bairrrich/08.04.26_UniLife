@@ -300,9 +300,17 @@ export function TransactionList({
                                 </div>
                               )}
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">
-                                  {tx.description || (isTransfer ? 'Перевод' : cat.name)}
-                                </p>
+                                <div className="flex items-center gap-1.5">
+                                  {!isTransfer && (
+                                    <span
+                                      className="h-2 w-2 rounded-full shrink-0"
+                                      style={{ backgroundColor: cat.color }}
+                                    />
+                                  )}
+                                  <p className="text-sm font-medium truncate">
+                                    {tx.description || (isTransfer ? 'Перевод' : cat.name)}
+                                  </p>
+                                </div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   {isTransfer ? (
                                     <span className="text-xs text-muted-foreground truncate">
@@ -396,40 +404,47 @@ export function TransactionList({
                                 </button>
                               </div>
                             </div>
-                            {/* Expandable details */}
+                            {/* Expandable receipt details */}
                             <div className={cn(
                               'overflow-hidden transition-all duration-200',
-                              isExpanded ? 'max-h-40 opacity-100' : 'max-h-0 opacity-0'
+                              isExpanded ? 'max-h-48 opacity-100' : 'max-h-0 opacity-0'
                             )}>
-                              <div className="pl-14 pr-4 pb-3 space-y-1.5 text-xs text-muted-foreground">
-                                {/* Full date */}
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-medium text-foreground/70">Дата:</span>
-                                  <span>{formatDateFull(tx.date)}</span>
-                                </div>
-                                {/* Category with colored dot */}
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-medium text-foreground/70">Категория:</span>
-                                  <span className="inline-flex items-center gap-1">
-                                    <span
-                                      className="h-2 w-2 rounded-full shrink-0"
-                                      style={{ backgroundColor: cat.color }}
-                                    />
-                                    {cat.name}
-                                  </span>
-                                </div>
-                                {/* Note */}
-                                {tx.note && (
-                                  <div className="italic text-muted-foreground/80 pt-0.5">
-                                    {tx.note}
+                              <div className="ml-2 pl-14 pr-4 pb-3 border-l-2 border-dashed border-muted-foreground/20">
+                                <div className="rounded-lg bg-muted/30 p-3 space-y-2 text-xs text-muted-foreground">
+                                  {/* Full description */}
+                                  {tx.description && (
+                                    <div className="flex items-start gap-1.5">
+                                      <span className="font-medium text-foreground/70 shrink-0">Описание:</span>
+                                      <span>{tx.description}</span>
+                                    </div>
+                                  )}
+                                  {/* Full date + time */}
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-medium text-foreground/70">Дата:</span>
+                                    <span>{formatDateFull(tx.date)}</span>
+                                    {tx.date.includes('T') && (
+                                      <span className="text-muted-foreground/60">
+                                        {new Date(tx.date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    )}
                                   </div>
-                                )}
-                                {/* Transaction ID */}
-                                <div className="flex items-center gap-1.5">
-                                  <span className="font-medium text-foreground/70">ID:</span>
-                                  <span className="font-mono text-[10px] text-muted-foreground/60">
-                                    {tx.id.length > 12 ? `${tx.id.slice(0, 12)}…` : tx.id}
-                                  </span>
+                                  {/* Category with colored dot */}
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-medium text-foreground/70">Категория:</span>
+                                    <span className="inline-flex items-center gap-1">
+                                      <span
+                                        className="h-2 w-2 rounded-full shrink-0"
+                                        style={{ backgroundColor: cat.color }}
+                                      />
+                                      {cat.name}
+                                    </span>
+                                  </div>
+                                  {/* Note */}
+                                  {tx.note && (
+                                    <div className="italic text-muted-foreground/80 border-t border-muted-foreground/10 pt-1.5">
+                                      📝 {tx.note}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
