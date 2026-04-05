@@ -1,4 +1,4 @@
-import { Star, Heart, Clock, CheckCircle, CalendarDays, Pencil, Save, X, ExternalLink } from 'lucide-react'
+import { Star, CalendarDays, Pencil, Save, X, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,19 +18,19 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import type { CollectionItem, CollectionType, CollectionStatus } from './types'
+import type { CollectionItem, CollectionType } from './types'
+import { parseDetails } from './types'
 import {
   TYPE_LABELS,
-  STATUS_LABELS,
-  STATUS_COLORS,
-  STATUS_BUTTON_STYLES,
-  STATUS_TRANSITIONS,
+  TYPE_AUTHOR_LABEL,
+  TYPE_FIELD_DEFINITIONS,
   TYPE_ICONS_LARGE,
   TYPE_ICON_BG,
-  TYPE_ICON_BG_LIGHT,
   getCoverGradient,
   parseTags,
   formatDaysAgo,
+  getDetailDisplayLabel,
+  formatDetailValue,
 } from './constants'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -45,25 +45,24 @@ interface ItemDialogProps {
   editAuthor: string
   editDescription: string
   editType: CollectionType
-  editStatus: CollectionStatus
   editTags: string
   editNotes: string
   editRating: number
   editSaving: boolean
+  editDetails: Record<string, string>
   // Edit form setters
   setEditTitle: (v: string) => void
   setEditAuthor: (v: string) => void
   setEditDescription: (v: string) => void
   setEditType: (v: CollectionType) => void
-  setEditStatus: (v: CollectionStatus) => void
   setEditTags: (v: string) => void
   setEditNotes: (v: string) => void
   setEditRating: (v: number) => void
+  setEditDetails: (v: Record<string, string>) => void
   // Actions
   onStartEdit: () => void
   onCancelEdit: () => void
   onSaveEdit: () => void
-  onStatusUpdate: (item: CollectionItem, status: CollectionStatus) => void
   onDelete: (item: CollectionItem) => void
   onRatingUpdate: (item: CollectionItem, rating: number) => void
   isFavorite?: boolean
@@ -73,18 +72,6 @@ interface ItemDialogProps {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function StatusIcon({ status }: { status: CollectionStatus }) {
-  if (status === 'WANT') return <Heart className="h-2.5 w-2.5" />
-  if (status === 'IN_PROGRESS') return <Clock className="h-2.5 w-2.5" />
-  return <CheckCircle className="h-2.5 w-2.5" />
-}
-
-function StatusActionIcon({ status }: { status: CollectionStatus }) {
-  if (status === 'WANT') return <Clock className="h-4 w-4 mr-2" />
-  if (status === 'IN_PROGRESS') return <CheckCircle className="h-4 w-4 mr-2" />
-  return <Heart className="h-4 w-4 mr-2" />
-}
 
 function StarRating({ rating, onRate }: { rating: number; onRate?: (r: number) => void }) {
   return (
@@ -120,23 +107,22 @@ export function ItemDialog({
   editAuthor,
   editDescription,
   editType,
-  editStatus,
   editTags,
   editNotes,
   editRating,
   editSaving,
+  editDetails,
   setEditTitle,
   setEditAuthor,
   setEditDescription,
   setEditType,
-  setEditStatus,
   setEditTags,
   setEditNotes,
   setEditRating,
+  setEditDetails,
   onStartEdit,
   onCancelEdit,
   onSaveEdit,
-  onStatusUpdate,
   onDelete,
   onRatingUpdate,
   isFavorite,
@@ -147,11 +133,22 @@ export function ItemDialog({
   if (!item) return null
 
   const currentType = isEditing ? editType : (item.type as CollectionType)
-  const currentStatus = isEditing ? editStatus : item.status
+  const authorLabel = TYPE_AUTHOR_LABEL[currentType]
+  const fields = TYPE_FIELD_DEFINITIONS[currentType]
+
+  // Parse item details for view mode
+  const details = parseDetails(item.details)
+  const detailEntries = Object.entries(details).filter(
+    ([, v]) => v !== null && v !== undefined && v !== ''
+  )
+
+  const handleEditDetailChange = (key: string, value: string) => {
+    setEditDetails({ ...editDetails, [key]: value })
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         {/* Large cover gradient area */}
         <div
           className={`-mx-6 -mt-6 h-24 bg-gradient-to-br ${getCoverGradient(item.id)} flex items-center justify-center relative`}
@@ -159,13 +156,12 @@ export function ItemDialog({
           <div className="text-white/90">
             {TYPE_ICONS_LARGE[currentType]}
           </div>
-          {/* Status badge on cover */}
+          {/* Type badge on cover */}
           <div className="absolute top-3 right-4">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[currentStatus]}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-medium bg-white/20 backdrop-blur-sm text-white border border-white/30`}
             >
-              <StatusIcon status={currentStatus} />
-              {STATUS_LABELS[currentStatus]}
+              {TYPE_LABELS[currentType]}
             </span>
           </div>
           {/* Type icon badge */}
@@ -179,7 +175,7 @@ export function ItemDialog({
             </span>
           </div>
           {/* Favorite toggle */}
-          {onToggleFavorite && (
+          {onToggleFavorite && !isEditing && (
             <button
               type="button"
               onClick={() => onToggleFavorite(item.id)}
@@ -211,38 +207,63 @@ export function ItemDialog({
                 <Label>Название *</Label>
                 <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Название" />
               </div>
-              <div className="space-y-2">
-                <Label>Автор / Создатель</Label>
-                <Input value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} placeholder="Автор" />
-              </div>
+              {authorLabel && (
+                <div className="space-y-2">
+                  <Label>{authorLabel}</Label>
+                  <Input value={editAuthor} onChange={(e) => setEditAuthor(e.target.value)} placeholder={authorLabel} />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Описание</Label>
                 <Textarea value={editDescription} onChange={(e) => setEditDescription(e.target.value)} placeholder="Краткое описание..." rows={3} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Тип</Label>
-                  <Select value={editType} onValueChange={(v) => setEditType(v as CollectionType)}>
-                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Статус</Label>
-                  <Select value={editStatus} onValueChange={(v) => setEditStatus(v as CollectionStatus)}>
-                    <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(([key, label]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="space-y-2">
+                <Label>Тип</Label>
+                <Select value={editType} onValueChange={(v) => setEditType(v as CollectionType)}>
+                  <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(Object.entries(TYPE_LABELS) as [CollectionType, string][]).map(([key, label]) => (
+                      <SelectItem key={key} value={key}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+              {/* Type-specific fields in edit mode */}
+              {fields.length > 0 && (
+                <div className="space-y-3">
+                  <Label className="text-sm text-muted-foreground">Дополнительно</Label>
+                  {fields.map((field) => (
+                    <div key={field.key} className="space-y-1.5">
+                      <Label className="text-xs">{field.label}</Label>
+                      {field.type === 'select' && field.options ? (
+                        <Select
+                          value={editDetails[field.key] || ''}
+                          onValueChange={(v) => handleEditDetailChange(field.key, v)}
+                        >
+                          <SelectTrigger className="w-full h-9 text-sm">
+                            <SelectValue placeholder={field.placeholder || field.label} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options.map((opt) => (
+                              <SelectItem key={opt} value={opt}>
+                                {opt}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <Input
+                          type={field.type === 'number' ? 'number' : 'text'}
+                          placeholder={field.placeholder}
+                          value={editDetails[field.key] || ''}
+                          onChange={(e) => handleEditDetailChange(field.key, e.target.value)}
+                          className="h-9 text-sm"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Рейтинг</Label>
                 <StarRating rating={editRating} onRate={setEditRating} />
@@ -276,14 +297,26 @@ export function ItemDialog({
                 <Badge variant="outline">
                   {TYPE_LABELS[item.type as CollectionType]}
                 </Badge>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[item.status]}`}>
-                  {STATUS_LABELS[item.status]}
-                </span>
                 <Badge variant="secondary" className="gap-1 font-normal text-[11px]">
                   <CalendarDays className="h-3 w-3" />
                   {formatDaysAgo(item.createdAt)}
                 </Badge>
               </div>
+
+              {/* Type-specific details */}
+              {detailEntries.length > 0 && (
+                <div className="rounded-lg border p-3 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground mb-2">Подробности</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                    {detailEntries.map(([key, value]) => (
+                      <div key={key} className="min-w-0">
+                        <p className="text-[11px] text-muted-foreground">{getDetailDisplayLabel(key)}</p>
+                        <p className="text-sm font-medium truncate">{formatDetailValue(key, value)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex items-center gap-2">
                 <Label className="text-sm">Рейтинг:</Label>
@@ -315,18 +348,9 @@ export function ItemDialog({
               <Separator />
 
               <div className="flex gap-2 flex-wrap">
-                {/* Open button placeholder */}
                 <Button variant="outline" className="flex-1 min-w-[120px]">
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Открыть
-                </Button>
-                <Button
-                  variant="outline"
-                  className={`flex-1 min-w-[120px] border ${STATUS_BUTTON_STYLES[item.status]}`}
-                  onClick={() => onStatusUpdate(item, STATUS_TRANSITIONS[item.status])}
-                >
-                  <StatusActionIcon status={item.status} />
-                  {STATUS_LABELS[STATUS_TRANSITIONS[item.status]]}
                 </Button>
                 <Button variant="outline" onClick={onStartEdit} className="flex-1 min-w-[120px]">
                   <Pencil className="h-4 w-4 mr-2" />
@@ -353,7 +377,7 @@ export function ItemDialog({
                         onClick={() => onOpenRelated?.(related)}
                         className="w-full flex items-center gap-2.5 rounded-lg border p-2.5 text-left hover:bg-muted/50 transition-colors"
                       >
-                        <span className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 ${TYPE_ICON_BG_LIGHT[related.type as CollectionType]}`}>
+                        <span className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 bg-muted/50`}>
                           {TYPE_ICONS_LARGE[related.type as CollectionType] && (
                             <span className="[&>svg]:h-4 [&>svg]:w-4">{TYPE_ICONS_LARGE[related.type as CollectionType]}</span>
                           )}
@@ -365,7 +389,7 @@ export function ItemDialog({
                           )}
                         </div>
                         <Badge variant="secondary" className="text-[10px] shrink-0">
-                          {STATUS_LABELS[related.status]}
+                          {TYPE_LABELS[related.type as CollectionType]}
                         </Badge>
                       </button>
                     ))}

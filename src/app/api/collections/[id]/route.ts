@@ -3,8 +3,7 @@ import { db } from '@/lib/db'
 
 const USER_ID = 'user_demo_001'
 
-const VALID_TYPES = ['BOOK', 'MOVIE', 'RECIPE', 'SUPPLEMENT', 'PRODUCT']
-const VALID_STATUSES = ['WANT', 'IN_PROGRESS', 'COMPLETED']
+const VALID_TYPES = ['BOOK', 'MOVIE', 'ANIME', 'SERIES', 'MUSIC', 'RECIPE', 'SUPPLEMENT', 'PRODUCT', 'PLACE']
 
 export async function PUT(
   request: NextRequest,
@@ -33,10 +32,10 @@ export async function PUT(
       description,
       coverUrl,
       rating,
-      status,
       date,
       tags,
       notes,
+      details,
     } = body
 
     if (type && !VALID_TYPES.includes(type)) {
@@ -44,16 +43,6 @@ export async function PUT(
         {
           success: false,
           error: `type must be one of: ${VALID_TYPES.join(', ')}`,
-        },
-        { status: 400 }
-      )
-    }
-
-    if (status && !VALID_STATUSES.includes(status)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `status must be one of: ${VALID_STATUSES.join(', ')}`,
         },
         { status: 400 }
       )
@@ -78,10 +67,10 @@ export async function PUT(
         ...(description !== undefined && { description: description ?? null }),
         ...(coverUrl !== undefined && { coverUrl: coverUrl ?? null }),
         ...(rating !== undefined && { rating: rating ?? null }),
-        ...(status && { status }),
         ...(date !== undefined && { date: date ? new Date(date) : null }),
         ...(tags !== undefined && { tags: tags ? JSON.stringify(tags) : '[]' }),
         ...(notes !== undefined && { notes: notes ?? null }),
+        ...(details !== undefined && { details: details && Object.keys(details).length > 0 ? JSON.stringify(details) : '{}' }),
       },
     })
 

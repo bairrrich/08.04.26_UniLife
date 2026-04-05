@@ -1,6 +1,6 @@
 'use client'
 
-import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star, Heart, Clock, CheckCircle } from 'lucide-react'
+import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,9 +12,9 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import type { CollectionType, CollectionStatus } from './types'
+import type { CollectionType } from './types'
 import type { SortOption } from './constants'
-import { TYPE_LABELS, STATUS_LABELS, STATUS_COLORS, SORT_OPTIONS, QUICK_ADD_TEMPLATES, TYPE_ICONS_LARGE, getCoverGradient, formatDaysAgo } from './constants'
+import { TYPE_LABELS, SORT_OPTIONS, QUICK_ADD_TEMPLATES, TYPE_ICONS_LARGE, getCoverGradient, formatDaysAgo, TYPE_COLORS } from './constants'
 import { useCollections } from './hooks'
 import { StatsBar } from './stats-bar'
 import { ItemCard } from './item-card'
@@ -24,28 +24,32 @@ import { cn } from '@/lib/utils'
 
 export default function CollectionsPage() {
   const {
-    items, loading, activeType, activeStatus, sortBy,
-    setActiveType, setActiveStatus, setSortBy,
+    items, loading, activeType, sortBy,
+    setActiveType, setSortBy,
     searchQuery, setSearchQuery,
     viewMode, setViewMode,
     dialogOpen, setDialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
     formType, setFormType, formTitle, setFormTitle,
     formAuthor, setFormAuthor, formDescription, setFormDescription,
-    formRating, setFormRating, formStatus, setFormStatus,
+    formRating, setFormRating,
     formTags, setFormTags,
+    formNotes, setFormNotes,
+    formCoverUrl, setFormCoverUrl,
+    formDetails, setFormDetails,
     editTitle, editAuthor, editDescription,
-    editType, editStatus, editTags,
+    editType, editTags,
     editNotes, editRating,
+    editDetails,
     setEditTitle, setEditAuthor, setEditDescription,
-    setEditType, setEditStatus, setEditTags,
+    setEditType, setEditTags,
     setEditNotes, setEditRating,
-    handleSubmit, handleStatusUpdate, handleDelete,
+    setEditDetails,
+    handleSubmit, handleDelete,
     handleRatingUpdate, openDetail, startEditing,
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
-    totalCount, wantCount, completedCount, inProgressCount, averageRating,
+    totalCount, averageRating,
     typeCounts,
-    formNotes, setFormNotes,
     getRelatedItems,
     favorites, toggleFavorite,
   } = useCollections()
@@ -79,9 +83,10 @@ export default function CollectionsPage() {
               formAuthor={formAuthor} setFormAuthor={setFormAuthor}
               formDescription={formDescription} setFormDescription={setFormDescription}
               formRating={formRating} setFormRating={setFormRating}
-              formStatus={formStatus} setFormStatus={setFormStatus}
               formTags={formTags} setFormTags={setFormTags}
               formNotes={formNotes} setFormNotes={setFormNotes}
+              formCoverUrl={formCoverUrl} setFormCoverUrl={setFormCoverUrl}
+              formDetails={formDetails} setFormDetails={setFormDetails}
               onSubmit={handleSubmit}
             />
           </div>
@@ -111,9 +116,6 @@ export default function CollectionsPage() {
         <StatsBar
           loading={loading}
           totalCount={totalCount}
-          wantCount={wantCount}
-          completedCount={completedCount}
-          inProgressCount={inProgressCount}
           averageRating={averageRating}
           typeCounts={typeCounts}
         />
@@ -134,22 +136,9 @@ export default function CollectionsPage() {
           ))}
         </div>
 
-        {/* Status filter + Sort + View Mode */}
+        {/* Sort + View Mode */}
         <div className="flex gap-2 mt-4 flex-wrap items-center justify-between">
-          <div className="flex gap-2 flex-wrap">
-            <Button variant={activeStatus === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus('all')}>
-              Все статусы
-            </Button>
-            {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(([key, label]) => {
-              const StatusIcon = key === 'WANT' ? Heart : key === 'IN_PROGRESS' ? Clock : CheckCircle
-              return (
-                <Button key={key} variant={activeStatus === key ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus(key)} className="gap-1.5">
-                  <StatusIcon className="h-3.5 w-3.5" />
-                  {label}
-                </Button>
-              )
-            })}
-          </div>
+          <div /> {/* spacer for alignment */}
 
           <div className="flex items-center gap-2">
             {/* Sort dropdown */}
@@ -234,7 +223,7 @@ export default function CollectionsPage() {
                   </div>
                   <h3 className="mt-5 text-lg font-semibold">Коллекция пуста</h3>
                   <p className="mt-1.5 text-sm text-muted-foreground max-w-xs mx-auto">
-                    Добавьте книги, фильмы или рецепты в свою коллекцию
+                    Добавьте книги, фильмы, рецепты и другие элементы в свою коллекцию
                   </p>
                   <Button
                     onClick={() => setDialogOpen(true)}
@@ -288,9 +277,9 @@ export default function CollectionsPage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-sm font-medium line-clamp-1">{item.title}</h3>
                             <span
-                              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${STATUS_COLORS[item.status]}`}
+                              className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${TYPE_COLORS[item.type as CollectionType]}`}
                             >
-                              {STATUS_LABELS[item.status]}
+                              {item.type}
                             </span>
                           </div>
                           {item.author && (
@@ -326,15 +315,17 @@ export default function CollectionsPage() {
         onOpenChange={closeDetail}
         isEditing={isEditing}
         editTitle={editTitle} editAuthor={editAuthor} editDescription={editDescription}
-        editType={editType} editStatus={editStatus} editTags={editTags}
+        editType={editType} editTags={editTags}
         editNotes={editNotes} editRating={editRating} editSaving={editSaving}
+        editDetails={editDetails}
         setEditTitle={setEditTitle} setEditAuthor={setEditAuthor}
         setEditDescription={setEditDescription} setEditType={setEditType}
-        setEditStatus={setEditStatus} setEditTags={setEditTags}
+        setEditTags={setEditTags}
         setEditNotes={setEditNotes} setEditRating={setEditRating}
+        setEditDetails={setEditDetails}
         onStartEdit={startEditing} onCancelEdit={cancelEdit}
         onSaveEdit={handleEditSave}
-        onStatusUpdate={handleStatusUpdate} onDelete={handleDelete}
+        onDelete={handleDelete}
         onRatingUpdate={handleRatingUpdate}
         isFavorite={detailItem ? favorites.has(detailItem.id) : false}
         onToggleFavorite={toggleFavorite}
@@ -344,5 +335,3 @@ export default function CollectionsPage() {
     </div>
   )
 }
-
-

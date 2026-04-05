@@ -1,30 +1,28 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Star, Heart, Clock, CheckCircle, CalendarDays } from 'lucide-react'
+import { Star, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import type { CollectionItem, CollectionType, CollectionStatus } from './types'
-import { TYPE_ICONS_LARGE, TYPE_ICONS, TYPE_ICON_BG, TYPE_ICON_BG_LIGHT, STATUS_COLORS, STATUS_LABELS, getCoverGradient, parseTags, formatDaysAgo } from './constants'
+import type { CollectionItem, CollectionType } from './types'
+import { TYPE_ICONS_LARGE, TYPE_ICONS, TYPE_ICON_BG, TYPE_COLORS, getCoverGradient, parseTags, formatDaysAgo } from './constants'
 
 // ─── Type-specific gradient overlays ─────────────────────────────────────────
 
 const TYPE_OVERLAY_GRADIENT: Record<CollectionType, string> = {
   BOOK: 'from-blue-500/5 to-transparent',
   MOVIE: 'from-purple-500/5 to-transparent',
+  ANIME: 'from-pink-500/5 to-transparent',
+  SERIES: 'from-sky-500/5 to-transparent',
+  MUSIC: 'from-violet-500/5 to-transparent',
   RECIPE: 'from-orange-500/5 to-transparent',
   SUPPLEMENT: 'from-green-500/5 to-transparent',
   PRODUCT: 'from-rose-500/5 to-transparent',
+  PLACE: 'from-amber-500/5 to-transparent',
 }
 
 interface ItemCardProps {
   item: CollectionItem
   onClick: (item: CollectionItem) => void
   isFavorite?: boolean
-}
-
-function StatusIcon({ status }: { status: CollectionStatus }) {
-  if (status === 'WANT') return <Heart className="h-2.5 w-2.5" />
-  if (status === 'IN_PROGRESS') return <Clock className="h-2.5 w-2.5" />
-  return <CheckCircle className="h-2.5 w-2.5" />
 }
 
 export function ItemCard({ item, onClick, isFavorite }: ItemCardProps) {
@@ -45,13 +43,12 @@ export function ItemCard({ item, onClick, isFavorite }: ItemCardProps) {
           </div>
           {/* Type-specific gradient overlay */}
           <div className={`absolute inset-0 bg-gradient-to-t ${TYPE_OVERLAY_GRADIENT[type]} pointer-events-none`} />
-          {/* Status badge */}
+          {/* Type badge */}
           <div className="absolute top-2 right-2">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLORS[item.status]}`}
+              className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${TYPE_COLORS[type]}`}
             >
-              <StatusIcon status={item.status} />
-              {STATUS_LABELS[item.status]}
+              {item.type}
             </span>
           </div>
           {/* Type icon in top-left corner */}

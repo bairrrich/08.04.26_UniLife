@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import { toast } from 'sonner'
-import type { CollectionType, CollectionStatus, CollectionItem } from './types'
+import type { CollectionType, CollectionItem } from './types'
 import type { SortOption } from './constants'
 import { parseTags } from './constants'
 
@@ -12,7 +12,6 @@ export function useCollections() {
   const [items, setItems] = useState<CollectionItem[]>([])
   const [loading, setLoading] = useState(true)
   const [activeType, setActiveType] = useState<string>('all')
-  const [activeStatus, setActiveStatus] = useState<string>('all')
   const [sortBy, setSortBy] = useState<SortOption>('date')
   const [searchQuery, setSearchQuery] = useState('')
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
@@ -39,20 +38,20 @@ export function useCollections() {
   const [formAuthor, setFormAuthor] = useState('')
   const [formDescription, setFormDescription] = useState('')
   const [formRating, setFormRating] = useState(0)
-  const [formStatus, setFormStatus] = useState<CollectionStatus>('WANT')
   const [formTags, setFormTags] = useState('')
   const [formCoverUrl, setFormCoverUrl] = useState('')
   const [formNotes, setFormNotes] = useState('')
+  const [formDetails, setFormDetails] = useState<Record<string, string>>({})
 
   // ── Edit form state ─────────────────────────────────────────────────────────
   const [editTitle, setEditTitle] = useState('')
   const [editAuthor, setEditAuthor] = useState('')
   const [editDescription, setEditDescription] = useState('')
   const [editType, setEditType] = useState<CollectionType>('BOOK')
-  const [editStatus, setEditStatus] = useState<CollectionStatus>('WANT')
   const [editTags, setEditTags] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [editRating, setEditRating] = useState(0)
+  const [editDetails, setEditDetails] = useState<Record<string, string>>({})
 
   // ── Data fetching ───────────────────────────────────────────────────────────
   const fetchItems = useCallback(async () => {
@@ -60,20 +59,23 @@ export function useCollections() {
     try {
       const params = new URLSearchParams()
       if (activeType !== 'all') params.set('type', activeType)
-      if (activeStatus !== 'all') params.set('status', activeStatus)
       const res = await fetch(`/api/collections?${params.toString()}`)
-      const json = await safeJson(res)
-      if (json.success) setItems(json.data)
+      const json = await safeJson<{ success: boolean; data: CollectionItem[] }>(res)
+      if (json?.success) setItems(json.data)
     } catch (err) {
       console.error('Failed to fetch collections:', err)
     } finally {
       setLoading(false)
     }
-  }, [activeType, activeStatus])
+  }, [activeType])
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
   // ── Sorted, filtered & searched items ────────────────────────────────────
+  const TYPE_ORDER: Record<string, number> = {
+    BOOK: 0, MOVIE: 1, ANIME: 2, SERIES: 3, MUSIC: 4,
+    RECIPE: 5, SUPPLEMENT: 6, PRODUCT: 7, PLACE: 8,
+  }
   const sortedItems = useMemo(() => {
     let filtered = [...items]
     // Search filter
@@ -86,7 +88,6 @@ export function useCollections() {
       )
     }
     // Sort
-    const STATUS_ORDER: Record<string, number> = { WANT: 0, IN_PROGRESS: 1, COMPLETED: 2 }
     switch (sortBy) {
       case 'rating':
         filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
@@ -94,8 +95,8 @@ export function useCollections() {
       case 'name':
         filtered.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
         break
-      case 'status':
-        filtered.sort((a, b) => (STATUS_ORDER[a.status] ?? 0) - (STATUS_ORDER[b.status] ?? 0))
+      case 'type':
+        filtered.sort((a, b) => (TYPE_ORDER[a.type] ?? 0) - (TYPE_ORDER[b.type] ?? 0))
         break
       case 'date':
       default:
@@ -107,9 +108,6 @@ export function useCollections() {
 
   // ── Computed stats ──────────────────────────────────────────────────────────
   const totalCount = items.length
-  const wantCount = items.filter((i) => i.status === 'WANT').length
-  const completedCount = items.filter((i) => i.status === 'COMPLETED').length
-  const inProgressCount = items.filter((i) => i.status === 'IN_PROGRESS').length
   const averageRating = useMemo(() => {
     const rated = items.filter((i) => i.rating && i.rating > 0)
     if (rated.length === 0) return 0
@@ -158,13 +156,18 @@ export function useCollections() {
   // ── Handlers ────────────────────────────────────────────────────────────────
   const resetForm = () => {
     setFormType('BOOK'); setFormTitle(''); setFormAuthor('')
-    setFormDescription(''); setFormRating(0); setFormStatus('WANT'); setFormTags('')
-    setFormCoverUrl(''); setFormNotes('')
+    setFormDescription(''); setFormRating(0); setFormTags('')
+    setFormCoverUrl(''); setFormNotes(''); setFormDetails({})
   }
 
   const handleSubmit = async () => {
     if (!formTitle.trim()) return
     const tags = formTags.split(',').map((t) => t.trim()).filter(Boolean)
+    // Clean empty values from details
+    const cleanDetails: Record<string, string> = {}
+    for (const [k, v] of Object.entries(formDetails)) {
+      if (v !== '' && v !== undefined) cleanDetails[k] = v
+    }
     toast.dismiss()
     try {
       const res = await fetch('/api/collections', {
@@ -173,13 +176,14 @@ export function useCollections() {
         body: JSON.stringify({
           type: formType, title: formTitle.trim(),
           author: formAuthor.trim() || null, description: formDescription.trim() || null,
-          rating: formRating > 0 ? formRating : null, status: formStatus,
+          rating: formRating > 0 ? formRating : null,
           tags: tags.length > 0 ? tags : [],
           notes: formNotes.trim() || null,
           coverUrl: formCoverUrl.trim() || null,
+          details: cleanDetails,
         }),
       })
-      const json = await safeJson(res)
+      const json = await safeJson<{ success: boolean }>(res)
       if (json && json.success) {
         toast.success('Элемент добавлен в коллекцию')
         setDialogOpen(false); resetForm(); fetchItems()
@@ -192,31 +196,11 @@ export function useCollections() {
     }
   }
 
-  const handleStatusUpdate = async (item: CollectionItem, newStatus: CollectionStatus) => {
-    toast.dismiss()
-    try {
-      const res = await fetch(`/api/collections/${item.id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus }),
-      })
-      const json = await safeJson(res)
-      if (json && json.success) {
-        toast.success('Статус обновлён'); fetchItems()
-        if (detailItem && detailItem.id === item.id) setDetailItem({ ...item, status: newStatus })
-      } else {
-        toast.error('Ошибка при обновлении статуса')
-      }
-    } catch (err) {
-      console.error('Failed to update status:', err)
-      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
-    }
-  }
-
   const handleDelete = async (item: CollectionItem) => {
     toast.dismiss()
     try {
       const res = await fetch(`/api/collections/${item.id}`, { method: 'DELETE' })
-      const json = await safeJson(res)
+      const json = await safeJson<{ success: boolean }>(res)
       if (json && json.success) {
         toast.success('Элемент удалён'); setDetailOpen(false); setDetailItem(null); fetchItems()
       } else {
@@ -234,7 +218,7 @@ export function useCollections() {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rating }),
       })
-      const json = await safeJson(res)
+      const json = await safeJson<{ success: boolean }>(res)
       if (json && json.success) {
         fetchItems()
         if (detailItem && detailItem.id === item.id) setDetailItem({ ...item, rating })
@@ -252,34 +236,52 @@ export function useCollections() {
     if (!detailItem) return
     setEditTitle(detailItem.title); setEditAuthor(detailItem.author || '')
     setEditDescription(detailItem.description || '')
-    setEditType(detailItem.type as CollectionType); setEditStatus(detailItem.status as CollectionStatus)
+    setEditType(detailItem.type as CollectionType)
     setEditTags(parseTags(detailItem.tags).join(', ')); setEditNotes(detailItem.notes || '')
     setEditRating(detailItem.rating || 0); setIsEditing(true)
+    // Parse details JSON into editDetails
+    try {
+      const parsed = JSON.parse(detailItem.details || '{}')
+      const stringDetails: Record<string, string> = {}
+      for (const [k, v] of Object.entries(parsed)) {
+        if (v !== null && v !== undefined) stringDetails[k] = String(v)
+      }
+      setEditDetails(stringDetails)
+    } catch {
+      setEditDetails({})
+    }
   }
 
   const handleEditSave = async () => {
     if (!detailItem || !editTitle.trim()) return
     toast.dismiss(); setEditSaving(true)
     const tags = editTags.split(',').map((t) => t.trim()).filter(Boolean)
+    // Clean empty values from details
+    const cleanDetails: Record<string, string> = {}
+    for (const [k, v] of Object.entries(editDetails)) {
+      if (v !== '' && v !== undefined) cleanDetails[k] = v
+    }
     try {
       const res = await fetch(`/api/collections/${detailItem.id}`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: editType, title: editTitle.trim(),
           author: editAuthor.trim() || null, description: editDescription.trim() || null,
-          rating: editRating > 0 ? editRating : null, status: editStatus,
+          rating: editRating > 0 ? editRating : null,
           tags: tags.length > 0 ? tags : [], notes: editNotes.trim() || null,
+          details: cleanDetails,
         }),
       })
-      const json = await safeJson(res)
+      const json = await safeJson<{ success: boolean }>(res)
       if (json && json.success) {
         toast.success('Элемент обновлён')
         setDetailItem({
           ...detailItem, type: editType, title: editTitle.trim(),
           author: editAuthor.trim() || null, description: editDescription.trim() || null,
-          rating: editRating > 0 ? editRating : null, status: editStatus,
+          rating: editRating > 0 ? editRating : null,
           tags: tags.length > 0 ? JSON.stringify(tags) : '[]',
           notes: editNotes.trim() || null, updatedAt: new Date().toISOString(),
+          details: JSON.stringify(cleanDetails),
         })
         setIsEditing(false); fetchItems()
       } else {
@@ -303,36 +305,38 @@ export function useCollections() {
   return {
     // state
     items: sortedItems,
-    loading, activeType, activeStatus, sortBy,
+    loading, activeType, sortBy,
     searchQuery, viewMode, favorites,
     dialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
 
     // setters
-    setActiveType, setActiveStatus, setDialogOpen, setSortBy,
+    setActiveType, setDialogOpen, setSortBy,
     setSearchQuery, setViewMode, toggleFavorite,
 
     // add form
     formType, setFormType, formTitle, setFormTitle,
     formAuthor, setFormAuthor, formDescription, setFormDescription,
-    formRating, setFormRating, formStatus, setFormStatus,
+    formRating, setFormRating,
     formTags, setFormTags,
     formCoverUrl, setFormCoverUrl,
     formNotes, setFormNotes,
+    formDetails, setFormDetails,
 
     // edit form
     editTitle, setEditTitle, editAuthor, setEditAuthor,
     editDescription, setEditDescription, editType, setEditType,
-    editStatus, setEditStatus, editTags, setEditTags,
+    editTags, setEditTags,
     editNotes, setEditNotes, editRating, setEditRating,
+    editDetails, setEditDetails,
 
     // handlers
-    handleSubmit, handleStatusUpdate, handleDelete,
+    handleSubmit, handleDelete,
     handleRatingUpdate, openDetail, startEditing,
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
 
     // computed
-    totalCount, wantCount, completedCount, inProgressCount, averageRating,
+    totalCount, averageRating,
     typeCounts, getRelatedItems,
   }
 }

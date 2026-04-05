@@ -325,13 +325,13 @@ model WorkoutExercise {
 model CollectionItem {
   id          String    @id @default(cuid())
   userId      String
-  type        String    @default("BOOK") // BOOK | MOVIE | RECIPE | SUPPLEMENT | PRODUCT
+  type        String    @default("BOOK") // BOOK | MOVIE | RECIPE | SUPPLEMENT | PRODUCT | ANIME | SERIES | MUSIC | PLACE
   title       String
-  author      String?
+  author      String?  // автор книги, режиссёр фильма, бренд БАД/продукта
   description String?
   coverUrl    String?
-  rating      Int? // 1-5
-  status      String    @default("WANT") // WANT | IN_PROGRESS | COMPLETED
+  rating      Int?      // 1-5
+  details     String    @default("{}") // JSON: type-specific fields
   date        DateTime?
   tags        String    @default("[]") // JSON array
   notes       String?

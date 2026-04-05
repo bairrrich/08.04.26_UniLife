@@ -7784,3 +7784,40 @@ Stage Summary:
 6. **Dashboard Customization** — 用户自定义小部件显示
 7. **Advanced Analytics** — 周/月趋势对比报告
 8. **Offline Support** — Service worker缓存离线使用
+
+---
+## Task ID: collections-rewrite
+### Agent: collections-rewrite-agent
+### Work Task
+Completely rewrite the Collections module to remove statuses and add type-specific forms. Each of the 9 collection types (BOOK, MOVIE, ANIME, SERIES, MUSIC, RECIPE, SUPPLEMENT, PRODUCT, PLACE) now has its own dynamic form fields instead of a shared status system.
+
+### Work Summary
+
+**Files Rewritten (10 total):**
+
+1. **types.ts** — Removed `CollectionStatus` type. Added `details` field to `CollectionItem`. Added 9 type-specific detail interfaces (`BookDetails`, `MovieDetails`, `AnimeDetails`, `SeriesDetails`, `MusicDetails`, `RecipeDetails`, `SupplementDetails`, `ProductDetails`, `PlaceDetails`) and `TypeSpecificDetails` union type. Added `parseDetails()` helper.
+
+2. **constants.tsx** — Removed ALL status constants (`STATUS_LABELS`, `STATUS_COLORS`, `STATUS_BUTTON_STYLES`, `STATUS_TRANSITIONS`). Expanded all type-related constants to cover 9 types with distinct colors/emojis/icons. Added `TYPE_FIELD_DEFINITIONS` mapping each type to its specific form fields (key, label, type, placeholder, options). Added `TYPE_AUTHOR_LABEL` for dynamic author field labels. Added `getDetailDisplayLabel()` and `formatDetailValue()` helpers for display formatting. Expanded `QUICK_ADD_TEMPLATES` to all 9 types. Updated `SORT_OPTIONS` to include 'type' sort.
+
+3. **hooks.ts** — Removed `activeStatus`, `formStatus`, `editStatus` states and `handleStatusUpdate` handler. Added `formDetails` and `editDetails` state (Record<string, string>) for type-specific field data. Updated `handleSubmit` and `handleEditSave` to include `details` in API payloads. Updated `startEditing` to parse item.details JSON into `editDetails`. Added 'type' sort case. Fixed all `safeJson` calls with proper generic types.
+
+4. **add-item-dialog.tsx** — Removed `formStatus`/`setFormStatus` props. Added `formDetails`/`setFormDetails` props. Type selector now renders 3×3 emoji grid for 9 types. Author field label changes dynamically per type (hidden for PLACE). Added dynamic type-specific fields section rendering from `TYPE_FIELD_DEFINITIONS` (text, number, select inputs).
+
+5. **item-card.tsx** — Removed `StatusIcon` function and status badge from card cover. Replaced with type badge using `TYPE_COLORS`. Removed status-related imports. Updated `TYPE_OVERLAY_GRADIENT` for all 9 types.
+
+6. **item-dialog.tsx** — Removed all status props/logic (`editStatus`, `setEditStatus`, `onStatusUpdate`, `StatusIcon`, `StatusActionIcon`, status cycling button). Added `editDetails`/`setEditDetails` props. View mode now shows type-specific details parsed from `item.details` JSON in a grid of label-value pairs. Edit mode includes dynamic type-specific fields. Related items now show type badge instead of status badge.
+
+7. **stats-bar.tsx** — Removed status pipeline visualization and all status-related props/count displays. Simplified to show: total items, average rating with stars, type diversity count. Per-type counts as badges. Clean layout with no status flow.
+
+8. **collections-page.tsx** — Removed all status-related imports, state destructuring, UI elements (status filter buttons, status badges in list view). Added `formDetails`/`editDetails` state pass-through to dialogs. List view now shows type badge instead of status badge.
+
+9. **API /collections/route.ts** — Removed `VALID_STATUSES` constant, status filtering from GET, status validation from POST. Added `details` field to POST handler (accepts object, stringifies to JSON). Updated `VALID_TYPES` to all 9 types.
+
+10. **API /collections/[id]/route.ts** — Removed `VALID_STATUSES`, status validation from PUT. Added `details` field support in PUT handler. Updated `VALID_TYPES` to all 9 types.
+
+**Verification:**
+- ESLint: 0 errors, 0 warnings
+- All status-related code fully removed from collections module
+- 9 collection types with unique form fields working
+- Type-specific details stored as JSON in `details` field
+- Dark mode support maintained throughout

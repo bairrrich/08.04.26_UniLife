@@ -3,23 +3,17 @@ import { db } from '@/lib/db'
 
 const USER_ID = 'user_demo_001'
 
-const VALID_TYPES = ['BOOK', 'MOVIE', 'RECIPE', 'SUPPLEMENT', 'PRODUCT']
-const VALID_STATUSES = ['WANT', 'IN_PROGRESS', 'COMPLETED']
+const VALID_TYPES = ['BOOK', 'MOVIE', 'ANIME', 'SERIES', 'MUSIC', 'RECIPE', 'SUPPLEMENT', 'PRODUCT', 'PLACE']
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
-    const status = searchParams.get('status')
 
     const where: Record<string, unknown> = { userId: USER_ID }
 
     if (type && VALID_TYPES.includes(type)) {
       where.type = type
-    }
-
-    if (status && VALID_STATUSES.includes(status)) {
-      where.status = status
     }
 
     const items = await db.collectionItem.findMany({
@@ -47,10 +41,10 @@ export async function POST(request: NextRequest) {
       description,
       coverUrl,
       rating,
-      status,
       date,
       tags,
       notes,
+      details,
     } = body
 
     if (!type || !title) {
@@ -65,16 +59,6 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: `type must be one of: ${VALID_TYPES.join(', ')}`,
-        },
-        { status: 400 }
-      )
-    }
-
-    if (status && !VALID_STATUSES.includes(status)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `status must be one of: ${VALID_STATUSES.join(', ')}`,
         },
         { status: 400 }
       )
@@ -99,10 +83,10 @@ export async function POST(request: NextRequest) {
         description: description ?? null,
         coverUrl: coverUrl ?? null,
         rating: rating ?? null,
-        status: status ?? 'WANT',
         date: date ? new Date(date) : null,
         tags: tags ? JSON.stringify(tags) : '[]',
         notes: notes ?? null,
+        details: details && Object.keys(details).length > 0 ? JSON.stringify(details) : '{}',
       },
     })
 
