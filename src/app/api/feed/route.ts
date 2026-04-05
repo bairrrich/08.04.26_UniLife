@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { entityType, entityId, caption } = body
+    const { entityType, entityId, caption, tags } = body
 
     if (!entityType || !entityId) {
       return NextResponse.json(
@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
         entityType,
         entityId,
         caption: caption ?? null,
+        tags: tags && Array.isArray(tags) ? JSON.stringify(tags) : '[]',
       },
       include: {
         user: {

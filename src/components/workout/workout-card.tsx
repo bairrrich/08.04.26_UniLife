@@ -25,32 +25,24 @@ interface WorkoutCardProps {
 
 export function WorkoutCard({ workout, isExpanded, onToggle, onEdit }: WorkoutCardProps) {
   const workoutType = detectWorkoutType(workout.name)
-  const typeConfig = WORKOUT_TYPE_CONFIG[workoutType]
+  const typeConfig = WORKOUT_TYPE_CONFIG[workoutType] || WORKOUT_TYPE_CONFIG.strength
   const borderColor = getWorkoutBorderColor(workout.name)
 
   const workoutVolume = workout.exercises.reduce((sum, ex) => {
-    if (workoutType === 'strength') {
-      const sets = parseSets(ex.sets)
-      return sum + calculateVolume(sets)
-    }
-    return sum
+    const sets = parseSets(ex.sets)
+    return sum + calculateVolume(sets)
   }, 0)
 
   return (
     <Card
-      className={`card-hover border-l-4 ${borderColor} ${typeConfig.topBorderColor} hover:shadow-sm transition cursor-pointer`}
+      className={`card-hover border-l-4 ${borderColor} hover:shadow-sm transition cursor-pointer`}
       onClick={onToggle}
     >
       <CardHeader className="pb-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
-              workoutType === 'strength' ? 'bg-rose-100 text-rose-600' :
-              workoutType === 'cardio' ? 'bg-purple-100 text-purple-600' :
-              workoutType === 'hiit' ? 'bg-orange-100 text-orange-600' :
-              'bg-emerald-100 text-emerald-600'
-            }`}>
-              {typeConfig.icon}
+            <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${typeConfig.iconBg}`}>
+              <span className={typeConfig.iconColor}>{typeConfig.icon}</span>
             </div>
             <CardTitle className="text-base">{workout.name}</CardTitle>
             <Badge variant="secondary" className="text-xs">{workout.exercises.length} упр.</Badge>
@@ -62,7 +54,7 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit }: WorkoutCa
                 {workout.durationMin} мин
               </span>
             )}
-            {workoutType === 'strength' && workoutVolume > 0 && (
+            {workoutVolume > 0 && (
               <span className="flex items-center gap-1 text-xs font-medium text-violet-600">
                 <Weight className="h-3 w-3" />
                 {workoutVolume >= 1000 ? `${(workoutVolume / 1000).toFixed(1)}т` : `${workoutVolume}кг`}

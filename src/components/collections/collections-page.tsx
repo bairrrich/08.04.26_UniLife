@@ -1,11 +1,19 @@
 'use client'
 
-import { Library, Plus } from 'lucide-react'
+import { Library, Plus, ArrowUpDown } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
 import type { CollectionType, CollectionStatus } from './types'
-import { TYPE_LABELS, STATUS_LABELS } from './constants'
+import type { SortOption } from './constants'
+import { TYPE_LABELS, STATUS_LABELS, SORT_OPTIONS, QUICK_ADD_TEMPLATES } from './constants'
 import { useCollections } from './hooks'
 import { StatsBar } from './stats-bar'
 import { ItemCard } from './item-card'
@@ -14,8 +22,8 @@ import { ItemDialog } from './item-dialog'
 
 export default function CollectionsPage() {
   const {
-    items, loading, activeType, activeStatus,
-    setActiveType, setActiveStatus,
+    items, loading, activeType, activeStatus, sortBy,
+    setActiveType, setActiveStatus, setSortBy,
     dialogOpen, setDialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
     formType, setFormType, formTitle, setFormTitle,
@@ -30,8 +38,8 @@ export default function CollectionsPage() {
     setEditNotes, setEditRating,
     handleSubmit, handleStatusUpdate, handleDelete,
     handleRatingUpdate, openDetail, startEditing,
-    handleEditSave, closeDetail, cancelEdit,
-    totalCount, completedCount, inProgressCount,
+    handleEditSave, closeDetail, cancelEdit, openQuickAdd,
+    totalCount, completedCount, inProgressCount, averageRating,
   } = useCollections()
 
   return (
@@ -39,7 +47,7 @@ export default function CollectionsPage() {
       {/* Header with decorative gradient blob */}
       <div className="relative">
         <div className="absolute -top-16 -right-8 w-56 h-56 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/15 blur-3xl pointer-events-none" />
-        <div className="absolute -top-8 -left-4 w-40 h-40 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-400/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-8 -left-4 w-40 h-40 rounded-full bg-gradient-to-amber-400/15 to-orange-400/10 blur-3xl pointer-events-none" />
         <div className="relative flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -76,18 +84,59 @@ export default function CollectionsPage() {
           ))}
         </TabsList>
 
-        <StatsBar loading={loading} totalCount={totalCount} completedCount={completedCount} inProgressCount={inProgressCount} />
+        <StatsBar
+          loading={loading}
+          totalCount={totalCount}
+          completedCount={completedCount}
+          inProgressCount={inProgressCount}
+          averageRating={averageRating}
+        />
 
-        {/* Status filter */}
+        {/* Quick Add Templates */}
         <div className="flex gap-2 mt-4 flex-wrap">
-          <Button variant={activeStatus === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus('all')}>
-            Все статусы
-          </Button>
-          {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(([key, label]) => (
-            <Button key={key} variant={activeStatus === key ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus(key)}>
-              {label}
+          {QUICK_ADD_TEMPLATES.map((template) => (
+            <Button
+              key={template.type}
+              variant="ghost"
+              size="sm"
+              className={`gap-1.5 text-xs font-medium ${template.color} border-0 shadow-sm`}
+              onClick={() => openQuickAdd(template.type)}
+            >
+              {template.icon}
+              {template.label}
             </Button>
           ))}
+        </div>
+
+        {/* Status filter + Sort */}
+        <div className="flex gap-2 mt-4 flex-wrap items-center justify-between">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant={activeStatus === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus('all')}>
+              Все статусы
+            </Button>
+            {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(([key, label]) => (
+              <Button key={key} variant={activeStatus === key ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus(key)}>
+                {label}
+              </Button>
+            ))}
+          </div>
+
+          {/* Sort dropdown */}
+          <div className="flex items-center gap-2">
+            <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortOption)}>
+              <SelectTrigger className="w-auto text-xs h-8 min-w-[160px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SORT_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Grid of items */}

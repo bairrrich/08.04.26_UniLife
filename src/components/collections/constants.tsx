@@ -6,7 +6,7 @@ import {
   Film,
   ChefHat,
   Pill,
-  Package,
+  ShoppingBag,
 } from 'lucide-react'
 
 // ─── Labels ──────────────────────────────────────────────────────────────────
@@ -52,7 +52,7 @@ export const TYPE_ICONS: Record<CollectionType, React.ReactNode> = {
   MOVIE: <Film className="h-4 w-4" />,
   RECIPE: <ChefHat className="h-4 w-4" />,
   SUPPLEMENT: <Pill className="h-4 w-4" />,
-  PRODUCT: <Package className="h-4 w-4" />,
+  PRODUCT: <ShoppingBag className="h-4 w-4" />,
 }
 
 export const TYPE_ICONS_LARGE: Record<CollectionType, React.ReactNode> = {
@@ -60,7 +60,7 @@ export const TYPE_ICONS_LARGE: Record<CollectionType, React.ReactNode> = {
   MOVIE: <Film className="h-8 w-8" />,
   RECIPE: <ChefHat className="h-8 w-8" />,
   SUPPLEMENT: <Pill className="h-8 w-8" />,
-  PRODUCT: <Package className="h-8 w-8" />,
+  PRODUCT: <ShoppingBag className="h-8 w-8" />,
 }
 
 // ─── Type Colors ──────────────────────────────────────────────────────────────
@@ -71,6 +71,22 @@ export const TYPE_COLORS: Record<CollectionType, string> = {
   RECIPE: 'bg-rose-50 text-rose-600',
   SUPPLEMENT: 'bg-cyan-50 text-cyan-600',
   PRODUCT: 'bg-emerald-50 text-emerald-600',
+}
+
+export const TYPE_ICON_BG: Record<CollectionType, string> = {
+  BOOK: 'bg-amber-500',
+  MOVIE: 'bg-purple-500',
+  RECIPE: 'bg-rose-500',
+  SUPPLEMENT: 'bg-cyan-500',
+  PRODUCT: 'bg-emerald-500',
+}
+
+export const TYPE_ICON_BG_LIGHT: Record<CollectionType, string> = {
+  BOOK: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+  MOVIE: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+  RECIPE: 'bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
+  SUPPLEMENT: 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400',
+  PRODUCT: 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
 }
 
 // ─── Cover Gradients ──────────────────────────────────────────────────────────
@@ -116,3 +132,49 @@ export function formatDateRussian(dateStr: string): string {
   const year = date.getFullYear()
   return `${day} ${month} ${year}`
 }
+
+export function formatDaysAgo(dateStr: string): string {
+  const now = new Date()
+  const date = new Date(dateStr)
+  const diffMs = now.getTime() - date.getTime()
+  const diffDays = Math.floor(diffMs / 86400000)
+
+  if (diffDays === 0) return 'Добавлено сегодня'
+  if (diffDays === 1) return 'Добавлено вчера'
+  if (diffDays < 5) {
+    return `Добавлено ${diffDays} дня назад`
+  }
+  if (diffDays < 21) {
+    const lastDigit = diffDays % 10
+    const lastTwo = diffDays % 100
+    if (lastTwo >= 11 && lastTwo <= 19) return `Добавлено ${diffDays} дней назад`
+    if (lastDigit === 1) return `Добавлено ${diffDays} день назад`
+    if (lastDigit >= 2 && lastDigit <= 4) return `Добавлено ${diffDays} дня назад`
+    return `Добавлено ${diffDays} дней назад`
+  }
+  if (diffDays < 30) {
+    return `Добавлено ${diffDays} дней назад`
+  }
+  const diffMonths = Math.floor(diffDays / 30)
+  if (diffMonths === 1) return 'Добавлено 1 месяц назад'
+  if (diffMonths < 5) return `Добавлено ${diffMonths} месяца назад`
+  return `Добавлено ${diffMonths} месяцев назад`
+}
+
+// ─── Sort options ─────────────────────────────────────────────────────────────
+
+export const SORT_OPTIONS = [
+  { value: 'date', label: 'По дате добавления' },
+  { value: 'rating', label: 'По рейтингу' },
+  { value: 'name', label: 'По названию' },
+] as const
+
+export type SortOption = (typeof SORT_OPTIONS)[number]['value']
+
+// ─── Quick add templates ─────────────────────────────────────────────────────
+
+export const QUICK_ADD_TEMPLATES: { type: CollectionType; label: string; icon: React.ReactNode; color: string }[] = [
+  { type: 'BOOK', label: 'Добавить книгу', icon: <BookOpen className="h-3.5 w-3.5" />, color: 'bg-amber-500 hover:bg-amber-600 text-white' },
+  { type: 'MOVIE', label: 'Добавить фильм', icon: <Film className="h-3.5 w-3.5" />, color: 'bg-purple-500 hover:bg-purple-600 text-white' },
+  { type: 'RECIPE', label: 'Добавить рецепт', icon: <ChefHat className="h-3.5 w-3.5" />, color: 'bg-rose-500 hover:bg-rose-600 text-white' },
+]

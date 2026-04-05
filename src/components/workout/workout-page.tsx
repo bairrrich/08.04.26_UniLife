@@ -8,11 +8,13 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 
 import { useWorkouts } from './hooks'
-import { WORKOUT_TYPE_CONFIG } from './constants'
+import { WORKOUT_TYPE_CONFIG, WORKOUT_PRESETS, WORKOUT_PHRASES, detectWorkoutType } from './constants'
 import { StatCards } from './stat-cards'
 import { WorkoutCard } from './workout-card'
 import { WorkoutDialog } from './workout-dialog'
 import { MonthNav } from './month-nav'
+import { WorkoutVolumeChart } from './volume-chart'
+import { PersonalRecords } from './personal-records'
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
@@ -25,6 +27,7 @@ export function WorkoutPage() {
     setFormName, setFormDate, setFormDuration, setFormNote, setFormExercises,
     totalWorkouts, totalMinutes, avgDuration, totalExercises,
     exerciseTypes, totalVolume, lastWorkoutTime,
+    personalRecords,
     handleSubmit, handleEditSubmit, handleApplyPreset,
     openEditDialog, toggleExpand, changeMonth, closeEditDialog,
     totalHours,
@@ -36,6 +39,8 @@ export function WorkoutPage() {
     onDurationChange: setFormDuration, onNoteChange: setFormNote,
     onExercisesChange: setFormExercises, onApplyPreset: handleApplyPreset,
   }
+
+  const phraseIdx = new Date().getDate() % WORKOUT_PHRASES.length
 
   return (
     <div className="space-y-6 animate-slide-up">
@@ -74,9 +79,10 @@ export function WorkoutPage() {
         <div className="flex flex-wrap items-center gap-2">
           {exerciseTypes.map((type) => {
             const config = WORKOUT_TYPE_CONFIG[type as keyof typeof WORKOUT_TYPE_CONFIG]
+            if (!config) return null
             return (
               <Badge key={type} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs font-medium">
-                {config?.icon}{config?.label || type}
+                {config.icon}{config.label || type}
               </Badge>
             )
           })}
@@ -89,6 +95,21 @@ export function WorkoutPage() {
       )}
 
       <MonthNav month={month} onChange={changeMonth} />
+
+      {/* Personal Records */}
+      {!loading && workouts.length > 0 && (
+        <PersonalRecords
+          heaviestWeight={personalRecords.heaviestWeight}
+          longestDuration={personalRecords.longestDuration}
+          mostExercises={personalRecords.mostExercises}
+          totalVolumeAllTime={personalRecords.totalVolumeAllTime}
+        />
+      )}
+
+      {/* Volume Chart */}
+      {!loading && workouts.length > 0 && (
+        <WorkoutVolumeChart />
+      )}
 
       {/* Workout List */}
       {loading ? (
@@ -110,13 +131,35 @@ export function WorkoutPage() {
               <Dumbbell className="h-10 w-10 text-white" />
             </div>
             <h3 className="text-lg font-semibold mb-1">Нет тренировок</h3>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-              Запишите свою первую тренировку и отслеживайте прогресс
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-1">
+              {WORKOUT_PHRASES[phraseIdx]}
             </p>
+            <p className="text-xs text-muted-foreground/70 mb-6">
+              Запиши свою первую тренировку и начни отслеживать прогресс
+            </p>
+            <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+              {WORKOUT_PRESETS.map((preset) => {
+                const pType = detectWorkoutType(preset.name)
+                const pConfig = WORKOUT_TYPE_CONFIG[pType]
+                return (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      handleApplyPreset(preset)
+                      setDialogOpen(true)
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 hover:border-muted-foreground/30 active-press"
+                  >
+                    <span className={pConfig?.iconColor}>{pConfig?.icon}</span>
+                    <span>{preset.label}</span>
+                  </button>
+                )
+              })}
+            </div>
             <Button
               size="lg"
               onClick={() => setDialogOpen(true)}
-              className="mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
             >
               <Plus className="h-5 w-5 mr-2" />
               Добавить тренировку

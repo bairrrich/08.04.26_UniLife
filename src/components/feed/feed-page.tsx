@@ -10,13 +10,16 @@ import { useFeed } from './hooks'
 
 export default function FeedPage() {
   const {
-    posts, loading,
+    posts, loading, groupedPosts,
     dialogOpen, setDialogOpen,
     formEntityType, setFormEntityType,
     formCaption, setFormCaption,
+    formTags, setFormTags,
     likedPosts, likeAnimating, bookmarkedPosts,
+    userReactions, reactionCounts, reactionAnimating,
     commentTexts, expandedComments, showCommentSection, sendingComment,
     handleToggleLike, handleToggleBookmark, handleShare,
+    handleToggleReaction,
     handleCommentSubmit, handleCommentKeyDown,
     toggleExpandComments, toggleCommentSection, updateCommentText,
     handleSubmit, handleDeletePost,
@@ -41,6 +44,7 @@ export default function FeedPage() {
         open={dialogOpen} onOpenChange={setDialogOpen}
         formEntityType={formEntityType} setFormEntityType={setFormEntityType}
         formCaption={formCaption} setFormCaption={setFormCaption}
+        formTags={formTags} setFormTags={setFormTags}
         onSubmit={handleSubmit}
       />
 
@@ -83,26 +87,48 @@ export default function FeedPage() {
         ) : posts.length === 0 ? (
           <FeedEmptyState onOpenDialog={() => setDialogOpen(true)} />
         ) : (
-          posts.map((post) => (
-            <PostCard
-              key={post.id} post={post}
-              isLiked={likedPosts.has(post.id)}
-              isAnimating={likeAnimating.has(post.id)}
-              isBookmarked={bookmarkedPosts.has(post.id)}
-              showCommentSection={showCommentSection.has(post.id)}
-              expandedComments={expandedComments.has(post.id)}
-              commentText={commentTexts[post.id] || ''}
-              sendingComment={sendingComment.has(post.id)}
-              onToggleLike={handleToggleLike}
-              onToggleBookmark={handleToggleBookmark}
-              onToggleCommentSection={toggleCommentSection}
-              onToggleExpandComments={toggleExpandComments}
-              onCommentTextChange={updateCommentText}
-              onCommentKeyDown={handleCommentKeyDown}
-              onCommentSubmit={handleCommentSubmit}
-              onShare={handleShare}
-              onDelete={handleDeletePost}
-            />
+          groupedPosts.map((group) => (
+            <div key={group.label} className="space-y-3">
+              {/* Time group header */}
+              <div className="flex items-center gap-3">
+                <h3 className="text-sm font-semibold text-muted-foreground whitespace-nowrap">
+                  {group.label}
+                </h3>
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground/60 tabular-nums">
+                  {group.posts.length} {group.posts.length === 1 ? 'запись' : 'записи'}
+                </span>
+              </div>
+
+              {/* Posts in this group */}
+              <div className="space-y-3">
+                {group.posts.map((post) => (
+                  <PostCard
+                    key={post.id} post={post}
+                    isLiked={likedPosts.has(post.id)}
+                    isAnimating={likeAnimating.has(post.id)}
+                    isBookmarked={bookmarkedPosts.has(post.id)}
+                    showCommentSection={showCommentSection.has(post.id)}
+                    expandedComments={expandedComments.has(post.id)}
+                    commentText={commentTexts[post.id] || ''}
+                    sendingComment={sendingComment.has(post.id)}
+                    userReaction={userReactions[post.id]}
+                    reactions={reactionCounts[post.id]}
+                    reactionAnimating={reactionAnimating.has(post.id)}
+                    onToggleLike={handleToggleLike}
+                    onToggleBookmark={handleToggleBookmark}
+                    onToggleCommentSection={toggleCommentSection}
+                    onToggleExpandComments={toggleExpandComments}
+                    onCommentTextChange={updateCommentText}
+                    onCommentKeyDown={handleCommentKeyDown}
+                    onCommentSubmit={handleCommentSubmit}
+                    onShare={handleShare}
+                    onDelete={handleDeletePost}
+                    onToggleReaction={handleToggleReaction}
+                  />
+                ))}
+              </div>
+            </div>
           ))
         )}
       </div>

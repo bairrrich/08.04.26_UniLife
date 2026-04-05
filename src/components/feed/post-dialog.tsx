@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { Camera, SmilePlus } from 'lucide-react'
+import { Camera, SmilePlus, Tag } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { EntityType } from './types'
 import { ENTITY_LABELS, QUICK_EMOJIS, MAX_CAPTION_LENGTH } from './constants'
@@ -27,6 +27,8 @@ interface PostDialogProps {
   setFormEntityType: (v: EntityType) => void
   formCaption: string
   setFormCaption: (v: string) => void
+  formTags: string
+  setFormTags: (v: string) => void
   onSubmit: () => void
 }
 
@@ -34,6 +36,7 @@ export function PostDialog({
   open, onOpenChange,
   formEntityType, setFormEntityType,
   formCaption, setFormCaption,
+  formTags, setFormTags,
   onSubmit,
 }: PostDialogProps) {
   const handleInsertEmoji = (emoji: string) => {
@@ -70,6 +73,21 @@ export function PostDialog({
                 {formCaption.length}/{MAX_CAPTION_LENGTH}
               </span>
             </div>
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <Tag className="h-3.5 w-3.5" />
+              Теги (через запятую)
+            </Label>
+            <Input
+              placeholder="достижение, тренировка, мысли"
+              value={formTags}
+              onChange={(e) => setFormTags(e.target.value)}
+              className="text-sm"
+            />
+            <span className="text-xs text-muted-foreground/60">Необязательно</span>
           </div>
 
           {/* Emoji quick insert */}

@@ -82,6 +82,48 @@ function useWaterHistory(waterTotalMl: number) {
   return { waterHistory, waterChartDays }
 }
 
+// ─── Nutrition Streak Calculation ───────────────────────────────────────────
+
+function calculateNutritionStreak(waterHistory: { date: string; ml: number }[], mealDates: string[]): number {
+  // Combine water and meal dates for streak calculation
+  const activeDates = new Set<string>()
+
+  // Add days with water > 0
+  waterHistory.forEach((h) => {
+    if (h.ml > 0) activeDates.add(h.date)
+  })
+
+  // Add meal dates
+  mealDates.forEach((d) => activeDates.add(d.split('T')[0]))
+
+  if (activeDates.size === 0) return 0
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  const yesterday = new Date(today)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+
+  if (!activeDates.has(todayStr) && !activeDates.has(yesterdayStr)) return 0
+
+  let streak = 0
+  const checkDate = activeDates.has(todayStr) ? new Date(today) : new Date(yesterday)
+
+  while (true) {
+    const checkStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`
+    if (activeDates.has(checkStr)) {
+      streak++
+      checkDate.setDate(checkDate.getDate() - 1)
+    } else {
+      break
+    }
+  }
+
+  return streak
+}
+
 // ─── Main nutrition hook — all state & handlers ────────────────────────────
 
 const DEFAULT_GOALS: NutritionGoals = {
@@ -129,7 +171,14 @@ export function useNutrition() {
   const [deletingMealId, setDeletingMealId] = useState<string | null>(null)
 
   // Water history (localStorage)
-  const { waterChartDays } = useWaterHistory(waterStats.totalMl)
+  const { waterHistory, waterChartDays } = useWaterHistory(waterStats.totalMl)
+
+  // ─── Streak calculation ──────────────────────────────────────────────────
+
+  const nutritionStreak = useMemo(() => {
+    const mealDates = meals.map((m) => m.date)
+    return calculateNutritionStreak(waterHistory, mealDates)
+  }, [waterHistory, meals])
 
   // ─── Data fetching ───────────────────────────────────────────────────────
 
@@ -344,6 +393,7 @@ export function useNutrition() {
     waterStats,
     waterAnimating,
     waterChartDays,
+    nutritionStreak,
     expandedMealId,
     deletingMealId,
 

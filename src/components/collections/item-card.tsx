@@ -1,8 +1,9 @@
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Star, Heart, Clock, CheckCircle } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { CollectionItem, CollectionType, CollectionStatus } from './types'
-import { TYPE_ICONS_LARGE, TYPE_ICONS, STATUS_COLORS, STATUS_LABELS, getCoverGradient, parseTags } from './constants'
+import { TYPE_ICONS_LARGE, TYPE_ICONS, TYPE_ICON_BG, TYPE_ICON_BG_LIGHT, STATUS_COLORS, STATUS_LABELS, getCoverGradient, parseTags } from './constants'
 
 interface ItemCardProps {
   item: CollectionItem
@@ -16,6 +17,8 @@ function StatusIcon({ status }: { status: CollectionStatus }) {
 }
 
 export function ItemCard({ item, onClick }: ItemCardProps) {
+  const type = item.type as CollectionType
+
   return (
     <Card
       className="overflow-hidden transition-all duration-200 cursor-pointer group hover:scale-[1.02] hover:shadow-lg hover:-translate-y-0.5 active:scale-[0.98]"
@@ -26,7 +29,7 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
         className={`h-32 bg-gradient-to-br ${getCoverGradient(item.id)} flex items-center justify-center relative overflow-hidden transition-transform duration-300 group-hover:scale-[1.03]`}
       >
         <div className="text-white/80 transition-transform duration-300 group-hover:scale-110">
-          {TYPE_ICONS_LARGE[item.type as CollectionType]}
+          {TYPE_ICONS_LARGE[type]}
         </div>
         {/* Status badge */}
         <div className="absolute top-2 right-2">
@@ -37,9 +40,12 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
             {STATUS_LABELS[item.status]}
           </span>
         </div>
-        {/* Type icon in top-left corner */}
-        <div className="absolute top-2 left-2 flex h-6 w-6 items-center justify-center rounded-md bg-black/20 backdrop-blur-sm text-white/90">
-          {TYPE_ICONS[item.type as CollectionType]}
+        {/* Type icon in top-left corner with colored bg */}
+        <div className={cn(
+          'absolute top-2 left-2 flex h-7 w-7 items-center justify-center rounded-lg text-white shadow-sm',
+          TYPE_ICON_BG[type]
+        )}>
+          {TYPE_ICONS[type]}
         </div>
       </div>
       <div className="p-3 space-y-1.5">
@@ -52,17 +58,19 @@ export function ItemCard({ item, onClick }: ItemCardProps) {
           </p>
         )}
         {item.rating && (
-          <div className="flex gap-0.5">
+          <div className="flex items-center gap-0.5">
             {Array.from({ length: 5 }).map((_, i) => (
               <Star
                 key={i}
-                className={`h-3.5 w-3.5 transition-colors ${
+                className={cn(
+                  'h-3.5 w-3.5 transition-colors',
                   i < item.rating!
                     ? 'fill-amber-400 text-amber-400'
                     : 'text-gray-300 dark:text-gray-600'
-                }`}
+                )}
               />
             ))}
+            <span className="text-[10px] text-muted-foreground ml-1">{item.rating}/5</span>
           </div>
         )}
         <div className="flex gap-1 flex-wrap">

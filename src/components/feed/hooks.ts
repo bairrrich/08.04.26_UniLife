@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { safeJson } from '@/lib/safe-fetch'
-import type { EntityType, FeedPost, FeedComment } from './types'
-import { generateRandomId } from './constants'
+import type { EntityType, FeedPost, FeedComment, ReactionType, ReactionCounts } from './types'
+import { generateRandomId, getTimeGroup } from './constants'
 
 // ─── useFeed Hook ─────────────────────────────────────────────────────────────
 
@@ -21,6 +21,11 @@ export function useFeed() {
   const [likeAnimating, setLikeAnimating] = useState<Set<string>>(new Set())
   const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set())
 
+  // ─── Reaction state ─────────────────────────────────────────────────────
+  const [userReactions, setUserReactions] = useState<Record<string, ReactionType>>({})
+  const [reactionCounts, setReactionCounts] = useState<Record<string, ReactionCounts>>({})
+  const [reactionAnimating, setReactionAnimating] = useState<Set<string>>(new Set())
+
   // ─── Comment state ───────────────────────────────────────────────────────
   const [commentTexts, setCommentTexts] = useState<Record<string, string>>({})
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set())
@@ -30,13 +35,14 @@ export function useFeed() {
   // ─── Form state ──────────────────────────────────────────────────────────
   const [formEntityType, setFormEntityType] = useState<EntityType>('diary')
   const [formCaption, setFormCaption] = useState('')
+  const [formTags, setFormTags] = useState('')
 
   // ─── Fetch Posts ─────────────────────────────────────────────────────────
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/feed?limit=20&offset=0')
+      const res = await fetch('/api/feed?limit=50&offset=0')
       const data: FeedPost[] | null = await safeJson<{ success: boolean; data: FeedPost[] }>(res)
       if (data) {
         setPosts(data.data)
@@ -55,6 +61,28 @@ export function useFeed() {
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
+
+  // ─── Time-grouped posts ──────────────────────────────────────────────────
+
+  const groupedPosts = useMemo(() => {
+    const groups: Record<string, FeedPost[]> = {}
+    const order: string[] = []
+
+    for (const post of posts) {
+      const group = getTimeGroup(post.createdAt)
+      if (!groups[group]) {
+        groups[group] = []
+        order.push(group)
+      }
+      groups[group].push(post)
+    }
+
+    // Order: Сегодня → Вчера → На этой неделе → Ранее
+    const canonicalOrder = ['Сегодня', 'Вчера', 'На этой неделе', 'Ранее']
+    return canonicalOrder
+      .filter((g) => groups[g]?.length)
+      .map((g) => ({ label: g, posts: groups[g] }))
+  }, [posts])
 
   // ─── Like / Bookmark / Share ─────────────────────────────────────────────
 
@@ -113,6 +141,64 @@ export function useFeed() {
         .catch(() => toast.error('Не удалось скопировать ссылку'))
     } else {
       toast.info('Скопируйте ссылку: ' + url)
+    }
+  }
+
+  // ─── Reactions ──────────────────────────────────────────────────────────
+
+  const handleToggleReaction = (postId: string, reactionType: ReactionType) => {
+    const currentReaction = userReactions[postId]
+    const willReact = currentReaction !== reactionType
+
+    // Update user reaction
+    setUserReactions((prev) => {
+      const next = { ...prev }
+      if (willReact) {
+        next[postId] = reactionType
+      } else {
+        delete next[postId]
+      }
+      return next
+    })
+
+    // Update reaction counts
+    setReactionCounts((prev) => {
+      const current = prev[postId] || { like: 0, love: 0, fire: 0, applause: 0, wow: 0 }
+      const next = { ...current }
+
+      if (currentReaction && currentReaction !== reactionType) {
+        // Remove previous reaction, add new one
+        next[currentReaction] = Math.max(0, next[currentReaction] - 1)
+        next[reactionType] = next[reactionType] + 1
+      } else if (willReact) {
+        next[reactionType] = next[reactionType] + 1
+      } else {
+        next[reactionType] = Math.max(0, next[reactionType] - 1)
+      }
+
+      return { ...prev, [postId]: next }
+    })
+
+    // Animate
+    if (willReact) {
+      setReactionAnimating((prev) => new Set(prev).add(postId))
+      setTimeout(() => {
+        setReactionAnimating((prev) => {
+          const next = new Set(prev)
+          next.delete(postId)
+          return next
+        })
+      }, 400)
+    }
+
+    // Also toggle like state for backward compatibility
+    if (willReact && !likedPosts.has(postId)) {
+      setLikedPosts((prev) => new Set(prev).add(postId))
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, _count: { likes: p._count.likes + 1 } } : p,
+        ),
+      )
     }
   }
 
@@ -227,10 +313,16 @@ export function useFeed() {
     toast.dismiss()
     try {
       const entityId = generateRandomId()
+      const tags = formTags.split(',').map((t) => t.trim()).filter(Boolean)
       const res = await fetch('/api/feed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entityType: formEntityType, entityId, caption: formCaption.trim() }),
+        body: JSON.stringify({
+          entityType: formEntityType,
+          entityId,
+          caption: formCaption.trim(),
+          tags: tags.length > 0 ? tags : [],
+        }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
 
@@ -240,6 +332,7 @@ export function useFeed() {
         setDialogOpen(false)
         setFormEntityType('diary')
         setFormCaption('')
+        setFormTags('')
         fetchPosts()
       } else {
         toast.error('Ошибка при публикации записи')
@@ -286,27 +379,34 @@ export function useFeed() {
     // State
     posts,
     loading,
+    groupedPosts,
     dialogOpen,
     likedPosts,
     likeAnimating,
     bookmarkedPosts,
+    userReactions,
+    reactionCounts,
+    reactionAnimating,
     commentTexts,
     expandedComments,
     showCommentSection,
     sendingComment,
     formEntityType,
     formCaption,
+    formTags,
 
     // Setters
     setDialogOpen,
     setFormEntityType,
     setFormCaption,
+    setFormTags,
 
     // Handlers
     fetchPosts,
     handleToggleLike,
     handleToggleBookmark,
     handleShare,
+    handleToggleReaction,
     handleCommentSubmit,
     handleCommentKeyDown,
     toggleExpandComments,

@@ -1,4 +1,4 @@
-import { Star, Heart, Clock, CheckCircle, CalendarDays, Pencil, Save, X } from 'lucide-react'
+import { Star, Heart, Clock, CheckCircle, CalendarDays, Pencil, Save, X, ExternalLink } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -26,9 +26,10 @@ import {
   STATUS_BUTTON_STYLES,
   STATUS_TRANSITIONS,
   TYPE_ICONS_LARGE,
+  TYPE_ICON_BG,
   getCoverGradient,
   parseTags,
-  formatDateRussian,
+  formatDaysAgo,
 } from './constants'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -158,6 +159,16 @@ export function ItemDialog({
               {STATUS_LABELS[currentStatus]}
             </span>
           </div>
+          {/* Type icon badge */}
+          <div className={`absolute top-3 left-4 flex h-7 w-7 items-center justify-center rounded-lg text-white ${TYPE_ICON_BG[currentType]}`}>
+            <span className="h-4 w-4 flex items-center justify-center">
+              {TYPE_ICONS_LARGE[currentType] && (
+                <span className="[&>svg]:h-4 [&>svg]:w-4">
+                  {TYPE_ICONS_LARGE[currentType]}
+                </span>
+              )}
+            </span>
+          </div>
         </div>
 
         <DialogHeader>
@@ -251,7 +262,7 @@ export function ItemDialog({
                 </span>
                 <Badge variant="secondary" className="gap-1 font-normal text-[11px]">
                   <CalendarDays className="h-3 w-3" />
-                  Создано {formatDateRussian(item.createdAt)}
+                  {formatDaysAgo(item.createdAt)}
                 </Badge>
               </div>
 
@@ -284,22 +295,27 @@ export function ItemDialog({
 
               <Separator />
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {/* Open button placeholder */}
+                <Button variant="outline" className="flex-1 min-w-[120px]">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Открыть
+                </Button>
                 <Button
                   variant="outline"
-                  className={`flex-1 border ${STATUS_BUTTON_STYLES[item.status]}`}
+                  className={`flex-1 min-w-[120px] border ${STATUS_BUTTON_STYLES[item.status]}`}
                   onClick={() => onStatusUpdate(item, STATUS_TRANSITIONS[item.status])}
                 >
                   <StatusActionIcon status={item.status} />
                   {STATUS_LABELS[STATUS_TRANSITIONS[item.status]]}
                 </Button>
-                <Button variant="outline" onClick={onStartEdit}>
+                <Button variant="outline" onClick={onStartEdit} className="flex-1 min-w-[120px]">
                   <Pencil className="h-4 w-4 mr-2" />
                   Редактировать
                 </Button>
                 <Button
                   variant="outline"
-                  className="text-destructive hover:text-destructive"
+                  className="text-destructive hover:text-destructive flex-1 min-w-[120px]"
                   onClick={() => onDelete(item)}
                 >
                   Удалить

@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import { toast } from 'sonner'
 import type { CollectionType, CollectionStatus, CollectionItem } from './types'
+import type { SortOption } from './constants'
 import { parseTags } from './constants'
 
 // ─── useCollections ────────────────────────────────────────────────────────────
@@ -14,6 +15,7 @@ export function useCollections() {
   const [loading, setLoading] = useState(true)
   const [activeType, setActiveType] = useState<string>('all')
   const [activeStatus, setActiveStatus] = useState<string>('all')
+  const [sortBy, setSortBy] = useState<SortOption>('date')
 
   // ── Dialog state ────────────────────────────────────────────────────────────
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -60,10 +62,40 @@ export function useCollections() {
 
   useEffect(() => { fetchItems() }, [fetchItems])
 
+  // ── Sorted & filtered items ────────────────────────────────────────────────
+  const sortedItems = useMemo(() => {
+    const sorted = [...items]
+    switch (sortBy) {
+      case 'rating':
+        sorted.sort((a, b) => (b.rating || 0) - (a.rating || 0))
+        break
+      case 'name':
+        sorted.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+        break
+      case 'date':
+      default:
+        sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        break
+    }
+    return sorted
+  }, [items, sortBy])
+
   // ── Computed stats ──────────────────────────────────────────────────────────
   const totalCount = items.length
   const completedCount = items.filter((i) => i.status === 'COMPLETED').length
   const inProgressCount = items.filter((i) => i.status === 'IN_PROGRESS').length
+  const averageRating = useMemo(() => {
+    const rated = items.filter((i) => i.rating && i.rating > 0)
+    if (rated.length === 0) return 0
+    return rated.reduce((sum, i) => sum + (i.rating || 0), 0) / rated.length
+  }, [items])
+
+  // ── Quick add from template ─────────────────────────────────────────────────
+  const openQuickAdd = (type: CollectionType) => {
+    resetForm()
+    setFormType(type)
+    setDialogOpen(true)
+  }
 
   // ── Handlers ────────────────────────────────────────────────────────────────
   const resetForm = () => {
@@ -209,12 +241,13 @@ export function useCollections() {
 
   return {
     // state
-    items, loading, activeType, activeStatus,
+    items: sortedItems,
+    loading, activeType, activeStatus, sortBy,
     dialogOpen, detailItem, detailOpen,
     isEditing, editSaving,
 
     // setters
-    setActiveType, setActiveStatus, setDialogOpen,
+    setActiveType, setActiveStatus, setDialogOpen, setSortBy,
 
     // add form
     formType, setFormType, formTitle, setFormTitle,
@@ -231,9 +264,9 @@ export function useCollections() {
     // handlers
     handleSubmit, handleStatusUpdate, handleDelete,
     handleRatingUpdate, openDetail, startEditing,
-    handleEditSave, closeDetail, cancelEdit,
+    handleEditSave, closeDetail, cancelEdit, openQuickAdd,
 
     // computed
-    totalCount, completedCount, inProgressCount,
+    totalCount, completedCount, inProgressCount, averageRating,
   }
 }

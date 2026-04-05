@@ -3,30 +3,40 @@ import {
   Clock,
   Flame,
   StretchHorizontal,
+  Heart,
+  Wind,
+  Zap,
+  Activity,
 } from 'lucide-react'
 import type { ExerciseData } from './types'
 
 // ─── Workout Type Detection ─────────────────────────────────────────────────
 
-export type WorkoutType = 'strength' | 'cardio' | 'hiit' | 'stretch'
+export type WorkoutType = 'strength' | 'cardio' | 'hiit' | 'stretch' | 'flexibility' | 'calisthenics' | 'other'
 
 export function detectWorkoutType(name: string): WorkoutType {
   const lower = name.toLowerCase()
-  if (lower.includes('кардио') || lower.includes('cardio') || lower.includes('бег') || lower.includes('ходьба')) return 'cardio'
+  if (lower.includes('кардио') || lower.includes('cardio') || lower.includes('бег') || lower.includes('ходьба') || lower.includes('пробеж')) return 'cardio'
   if (lower.includes('hiit') || lower.includes('интервал') || lower.includes('табата')) return 'hiit'
-  if (lower.includes('растяж') || lower.includes('йога') || lower.includes('stretch')) return 'stretch'
+  if (lower.includes('растяж') || lower.includes('йога') || lower.includes('stretch') || lower.includes('размин')) return 'stretch'
+  if (lower.includes('вес собственного') || lower.includes('турник') || lower.includes('брусья') || lower.includes('calisthenics') || lower.includes('отжиман')) return 'calisthenics'
   return 'strength'
 }
 
-export const WORKOUT_TYPE_CONFIG: Record<WorkoutType, {
+export const WORKOUT_TYPE_CONFIG: Record<string, {
   icon: React.ReactNode
   topBorderColor: string
   label: string
+  iconBg: string
+  iconColor: string
 }> = {
-  strength: { icon: <Dumbbell className="h-4 w-4" />, topBorderColor: 'border-t-rose-400', label: 'Силовая' },
-  cardio: { icon: <Clock className="h-4 w-4" />, topBorderColor: 'border-t-purple-400', label: 'Кардио' },
-  hiit: { icon: <Flame className="h-4 w-4" />, topBorderColor: 'border-t-orange-400', label: 'HIIT' },
-  stretch: { icon: <StretchHorizontal className="h-4 w-4" />, topBorderColor: 'border-t-emerald-400', label: 'Растяжка' },
+  strength: { icon: <Dumbbell className="h-4 w-4" />, topBorderColor: 'border-t-rose-400', label: 'Силовая', iconBg: 'bg-rose-100 dark:bg-rose-900/50', iconColor: 'text-rose-600 dark:text-rose-400' },
+  cardio: { icon: <Heart className="h-4 w-4" />, topBorderColor: 'border-t-purple-400', label: 'Кардио', iconBg: 'bg-purple-100 dark:bg-purple-900/50', iconColor: 'text-purple-600 dark:text-purple-400' },
+  hiit: { icon: <Flame className="h-4 w-4" />, topBorderColor: 'border-t-orange-400', label: 'HIIT', iconBg: 'bg-orange-100 dark:bg-orange-900/50', iconColor: 'text-orange-600 dark:text-orange-400' },
+  stretch: { icon: <Wind className="h-4 w-4" />, topBorderColor: 'border-t-emerald-400', label: 'Растяжка', iconBg: 'bg-emerald-100 dark:bg-emerald-900/50', iconColor: 'text-emerald-600 dark:text-emerald-400' },
+  flexibility: { icon: <Wind className="h-4 w-4" />, topBorderColor: 'border-teal-400', label: 'Гибкость', iconBg: 'bg-teal-100 dark:bg-teal-900/50', iconColor: 'text-teal-600 dark:text-teal-400' },
+  calisthenics: { icon: <Activity className="h-4 w-4" />, topBorderColor: 'border-cyan-400', label: 'Калистеника', iconBg: 'bg-cyan-100 dark:bg-cyan-900/50', iconColor: 'text-cyan-600 dark:text-cyan-400' },
+  other: { icon: <Zap className="h-4 w-4" />, topBorderColor: 'border-gray-400', label: 'Другое', iconBg: 'bg-gray-100 dark:bg-gray-900/50', iconColor: 'text-gray-600 dark:text-gray-400' },
 }
 
 // ─── Preset Templates ───────────────────────────────────────────────────────
@@ -38,8 +48,8 @@ export const WORKOUT_PRESETS: {
   exercises: ExerciseData[]
 }[] = [
   {
-    label: 'Кардио 30 мин',
-    name: 'Кардио тренировка',
+    label: 'Утренняя пробежка',
+    name: 'Утренняя пробежка',
     duration: 30,
     exercises: [
       { name: 'Бег', sets: [{ weight: 0, reps: 1, completed: false }], order: 0 },
@@ -48,9 +58,9 @@ export const WORKOUT_PRESETS: {
     ],
   },
   {
-    label: 'Силовая 45 мин',
+    label: 'Силовая тренировка',
     name: 'Силовая тренировка',
-    duration: 45,
+    duration: 60,
     exercises: [
       { name: 'Жим штанги', sets: [{ weight: 60, reps: 10, completed: false }, { weight: 60, reps: 10, completed: false }, { weight: 60, reps: 8, completed: false }], order: 0 },
       { name: 'Приседания', sets: [{ weight: 80, reps: 10, completed: false }, { weight: 80, reps: 10, completed: false }, { weight: 80, reps: 8, completed: false }], order: 1 },
@@ -59,25 +69,25 @@ export const WORKOUT_PRESETS: {
     ],
   },
   {
-    label: 'HIIT 20 мин',
-    name: 'HIIT тренировка',
-    duration: 20,
-    exercises: [
-      { name: 'Бёрпи', sets: [{ weight: 0, reps: 15, completed: false }, { weight: 0, reps: 15, completed: false }, { weight: 0, reps: 15, completed: false }], order: 0 },
-      { name: 'Выпады с прыжком', sets: [{ weight: 0, reps: 20, completed: false }, { weight: 0, reps: 20, completed: false }], order: 1 },
-      { name: 'Отжимания', sets: [{ weight: 0, reps: 20, completed: false }, { weight: 0, reps: 20, completed: false }], order: 2 },
-      { name: 'Планка', sets: [{ weight: 0, reps: 1, completed: false }], order: 3 },
-    ],
-  },
-  {
-    label: 'Растяжка 15 мин',
+    label: 'Растяжка',
     name: 'Растяжка',
-    duration: 15,
+    duration: 20,
     exercises: [
       { name: 'Наклоны к ногам', sets: [{ weight: 0, reps: 1, completed: false }], order: 0 },
       { name: 'Растяжка бёдер', sets: [{ weight: 0, reps: 1, completed: false }], order: 1 },
       { name: 'Поза ребёнка', sets: [{ weight: 0, reps: 1, completed: false }], order: 2 },
       { name: 'Поза кобры', sets: [{ weight: 0, reps: 1, completed: false }], order: 3 },
+    ],
+  },
+  {
+    label: 'HIIT',
+    name: 'HIIT тренировка',
+    duration: 25,
+    exercises: [
+      { name: 'Бёрпи', sets: [{ weight: 0, reps: 15, completed: false }, { weight: 0, reps: 15, completed: false }, { weight: 0, reps: 15, completed: false }], order: 0 },
+      { name: 'Выпады с прыжком', sets: [{ weight: 0, reps: 20, completed: false }, { weight: 0, reps: 20, completed: false }], order: 1 },
+      { name: 'Отжимания', sets: [{ weight: 0, reps: 20, completed: false }, { weight: 0, reps: 20, completed: false }], order: 2 },
+      { name: 'Планка', sets: [{ weight: 0, reps: 1, completed: false }], order: 3 },
     ],
   },
 ]
@@ -134,7 +144,18 @@ export function getWorkoutBorderColor(name: string): string {
   if (lower.includes('спин') || lower.includes('back')) return 'border-l-blue-400'
   if (lower.includes('ног') || lower.includes('leg')) return 'border-l-emerald-400'
   if (lower.includes('плеч') || lower.includes('shoulder')) return 'border-l-amber-400'
-  if (lower.includes('кардио') || lower.includes('cardio')) return 'border-l-purple-400'
+  if (lower.includes('кардио') || lower.includes('cardio') || lower.includes('бег') || lower.includes('пробеж')) return 'border-l-purple-400'
   if (lower.includes('рука') || lower.includes('arm')) return 'border-l-orange-400'
+  if (lower.includes('hiit') || lower.includes('интервал')) return 'border-l-orange-400'
+  if (lower.includes('растяж') || lower.includes('йога') || lower.includes('stretch')) return 'border-l-emerald-400'
   return 'border-l-gray-300'
 }
+
+// ─── Workout Motivational Phrases ───────────────────────────────────────────
+
+export const WORKOUT_PHRASES = [
+  'Тренировка — лучшее вложение в своё тело!',
+  'Начни с малого — и постепенно достигай большего',
+  'Каждая тренировка делает тебя сильнее',
+  'Дисциплина — ключ к результатам',
+]

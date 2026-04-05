@@ -1,8 +1,9 @@
 'use client'
 
-import { Plus, Settings2 } from 'lucide-react'
+import { Plus, Settings2, Flame } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 
 import { useNutrition } from './hooks'
 import { MacroRings } from './macro-ring'
@@ -21,6 +22,7 @@ export default function NutritionPage() {
     waterStats,
     waterAnimating,
     waterChartDays,
+    nutritionStreak,
     expandedMealId,
     deletingMealId,
     showNewMealDialog,
@@ -76,6 +78,37 @@ export default function NutritionPage() {
         </div>
 
         <MacroRings stats={stats} goals={goals} />
+
+        {/* Nutrition Streak Card */}
+        {nutritionStreak > 0 && (
+          <Card className="mb-6 overflow-hidden card-hover">
+            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-orange-500/5 pointer-events-none" />
+            <CardContent className="relative flex items-center gap-4 py-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 shadow-md shadow-orange-500/20">
+                <Flame className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium">Серия отслеживания</p>
+                <p className="text-xs text-muted-foreground">
+                  {nutritionStreak === 1
+                    ? 'Вчера ты начал(а) отслеживать питание'
+                    : nutritionStreak < 7
+                      ? `Отличное начало — продолжай в том же духе!`
+                      : nutritionStreak < 30
+                        ? `Невероятная дисциплина — так держать!`
+                        : `Месяц непрерывного отслеживания!`}
+                </p>
+              </div>
+              <div className="text-right shrink-0">
+                <p className="text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{nutritionStreak}</p>
+                <p className="text-xs text-muted-foreground">
+                  {nutritionStreak === 1 ? 'день' : nutritionStreak < 5 ? 'дня' : 'дней'} подряд
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <WaterTracker
           waterStats={waterStats}
           waterAnimating={waterAnimating}

@@ -2,6 +2,16 @@
 
 export type EntityType = 'diary' | 'transaction' | 'meal' | 'workout' | 'collection'
 
+export type ReactionType = 'like' | 'love' | 'fire' | 'applause' | 'wow'
+
+export interface ReactionCounts {
+  like: number
+  love: number
+  fire: number
+  applause: number
+  wow: number
+}
+
 export interface FeedUser {
   id: string
   name: string | null
@@ -21,6 +31,7 @@ export interface FeedPost {
   entityType: EntityType
   entityId: string
   caption: string | null
+  tags: string
   createdAt: string
   updatedAt: string
   user: FeedUser

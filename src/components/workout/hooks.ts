@@ -19,6 +19,7 @@ import {
 export function useWorkouts() {
   // ── State ──────────────────────────────────────────────────────────────────
   const [workouts, setWorkouts] = useState<Workout[]>([])
+  const [allWorkouts, setAllWorkouts] = useState<Workout[]>([])
   const [loading, setLoading] = useState(true)
   const [month, setMonth] = useState(getCurrentMonthStr())
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -47,7 +48,18 @@ export function useWorkouts() {
     }
   }, [month])
 
+  const fetchAllWorkouts = useCallback(async () => {
+    try {
+      const res = await fetch('/api/workout')
+      const json = await safeJson(res)
+      if (json && json.success) setAllWorkouts(json.data)
+    } catch {
+      // ignore
+    }
+  }, [])
+
   useEffect(() => { fetchWorkouts() }, [fetchWorkouts])
+  useEffect(() => { fetchAllWorkouts() }, [fetchAllWorkouts])
 
   // ── Computed values ────────────────────────────────────────────────────────
   const totalWorkouts = workouts.length
@@ -65,9 +77,7 @@ export function useWorkouts() {
   const totalVolume = useMemo(() => {
     let volume = 0
     workouts.forEach((w) => {
-      if (detectWorkoutType(w.name) === 'strength') {
-        w.exercises.forEach((ex) => { volume += calculateVolume(parseSets(ex.sets)) })
-      }
+      w.exercises.forEach((ex) => { volume += calculateVolume(parseSets(ex.sets)) })
     })
     return volume
   }, [workouts])
@@ -77,6 +87,29 @@ export function useWorkouts() {
     const sorted = [...workouts].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     return getRelativeTime(sorted[0].date)
   }, [workouts])
+
+  // ── Personal Records (from all workouts) ──────────────────────────────────
+
+  const personalRecords = useMemo(() => {
+    let heaviestWeight = 0
+    let longestDuration = 0
+    let mostExercises = 0
+    let totalVolumeAllTime = 0
+
+    allWorkouts.forEach((w) => {
+      if (w.durationMin && w.durationMin > longestDuration) longestDuration = w.durationMin
+      if (w.exercises.length > mostExercises) mostExercises = w.exercises.length
+      w.exercises.forEach((ex) => {
+        const sets = parseSets(ex.sets)
+        sets.forEach((s) => {
+          if (s.weight > heaviestWeight) heaviestWeight = s.weight
+          if (s.completed) totalVolumeAllTime += s.weight * s.reps
+        })
+      })
+    })
+
+    return { heaviestWeight, longestDuration, mostExercises, totalVolumeAllTime }
+  }, [allWorkouts])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   const resetForm = () => {
@@ -117,6 +150,7 @@ export function useWorkouts() {
         setDialogOpen(false)
         resetForm()
         fetchWorkouts()
+        fetchAllWorkouts()
       } else {
         toast.error('Ошибка при добавлении тренировки')
       }
@@ -176,6 +210,7 @@ export function useWorkouts() {
         setEditingWorkout(null)
         resetForm()
         fetchWorkouts()
+        fetchAllWorkouts()
       } else {
         toast.error('Ошибка при обновлении тренировки')
       }
@@ -224,6 +259,7 @@ export function useWorkouts() {
     exerciseTypes,
     totalVolume,
     lastWorkoutTime,
+    personalRecords,
     // Handlers
     handleSubmit,
     handleEditSubmit,

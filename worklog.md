@@ -5263,3 +5263,296 @@ Stage Summary:
 - 1 shared hook created (useUserPrefs)
 - All API endpoints return HTTP 200
 - ESLint: 0 errors, 0 warnings
+
+---
+## Task ID: 5-b
+### Agent: feed-collections-enhance-agent
+### Work Task
+Enhance Feed (Лента) and Collections (Коллекции) modules with better visuals and new features.
+
+### Work Summary
+
+**Feed Module Enhancements:**
+
+1. **Post Types Visual Differentiation** — Updated entity type icons and borders:
+   - diary → BookOpen icon + emerald left border (`border-l-emerald-500`)
+   - transaction → Wallet icon + amber left border (`border-l-amber-500`)
+   - meal → UtensilsCrossed icon + rose left border (`border-l-rose-500`)
+   - workout → Dumbbell icon + blue left border (`border-l-blue-500`)
+   - collection → Layers icon + violet left border (`border-l-violet-500`)
+   - Added colored type icon badge on avatar (`ENTITY_ICON_BG`)
+   - Removed emoji prefixes from ENTITY_LABELS for cleaner look
+
+2. **Post Reactions System** — Added emoji reactions beyond just like:
+   - 5 reaction types: 👍 Like, ❤️ Love, 🔥 Fire, 👏 Applause, 😮 Wow
+   - Reaction picker appears on hover over the like button
+   - User reaction state tracked per post (`userReactions`)
+   - Reaction counts tracked per post and type (`reactionCounts`)
+   - Animation on reaction toggle (scale bounce)
+   - Top 3 reactions displayed inline when no user reaction is active
+   - Backward-compatible like toggle behavior
+
+3. **Rich Text Preview** — Added "Показать больше"/"Свернуть" toggle:
+   - Posts with captions over 180 characters show `line-clamp-3`
+   - Toggle button with proper Russian labels
+   - `whitespace-pre-wrap` preserved for line breaks
+
+4. **Post Categories/Tags** — Added optional tag system:
+   - New `tags` field on Post model (JSON array string, default `"[]"`)
+   - Updated `/api/feed` POST handler to accept and store tags
+   - Tag input field in PostDialog with comma-separated format
+   - Tags displayed as small `#tag` badges below post caption
+   - `parsePostTags()` helper function
+
+5. **Better Empty State** — Enhanced empty state:
+   - Gradient icon circle (`from-emerald-500 to-teal-500`)
+   - White Rss icon inside gradient circle with shadow
+   - "Поделитесь первым постом" message
+   - Gradient CTA button with PenLine icon
+
+6. **Time-based Grouping** — Posts grouped by time periods:
+   - Groups: "Сегодня", "Вчера", "На этой неделе", "Ранее"
+   - `getTimeGroup()` helper function
+   - `groupedPosts` computed via `useMemo`
+   - Group headers with label, separator line, and post count
+   - Canonical order preserved regardless of post dates
+
+**Collections Module Enhancements:**
+
+1. **Stats Dashboard** — Enhanced stats bar with 4 stat cards in a grid:
+   - Total items count with ListChecks icon in primary color
+   - Completed count with SVG progress ring (shows percentage)
+   - In progress count with amber Loader2 icon
+   - Average rating with Star icon and mini star display
+   - Card-based layout with colored icon circles
+
+2. **Quick Add from Templates** — Added 3 template buttons:
+   - "Добавить книгу" (BOOK) — amber color
+   - "Добавить фильм" (MOVIE) — purple color
+   - "Добавить рецепт" (RECIPE) — rose color
+   - Each opens AddItemDialog pre-set to the corresponding type
+   - `openQuickAdd()` handler resets form and sets type
+
+3. **Rating Display Enhancement** — Stars shown with actual filled/empty icons:
+   - `StarDisplay` component with 5 Star icons
+   - Gold fill for rated stars (`fill-amber-400 text-amber-400`)
+   - Muted for empty stars (`text-gray-300 dark:text-gray-600`)
+   - Numeric rating (e.g., "4.2") displayed alongside stars in stats bar
+   - Item cards now show rating value text (e.g., "4/5") next to stars
+
+4. **Collection Type Icons** — Updated with colored backgrounds:
+   - BOOK → BookOpen + amber background
+   - MOVIE → Film + purple background
+   - RECIPE → ChefHat + rose background
+   - SUPPLEMENT → Pill + cyan background
+   - PRODUCT → ShoppingBag + emerald background
+   - `TYPE_ICON_BG` and `TYPE_ICON_BG_LIGHT` constant maps
+   - Item cards show colored rounded-lg icon badge in cover corner
+
+5. **Detail Enhancement** — Improved detail dialog:
+   - "Добавлено N дней назад" using `formatDaysAgo()` helper (replaces raw date)
+   - "Открыть" button with ExternalLink icon (placeholder for future link support)
+   - Type icon badge in cover area with colored background
+   - Better button layout with `min-w-[120px]` for consistent sizing
+
+6. **Sort Options** — Added sort dropdown:
+   - "По дате добавления" (date, default)
+   - "По рейтингу" (rating, descending)
+   - "По названию" (name, alphabetical Russian sort)
+   - `ArrowUpDown` icon + Select component in header row
+   - `sortBy` state + `sortedItems` computed via `useMemo`
+   - Items sorted client-side after fetch
+
+**Files Modified:**
+- `prisma/schema.prisma` — Added `tags` field to Post model
+- `src/app/api/feed/route.ts` — Handle tags in POST
+- `src/components/feed/types.ts` — Added ReactionType, ReactionCounts, tags field
+- `src/components/feed/constants.tsx` — New icons, borders, reactions config, getTimeGroup(), parsePostTags()
+- `src/components/feed/hooks.ts` — Reaction state, formTags, groupedPosts computed
+- `src/components/feed/post-card.tsx` — Reactions, rich text, tags, new border styles
+- `src/components/feed/post-dialog.tsx` — Tag input field
+- `src/components/feed/empty-state.tsx` — Gradient icon, Russian CTA
+- `src/components/feed/feed-page.tsx` — Time-grouped posts, reaction props
+- `src/components/collections/constants.tsx` — New icons (ShoppingBag), TYPE_ICON_BG, QUICK_ADD_TEMPLATES, SORT_OPTIONS, formatDaysAgo()
+- `src/components/collections/hooks.ts` — Sort state, openQuickAdd, averageRating, sortedItems
+- `src/components/collections/stats-bar.tsx` — Progress ring SVG, star display, 4-card grid
+- `src/components/collections/collections-page.tsx` — Quick add buttons, sort dropdown
+- `src/components/collections/item-card.tsx` — Colored type icon badge, rating value text
+- `src/components/collections/item-dialog.tsx` — formatDaysAgo, "Открыть" button, type icon in cover
+
+**Verification:**
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly
+- ✅ All existing functionality preserved
+- ✅ Database schema migrated (tags field added to Post)
+
+---
+## Task ID: 5-a
+### Work Task
+Enhance Nutrition (Питание) and Workout (Тренировки) modules with better visuals and new features.
+
+### Work Summary
+
+**Part 1 — Nutrition Module Enhancements:**
+
+a) **Meal Cards Enhancement** (`meal-timeline.tsx`):
+- Added colored left border per meal type: BREAKFAST → amber, LUNCH → emerald, DINNER → blue, SNACK → rose (via `border-l-{color}-400` classes in `MEAL_TYPE_CONFIG`)
+- Replaced emoji icons with lucide-react icons: Coffee for breakfast, UtensilsCrossed for lunch, Sunset for dinner, CakeSlice for snack
+- Each meal card now has an icon badge with colored background (`iconBg`, `iconColor` properties)
+- Calorie badge already existed with Flame icon — preserved as-is
+
+b) **Nutrition Streak** (`hooks.ts`, `nutrition-page.tsx`):
+- Added `calculateNutritionStreak()` function combining water history (localStorage) and meal dates for consecutive day tracking
+- Added `nutritionStreak` to useNutrition hook via useMemo
+- New streak card on nutrition page: gradient flame icon, streak count, motivational message (varies by streak length: 1 day, <7 days, <30 days, 30+ days)
+- Card only shown when streak > 0
+
+c) **Quick Add Presets** (`meal-dialog.tsx`, `constants.tsx`):
+- Added `FOOD_PRESETS` constant with 6 items: Кофе с молоком (45), Яичница (220), Салат (150), Куриная грудка (250), Овсянка (180), Банан (105)
+- Added preset chips in AddMealDialog (not EditMealDialog): small clickable rounded-full buttons with Zap icon label
+- Clicking a preset pre-fills the first meal item with name, kcal, protein, fat, carbs
+
+d) **Water Tracker Enhancement** (`water-tracker.tsx`):
+- Weekly water bar chart already existed — confirmed working with waterChartDays prop
+- Chart shows 7-day history with color-coded bars (emerald for goal reached, blue for today, muted for no data)
+
+e) **Better Empty State** (`meal-timeline.tsx`):
+- Enhanced empty state with gradient icon background (orange-400 to amber-500 gradient)
+- Added motivational phrase from `NUTRITION_PHRASES` array (4 phrases, selected by day of month)
+- Added secondary subtitle text
+- Prominent gradient CTA button with active-press class
+
+**Part 2 — Workout Module Enhancements:**
+
+a) **Workout Type Icons** (`constants.tsx`):
+- Updated `detectWorkoutType` to recognize more types: calisthenics (турник, брусья, отжимания, вес собственного)
+- Updated `WORKOUT_TYPE_CONFIG` with new icons: Heart for cardio, Dumbbell for strength, Flame for HIIT, Wind for stretch/flexibility, Activity for calisthenics, Zap for other
+- Added `iconBg` and `iconColor` properties for each type
+- Updated `getWorkoutBorderColor` to handle пробеж, hiit, растяж, stretch keywords
+
+b) **Volume Chart** (`volume-chart.tsx`, new file):
+- Created WorkoutVolumeChart component using Recharts AreaChart
+- Fetches workout data for last 7 days, calculates volume per day (weight × reps across all exercises)
+- Violet gradient fill with custom dot rendering
+- Tooltip showing day name and volume in kg/tons
+- Empty state message when no data
+- Loading skeleton state
+
+c) **Workout Presets** (`constants.tsx`):
+- Updated preset labels to match requirements: "Утренняя пробежка" (cardio, 30 min), "Силовая тренировка" (strength, 60 min), "Растяжка" (flexibility, 20 min), "HIIT" (hiit, 25 min)
+- Presets shown as clickable chips in workout empty state
+- Clicking a preset opens the dialog with pre-filled name and duration
+
+d) **Personal Records** (`personal-records.tsx`, new file):
+- Created PersonalRecords component with Trophy gradient icon
+- Shows 4 records in 2×2 grid: Heaviest weight (kg), Longest duration (min), Most exercises in one workout, Total volume all time
+- Each record has colored icon, value, and description
+- Only displayed when at least one record exists
+- Data calculated in hooks.ts from all workouts (not just current month)
+
+e) **Better Empty State** (`workout-page.tsx`):
+- Enhanced empty state with motivational phrase from `WORKOUT_PHRASES` array
+- Added preset quick-add buttons (clickable chips with type icons)
+- Gradient CTA button preserved
+- Secondary subtitle text added
+
+**New Files Created:**
+- `/src/components/workout/volume-chart.tsx` — Weekly workout volume AreaChart
+- `/src/components/workout/personal-records.tsx` — Personal records display card
+
+**Modified Files:**
+- `/src/components/nutrition/constants.tsx` — Added border colors, icon configs, FOOD_PRESETS, NUTRITION_PHRASES
+- `/src/components/nutrition/meal-timeline.tsx` — Colored borders, icons, enhanced empty state
+- `/src/components/nutrition/meal-dialog.tsx` — Quick food presets as chips
+- `/src/components/nutrition/hooks.ts` — nutritionStreak calculation, calculateNutritionStreak function
+- `/src/components/nutrition/nutrition-page.tsx` — Streak card integration
+- `/src/components/workout/constants.tsx` — New type icons, presets, phrases, extended type detection
+- `/src/components/workout/workout-card.tsx` — Dynamic icon rendering with type config
+- `/src/components/workout/hooks.ts` — personalRecords computation, fetchAllWorkouts
+- `/src/components/workout/workout-page.tsx` — Volume chart, personal records, enhanced empty state
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All lucide-react icons verified (Sunset, CakeSlice, Wind, Activity, Zap, Heart)
+- ✅ Workout API supports fetching without month parameter (for all-time records)
+- ✅ All existing functionality preserved — no breaking changes
+- ✅ Dark mode support via dark: variants on all new styles
+
+
+---
+Task ID: cron-review-round-2026-04-05-17
+Agent: main-coordinator
+Task: QA testing, bug fixes, and new feature development
+
+## Project Current Status Assessment
+
+**Overall Health**: ✅ Stable
+- All 11 modules render and function correctly
+- All 9 API endpoints return HTTP 200
+- ESLint: 0 errors, 0 warnings
+- Dev server compiles cleanly
+
+**QA Results (agent-browser)**:
+- Dashboard: ✅ Loads correctly, greeting shows dynamic username, all quick actions visible
+- All sidebar navigation: ✅ Working (Дневник, Финансы, Питание, Тренировки, Коллекции, Лента, Привычки, Цели, Аналитика, Настройки)
+- API endpoints: ✅ All return HTTP 200 (/api/goals, /api/habits, /api/diary, /api/finance, /api/nutrition, /api/workout, /api/collections, /api/feed, /api/dashboard, /api/module-counts)
+- Finance ChunkLoadError: Was observed but determined to be a Turbopack cache corruption issue (sandbox kills server mid-write), NOT a code bug. Resolved by clearing .next cache.
+
+## Completed This Round
+
+### 1. Bug Investigation
+- Finance module "Что-то пошло не так" error investigated via agent-browser
+- Root cause: Turbopack SST database corruption when sandbox kills process during chunk compilation
+- Not a code bug — all imports/exports verified correct
+- Resolution: Clear .next cache on server restart
+
+### 2. Nutrition Module Enhancement
+- Meal cards: colored left borders per meal type (amber/emerald/blue/rose), meal type icons (Coffee/UtensilsCrossed/Sunset/CakeSlice), calorie badges
+- Nutrition streak: calculates consecutive days of meal/water logging, shows flame icon + streak count
+- Quick add presets: 6 food presets (Кофе с молоком, Яичница, Салат, Куриная грудка, Овсянка, Банан) as clickable chips
+- Better empty state: gradient icon, motivational phrases, CTA button
+
+### 3. Workout Module Enhancement
+- Workout type icons: Heart (cardio), Dumbbell (strength), Flame (HIIT), Wind (flexibility), Activity (calisthenics), Zap (other)
+- Volume chart: new area chart showing workout volume (weight × reps) for last 7 days
+- Personal records: 2×2 grid showing heaviest lift, longest workout, most exercises, total volume
+- Workout presets: 4 templates (Утренняя пробежка, Силовая тренировка, Растяжка, HIIT)
+- Better empty state with presets
+
+### 4. Feed Module Enhancement
+- Post type visual differentiation: colored icons + left borders per entity type
+- Emoji reactions: 5 reaction types (👍❤️🔥👏😮) with hover picker
+- Rich text preview: line-clamp-3 with "Показать больше"/"Свернуть" toggle
+- Post tags: new tags field, tag input in dialog, #tag badges
+- Time-based grouping: "Сегодня", "Вчера", "На этой неделе", "Ранее"
+- Better empty state
+
+### 5. Collections Module Enhancement
+- Stats dashboard: 4-card grid (total, completed with progress ring, in progress, avg rating)
+- Quick add templates: "Добавить книгу", "Добавить фильм", "Добавить рецепт" buttons
+- Star rating display: filled/empty Star icons in gold/muted
+- Collection type icons: ShoppingBag, BookOpen, Film, ChefHat, Pill
+- Sort options: dropdown (По дате, По рейтингу, По названию)
+- Detail enhancement: relative date ("Добавлено N дней назад"), "Открыть" button
+
+## Known Issues & Risks
+
+1. **Turbopack Cache Corruption** — Sandbox environment kills server process during compilation, corrupting .next cache. Mitigation: clear .next on restart. Do NOT preserve .next cache.
+2. **Server Stability** — Server dies after ~30-60s idle in sandbox. Cron job (ID: 63824) restarts every 15 min.
+3. **Single User** — All APIs use hardcoded DEMO_USER_ID. No authentication system.
+
+## Recommended Next Steps
+
+1. **Mobile responsiveness audit** — Test all modules on small viewports (375px)
+2. **Dark mode polish** — Some new components may need dark mode fixes
+3. **Data persistence** — Add export/import for nutrition and workout data
+4. **Search enhancement** — Include collections and feed in global search
+5. **Notification system** — Add deadline reminders for goals and habits
+6. **Settings page** — Add nutrition/workout goals configuration
+7. **Performance optimization** — Lazy-load heavy sub-components within modules
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All 9 API endpoints: HTTP 200
+- ✅ Dev server: compiles cleanly
+- ✅ All modules render without errors (confirmed via agent-browser)

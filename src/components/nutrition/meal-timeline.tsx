@@ -9,7 +9,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Flame, UtensilsCrossed, Trash2, Clock, ChevronDown, ChevronUp, Pencil, Plus } from 'lucide-react'
-import { MEAL_TYPE_CONFIG } from './constants'
+import { MEAL_TYPE_CONFIG, NUTRITION_PHRASES } from './constants'
 import type { MealWithItems } from './types'
 
 interface MealTimelineProps {
@@ -45,6 +45,8 @@ export function MealTimeline({
   const sorted = sortMealsByType(meals)
 
   if (sorted.length === 0) {
+    const phraseIdx = new Date().getDate() % NUTRITION_PHRASES.length
+
     return (
       <Card className="mb-6 overflow-hidden relative animate-slide-up">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-500/5 via-transparent to-amber-500/5 pointer-events-none" />
@@ -53,13 +55,16 @@ export function MealTimeline({
             <UtensilsCrossed className="h-10 w-10 text-white" />
           </div>
           <h3 className="text-lg font-semibold mb-1">Нет записей о питании</h3>
-          <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-            Запишите первый приём пищи для отслеживания калорий
+          <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-1">
+            {NUTRITION_PHRASES[phraseIdx]}
+          </p>
+          <p className="text-xs text-muted-foreground/70 mb-6">
+            Начни отслеживать калории уже сегодня
           </p>
           <Button
             size="lg"
             onClick={onAddNew}
-            className="mt-6 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+            className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
           >
             <Plus className="h-5 w-5 mr-2" />
             Добавить приём пищи
@@ -77,11 +82,13 @@ export function MealTimeline({
         const isExpanded = expandedMealId === meal.id
 
         return (
-          <Card key={meal.id} className="card-hover">
+          <Card key={meal.id} className={`card-hover border-l-4 ${config.borderColor}`}>
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <span>{config.emoji}</span>
+                <CardTitle className="flex items-center gap-2.5 text-base">
+                  <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${config.iconBg}`}>
+                    <span className={config.iconColor}>{config.icon}</span>
+                  </div>
                   <span>{config.label}</span>
                   <span className="flex items-center gap-1 rounded-md bg-muted/60 px-2 py-0.5 text-xs font-semibold text-muted-foreground">
                     <Clock className="size-3" />

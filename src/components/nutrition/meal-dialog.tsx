@@ -17,8 +17,8 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select'
-import { Plus, UtensilsCrossed, Pencil, X } from 'lucide-react'
-import { MEAL_TYPE_ORDER, MEAL_TYPE_CONFIG } from './constants'
+import { Plus, UtensilsCrossed, Pencil, X, Zap } from 'lucide-react'
+import { MEAL_TYPE_ORDER, MEAL_TYPE_CONFIG, FOOD_PRESETS } from './constants'
 
 // ─── Shared meal form item type ─────────────────────────────────────────────
 
@@ -42,6 +42,7 @@ function MealItemsForm({
   itemsLabel,
   note,
   onNoteChange,
+  showPresets = false,
 }: {
   mealType: string
   mealItems: MealFormItem[]
@@ -50,6 +51,7 @@ function MealItemsForm({
   itemsLabel?: string
   note?: string
   onNoteChange?: (val: string) => void
+  showPresets?: boolean
 }) {
   const addItem = () => onMealItemsChange([...mealItems, { ...EMPTY_ITEM }])
   const removeItem = (index: number) => {
@@ -60,6 +62,16 @@ function MealItemsForm({
     const updated = [...mealItems]
     updated[index] = { ...updated[index], [field]: value }
     onMealItemsChange(updated)
+  }
+
+  const applyPreset = (preset: typeof FOOD_PRESETS[number]) => {
+    onMealItemsChange([{
+      name: preset.name,
+      kcal: String(preset.kcal),
+      protein: String(preset.protein),
+      fat: String(preset.fat),
+      carbs: String(preset.carbs),
+    }])
   }
 
   return (
@@ -83,6 +95,29 @@ function MealItemsForm({
           </SelectContent>
         </Select>
       </div>
+
+      {/* Quick food presets (only for add dialog) */}
+      {showPresets && (
+        <div>
+          <div className="mb-2 flex items-center gap-1.5">
+            <Zap className="size-3.5 text-amber-500" />
+            <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Быстрый выбор</label>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {FOOD_PRESETS.map((preset) => (
+              <button
+                key={preset.name}
+                type="button"
+                onClick={() => applyPreset(preset)}
+                className="inline-flex items-center gap-1 rounded-full border bg-muted/30 px-2.5 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 hover:border-muted-foreground/30 active-press"
+              >
+                <span>{preset.name}</span>
+                <span className="text-muted-foreground">{preset.kcal} ккал</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Note (edit only) */}
       {onNoteChange !== undefined && (
@@ -202,6 +237,7 @@ export function AddMealDialog({
           mealItems={mealItems}
           onMealTypeChange={onMealTypeChange}
           onMealItemsChange={onMealItemsChange}
+          showPresets
         />
 
         <Button
