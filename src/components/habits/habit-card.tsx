@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { Check, Calendar, Flame, Edit2, Trash2, Sparkles, Trophy, Archive, RotateCcw } from 'lucide-react'
+import { Check, Flame, Edit2, Trash2, Sparkles, Trophy, Archive } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { HabitData } from './types'
-import { getDayLabel, getCategoryLabel, getCategoryEmoji } from './constants'
+import { getDayLabel, getCategoryLabel, getCategoryEmoji, getCategoryBorderClass, getCategoryColor } from './constants'
 import { cn } from '@/lib/utils'
 
 interface HabitCardProps {
@@ -60,6 +60,8 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
   const [showSparkle, setShowSparkle] = useState(false)
   const [checkAnim, setCheckAnim] = useState(false)
   const difficulty = getDifficultyBadge(habit.frequency, habit.targetCount)
+  const categoryColor = getCategoryColor(habit.category)
+  const categoryBorderClass = getCategoryBorderClass(habit.category)
 
   // Calculate completion rate for best streak display
   const completionRate = Object.values(habit.last7Days).filter(Boolean).length
@@ -81,31 +83,45 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
   const categoryEmoji = getCategoryEmoji(habit.category)
 
   return (
-    <Card className="card-hover overflow-hidden relative group">
+    <Card className={cn(
+      'card-hover overflow-hidden relative group',
+      categoryBorderClass,
+    )}>
       <CardContent className="p-4">
         <div className="flex items-center gap-3">
           {/* Toggle button with checkmark animation */}
           <div className="relative">
             <button
               onClick={handleToggle}
-              className="shrink-0 transition-transform hover:scale-110 active:scale-95"
+              className="shrink-0 transition-transform hover:scale-110 active:scale-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-full"
               aria-label={habit.todayCompleted ? 'Отменить выполнение' : 'Отметить выполненным'}
             >
               {habit.todayCompleted ? (
                 <div
                   className={cn(
-                    'h-11 w-11 rounded-full flex items-center justify-center text-white',
+                    'h-11 w-11 rounded-full flex items-center justify-center text-white transition-shadow duration-300',
                     checkAnim && 'animate-[checkBounce_0.5s_ease-out]',
+                    !checkAnim && 'shadow-md',
                   )}
                   style={{ backgroundColor: habit.color }}
                 >
-                  <Check className={cn(
-                    'h-5 w-5 transition-all',
-                    checkAnim && 'animate-[checkPop_0.3s_ease-out]',
-                  )} />
+                  <Check
+                    className={cn(
+                      'h-5 w-5 text-white',
+                      checkAnim && 'animate-[checkPop_0.3s_ease-out]',
+                    )}
+                    strokeWidth={3}
+                  />
                 </div>
               ) : (
-                <div className="h-11 w-11 rounded-full border-2 border-muted-foreground/30 dark:border-muted-foreground/50 flex items-center justify-center" />
+                <div
+                  className="h-11 w-11 rounded-full border-2 border-dashed border-muted-foreground/25 dark:border-muted-foreground/40 flex items-center justify-center hover:border-muted-foreground/50 dark:hover:border-muted-foreground/60 transition-colors"
+                >
+                  <div
+                    className="h-5 w-5 rounded-full opacity-20"
+                    style={{ backgroundColor: habit.color }}
+                  />
+                </div>
               )}
             </button>
             <CompletionSparkle show={showSparkle} color={habit.color} />
@@ -115,11 +131,14 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg">{habit.emoji}</span>
-              <span className={`font-medium text-sm ${habit.todayCompleted ? 'line-through text-muted-foreground' : ''}`}>
+              <span className={`font-medium text-sm transition-all duration-300 ${habit.todayCompleted ? 'line-through text-muted-foreground' : ''}`}>
                 {habit.name}
               </span>
-              {/* Category badge */}
-              <span className="inline-flex items-center gap-0.5 rounded-full bg-muted/60 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+              {/* Category badge with category color */}
+              <span
+                className="inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+                style={{ backgroundColor: categoryColor }}
+              >
                 {categoryEmoji} {categoryLabel}
               </span>
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
@@ -132,66 +151,82 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
                 <span className={`h-1.5 w-1.5 rounded-full ${difficulty.text.replace('text-', 'bg-')}`} />
                 {difficulty.label}
               </span>
-              {habit.streak >= 3 && (
-                <span className="ml-auto flex items-center gap-1 rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-medium text-orange-700 dark:bg-orange-900/30 dark:text-orange-400">
-                  🔥 {habit.streak}д
-                </span>
-              )}
-              {habit.bestStreak > habit.streak && habit.bestStreak >= 3 && (
-                <span className="flex items-center gap-0.5 text-[9px] text-amber-500" title="Лучшая серия">
-                  <Trophy className="h-3 w-3" />
-                  <span className="font-medium tabular-nums">{habit.bestStreak}д</span>
-                </span>
-              )}
             </div>
 
-            {/* Weekly mini-grid */}
-            <div className="flex items-center gap-1.5 mt-2">
-              <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
-              <div className="flex gap-1">
+            {/* 7-day streak dots */}
+            <div className="flex items-center gap-2 mt-2.5">
+              <span className="text-[9px] text-muted-foreground/60 font-medium shrink-0">7 дней</span>
+              <div className="flex gap-1.5">
                 {last7Days.map((day) => {
                   const completed = habit.last7Days[day]
                   const isToday = day === new Date().toISOString().split('T')[0]
                   return (
                     <div
                       key={day}
-                      className="flex flex-col items-center gap-0.5"
+                      className="relative flex flex-col items-center gap-1"
                       title={`${getDayLabel(day)} ${day}${completed ? ' ✓' : ''}`}
                     >
                       <div
                         className={cn(
-                          'h-5 w-5 rounded-sm transition-all',
-                          completed ? 'scale-100 shadow-sm' : 'border border-muted-foreground/15 dark:border-muted-foreground/25'
+                          'h-3 w-3 rounded-full transition-all duration-300',
+                          completed
+                            ? 'scale-100'
+                            : 'scale-90 opacity-30',
+                          isToday && completed && 'streak-dot-active',
                         )}
                         style={{
-                          backgroundColor: completed ? habit.color : 'transparent',
-                          opacity: completed ? 1 : 0.3,
+                          backgroundColor: completed ? habit.color : undefined,
+                          border: completed ? 'none' : `1.5px solid ${habit.color}40`,
                         }}
                       />
-                      <span className="text-[9px] text-muted-foreground leading-none">
+                      <span className={cn(
+                        'text-[8px] leading-none',
+                        isToday ? 'text-foreground font-bold' : 'text-muted-foreground/50'
+                      )}>
                         {getDayLabel(day)}
                       </span>
                     </div>
                   )
                 })}
               </div>
-              <span className="text-[9px] text-muted-foreground/50 ml-1 tabular-nums">
+              <span className="text-[9px] text-muted-foreground/50 ml-auto tabular-nums font-medium">
                 {thisWeekCompleted}/7
               </span>
+              {/* Streak flame for streak >= 3 */}
+              {habit.streak >= 3 && (
+                <span className="inline-flex items-center gap-0.5 text-orange-500 shrink-0">
+                  <Flame className={cn('h-3.5 w-3.5', habit.streak >= 7 && 'animate-pulse')} />
+                  <span className="text-[10px] font-bold tabular-nums">{habit.streak}д</span>
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Streak */}
-          <div className="flex flex-col items-center gap-1 shrink-0">
-            {habit.streak > 0 ? (
-              <div className="flex items-center gap-1 text-orange-500">
-                <Flame className="h-4 w-4" />
-                <span className="text-sm font-bold tabular-nums">{habit.streak}</span>
+          {/* Streak display */}
+          {habit.streak > 0 && (
+            <div className="flex flex-col items-center gap-0.5 shrink-0 self-center">
+              <div className={cn(
+                'flex items-center gap-1 rounded-full px-2 py-1',
+                habit.streak >= 7
+                  ? 'bg-gradient-to-r from-orange-500/20 to-amber-500/20'
+                  : 'bg-muted/50',
+              )}>
+                <Flame className={cn(
+                  'h-4 w-4 text-orange-500',
+                  habit.streak >= 7 && 'animate-pulse',
+                )} />
+                <span className="text-sm font-bold tabular-nums text-orange-600 dark:text-orange-400">
+                  {habit.streak}
+                </span>
               </div>
-            ) : (
-              <div className="h-5" />
-            )}
-          </div>
+              {habit.bestStreak > habit.streak && habit.bestStreak >= 3 && (
+                <span className="flex items-center gap-0.5 text-[9px] text-amber-500" title="Лучшая серия">
+                  <Trophy className="h-2.5 w-2.5" />
+                  <span className="font-medium tabular-nums">{habit.bestStreak}</span>
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex items-center gap-1 shrink-0">
@@ -231,11 +266,6 @@ export function HabitCard({ habit, last7Days, onToggle, onEdit, onDeleteClick, d
           </div>
         </div>
       </CardContent>
-      {/* Left colored border accent */}
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl"
-        style={{ backgroundColor: habit.color }}
-      />
     </Card>
   )
 }
@@ -271,7 +301,7 @@ export function ArchivedHabitCard({ habit, onUnarchive, onDeleteClick, deleteCon
               onClick={() => onUnarchive(habit.id)}
               title="Восстановить"
             >
-              <RotateCcw className="h-3.5 w-3.5" />
+              <Archive className="h-3.5 w-3.5 rotate-180" />
             </Button>
             {deleteConfirmId === habit.id ? (
               <button

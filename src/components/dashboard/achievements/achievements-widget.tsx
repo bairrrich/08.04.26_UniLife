@@ -1,11 +1,9 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Separator } from '@/components/ui/separator'
 import {
@@ -13,11 +11,12 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
+  Star,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AchievementBadge } from './achievement-badge'
 import { ACHIEVEMENT_DEFINITIONS, CATEGORY_COLORS } from './constants'
-import type { Achievement, AchievementContext } from './types'
+import type { Achievement, AchievementContext, PersistedAchievement } from './types'
 import type { DiaryEntry, FinanceStats, NutritionStats, Workout, HabitItem, BudgetData } from '../types'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -48,8 +47,7 @@ function evaluateAchievement(
   ctx: AchievementContext
 ): { earned: boolean; earnedAt: string | null } {
   const now = new Date()
-
-  const hasBudget = ctx.financeStats !== null && ctx.transactionsCount > 0
+  const todayDateStr = now.toISOString().split('T')[0]
 
   const savingsRate = ctx.financeStats
     ? ctx.financeStats.totalIncome > 0
@@ -58,98 +56,121 @@ function evaluateAchievement(
     : 0
 
   const totalWorkoutMin = ctx.workouts.reduce((sum, w) => sum + (w.durationMin ?? 0), 0)
-
   const hasAnyHabit = (ctx.habitsData?.data ?? []).length > 0
-
   const has7DayHabitStreak = (ctx.habitsData?.data ?? []).some((h) => h.streak >= 7)
-
   const hasAnyNutrition = ctx.nutritionStats !== null && ctx.nutritionStats.totalKcal > 0
 
-  const todayDateStr = now.toISOString().split('T')[0]
+  // Week range for workout streak
+  const weekAgo = new Date(now)
+  weekAgo.setDate(weekAgo.getDate() - 7)
+  const weekAgoStr = weekAgo.toISOString().split('T')[0]
+  const weekWorkouts = ctx.workouts.filter((w) => new Date(w.date).toISOString().split('T')[0] >= weekAgoStr).length
 
-  // Early bird: diary entry created before 8am today
+  // Diary streak
+  const dates = [...new Set(ctx.diaryEntries.map((e) => new Date(e.date).toISOString().split('T')[0]))].sort().reverse()
+  let diaryStreak = 0
+  if (dates.length > 0) {
+    const todayKey = todayDateStr
+    const yesterdayKey = (() => { const d = new Date(now); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] })()
+    if (dates[0] === todayKey || dates[0] === yesterdayKey) {
+      diaryStreak = 1
+      for (let i = 0; i < dates.length - 1; i++) {
+        const curr = new Date(dates[i])
+        const prev = new Date(dates[i + 1])
+        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24))
+        if (diffDays === 1) {
+          diaryStreak++
+        } else {
+          break
+        }
+      }
+    }
+  }
+
+  // Early bird
   const hasEarlyBirdEntry = ctx.diaryEntries.some((e) => {
     const d = new Date(e.date)
     const isToday = d.toISOString().split('T')[0] === todayDateStr
     return isToday && d.getHours() < 8
   })
 
+  // Active day
+  const todayDiaryDone = ctx.diaryEntries.some((e) => new Date(e.date).toISOString().split('T')[0] === todayDateStr)
+  const activeDay = todayDiaryDone && ctx.todayWorkoutDone && ctx.hasMealsToday && ctx.allHabitsCompleted
+
   switch (id) {
     // ── Diary ──
-    case 'diary_first_entry':
+    case 'first_diary_entry':
       return { earned: ctx.diaryEntries.length > 0, earnedAt: ctx.diaryEntries.length > 0 ? ctx.diaryEntries[ctx.diaryEntries.length - 1]?.date ?? null : null }
 
-    case 'diary_week_streak': {
-      // Check if there's a 7-day consecutive streak in diary entries
-      const dates = [...new Set(ctx.diaryEntries.map((e) => new Date(e.date).toISOString().split('T')[0]))].sort()
-      let streak = 1
-      for (let i = dates.length - 1; i > 0; i--) {
-        const curr = new Date(dates[i])
-        const prev = new Date(dates[i - 1])
-        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24))
-        if (diffDays === 1) {
-          streak++
-          if (streak >= 7) break
-        } else {
-          streak = 1
-        }
-      }
-      return { earned: streak >= 7, earnedAt: streak >= 7 ? dates[dates.length - 1] ?? null : null }
-    }
+    case 'diary_streak_3':
+      return { earned: diaryStreak >= 3, earnedAt: diaryStreak >= 3 ? todayDateStr : null }
+
+    case 'diary_streak_7':
+      return { earned: diaryStreak >= 7, earnedAt: diaryStreak >= 7 ? todayDateStr : null }
 
     case 'diary_30_entries':
       return { earned: ctx.diaryEntries.length >= 30, earnedAt: ctx.diaryEntries.length >= 30 ? ctx.diaryEntries[Math.max(0, ctx.diaryEntries.length - 30)]?.date ?? null : null }
 
     // ── Finance ──
-    case 'finance_first_budget':
-      return { earned: hasBudget, earnedAt: hasBudget ? ctx.transactionsData[0]?.date ?? null : null }
+    case 'first_transaction':
+      return { earned: ctx.transactionsCount > 0, earnedAt: ctx.transactionsCount > 0 ? ctx.transactionsData[0]?.date ?? null : null }
 
-    case 'finance_savings_month':
-      return { earned: savingsRate > 20, earnedAt: savingsRate > 20 ? todayDateStr : null }
+    case 'savings_rate_positive':
+      return { earned: savingsRate > 0, earnedAt: savingsRate > 0 ? todayDateStr : null }
 
     case 'finance_100_transactions':
-      return { earned: ctx.transactionsCount >= 100, earnedAt: ctx.transactionsCount >= 100 ? ctx.transactionsData[Math.max(0, ctx.transactionsCount - 1)]?.date ?? null : null }
+      return { earned: ctx.transactionsCount >= 100, earnedAt: ctx.transactionsCount >= 100 ? todayDateStr : null }
 
     // ── Workout ──
-    case 'workout_first':
+    case 'first_workout':
       return { earned: ctx.workouts.length > 0, earnedAt: ctx.workouts.length > 0 ? ctx.workouts[0]?.date ?? null : null }
 
-    case 'workout_week_7': {
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-      const monthWorkouts = ctx.workouts.filter((w) => new Date(w.date).toISOString().split('T')[0] >= monthStart)
-      return { earned: monthWorkouts.length >= 7, earnedAt: monthWorkouts.length >= 7 ? monthWorkouts[monthWorkouts.length - 1]?.date ?? null : null }
-    }
+    case 'workout_streak_3':
+      return { earned: weekWorkouts >= 3, earnedAt: weekWorkouts >= 3 ? todayDateStr : null }
 
     case 'workout_marathon':
       return { earned: totalWorkoutMin >= 1000, earnedAt: totalWorkoutMin >= 1000 ? ctx.workouts[ctx.workouts.length - 1]?.date ?? null : null }
 
     // ── Habits ──
-    case 'habits_first':
-      return { earned: hasAnyHabit, earnedAt: hasAnyHabit ? todayDateStr : null }
+    case 'first_habit_complete':
+      return { earned: hasAnyHabit && (ctx.habitsData?.stats.completedToday ?? 0) > 0, earnedAt: hasAnyHabit && (ctx.habitsData?.stats.completedToday ?? 0) > 0 ? todayDateStr : null }
 
-    case 'habits_all_done':
+    case 'all_habits_complete':
       return { earned: ctx.allHabitsCompleted, earnedAt: ctx.allHabitsCompleted ? todayDateStr : null }
 
     case 'habits_streak_7':
       return { earned: has7DayHabitStreak, earnedAt: has7DayHabitStreak ? todayDateStr : null }
 
     // ── Nutrition ──
-    case 'nutrition_balanced':
-      return {
-        earned: hasAnyNutrition && ctx.nutritionStats!.totalKcal > 0 && ctx.nutritionStats!.totalProtein > 0 && ctx.nutritionStats!.totalFat > 0 && ctx.nutritionStats!.totalCarbs > 0,
-        earnedAt: hasAnyNutrition && ctx.nutritionStats!.totalKcal > 0 ? todayDateStr : null,
-      }
-
-    case 'nutrition_tracking_week': {
-      // Count days with meals logged in the last 7 days
-      // Since we only know today's status, we approximate with hasMealsToday
-      // For a more accurate check, we'd need meal dates, but based on available data:
+    case 'first_meal':
       return { earned: ctx.hasMealsToday, earnedAt: ctx.hasMealsToday ? todayDateStr : null }
-    }
+
+    case 'water_goal':
+      return { earned: ctx.waterTodayMl >= 2000, earnedAt: ctx.waterTodayMl >= 2000 ? todayDateStr : null }
+
+    // ── Collections ──
+    case 'first_collection':
+      // Checked via API persistence
+      return { earned: false, earnedAt: null }
+
+    case 'collections_10':
+      return { earned: false, earnedAt: null }
+
+    // ── Goals ──
+    case 'first_goal_set':
+      return { earned: false, earnedAt: null }
+
+    case 'first_goal_completed':
+      return { earned: false, earnedAt: null }
+
+    // ── Feed ──
+    case 'first_post':
+      return { earned: false, earnedAt: null }
 
     // ── General ──
     case 'general_active_day':
-      return { earned: ctx.todayMood !== null && ctx.todayWorkoutDone && ctx.hasMealsToday && ctx.allHabitsCompleted, earnedAt: ctx.todayMood !== null ? todayDateStr : null }
+      return { earned: activeDay, earnedAt: activeDay ? todayDateStr : null }
 
     case 'general_early_bird':
       return { earned: hasEarlyBirdEntry, earnedAt: hasEarlyBirdEntry ? todayDateStr : null }
@@ -168,6 +189,9 @@ const ALL_CATEGORIES = [
   { key: 'workout', label: 'Тренировки', icon: '💪' },
   { key: 'habits', label: 'Привычки', icon: '🎯' },
   { key: 'nutrition', label: 'Питание', icon: '🥗' },
+  { key: 'collections', label: 'Коллекции', icon: '📚' },
+  { key: 'goals', label: 'Цели', icon: '🎯' },
+  { key: 'feed', label: 'Лента', icon: '📢' },
   { key: 'general', label: 'Общие', icon: '⭐' },
 ] as const
 
@@ -192,6 +216,40 @@ export const AchievementsWidget = memo(function AchievementsWidget({
 }: AchievementsWidgetProps) {
   const [showUnearned, setShowUnearned] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>('all')
+  const [persistedKeys, setPersistedKeys] = useState<Set<string>>(new Set())
+  const [newlyEarnedKeys, setNewlyEarnedKeys] = useState<Set<string>>(new Set())
+
+  // ── Fetch persisted achievements from API ──
+  useEffect(() => {
+    if (loading) return
+    const controller = new AbortController()
+
+    async function checkAchievements() {
+      try {
+        const res = await fetch('/api/achievements', { signal: controller.signal })
+        if (!res.ok) return
+        const json = await res.json()
+        if (!json.success) return
+
+        // Mark persisted achievement keys
+        const persisted: PersistedAchievement[] = json.data?.persisted ?? []
+        setPersistedKeys(new Set(persisted.map((a) => a.key)))
+
+        // Mark newly earned keys for animation
+        const newlyEarned = json.data?.earned ?? []
+        if (newlyEarned.length > 0) {
+          setNewlyEarnedKeys(new Set(newlyEarned.map((a: { key: string }) => a.key)))
+          // Clear newly earned flag after 5 seconds
+          setTimeout(() => setNewlyEarnedKeys(new Set()), 5000)
+        }
+      } catch {
+        // Silently fail — fall back to client-side evaluation
+      }
+    }
+
+    checkAchievements()
+    return () => controller.abort()
+  }, [loading])
 
   // ── Compute achievements ──
   const achievements: Achievement[] = useMemo(() => {
@@ -225,14 +283,18 @@ export const AchievementsWidget = memo(function AchievementsWidget({
     }
 
     return ACHIEVEMENT_DEFINITIONS.map((def) => {
+      const isPersisted = persistedKeys.has(def.id)
+      const isNewlyEarned = newlyEarnedKeys.has(def.id)
       const { earned, earnedAt } = evaluateAchievement(def.id, ctx)
+
       return {
         ...def,
-        earned,
-        earnedAt,
+        earned: isPersisted || earned,
+        earnedAt: earnedAt,
+        newlyEarned: isNewlyEarned,
       } satisfies Achievement
     })
-  }, [diaryEntries, financeStats, transactionsData, workouts, habitsData, nutritionStats, waterTodayMl, hasMealsToday, todayMood, todayWorkoutDone, allHabitsCompleted])
+  }, [diaryEntries, financeStats, transactionsData, workouts, habitsData, nutritionStats, waterTodayMl, hasMealsToday, todayMood, todayWorkoutDone, allHabitsCompleted, persistedKeys, newlyEarnedKeys])
 
   const earnedCount = useMemo(
     () => achievements.filter((a) => a.earned).length,
@@ -241,13 +303,19 @@ export const AchievementsWidget = memo(function AchievementsWidget({
   const totalCount = achievements.length
   const progressPct = totalCount > 0 ? Math.round((earnedCount / totalCount) * 100) : 0
 
+  // ── Recently earned (newly earned) ──
+  const recentlyEarned = useMemo(
+    () => achievements.filter((a) => a.earned && a.newlyEarned),
+    [achievements]
+  )
+
   // ── Filtered achievements ──
   const filteredAchievements = useMemo(() => {
     const filtered = categoryFilter === 'all'
       ? achievements
       : achievements.filter((a) => a.category === categoryFilter)
 
-    const earned = filtered.filter((a) => a.earned)
+    const earned = filtered.filter((a) => a.earned && !a.newlyEarned)
     const unearned = filtered.filter((a) => !a.earned)
     return { earned, unearned }
   }, [achievements, categoryFilter])
@@ -273,9 +341,9 @@ export const AchievementsWidget = memo(function AchievementsWidget({
         </CardHeader>
         <CardContent>
           <Skeleton className="mb-4 h-3 w-full rounded-full" />
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <Skeleton key={i} className="h-36 rounded-xl" />
+          <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 rounded-xl" />
             ))}
           </div>
         </CardContent>
@@ -316,6 +384,42 @@ export const AchievementsWidget = memo(function AchievementsWidget({
       </CardHeader>
 
       <CardContent>
+        {/* ── Recently Earned Section ── */}
+        {recentlyEarned.length > 0 && (
+          <div className="mb-4">
+            <div className="mb-2 flex items-center gap-1.5">
+              <Star className="h-3.5 w-3.5 text-amber-500" />
+              <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
+                Новые достижения!
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {recentlyEarned.map((achievement) => (
+                <div
+                  key={achievement.id}
+                  className={cn(
+                    'animate-bounce-in flex flex-col items-center gap-1.5 rounded-xl border-2 border-amber-300 bg-amber-50/50 p-3 dark:border-amber-600 dark:bg-amber-950/30'
+                  )}
+                >
+                  <div className={cn(
+                    'flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br shadow-lg text-lg',
+                    achievement.gradient,
+                  )}>
+                    {achievement.icon}
+                  </div>
+                  <span className="text-xs font-semibold text-center leading-tight">
+                    {achievement.name}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground text-center line-clamp-1">
+                    {achievement.description}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <Separator className="mt-4" />
+          </div>
+        )}
+
         {/* Category Filter */}
         <div className="mb-4 flex flex-wrap gap-1.5">
           {ALL_CATEGORIES.map((cat) => (
@@ -347,9 +451,9 @@ export const AchievementsWidget = memo(function AchievementsWidget({
           ))}
         </div>
 
-        {/* Earned Achievements */}
+        {/* Earned Achievements Grid */}
         {filteredAchievements.earned.length > 0 ? (
-          <div className="stagger-children grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="stagger-children grid grid-cols-3 gap-2 sm:grid-cols-4">
             {filteredAchievements.earned.map((achievement) => (
               <AchievementBadge key={achievement.id} achievement={achievement} />
             ))}
@@ -396,7 +500,7 @@ export const AchievementsWidget = memo(function AchievementsWidget({
             </button>
 
             {showUnearned && (
-              <div className="stagger-children mt-3 grid max-h-96 grid-cols-2 gap-3 overflow-y-auto sm:grid-cols-3">
+              <div className="stagger-children mt-3 grid max-h-96 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4">
                 {filteredAchievements.unearned.map((achievement) => (
                   <AchievementBadge key={achievement.id} achievement={achievement} />
                 ))}

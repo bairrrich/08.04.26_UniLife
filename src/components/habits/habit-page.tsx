@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Plus, Target, Calendar, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, RotateCcw, Tag } from 'lucide-react'
+import { Plus, Target, Calendar, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, Tag, Sparkles, TrendingUp, Zap, Rocket } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -16,8 +16,29 @@ import { StreakRecords } from './streak-records'
 import { HabitCard, ArchivedHabitCard } from './habit-card'
 import { HabitDialog } from './habit-dialog'
 import { HabitHeatmap } from './habit-heatmap'
+import { WeeklyOverviewHeatmap } from './weekly-overview-heatmap'
 import type { HabitPreset } from './constants'
 import { cn } from '@/lib/utils'
+
+// Motivational messages based on completion rate
+function getMotivationalMessage(rate: number, remaining: number, total: number): { icon: React.ReactNode; text: string; className: string } {
+  if (total === 0) {
+    return { icon: <Rocket className="h-4 w-4" />, text: 'Добавьте привычки и начните свой путь к лучшей версии себя!', className: 'text-blue-600 dark:text-blue-400' }
+  }
+  if (rate === 100) {
+    return { icon: <Trophy className="h-4 w-4" />, text: 'Все привычки выполнены! Ты невероятен! 🎉', className: 'text-emerald-600 dark:text-emerald-400' }
+  }
+  if (rate >= 80) {
+    return { icon: <Flame className="h-4 w-4" />, text: 'Почти всё готово! Осталось совсем чуть-чуть! 🔥', className: 'text-orange-600 dark:text-orange-400' }
+  }
+  if (rate >= 50) {
+    return { icon: <TrendingUp className="h-4 w-4" />, text: 'Отличный прогресс! Ты на верном пути! 💪', className: 'text-emerald-600 dark:text-emerald-400' }
+  }
+  if (rate > 0) {
+    return { icon: <Zap className="h-4 w-4" />, text: `Хороший старт! Ещё ${remaining} ${remaining === 1 ? 'привычка' : remaining <= 4 ? 'привычки' : 'привычек'} до цели!`, className: 'text-amber-600 dark:text-amber-400' }
+  }
+  return { icon: <Sparkles className="h-4 w-4" />, text: 'Новый день — новые возможности! Начни прямо сейчас ✨', className: 'text-blue-600 dark:text-blue-400' }
+}
 
 export default function HabitsPage() {
   const {
@@ -62,12 +83,28 @@ export default function HabitsPage() {
     return { planned, completed, remaining }
   }, [activeHabits])
 
+  // Today's completion rate
+  const todayRate = useMemo(() => {
+    if (todaySummary.planned === 0) return 0
+    return Math.round((todaySummary.completed / todaySummary.planned) * 100)
+  }, [todaySummary])
+
+  // Uncompleted habits for today (shown prominently at top)
+  const todayRemaining = useMemo(() => {
+    return categoryFiltered.filter(h => !h.todayCompleted)
+  }, [categoryFiltered])
+
   // Longest streak celebration
   const longestStreakHabit = useMemo(() => {
     if (activeHabits.length === 0) return null
     const best = activeHabits.reduce((a, b) => (a.streak > b.streak ? a : b))
     return best.streak >= 7 ? best : null
   }, [activeHabits])
+
+  // Motivational message
+  const motivation = useMemo(() => {
+    return getMotivationalMessage(todayRate, todaySummary.remaining, todaySummary.planned)
+  }, [todayRate, todaySummary])
 
   // Handle preset quick-add from empty state
   const handlePresetQuickAdd = (preset: HabitPreset) => {
@@ -208,7 +245,7 @@ export default function HabitsPage() {
         </Card>
       ) : (
         <>
-          {/* Today's Plan Summary */}
+          {/* Today's Plan Summary with motivational message */}
           <Card className="overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
             <CardContent className="relative p-4">
@@ -253,6 +290,16 @@ export default function HabitsPage() {
                   </span>
                 </div>
               </div>
+
+              {/* Motivational message */}
+              {todaySummary.planned > 0 && (
+                <div className={cn(
+                  'flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-muted/30 dark:bg-muted/20 motivation-enter',
+                )}>
+                  <span className={motivation.className}>{motivation.icon}</span>
+                  <span className={cn('text-xs font-medium', motivation.className)}>{motivation.text}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -283,6 +330,9 @@ export default function HabitsPage() {
               </div>
             </div>
           )}
+
+          {/* Week Overview Heatmap — completion rates per day */}
+          <WeeklyOverviewHeatmap habits={activeHabits} last7Days={last7Days} />
 
           {/* Heatmap Calendar */}
           <HabitHeatmap habits={activeHabits} />
@@ -360,6 +410,33 @@ export default function HabitsPage() {
             </div>
           </div>
 
+          {/* "Сегодня" section — uncompleted habits prominently */}
+          {todayRemaining.length > 0 && (
+            <div className="space-y-3 animate-slide-up">
+              <div className="flex items-center gap-2">
+                <div className="h-5 w-5 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Zap className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                </div>
+                <h3 className="text-sm font-semibold flex items-center gap-2">
+                  Сегодня
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-0">
+                    {todayRemaining.length} осталось
+                  </Badge>
+                </h3>
+              </div>
+              <div className="stagger-children space-y-3">
+                {todayRemaining.map((habit) => (
+                  <HabitCard
+                    key={habit.id} habit={habit} last7Days={last7Days}
+                    onToggle={handleToggle} onEdit={handleEdit}
+                    onDeleteClick={handleDeleteClick} deleteConfirmId={deleteConfirmId}
+                    onArchive={handleArchive}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* "All habits" toggle + Habit List */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -387,7 +464,11 @@ export default function HabitsPage() {
             </div>
 
             <div className="stagger-children space-y-3">
-              {filteredHabits.map((habit) => (
+              {/* If showing all, filter out todayRemaining to avoid duplicates */}
+              {(showCompleted
+                ? filteredHabits
+                : filteredHabits.filter(h => h.todayCompleted)
+              ).map((habit) => (
                 <HabitCard
                   key={habit.id} habit={habit} last7Days={last7Days}
                   onToggle={handleToggle} onEdit={handleEdit}
@@ -397,7 +478,8 @@ export default function HabitsPage() {
               ))}
             </div>
 
-            {filteredHabits.length === 0 && categoryFiltered.length > 0 && (
+            {/* When hiding completed and all are done (and we already showed today's remaining) */}
+            {!showCompleted && filteredHabits.length === 0 && todayRemaining.length === 0 && (
               <Card className="py-8 text-center">
                 <p className="text-sm text-muted-foreground">
                   Все привычки на сегодня выполнены! 🎉

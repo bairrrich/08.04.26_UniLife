@@ -1,264 +1,148 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   BarChart3,
   CalendarDays,
-  Lightbulb,
-  Sparkles,
-  Inbox,
-  Brain,
-  Flame,
-  Smile,
+  BookOpen,
   Dumbbell,
+  Flame,
+  Target,
+  Inbox,
+  Smile,
   Wallet,
+  CheckCircle2,
+  Library,
+  TrendingUp,
+  Activity,
 } from 'lucide-react'
-
 import {
-  toDateStr,
-  getDateRange,
-  MOOD_EMOJI,
-  MOOD_LABELS,
-  RU_DAYS_SHORT,
-  RU_MONTHS_SHORT,
-  RU_MONTHS,
-  formatCurrency,
-  calculateStreak,
-  type Period,
-} from '@/lib/format'
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+} from 'recharts'
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from '@/components/ui/chart'
+import {
+  AnimatedNumber,
+} from '@/components/ui/animated-number'
+import { RU_DAYS_SHORT, formatCurrency } from '@/lib/format'
+import type { ChartConfig } from '@/components/ui/chart'
 
-import type {
-  DiaryEntry,
-  Transaction,
-  NutritionDay,
-  MealEntry,
-  Workout,
-  HabitItem,
-  ActivityStats,
-  MoodChartDataPoint,
-  SpendingChartDataPoint,
-  WorkoutDistributionPoint,
-  TopCategoryPoint,
-  HabitsHeatmapCell,
-  WeeklyActivityCell,
-  ModuleStreak,
-  TimeOfDayPoint,
-  MoodTrendPoint,
-} from './types'
-import { PIE_COLORS, WORKOUT_TYPE_COLORS } from './constants'
-import { classifyWorkout, getMonthStr } from './helpers'
-import { ActivityOverview } from './activity-overview'
-import { OverviewStats } from './overview-stats'
-import { ChartsRow } from './charts-row'
-import { NutritionChart, WorkoutDistributionChart, TopCategoriesChart } from './bottom-charts'
-import { HabitsHeatmapSection } from './habits-heatmap-section'
-import { WeeklyActivityHeatmap } from './weekly-activity-heatmap'
-import { MoodTrendsChart } from './mood-trends-chart'
-import { ModuleStreaks } from './module-streaks'
-import { TimeOfDayChart } from './time-of-day-chart'
-import { PersonalInsights } from './personal-insights'
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-// ─── Period Comparison Types ──────────────────────────────────────────────────
+type Period = '7d' | '30d' | '3m' | 'all'
 
-interface PeriodComparison {
-  diaryChange: number | null
-  expenseChange: number | null
-  workoutChange: number | null
-  habitsChange: number | null
+interface Overview {
+  totalDiaryEntries: number
+  totalWorkouts: number
+  totalCalories: number
+  totalDaysTracked: number
+  totalHabitsCompleted: number
+}
+
+interface MonthlyActivityItem {
+  month: string
+  year: number
+  monthIdx: number
+  diary: number
+  workouts: number
+  habits: number
+  meals: number
+}
+
+interface MoodDistItem {
+  mood: number
+  emoji: string
+  label: string
+  count: number
+  percentage: number
+}
+
+interface TopCategoryItem {
+  name: string
+  amount: number
+  color: string
+}
+
+interface HabitTrendItem {
+  week: string
+  rate: number
+}
+
+interface CollectionsDistItem {
+  type: string
+  count: number
+}
+
+interface HeatmapCell {
+  weekIdx: number
+  dayIdx: number
+  date: string
+  count: number
+  dayNum: number
+}
+
+interface AnalyticsData {
+  overview: Overview
+  monthlyActivity: MonthlyActivityItem[]
+  moodDistribution: MoodDistItem[]
+  topCategories: TopCategoryItem[]
+  habitCompletionTrend: HabitTrendItem[]
+  collectionsDistribution: CollectionsDistItem[]
+  weeklyHeatmap: { cells: HeatmapCell[]; maxCount: number }
+}
+
+// ─── Chart configs ────────────────────────────────────────────────────────────
+
+const monthlyChartConfig: ChartConfig = {
+  diary: { label: 'Дневник', color: '#3b82f6' },
+  workouts: { label: 'Тренировки', color: '#ef4444' },
+  habits: { label: 'Привычки', color: '#10b981' },
+  meals: { label: 'Питание', color: '#f97316' },
+}
+
+const PIE_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#64748b']
+
+const MOOD_COLORS = ['#ef4444', '#f97316', '#f59e0b', '#84cc16', '#10b981']
+
+const COLLECTION_COLORS = ['#3b82f6', '#ef4444', '#a855f7', '#f97316', '#10b981', '#ec4899', '#14b8a6', '#f59e0b', '#64748b']
+
+const habitChartConfig: ChartConfig = {
+  rate: { label: 'Выполнение', color: '#10b981' },
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const [period, setPeriod] = useState<Period>('month')
+  const [period, setPeriod] = useState<Period>('30d')
   const [loading, setLoading] = useState(true)
-  const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([])
-  const [transactions, setTransactions] = useState<Transaction[]>([])
-  const [workouts, setWorkouts] = useState<Workout[]>([])
-  const [habits, setHabits] = useState<HabitItem[]>([])
-  const [nutritionDays, setNutritionDays] = useState<NutritionDay[]>([])
-  const [meals, setMeals] = useState<MealEntry[]>([])
-  const [prevPeriodComparison, setPrevPeriodComparison] = useState<PeriodComparison>({
-    diaryChange: null,
-    expenseChange: null,
-    workoutChange: null,
-    habitsChange: null,
-  })
-
-  // ── Data Fetching (parallel) ────────────────────────────────────────────
-  const safeFetch = async (url: string, timeoutMs = 8000) => {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), timeoutMs)
-    try {
-      const res = await fetch(url, { signal: controller.signal })
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const text = await res.text()
-      if (text.trimStart().startsWith('<')) throw new Error('Received HTML instead of JSON')
-      return JSON.parse(text)
-    } finally {
-      clearTimeout(timer)
-    }
-  }
+  const [data, setData] = useState<AnalyticsData | null>(null)
 
   const fetchData = useCallback(async (p: Period) => {
     setLoading(true)
-    const { from, to } = getDateRange(p)
-    const currentMonth = getMonthStr(new Date())
-
     try {
-      // Build nutrition date URLs for parallel fetching
-      const fromDate = new Date(from)
-      const toDate = new Date(to)
-      const maxDays = p === 'year' ? 14 : p === 'month' ? 14 : 7
-      const nutritionUrls: string[] = []
-      const cursor = new Date(fromDate)
-      let dayCount = 0
-      while (cursor <= toDate && dayCount < maxDays) {
-        const dateStr = toDateStr(cursor)
-        nutritionUrls.push(`/api/nutrition/stats?date=${dateStr}`)
-        cursor.setDate(cursor.getDate() + 1)
-        dayCount++
+      const res = await fetch(`/api/analytics?period=${p}`)
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const json = await res.json()
+      if (json.success && json.data) {
+        setData(json.data)
       }
-
-      // ── Previous period range for comparison ────────────────────────────
-      const periodDays = p === 'week' ? 7 : p === 'month' ? 30 : 365
-      const prevFrom = new Date(new Date(from).getTime() - periodDays * 24 * 60 * 60 * 1000)
-      const prevTo = new Date(from)
-      const prevMonth = getMonthStr(prevFrom)
-      const prevFromStr = toDateStr(prevFrom)
-      const prevToStr = toDateStr(prevTo)
-
-      // ── Parallel fetch all endpoints (current + previous period) ────────
-      const results = await Promise.allSettled([
-        safeFetch(`/api/diary?from=${from}&to=${to}`),
-        safeFetch(`/api/finance?month=${currentMonth}`),
-        safeFetch(`/api/workout?month=${currentMonth}`),
-        safeFetch('/api/habits'),
-        safeFetch(`/api/nutrition?month=${currentMonth}`),
-        ...nutritionUrls.map((url) => safeFetch(url)),
-        // Previous period for comparison
-        safeFetch(`/api/diary?from=${prevFromStr}&to=${prevToStr}`),
-        safeFetch(`/api/finance?month=${prevMonth}`),
-        safeFetch(`/api/workout?month=${prevMonth}`),
-      ])
-
-      const [diaryRes, financeRes, workoutRes, habitsRes, mealsRes, ...nutritionResults] = results
-      const prevDiaryRes = results[5 + nutritionUrls.length]
-      const prevFinanceRes = results[6 + nutritionUrls.length]
-      const prevWorkoutRes = results[7 + nutritionUrls.length]
-
-      // Diary
-      if (diaryRes.status === 'fulfilled' && diaryRes.value.data) {
-        setDiaryEntries(diaryRes.value.data)
-      } else {
-        setDiaryEntries([])
-      }
-
-      // Transactions
-      if (
-        financeRes.status === 'fulfilled' &&
-        financeRes.value.success &&
-        financeRes.value.data
-      ) {
-        setTransactions(financeRes.value.data)
-      } else {
-        setTransactions([])
-      }
-
-      // Workouts
-      if (
-        workoutRes.status === 'fulfilled' &&
-        workoutRes.value.success &&
-        workoutRes.value.data
-      ) {
-        setWorkouts(workoutRes.value.data)
-      } else {
-        setWorkouts([])
-      }
-
-      // Habits
-      if (
-        habitsRes.status === 'fulfilled' &&
-        habitsRes.value.success &&
-        habitsRes.value.data
-      ) {
-        setHabits(habitsRes.value.data)
-      } else {
-        setHabits([])
-      }
-
-      // Meals (for heatmap, streaks, time-of-day)
-      if (
-        mealsRes.status === 'fulfilled' &&
-        mealsRes.value.success &&
-        mealsRes.value.data
-      ) {
-        const rawMeals: MealEntry[] = mealsRes.value.data.map((m: { id: string; date: string; createdAt?: string; type: string }) => ({
-          id: m.id,
-          date: m.date,
-          createdAt: m.createdAt,
-          type: m.type,
-        }))
-        setMeals(rawMeals)
-      } else {
-        setMeals([])
-      }
-
-      // Nutrition days
-      const nutritionData: NutritionDay[] = []
-      for (let i = 0; i < nutritionResults.length; i++) {
-        const res = nutritionResults[i]
-        if (
-          res &&
-          res.status === 'fulfilled' &&
-          res.value &&
-          res.value.success &&
-          res.value.data
-        ) {
-          nutritionData.push({
-            date: res.value.data.date,
-            totalKcal: res.value.data.totalKcal || 0,
-            totalProtein: res.value.data.totalProtein || 0,
-            totalFat: res.value.data.totalFat || 0,
-            totalCarbs: res.value.data.totalCarbs || 0,
-          })
-        }
-      }
-      setNutritionDays(nutritionData)
-
-      // ── Compute previous period comparison ──────────────────────────────
-      let prevDiaryCount = 0
-      let prevExpenseTotal = 0
-      let prevWorkoutCount = 0
-
-      if (prevDiaryRes?.status === 'fulfilled' && prevDiaryRes.value?.data) {
-        prevDiaryCount = prevDiaryRes.value.data.length
-      }
-      if (prevFinanceRes?.status === 'fulfilled' && prevFinanceRes.value?.data) {
-        prevExpenseTotal = prevFinanceRes.value.data
-          .filter((t: Transaction) => t.type === 'EXPENSE')
-          .reduce((s: number, t: Transaction) => s + t.amount, 0)
-      }
-      if (prevWorkoutRes?.status === 'fulfilled' && prevWorkoutRes.value?.data) {
-        prevWorkoutCount = prevWorkoutRes.value.data.length
-      }
-
-      // Current period metrics (computed from loaded data)
-      const curDiaryCount = diaryRes.status === 'fulfilled' && diaryRes.value?.data
-        ? diaryRes.value.data.length : 0
-      const curExpenseTotal = financeRes.status === 'fulfilled' && financeRes.value?.data
-        ? financeRes.value.data.filter((t: Transaction) => t.type === 'EXPENSE').reduce((s: number, t: Transaction) => s + t.amount, 0) : 0
-      const curWorkoutCount = workoutRes.status === 'fulfilled' && workoutRes.value?.data
-        ? workoutRes.value.data.length : 0
-
-      setPrevPeriodComparison({
-        diaryChange: prevDiaryCount > 0 ? Math.round(((curDiaryCount - prevDiaryCount) / prevDiaryCount) * 100) : null,
-        expenseChange: prevExpenseTotal > 0 ? Math.round(((curExpenseTotal - prevExpenseTotal) / prevExpenseTotal) * 100) : null,
-        workoutChange: prevWorkoutCount > 0 ? Math.round(((curWorkoutCount - prevWorkoutCount) / prevWorkoutCount) * 100) : null,
-        habitsChange: null, // habits don't have historical comparison
-      })
     } catch (err) {
       console.error('Analytics fetch error:', err)
     } finally {
@@ -270,654 +154,36 @@ export default function AnalyticsPage() {
     fetchData(period)
   }, [period, fetchData])
 
-  // ── Derived Data ───────────────────────────────────────────────────────
+  const hasData = data && (
+    data.overview.totalDiaryEntries > 0 ||
+    data.overview.totalWorkouts > 0 ||
+    data.overview.totalCalories > 0 ||
+    data.overview.totalHabitsCompleted > 0
+  )
 
-  // Check if we have ANY data
-  const hasData = useMemo(() => {
-    return diaryEntries.length > 0 || transactions.length > 0 || workouts.length > 0 || habits.length > 0 || nutritionDays.length > 0 || meals.length > 0
-  }, [diaryEntries, transactions, workouts, habits, nutritionDays, meals])
-
-  // 1. Overview Stats
-  const diaryCount = diaryEntries.length
-  const moodEntries = diaryEntries.filter((e) => e.mood !== null)
-  const avgMood = moodEntries.length > 0
-    ? moodEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / moodEntries.length
-    : 0
-
-  const totalExpenses = transactions
-    .filter((t) => t.type === 'EXPENSE')
-    .reduce((s, t) => s + t.amount, 0)
-  const totalIncome = transactions
-    .filter((t) => t.type === 'INCOME')
-    .reduce((s, t) => s + t.amount, 0)
-  const savingsRate = totalIncome > 0
-    ? Math.round(((totalIncome - totalExpenses) / totalIncome) * 100)
-    : 0
-
-  const workoutCount = workouts.length
-  const totalMinutes = workouts.reduce((s, w) => s + (w.durationMin ?? 0), 0)
-
-  const totalHabits = habits.length
-  const completedHabits = habits.filter((h) => h.todayCompleted).length
-  const habitsRate = totalHabits > 0 ? Math.round((completedHabits / totalHabits) * 100) : 0
-
-  // 2. Mood Trend Chart Data
-  const moodChartData = useMemo((): MoodChartDataPoint[] => {
-    const now = new Date()
-    const entries = diaryEntries
-      .filter((e) => e.mood !== null)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-    if (period === 'week') {
-      const data: MoodChartDataPoint[] = []
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(now)
-        d.setDate(now.getDate() - i)
-        const dateStr = toDateStr(d)
-        const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1
-        const entry = entries.find((e) => toDateStr(new Date(e.date)) === dateStr)
-        data.push({
-          label: RU_DAYS_SHORT[dayIdx],
-          mood: entry?.mood ?? 0,
-          fullLabel: `${RU_DAYS_SHORT[dayIdx]}: ${entry ? MOOD_EMOJI[entry.mood!] + ' ' + MOOD_LABELS[entry.mood!] : 'Нет данных'}`,
-        })
-      }
-      return data
-    } else if (period === 'month') {
-      const data: MoodChartDataPoint[] = []
-      const weekLabels = ['Нед 1', 'Нед 2', 'Нед 3', 'Нед 4', 'Нед 5']
-      for (let w = 0; w < 5; w++) {
-        const weekStart = new Date(now.getFullYear(), now.getMonth(), w * 7 + 1)
-        const weekEnd = new Date(now.getFullYear(), now.getMonth(), (w + 1) * 7)
-        const weekEntries = entries.filter((e) => {
-          const d = new Date(e.date)
-          return d >= weekStart && d < weekEnd && d.getMonth() === now.getMonth()
-        })
-        const avg = weekEntries.length > 0
-          ? Math.round(weekEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / weekEntries.length * 10) / 10
-          : 0
-        data.push({
-          label: weekLabels[w] ?? `Н${w + 1}`,
-          mood: avg,
-          fullLabel: `${weekLabels[w]}: ${avg > 0 ? avg.toFixed(1) : 'Нет данных'}`,
-        })
-      }
-      return data
-    } else {
-      const data: MoodChartDataPoint[] = []
-      for (let m = 0; m < 12; m++) {
-        const monthEntries = entries.filter((e) => {
-          const d = new Date(e.date)
-          return d.getMonth() === m && d.getFullYear() === now.getFullYear()
-        })
-        const avg = monthEntries.length > 0
-          ? Math.round(monthEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / monthEntries.length * 10) / 10
-          : 0
-        data.push({
-          label: RU_MONTHS_SHORT[m],
-          mood: avg,
-          fullLabel: `${RU_MONTHS[m]}: ${avg > 0 ? avg.toFixed(1) : 'Нет данных'}`,
-        })
-      }
-      return data
-    }
-  }, [diaryEntries, period])
-
-  // 3. Spending Trend Data
-  const spendingChartData = useMemo((): SpendingChartDataPoint[] => {
-    const now = new Date()
-    const expenses = transactions.filter((t) => t.type === 'EXPENSE')
-    const income = transactions.filter((t) => t.type === 'INCOME')
-
-    if (period === 'week') {
-      const data: SpendingChartDataPoint[] = []
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(now)
-        d.setDate(now.getDate() - i)
-        const dateStr = toDateStr(d)
-        const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1
-        const dayExpenses = expenses
-          .filter((t) => toDateStr(new Date(t.date)) === dateStr)
-          .reduce((s, t) => s + t.amount, 0)
-        const dayIncome = income
-          .filter((t) => toDateStr(new Date(t.date)) === dateStr)
-          .reduce((s, t) => s + t.amount, 0)
-        data.push({
-          label: RU_DAYS_SHORT[dayIdx],
-          spending: Math.round(dayExpenses),
-          income: Math.round(dayIncome),
-        })
-      }
-      return data
-    } else if (period === 'month') {
-      const data: SpendingChartDataPoint[] = []
-      const weekLabels = ['Нед 1', 'Нед 2', 'Нед 3', 'Нед 4', 'Нед 5']
-      for (let w = 0; w < 5; w++) {
-        const weekStart = new Date(now.getFullYear(), now.getMonth(), w * 7 + 1)
-        const weekEnd = new Date(now.getFullYear(), now.getMonth(), (w + 1) * 7)
-        const weekExpenses = expenses.filter((t) => {
-          const d = new Date(t.date)
-          return d >= weekStart && d < weekEnd && d.getMonth() === now.getMonth()
-        }).reduce((s, t) => s + t.amount, 0)
-        const weekIncome = income.filter((t) => {
-          const d = new Date(t.date)
-          return d >= weekStart && d < weekEnd && d.getMonth() === now.getMonth()
-        }).reduce((s, t) => s + t.amount, 0)
-        data.push({
-          label: weekLabels[w] ?? `Н${w + 1}`,
-          spending: Math.round(weekExpenses),
-          income: Math.round(weekIncome),
-        })
-      }
-      return data
-    } else {
-      const data: SpendingChartDataPoint[] = []
-      for (let m = 0; m < 12; m++) {
-        const monthExpenses = expenses.filter((t) => {
-          const d = new Date(t.date)
-          return d.getMonth() === m && d.getFullYear() === now.getFullYear()
-        }).reduce((s, t) => s + t.amount, 0)
-        const monthIncome = income.filter((t) => {
-          const d = new Date(t.date)
-          return d.getMonth() === m && d.getFullYear() === now.getFullYear()
-        }).reduce((s, t) => s + t.amount, 0)
-        data.push({
-          label: RU_MONTHS_SHORT[m],
-          spending: Math.round(monthExpenses),
-          income: Math.round(monthIncome),
-        })
-      }
-      return data
-    }
-  }, [transactions, period])
-
-  // 4. Nutrition Summary
-  const nutritionSummary = useMemo(() => {
-    if (nutritionDays.length === 0) {
-      return { avgKcal: 0, avgProtein: 0, avgFat: 0, avgCarbs: 0, daysWithData: 0 }
-    }
-    const daysWithData = nutritionDays.filter((d) => d.totalKcal > 0).length
-    const total = nutritionDays.reduce(
-      (acc, d) => ({
-        kcal: acc.kcal + d.totalKcal,
-        protein: acc.protein + d.totalProtein,
-        fat: acc.fat + d.totalFat,
-        carbs: acc.carbs + d.totalCarbs,
-      }),
-      { kcal: 0, protein: 0, fat: 0, carbs: 0 }
-    )
-    const n = daysWithData || 1
-    return {
-      avgKcal: Math.round(total.kcal / n),
-      avgProtein: Math.round(total.protein / n),
-      avgFat: Math.round(total.fat / n),
-      avgCarbs: Math.round(total.carbs / n),
-      daysWithData,
-    }
-  }, [nutritionDays])
-
-  // 5. Workout Distribution
-  const workoutDistribution = useMemo((): WorkoutDistributionPoint[] => {
-    const typeCounts: Record<string, number> = {}
-    for (const w of workouts) {
-      const type = classifyWorkout(w.name)
-      typeCounts[type] = (typeCounts[type] || 0) + 1
-    }
-    return Object.entries(typeCounts)
-      .map(([name, value]) => ({
-        name,
-        value,
-        fill: WORKOUT_TYPE_COLORS[name] ?? 'hsl(var(--chart-3))',
-      }))
-      .sort((a, b) => b.value - a.value)
-  }, [workouts])
-
-  // 6. Top Expense Categories
-  const topCategories = useMemo((): TopCategoryPoint[] => {
-    const catMap: Record<string, { name: string; total: number }> = {}
-    for (const t of transactions) {
-      if (t.type !== 'EXPENSE') continue
-      const name = t.category?.name || 'Другое'
-      if (!catMap[name]) catMap[name] = { name, total: 0 }
-      catMap[name].total += t.amount
-    }
-    return Object.values(catMap)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 5)
-      .map((c, i) => ({
-        name: c.name.length > 14 ? c.name.slice(0, 14) + '...' : c.name,
-        amount: Math.round(c.total),
-        fill: PIE_COLORS[i % PIE_COLORS.length],
-      }))
-  }, [transactions])
-
-  // 7. Habits Heatmap Data (last 30 days)
-  const habitsHeatmap = useMemo((): HabitsHeatmapCell[] => {
-    const grid: HabitsHeatmapCell[] = []
-    const now = new Date()
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now)
-      d.setDate(now.getDate() - i)
-      const dateStr = toDateStr(d)
-      let completedCount = 0
-      let totalCount = habits.length
-      for (const h of habits) {
-        if (h.last7Days[dateStr]) completedCount++
-      }
-      const isInRange = i <= 6 || false
-      grid.push({
-        date: dateStr,
-        completed: totalCount > 0 ? completedCount === totalCount : false,
-        day: d.getDate(),
-        completedCount,
-        totalCount,
-        dayOfWeek: d.getDay(),
-      })
-    }
-    return grid
-  }, [habits])
-
-  const heatmapCompletionRate = habitsHeatmap.length > 0
-    ? Math.round((habitsHeatmap.filter((h) => h.completed).length / habitsHeatmap.length) * 100)
-    : 0
-
-  // 8. Activity Overview Stats
-  const activityStats = useMemo((): ActivityStats => {
-    const totalActions = diaryCount + transactions.length + workoutCount + totalHabits
-
-    const now = new Date()
-    let daysInPeriod: number
-    if (period === 'week') daysInPeriod = 7
-    else if (period === 'month') daysInPeriod = now.getDate()
-    else daysInPeriod = Math.ceil((now.getTime() - new Date(now.getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24)) || 1
-
-    const avgDaily = daysInPeriod > 0 ? (totalActions / daysInPeriod).toFixed(1) : '0'
-
-    const dayCounts: Record<string, number> = {}
-    for (const e of diaryEntries) {
-      const d = toDateStr(new Date(e.date))
-      dayCounts[d] = (dayCounts[d] || 0) + 1
-    }
-    for (const t of transactions) {
-      const d = toDateStr(new Date(t.date))
-      dayCounts[d] = (dayCounts[d] || 0) + 1
-    }
-    for (const w of workouts) {
-      const d = toDateStr(new Date(w.date))
-      dayCounts[d] = (dayCounts[d] || 0) + 1
-    }
-    let mostActiveDay = '—'
-    let maxDayCount = 0
-    for (const [day, count] of Object.entries(dayCounts)) {
-      if (count > maxDayCount) {
-        maxDayCount = count
-        const date = new Date(day)
-        const dayIdx = date.getDay() === 0 ? 6 : date.getDay() - 1
-        mostActiveDay = RU_DAYS_SHORT[dayIdx] + ', ' + date.getDate()
-      }
-    }
-    if (maxDayCount === 0) mostActiveDay = '—'
-
-    const moduleCounts: Record<string, number> = {
-      Дневник: diaryCount,
-      Финансы: transactions.length,
-      Тренировки: workoutCount,
-      Привычки: totalHabits,
-    }
-    let mostActiveModule = '—'
-    let maxModuleCount = 0
-    for (const [mod, count] of Object.entries(moduleCounts)) {
-      if (count > maxModuleCount) {
-        maxModuleCount = count
-        mostActiveModule = mod
-      }
-    }
-    if (maxModuleCount === 0) mostActiveModule = '—'
-
-    const sparkline: number[] = []
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now)
-      d.setDate(now.getDate() - i)
-      const dateStr = toDateStr(d)
-      sparkline.push(dayCounts[dateStr] || 0)
-    }
-
-    const dayNames = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-    const dayOfWeekCounts: Record<number, number> = {}
-    for (const [day, count] of Object.entries(dayCounts)) {
-      const dow = new Date(day).getDay()
-      dayOfWeekCounts[dow] = (dayOfWeekCounts[dow] || 0) + count
-    }
-    let mostProductiveDay = '—'
-    let maxDowCount = 0
-    for (const [dow, count] of Object.entries(dayOfWeekCounts)) {
-      if (count > maxDowCount) {
-        maxDowCount = count
-        mostProductiveDay = dayNames[Number(dow)]
-      }
-    }
-    if (maxDowCount === 0) mostProductiveDay = '—'
-
-    return { totalActions, avgDaily, mostActiveDay, mostActiveModule, sparkline, mostProductiveDay }
-  }, [diaryEntries, transactions, workouts, totalHabits, diaryCount, period])
-
-  // ── NEW: 9. Weekly Activity Heatmap Data ──────────────────────────────
-  const weeklyActivityData = useMemo((): WeeklyActivityCell[] => {
-    const now = new Date()
-    const data: WeeklyActivityCell[] = []
-
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(now)
-      d.setDate(now.getDate() - i)
-      const dateStr = toDateStr(d)
-      const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1
-
-      // Count diary entries for this day
-      const diaryCountDay = diaryEntries.filter(
-        (e) => toDateStr(new Date(e.date)) === dateStr,
-      ).length
-
-      // Count workouts for this day
-      const workoutCountDay = workouts.filter(
-        (w) => toDateStr(new Date(w.date)) === dateStr,
-      ).length
-
-      // Count meals for this day
-      const mealCountDay = meals.filter(
-        (m) => toDateStr(new Date(m.date)) === dateStr,
-      ).length
-
-      // Count habits completed for this day
-      let habitsCompletedDay = 0
-      for (const h of habits) {
-        if (h.last7Days[dateStr]) habitsCompletedDay++
-      }
-
-      const total = diaryCountDay + workoutCountDay + mealCountDay + habitsCompletedDay
-
-      data.push({
-        date: dateStr,
-        day: d.getDate(),
-        dayOfWeek: d.getDay(),
-        dayLabel: RU_DAYS_SHORT[dayIdx],
-        diary: diaryCountDay,
-        workouts: workoutCountDay,
-        meals: mealCountDay,
-        habitsCompleted: habitsCompletedDay,
-        total,
-      })
-    }
-
-    return data
-  }, [diaryEntries, workouts, meals, habits])
-
-  // ── NEW: 10. Mood Trends (30 days) ───────────────────────────────────
-  const moodTrendData = useMemo((): MoodTrendPoint[] => {
-    const now = new Date()
-    const entries = diaryEntries
-      .filter((e) => e.mood !== null)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-    const data: MoodTrendPoint[] = []
-
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(now)
-      d.setDate(now.getDate() - i)
-      const dateStr = toDateStr(d)
-
-      const dayEntries = entries.filter(
-        (e) => toDateStr(new Date(e.date)) === dateStr,
-      )
-      const dayMood = dayEntries.length > 0
-        ? Math.round(dayEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / dayEntries.length * 10) / 10
-        : 0
-
-      // Calculate weekly average (previous 7 days including current)
-      let weekAvg: number | null = null
-      if (i <= 23) { // Only show weekAvg when we have 7+ days of history
-        const weekStart = new Date(d)
-        weekStart.setDate(weekStart.getDate() - 6)
-        const weekEntries = entries.filter((e) => {
-          const eDate = new Date(e.date)
-          return eDate >= weekStart && eDate <= d
-        })
-        if (weekEntries.length > 0) {
-          weekAvg = Math.round(weekEntries.reduce((s, e) => s + (e.mood ?? 0), 0) / weekEntries.length * 10) / 10
-        }
-      }
-
-      const dayIdx = d.getDay() === 0 ? 6 : d.getDay() - 1
-      data.push({
-        date: dateStr,
-        label: `${d.getDate()} ${RU_MONTHS_SHORT[d.getMonth()]}`,
-        mood: dayMood,
-        weekAvg,
-      })
-    }
-
-    return data
-  }, [diaryEntries])
-
-  // ── NEW: 11. Module Completion Streaks ───────────────────────────────
-  const moduleStreaksData = useMemo((): ModuleStreak[] => {
-    const now = new Date()
-
-    // Diary streak
-    const diaryDates = diaryEntries.map((e) => toDateStr(new Date(e.date)))
-    const diaryStreak = calculateStreak(diaryDates)
-
-    // Workout streak
-    const workoutDates = workouts.map((w) => toDateStr(new Date(w.date)))
-    const workoutStreak = calculateStreak(workoutDates)
-
-    // Nutrition (meals) streak
-    const mealDates = meals.map((m) => toDateStr(new Date(m.date)))
-    const nutritionStreak = calculateStreak(mealDates)
-
-    // Habits streak (max across all habits)
-    const habitsStreak = habits.length > 0
-      ? Math.max(...habits.map((h) => h.streak))
-      : 0
-
-    return [
-      {
-        module: 'Дневник',
-        emoji: '📋',
-        streak: diaryStreak,
-        color: 'text-emerald-600',
-        bgColor: 'bg-gradient-to-br from-emerald-50 to-teal-50',
-        darkBgColor: 'dark:from-emerald-950/40 dark:to-teal-950/30',
-      },
-      {
-        module: 'Тренировки',
-        emoji: '💪',
-        streak: workoutStreak,
-        color: 'text-blue-600',
-        bgColor: 'bg-gradient-to-br from-blue-50 to-sky-50',
-        darkBgColor: 'dark:from-blue-950/40 dark:to-sky-950/30',
-      },
-      {
-        module: 'Питание',
-        emoji: '🥗',
-        streak: nutritionStreak,
-        color: 'text-orange-600',
-        bgColor: 'bg-gradient-to-br from-orange-50 to-amber-50',
-        darkBgColor: 'dark:from-orange-950/40 dark:to-amber-950/30',
-      },
-      {
-        module: 'Привычки',
-        emoji: '✅',
-        streak: habitsStreak,
-        color: 'text-violet-600',
-        bgColor: 'bg-gradient-to-br from-violet-50 to-purple-50',
-        darkBgColor: 'dark:from-violet-950/40 dark:to-purple-950/30',
-      },
-    ]
-  }, [diaryEntries, workouts, meals, habits])
-
-  // ── NEW: 12. Time-of-Day Activity Data ───────────────────────────────
-  const timeOfDayData = useMemo((): TimeOfDayPoint[] => {
-    const periods = [
-      { name: 'Утро', minHour: 5, maxHour: 12, fill: '#f59e0b' },
-      { name: 'День', minHour: 12, maxHour: 17, fill: '#10b981' },
-      { name: 'Вечер', minHour: 17, maxHour: 22, fill: '#6366f1' },
-      { name: 'Ночь', minHour: 22, maxHour: 5, fill: '#64748b' },
-    ]
-
-    // Collect all timestamps
-    const allTimestamps: string[] = [
-      ...diaryEntries.map((e) => e.createdAt || e.date),
-      ...workouts.map((w) => w.createdAt || w.date),
-      ...transactions.map((t) => t.createdAt || t.date),
-      ...meals.map((m) => m.createdAt || m.date),
-    ]
-
-    return periods.map((period) => {
-      let count = 0
-      for (const ts of allTimestamps) {
-        const d = new Date(ts)
-        const hour = d.getHours()
-        if (period.name === 'Ночь') {
-          if (hour >= 22 || hour < 5) count++
-        } else {
-          if (hour >= period.minHour && hour < period.maxHour) count++
-        }
-      }
-      return { period: period.name, count, fill: period.fill }
-    })
-  }, [diaryEntries, workouts, transactions, meals])
-
-  // ── NEW: 13. Best Mood Day ──────────────────────────────────────────
-  const { bestMoodDay, bestMood } = useMemo(() => {
-    const moodWithDates = diaryEntries
-      .filter((e) => e.mood !== null)
-      .map((e) => ({
-        date: new Date(e.date),
-        mood: e.mood!,
-      }))
-
-    if (moodWithDates.length === 0) return { bestMoodDay: null, bestMood: 0 }
-
-    let best = moodWithDates[0]
-    for (const entry of moodWithDates) {
-      if (entry.mood > best.mood) best = entry
-    }
-
-    const dayIdx = best.date.getDay() === 0 ? 6 : best.date.getDay() - 1
-    const bestMoodDay = `${RU_DAYS_SHORT[dayIdx]}, ${best.date.getDate()} ${RU_MONTHS_SHORT[best.date.getMonth()]}`
-
-    return { bestMoodDay, bestMood: best.mood }
-  }, [diaryEntries])
-
-  // ── NEW: 14. Longest Streak Module ─────────────────────────────────
-  const longestStreakModule = useMemo((): ModuleStreak | null => {
-    if (moduleStreaksData.length === 0) return null
-    const maxStreak = Math.max(...moduleStreaksData.map((s) => s.streak))
-    if (maxStreak === 0) return null
-    return moduleStreaksData.find((s) => s.streak === maxStreak) || null
-  }, [moduleStreaksData])
-
-  // ── NEW: 15. Peak Time Period ──────────────────────────────────────
-  const peakTimePeriod = useMemo((): TimeOfDayPoint | null => {
-    if (timeOfDayData.length === 0) return null
-    const maxCount = Math.max(...timeOfDayData.map((d) => d.count))
-    if (maxCount === 0) return null
-    return timeOfDayData.find((d) => d.count === maxCount) || null
-  }, [timeOfDayData])
-
-  // 16. Insights Data (existing)
-  const insights = useMemo(() => {
-    const items: { icon: React.ReactNode; text: string; color: string }[] = []
-
-    if (activityStats.mostProductiveDay && activityStats.mostProductiveDay !== '—') {
-      items.push({
-        icon: <Brain className="h-4 w-4" />,
-        text: `Самый продуктивный день: ${activityStats.mostProductiveDay}`,
-        color: 'text-emerald-600 dark:text-emerald-400',
-      })
-    }
-
-    if (topCategories.length > 0) {
-      items.push({
-        icon: <Wallet className="h-4 w-4" />,
-        text: `Топ категория расходов: ${topCategories[0].name} (${formatCurrency(topCategories[0].amount)})`,
-        color: 'text-amber-600 dark:text-amber-400',
-      })
-    }
-
-    if (avgMood > 0) {
-      const moodEmoji = MOOD_EMOJI[Math.round(avgMood)] || ''
-      items.push({
-        icon: <Smile className="h-4 w-4" />,
-        text: `Среднее настроение: ${moodEmoji} ${avgMood.toFixed(1)}/5`,
-        color: 'text-blue-600 dark:text-blue-400',
-      })
-    }
-
-    const maxStreak = habits.length > 0 ? Math.max(...habits.map((h) => h.streak)) : 0
-    if (maxStreak > 0) {
-      items.push({
-        icon: <Flame className="h-4 w-4" />,
-        text: `Серия тренировок: ${maxStreak} дней`,
-        color: 'text-orange-600 dark:text-orange-400',
-      })
-    }
-
-    if (totalMinutes > 0) {
-      items.push({
-        icon: <Dumbbell className="h-4 w-4" />,
-        text: `Всего тренировок: ${workoutCount}, ${totalMinutes} мин.`,
-        color: 'text-violet-600 dark:text-violet-400',
-      })
-    }
-
-    if (totalHabits > 0) {
-      items.push({
-        icon: <Sparkles className="h-4 w-4" />,
-        text: `Привычки: ${completedHabits} из ${totalHabits} сегодня (${habitsRate}%)`,
-        color: 'text-violet-600 dark:text-violet-400',
-      })
-    }
-
-    if (nutritionSummary.daysWithData > 0) {
-      items.push({
-        icon: <CalendarDays className="h-4 w-4" />,
-        text: `Ср. калории: ${nutritionSummary.avgKcal} ккал (${nutritionSummary.daysWithData} дн.)`,
-        color: 'text-rose-600 dark:text-rose-400',
-      })
-    }
-
-    return items
-  }, [activityStats, topCategories, avgMood, habits, totalMinutes, workoutCount, totalHabits, completedHabits, habitsRate, nutritionSummary])
-
-  // ── Current Period Label ───────────────────────────────────────────────
   const periodLabel = useMemo(() => {
-    const now = new Date()
-    const { from, to } = getDateRange(period)
-    const fromDate = new Date(from)
-    const toDate = new Date(to)
-    const fmt = (d: Date) => `${d.getDate()} ${RU_MONTHS_SHORT[d.getMonth()]}`
-    return period === 'week'
-      ? `${fmt(fromDate)} — ${fmt(toDate)}`
-      : period === 'month'
-        ? RU_MONTHS[now.getMonth()] + ' ' + now.getFullYear()
-        : String(now.getFullYear())
+    switch (period) {
+      case '7d': return '7 дней'
+      case '30d': return '30 дней'
+      case '3m': return '3 месяца'
+      case 'all': return 'Всё время'
+      default: return '30 дней'
+    }
   }, [period])
 
-  // ── Render ─────────────────────────────────────────────────────────────
+  // ── Render ──────────────────────────────────────────────────────────────
 
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <div className="relative overflow-hidden">
-        {/* Decorative gradient blobs */}
-        <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -left-20 top-0 h-56 w-56 rounded-full bg-gradient-to-br from-blue-400/15 to-violet-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-blue-400/20 to-violet-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute -left-20 top-0 h-56 w-56 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 shadow-sm">
                 <BarChart3 className="h-5 w-5 text-white" />
               </div>
               <div>
@@ -929,7 +195,7 @@ export default function AnalyticsPage() {
                   </Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  Статистика и тренды по всем модулям
+                  Полная статистика по всем модулям
                 </p>
               </div>
             </div>
@@ -941,9 +207,10 @@ export default function AnalyticsPage() {
             onValueChange={(v) => setPeriod(v as Period)}
           >
             <TabsList className="bg-muted/60">
-              <TabsTrigger value="week" className="text-xs sm:text-sm">Неделя</TabsTrigger>
-              <TabsTrigger value="month" className="text-xs sm:text-sm">Месяц</TabsTrigger>
-              <TabsTrigger value="year" className="text-xs sm:text-sm">Год</TabsTrigger>
+              <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
+              <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
+              <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -952,120 +219,652 @@ export default function AnalyticsPage() {
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-muted-foreground/25 bg-gradient-to-b from-muted/30 to-transparent py-16">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400/20 to-violet-500/20">
             <Inbox className="h-8 w-8 text-muted-foreground/60" />
           </div>
           <h3 className="mb-1 text-lg font-semibold text-muted-foreground">Нет данных</h3>
           <p className="max-w-xs text-center text-sm text-muted-foreground/70">
-            Начните вести дневник, добавлять расходы или тренировки, чтобы увидеть аналитику за{' '}
-            {period === 'week' ? 'эту неделю' : period === 'month' ? 'этот месяц' : 'этот год'}
+            Начните вести дневник, добавлять расходы или тренировки, чтобы увидеть аналитику
           </p>
         </div>
       )}
 
-      {/* ── Content (hidden when empty) ──────────────────────────────────── */}
+      {/* ── Content ─────────────────────────────────────────────────────── */}
       {(loading || hasData) && (
         <>
-          {/* ── Activity Overview Summary ─────────────────────────────────── */}
-          <ActivityOverview loading={loading} activityStats={activityStats} period={period} />
+          {/* ── 1. Overview Stats Cards ──────────────────────────────────── */}
+          <OverviewStatsCards loading={loading} data={data} />
 
-          {/* ── Overview Stats ───────────────────────────────────────────── */}
-          <OverviewStats
-            loading={loading}
-            diaryCount={diaryCount}
-            avgMood={avgMood}
-            totalExpenses={totalExpenses}
-            totalIncome={totalIncome}
-            savingsRate={savingsRate}
-            workoutCount={workoutCount}
-            totalMinutes={totalMinutes}
-            totalHabits={totalHabits}
-            completedHabits={completedHabits}
-            habitsRate={habitsRate}
-            diaryEntries={diaryEntries}
-            transactions={transactions}
-            periodComparison={prevPeriodComparison}
-          />
+          {/* ── 2. Monthly Activity Chart ────────────────────────────────── */}
+          <MonthlyActivityChart loading={loading} data={data} />
 
-          {/* ── NEW: Module Completion Streaks ────────────────────────────── */}
-          <ModuleStreaks loading={loading} streaks={moduleStreaksData} />
-
-          {/* ── Charts Row: Mood + Spending ───────────────────────────────── */}
-          <ChartsRow
-            loading={loading}
-            moodChartData={moodChartData}
-            spendingChartData={spendingChartData}
-            period={period}
-          />
-
-          {/* ── NEW: Mood Trends (30 days) ────────────────────────────────── */}
-          <MoodTrendsChart loading={loading} data={moodTrendData} />
-
-          {/* ── NEW: Weekly Activity Heatmap ──────────────────────────────── */}
-          <WeeklyActivityHeatmap loading={loading} heatmapData={weeklyActivityData} />
-
-          {/* ── Nutrition Summary + Workout Distribution ──────────────────── */}
+          {/* ── 3 & 4. Mood Distribution + Top Categories ────────────────── */}
           <div className="stagger-children grid gap-4 lg:grid-cols-2">
-            <NutritionChart loading={loading} nutritionSummary={nutritionSummary} />
-            <WorkoutDistributionChart loading={loading} workoutDistribution={workoutDistribution} workoutCount={workoutCount} />
+            <MoodDistributionChart loading={loading} data={data} />
+            <TopCategoriesChart loading={loading} data={data} />
           </div>
 
-          {/* ── NEW: Time-of-Day Activity Chart ───────────────────────────── */}
-          <TimeOfDayChart loading={loading} data={timeOfDayData} />
+          {/* ── 5. Habit Completion Trend ───────────────────────────────── */}
+          <HabitCompletionTrend loading={loading} data={data} />
 
-          {/* ── Top Categories + Habits Heatmap ───────────────────────────── */}
-          <div className="stagger-children grid gap-4 lg:grid-cols-2">
-            <TopCategoriesChart loading={loading} topCategories={topCategories} />
-            <HabitsHeatmapSection
-              loading={loading}
-              habitsHeatmap={habitsHeatmap}
-              heatmapCompletionRate={heatmapCompletionRate}
-              totalHabits={totalHabits}
-              habits={habits}
-            />
-          </div>
+          {/* ── 6. Collections Distribution ──────────────────────────────── */}
+          <CollectionsDistribution loading={loading} data={data} />
 
-          {/* ── NEW: Personal Insights Cards ──────────────────────────────── */}
-          <PersonalInsights
-            loading={loading}
-            mostProductiveDay={activityStats.mostProductiveDay ?? null}
-            bestMoodDay={bestMoodDay}
-            bestMood={bestMood}
-            longestStreakModule={longestStreakModule}
-            peakTimePeriod={peakTimePeriod}
-            totalActions={activityStats.totalActions}
-            avgMood={avgMood}
-          />
-
-          {/* ── Insights Section (existing) ───────────────────────────────── */}
-          {!loading && insights.length > 0 && (
-            <div className="card-hover overflow-hidden rounded-xl border border-border bg-gradient-to-br from-amber-50/60 via-background to-violet-50/40 dark:from-amber-950/20 dark:via-background dark:to-violet-950/15">
-              <div className="flex items-center gap-2.5 border-b bg-muted/30 px-5 py-3.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
-                  <Lightbulb className="h-4 w-4 text-white" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <h2 className="text-sm font-semibold">Подробные инсайты</h2>
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                </div>
-                <Badge variant="secondary" className="ml-auto text-[10px]">
-                  {insights.length} подсказок
-                </Badge>
-              </div>
-              <div className="stagger-children divide-y">
-                {insights.map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/30">
-                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted/60 ${item.color}`}>
-                      {item.icon}
-                    </div>
-                    <p className="text-sm text-muted-foreground">{item.text}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* ── 7. Weekly Heatmap ────────────────────────────────────────── */}
+          <WeeklyHeatmapSection loading={loading} data={data} />
         </>
       )}
     </div>
+  )
+}
+
+// ─── 1. Overview Stats Cards ──────────────────────────────────────────────────
+
+function OverviewStatsCards({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  const cards = [
+    {
+      label: 'Записи в дневнике',
+      value: data?.overview.totalDiaryEntries ?? 0,
+      icon: BookOpen,
+      gradient: 'from-emerald-500/10 to-teal-500/10',
+      borderGrad: 'from-emerald-400 to-teal-500',
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/50',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+      textColor: 'text-emerald-700 dark:text-emerald-300',
+    },
+    {
+      label: 'Тренировки',
+      value: data?.overview.totalWorkouts ?? 0,
+      icon: Dumbbell,
+      gradient: 'from-blue-500/10 to-sky-500/10',
+      borderGrad: 'from-blue-400 to-sky-500',
+      iconBg: 'bg-blue-100 dark:bg-blue-900/50',
+      iconColor: 'text-blue-600 dark:text-blue-400',
+      textColor: 'text-blue-700 dark:text-blue-300',
+    },
+    {
+      label: 'Калории потреблено',
+      value: data?.overview.totalCalories ?? 0,
+      icon: Flame,
+      gradient: 'from-orange-500/10 to-amber-500/10',
+      borderGrad: 'from-orange-400 to-amber-500',
+      iconBg: 'bg-orange-100 dark:bg-orange-900/50',
+      iconColor: 'text-orange-600 dark:text-orange-400',
+      textColor: 'text-orange-700 dark:text-orange-300',
+      suffix: ' ккал',
+    },
+    {
+      label: 'Дней отслеживания',
+      value: data?.overview.totalDaysTracked ?? 0,
+      icon: CalendarDays,
+      gradient: 'from-violet-500/10 to-purple-500/10',
+      borderGrad: 'from-violet-400 to-purple-500',
+      iconBg: 'bg-violet-100 dark:bg-violet-900/50',
+      iconColor: 'text-violet-600 dark:text-violet-400',
+      textColor: 'text-violet-700 dark:text-violet-300',
+    },
+    {
+      label: 'Привычки выполнены',
+      value: data?.overview.totalHabitsCompleted ?? 0,
+      icon: Target,
+      gradient: 'from-pink-500/10 to-rose-500/10',
+      borderGrad: 'from-pink-400 to-rose-500',
+      iconBg: 'bg-pink-100 dark:bg-pink-900/50',
+      iconColor: 'text-pink-600 dark:text-pink-400',
+      textColor: 'text-pink-700 dark:text-pink-300',
+    },
+  ]
+
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Card key={i} className="rounded-xl border">
+            <CardContent className="p-4">
+              <div className="skeleton-shimmer mb-3 h-4 w-24 rounded-md" />
+              <div className="skeleton-shimmer h-8 w-16 rounded-md" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <div className="stagger-children grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+      {cards.map((card) => {
+        const Icon = card.icon
+        return (
+          <Card
+            key={card.label}
+            className={`card-hover relative overflow-hidden rounded-xl border border-transparent bg-gradient-to-br ${card.gradient} dark:border-white/5`}
+          >
+            <div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b ${card.borderGrad}`} />
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-muted-foreground">{card.label}</p>
+                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${card.iconBg}`}>
+                  <Icon className={`h-3.5 w-3.5 ${card.iconColor}`} />
+                </div>
+              </div>
+              <p className={`mt-2 text-xl font-bold tabular-nums ${card.textColor}`}>
+                <AnimatedNumber value={card.value} />
+                {card.suffix && <span className="text-sm font-medium">{card.suffix}</span>}
+              </p>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </div>
+  )
+}
+
+// ─── 2. Monthly Activity Chart ────────────────────────────────────────────────
+
+function MonthlyActivityChart({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="skeleton-shimmer mb-4 h-5 w-48 rounded-md" />
+          <div className="skeleton-shimmer h-[300px] rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const chartData = data?.monthlyActivity ?? []
+
+  return (
+    <Card className="card-hover rounded-xl border">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Activity className="h-4 w-4 text-blue-500" />
+          Активность по месяцам
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Количество записей по модулям за последние 12 месяцев
+        </p>
+      </CardHeader>
+      <CardContent>
+        {chartData.every((d) => d.diary === 0 && d.workouts === 0 && d.habits === 0 && d.meals === 0) ? (
+          <div className="flex h-[300px] items-center justify-center rounded-lg bg-muted/30">
+            <div className="text-center">
+              <Activity className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">Нет данных об активности</p>
+            </div>
+          </div>
+        ) : (
+          <ChartContainer config={monthlyChartConfig} className="h-[300px] w-full">
+            <LineChart data={chartData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
+              <XAxis
+                dataKey="month"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+                allowDecimals={false}
+              />
+              <ChartTooltip content={<ChartTooltipContent />} />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Line type="monotone" dataKey="diary" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} name="Дневник" />
+              <Line type="monotone" dataKey="workouts" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} name="Тренировки" />
+              <Line type="monotone" dataKey="habits" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} name="Привычки" />
+              <Line type="monotone" dataKey="meals" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} name="Питание" />
+            </LineChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── 3. Mood Distribution ────────────────────────────────────────────────────
+
+function MoodDistributionChart({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="skeleton-shimmer mb-4 h-5 w-40 rounded-md" />
+          <div className="skeleton-shimmer h-[260px] rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const moodData = data?.moodDistribution ?? []
+  const hasMoodData = moodData.some((d) => d.count > 0)
+
+  // For the donut chart, filter out zero values
+  const chartData = moodData.filter((d) => d.count > 0)
+
+  return (
+    <Card className="card-hover rounded-xl border">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Smile className="h-4 w-4 text-amber-500" />
+          Распределение настроений
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Настроения из дневника
+        </p>
+      </CardHeader>
+      <CardContent>
+        {!hasMoodData ? (
+          <div className="flex h-[260px] items-center justify-center rounded-lg bg-muted/30">
+            <div className="text-center">
+              <Smile className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">Нет данных о настроениях</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="h-[200px] w-[200px] shrink-0">
+              <ChartContainer config={{ value: { label: 'Записи', color: '#f59e0b' } }} className="h-[200px] w-[200px]">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={85}
+                    paddingAngle={3}
+                    dataKey="count"
+                    nameKey="emoji"
+                    stroke="none"
+                  >
+                    {chartData.map((entry, idx) => (
+                      <Cell key={`cell-${idx}`} fill={MOOD_COLORS[entry.mood - 1]} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<MoodTooltip />} />
+                </PieChart>
+              </ChartContainer>
+            </div>
+            <div className="flex flex-1 flex-col gap-2.5">
+              {moodData.map((item) => (
+                <div key={item.mood} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{item.emoji}</span>
+                    <span className="text-xs text-muted-foreground">{item.label}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold tabular-nums">{item.count}</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">{item.percentage}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function MoodTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: MoodDistItem }> }) {
+  if (active && payload && payload.length) {
+    const item = payload[0].payload
+    return (
+      <div className="rounded-lg border bg-background p-2.5 shadow-md">
+        <p className="text-sm font-semibold">
+          {item.emoji} {item.label}: {item.count} ({item.percentage}%)
+        </p>
+      </div>
+    )
+  }
+  return null
+}
+
+// ─── 4. Top Expense Categories ────────────────────────────────────────────────
+
+function TopCategoriesChart({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="skeleton-shimmer mb-4 h-5 w-40 rounded-md" />
+          <div className="skeleton-shimmer h-[260px] rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const categories = data?.topCategories ?? []
+  const maxAmount = Math.max(...categories.map((c) => c.amount), 1)
+
+  return (
+    <Card className="card-hover rounded-xl border">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Wallet className="h-4 w-4 text-amber-500" />
+          Топ категории расходов
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Наибольшие расходы по категориям
+        </p>
+      </CardHeader>
+      <CardContent>
+        {categories.length === 0 ? (
+          <div className="flex h-[260px] items-center justify-center rounded-lg bg-muted/30">
+            <div className="text-center">
+              <Wallet className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">Нет финансовых данных</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {categories.map((cat, idx) => (
+              <div key={cat.name} className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: cat.color || PIE_COLORS[idx % PIE_COLORS.length] }}
+                    />
+                    <span className="text-xs font-medium">{cat.name}</span>
+                  </div>
+                  <span className="text-xs font-semibold tabular-nums">{formatCurrency(cat.amount)}</span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${(cat.amount / maxAmount) * 100}%`,
+                      backgroundColor: cat.color || PIE_COLORS[idx % PIE_COLORS.length],
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── 5. Habit Completion Trend ────────────────────────────────────────────────
+
+function HabitCompletionTrend({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="skeleton-shimmer mb-4 h-5 w-48 rounded-md" />
+          <div className="skeleton-shimmer h-[260px] rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const trendData = data?.habitCompletionTrend ?? []
+  const hasData = trendData.some((d) => d.rate > 0)
+
+  return (
+    <Card className="card-hover rounded-xl border">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          Тренд выполнения привычек
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Процент выполнения за последние 8 недель
+        </p>
+      </CardHeader>
+      <CardContent>
+        {!hasData ? (
+          <div className="flex h-[260px] items-center justify-center rounded-lg bg-muted/30">
+            <div className="text-center">
+              <CheckCircle2 className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">Нет данных о привычках</p>
+            </div>
+          </div>
+        ) : (
+          <ChartContainer config={habitChartConfig} className="h-[260px] w-full">
+            <BarChart data={trendData} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
+              <defs>
+                <linearGradient id="habitGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0.3} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-muted" />
+              <XAxis
+                dataKey="week"
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 10 }}
+                angle={-20}
+                textAnchor="end"
+                height={50}
+              />
+              <YAxis
+                tickLine={false}
+                axisLine={false}
+                tick={{ fontSize: 11 }}
+                domain={[0, 100]}
+                tickFormatter={(v) => `${v}%`}
+              />
+              <ChartTooltip content={<HabitTooltip />} />
+              <Bar
+                dataKey="rate"
+                fill="url(#habitGrad)"
+                radius={[6, 6, 0, 0]}
+                maxBarSize={40}
+              />
+            </BarChart>
+          </ChartContainer>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function HabitTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ value: number }>; label?: string }) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="rounded-lg border bg-background p-2.5 shadow-md">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold tabular-nums">{payload[0].value}%</p>
+      </div>
+    )
+  }
+  return null
+}
+
+// ─── 6. Collections Distribution ──────────────────────────────────────────────
+
+function CollectionsDistribution({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="skeleton-shimmer mb-4 h-5 w-48 rounded-md" />
+          <div className="skeleton-shimmer h-[260px] rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const collData = data?.collectionsDistribution ?? []
+  const hasData = collData.length > 0
+
+  const chartData = collData.filter((d) => d.count > 0)
+
+  return (
+    <Card className="card-hover rounded-xl border">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+          <Library className="h-4 w-4 text-violet-500" />
+          Коллекции по типам
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Распределение элементов по категориям
+        </p>
+      </CardHeader>
+      <CardContent>
+        {!hasData ? (
+          <div className="flex h-[260px] items-center justify-center rounded-lg bg-muted/30">
+            <div className="text-center">
+              <Library className="mx-auto mb-2 h-8 w-8 text-muted-foreground/40" />
+              <p className="text-sm text-muted-foreground">Нет данных о коллекциях</p>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center gap-4">
+            <div className="h-[200px] w-[200px] shrink-0">
+              <ChartContainer config={{ value: { label: 'Элементов', color: '#8b5cf6' } }} className="h-[200px] w-[200px]">
+                <PieChart>
+                  <Pie
+                    data={chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={85}
+                    paddingAngle={2}
+                    dataKey="count"
+                    nameKey="type"
+                    stroke="none"
+                  >
+                    {chartData.map((_, idx) => (
+                      <Cell key={`cell-${idx}`} fill={COLLECTION_COLORS[idx % COLLECTION_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <ChartTooltip content={<CollectionsTooltip />} />
+                </PieChart>
+              </ChartContainer>
+            </div>
+            <div className="flex flex-1 flex-col gap-2.5">
+              {collData.map((item, idx) => (
+                <div key={item.type} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="h-2.5 w-2.5 rounded-full"
+                      style={{ backgroundColor: COLLECTION_COLORS[idx % COLLECTION_COLORS.length] }}
+                    />
+                    <span className="text-xs font-medium">{item.type}</span>
+                  </div>
+                  <span className="text-xs font-semibold tabular-nums">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function CollectionsTooltip({ active, payload }: { active?: boolean; payload?: Array<{ payload: CollectionsDistItem }> }) {
+  if (active && payload && payload.length) {
+    const item = payload[0].payload
+    return (
+      <div className="rounded-lg border bg-background p-2.5 shadow-md">
+        <p className="text-sm font-semibold">
+          {item.type}: {item.count}
+        </p>
+      </div>
+    )
+  }
+  return null
+}
+
+// ─── 7. Weekly Heatmap ────────────────────────────────────────────────────────
+
+function WeeklyHeatmapSection({ loading, data }: { loading: boolean; data: AnalyticsData | null }) {
+  if (loading) {
+    return (
+      <Card className="rounded-xl border">
+        <CardContent className="p-4">
+          <div className="skeleton-shimmer mb-4 h-5 w-48 rounded-md" />
+          <div className="skeleton-shimmer h-[180px] rounded-md" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  const heatmapData = data?.weeklyHeatmap ?? { cells: [], maxCount: 1 }
+  const cells = heatmapData.cells
+  const maxCount = heatmapData.maxCount || 1
+
+  // Organize into grid: 12 weeks × 7 days
+  const grid: HeatmapCell[][] = []
+  for (let w = 0; w < 12; w++) {
+    const weekCells = cells.filter((c) => c.weekIdx === w).sort((a, b) => a.dayIdx - b.dayIdx)
+    grid.push(weekCells)
+  }
+
+  const getHeatColor = (count: number) => {
+    if (count === 0) return 'bg-muted/40 dark:bg-muted/20'
+    const intensity = count / maxCount
+    if (intensity <= 0.25) return 'bg-emerald-200 dark:bg-emerald-900/60'
+    if (intensity <= 0.5) return 'bg-emerald-300 dark:bg-emerald-700/70'
+    if (intensity <= 0.75) return 'bg-emerald-500 dark:bg-emerald-500/80'
+    return 'bg-emerald-700 dark:bg-emerald-400'
+  }
+
+  return (
+    <Card className="card-hover rounded-xl border">
+      <CardHeader className="pb-2">
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <TrendingUp className="h-4 w-4 text-emerald-500" />
+              Тепловая карта активности
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Последние 12 недель — интенсивность активности по дням
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+            <span>Меньше</span>
+            <div className="h-3 w-3 rounded-sm bg-muted/40 dark:bg-muted/20" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-200 dark:bg-emerald-900/60" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-300 dark:bg-emerald-700/70" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-500 dark:bg-emerald-500/80" />
+            <div className="h-3 w-3 rounded-sm bg-emerald-700 dark:bg-emerald-400" />
+            <span>Больше</span>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <div className="inline-flex flex-col gap-1 min-w-fit">
+            {/* Day labels + grid */}
+            {RU_DAYS_SHORT.map((dayLabel, dayIdx) => (
+              <div key={dayLabel} className="flex items-center gap-1">
+                <span className="w-7 text-right text-[10px] text-muted-foreground pr-1">{dayLabel}</span>
+                {grid.map((weekCells, weekIdx) => {
+                  const cell = weekCells.find((c) => c.dayIdx === dayIdx)
+                  const isFuture = cell ? new Date(cell.date) > new Date() : false
+                  return (
+                    <div
+                      key={`${weekIdx}-${dayIdx}`}
+                      className={`h-3.5 w-3.5 rounded-sm transition-colors ${isFuture ? 'bg-muted/10' : getHeatColor(cell?.count ?? 0)}`}
+                      title={cell ? `${cell.date}: ${cell.count} действий` : ''}
+                    />
+                  )
+                })}
+              </div>
+            ))}
+            {/* Week numbers */}
+            <div className="mt-0.5 flex items-center gap-1 pl-8">
+              {grid.map((weekCells, weekIdx) => (
+                <div key={weekIdx} className="w-3.5 text-center text-[8px] text-muted-foreground/50">
+                  {weekCells.length > 0 ? weekCells[0].dayNum : ''}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }

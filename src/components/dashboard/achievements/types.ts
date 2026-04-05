@@ -6,10 +6,13 @@ export type AchievementCategory =
   | 'workout'
   | 'habits'
   | 'nutrition'
+  | 'collections'
+  | 'goals'
+  | 'feed'
   | 'general'
 
 export interface Achievement {
-  /** Unique identifier */
+  /** Unique identifier (e.g. "first_diary_entry") */
   id: string
   /** Display name */
   name: string
@@ -27,6 +30,8 @@ export interface Achievement {
   earned: boolean
   /** ISO date string when earned */
   earnedAt: string | null
+  /** Whether this was just earned (for animation) */
+  newlyEarned?: boolean
 }
 
 /** Context data passed to the achievement evaluator */
@@ -55,4 +60,15 @@ export interface AchievementContext {
   todayMood: number | null
   todayWorkoutDone: boolean
   allHabitsCompleted: boolean
+}
+
+/** Persisted achievement from the API */
+export interface PersistedAchievement {
+  id: string
+  key: string
+  title: string
+  description: string
+  icon: string
+  category: string
+  earnedAt: string
 }

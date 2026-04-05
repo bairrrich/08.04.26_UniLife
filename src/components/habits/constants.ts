@@ -129,3 +129,22 @@ export function getCategoryEmoji(value: string): string {
   const cat = HABIT_CATEGORIES.find(c => c.value === value)
   return cat ? cat.emoji : '✨'
 }
+
+export function getCategoryColor(value: string): string {
+  const cat = HABIT_CATEGORIES.find(c => c.value === value)
+  return cat ? cat.color : '#6366f1'
+}
+
+export function getCategoryBorderClass(value: string): string {
+  const map: Record<string, string> = {
+    health: 'habit-border-health',
+    productivity: 'habit-border-productivity',
+    study: 'habit-border-study',
+    mindfulness: 'habit-border-mindfulness',
+    social: 'habit-border-social',
+    creative: 'habit-border-creative',
+    finance: 'habit-border-finance',
+    other: 'habit-border-other',
+  }
+  return map[value] || 'habit-border-other'
+}

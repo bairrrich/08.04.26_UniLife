@@ -2,7 +2,7 @@
 
 import type { Achievement, AchievementCategory } from './types'
 
-export type AchievementDef = Omit<Achievement, 'earned' | 'earnedAt'>
+export type AchievementDef = Omit<Achievement, 'earned' | 'earnedAt' | 'newlyEarned'>
 
 // ─── Color Schemes ────────────────────────────────────────────────────────────
 
@@ -27,6 +27,18 @@ export const CATEGORY_COLORS: Record<AchievementCategory, { gradient: string; la
     gradient: 'from-orange-400 to-rose-500',
     label: 'Питание',
   },
+  collections: {
+    gradient: 'from-pink-400 to-fuchsia-500',
+    label: 'Коллекции',
+  },
+  goals: {
+    gradient: 'from-cyan-400 to-blue-500',
+    label: 'Цели',
+  },
+  feed: {
+    gradient: 'from-lime-400 to-green-500',
+    label: 'Лента',
+  },
   general: {
     gradient: 'from-emerald-400 to-cyan-500',
     label: 'Общие',
@@ -38,7 +50,7 @@ export const CATEGORY_COLORS: Record<AchievementCategory, { gradient: string; la
 export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
   // ── Дневник (Diary) ──
   {
-    id: 'diary_first_entry',
+    id: 'first_diary_entry',
     name: 'Первая запись',
     description: 'Создайте первую запись в дневнике',
     icon: '📖',
@@ -47,7 +59,16 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     categoryLabel: CATEGORY_COLORS.diary.label,
   },
   {
-    id: 'diary_week_streak',
+    id: 'diary_streak_3',
+    name: 'Три дня подряд',
+    description: 'Пишите в дневник 3 дня подряд',
+    icon: '📝',
+    gradient: CATEGORY_COLORS.diary.gradient,
+    category: 'diary',
+    categoryLabel: CATEGORY_COLORS.diary.label,
+  },
+  {
+    id: 'diary_streak_7',
     name: 'Неделя без пропусков',
     description: 'Пишите в дневник 7 дней подряд',
     icon: '🔥',
@@ -59,7 +80,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     id: 'diary_30_entries',
     name: '30 записей',
     description: 'Создайте 30 записей в дневнике',
-    icon: '📝',
+    icon: '📚',
     gradient: CATEGORY_COLORS.diary.gradient,
     category: 'diary',
     categoryLabel: CATEGORY_COLORS.diary.label,
@@ -67,19 +88,19 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
 
   // ── Финансы (Finance) ──
   {
-    id: 'finance_first_budget',
-    name: 'Первый бюджет',
-    description: 'Установите бюджет хотя бы на одну категорию',
-    icon: '💰',
+    id: 'first_transaction',
+    name: 'Первая транзакция',
+    description: 'Запишите первую транзакцию',
+    icon: '💳',
     gradient: CATEGORY_COLORS.finance.gradient,
     category: 'finance',
     categoryLabel: CATEGORY_COLORS.finance.label,
   },
   {
-    id: 'finance_savings_month',
-    name: 'Месяц экономии',
-    description: 'Норма сбережений больше 20%',
-    icon: '📊',
+    id: 'savings_rate_positive',
+    name: 'Положительный баланс',
+    description: 'Доходы превышают расходы',
+    icon: '📈',
     gradient: CATEGORY_COLORS.finance.gradient,
     category: 'finance',
     categoryLabel: CATEGORY_COLORS.finance.label,
@@ -88,7 +109,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     id: 'finance_100_transactions',
     name: '100 транзакций',
     description: 'Запишите 100 транзакций',
-    icon: '💳',
+    icon: '💰',
     gradient: CATEGORY_COLORS.finance.gradient,
     category: 'finance',
     categoryLabel: CATEGORY_COLORS.finance.label,
@@ -96,7 +117,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
 
   // ── Тренировки (Workout) ──
   {
-    id: 'workout_first',
+    id: 'first_workout',
     name: 'Первая тренировка',
     description: 'Запишите первую тренировку',
     icon: '💪',
@@ -105,9 +126,9 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     categoryLabel: CATEGORY_COLORS.workout.label,
   },
   {
-    id: 'workout_week_7',
-    name: 'Неделя спорта',
-    description: 'Выполните 7 тренировок за месяц',
+    id: 'workout_streak_3',
+    name: '3 тренировки за неделю',
+    description: 'Выполните 3+ тренировки за неделю',
     icon: '🏃',
     gradient: CATEGORY_COLORS.workout.gradient,
     category: 'workout',
@@ -125,16 +146,16 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
 
   // ── Привычки (Habits) ──
   {
-    id: 'habits_first',
-    name: 'Первая привычка',
-    description: 'Добавьте хотя бы одну привычку',
+    id: 'first_habit_complete',
+    name: 'Привычка выполнена',
+    description: 'Завершите хотя бы одну привычку сегодня',
     icon: '🎯',
     gradient: CATEGORY_COLORS.habits.gradient,
     category: 'habits',
     categoryLabel: CATEGORY_COLORS.habits.label,
   },
   {
-    id: 'habits_all_done',
+    id: 'all_habits_complete',
     name: 'Все выполнены',
     description: 'Выполните все привычки за один день',
     icon: '✅',
@@ -145,7 +166,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
   {
     id: 'habits_streak_7',
     name: 'Стрик 7 дней',
-    description: 'Поддерживайте стрик привычки 7 дней',
+    description: 'Все привычки 7 дней подряд',
     icon: '⚡',
     gradient: CATEGORY_COLORS.habits.gradient,
     category: 'habits',
@@ -154,22 +175,73 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
 
   // ── Питание (Nutrition) ──
   {
-    id: 'nutrition_balanced',
-    name: 'Сбалансированный день',
-    description: 'Получите все макросы за день',
-    icon: '🥗',
+    id: 'first_meal',
+    name: 'Первый приём пищи',
+    description: 'Запишите первый приём пищи',
+    icon: '🍽️',
     gradient: CATEGORY_COLORS.nutrition.gradient,
     category: 'nutrition',
     categoryLabel: CATEGORY_COLORS.nutrition.label,
   },
   {
-    id: 'nutrition_tracking_week',
-    name: 'Неделя трекинга',
-    description: 'Отслеживайте питание 7 дней подряд',
-    icon: '🥤',
+    id: 'water_goal',
+    name: 'Водный баланс',
+    description: 'Выпейте 8+ стаканов воды за день',
+    icon: '💧',
     gradient: CATEGORY_COLORS.nutrition.gradient,
     category: 'nutrition',
     categoryLabel: CATEGORY_COLORS.nutrition.label,
+  },
+
+  // ── Коллекции (Collections) ──
+  {
+    id: 'first_collection',
+    name: 'Первая коллекция',
+    description: 'Добавьте первый элемент в коллекцию',
+    icon: '📚',
+    gradient: CATEGORY_COLORS.collections.gradient,
+    category: 'collections',
+    categoryLabel: CATEGORY_COLORS.collections.label,
+  },
+  {
+    id: 'collections_10',
+    name: 'Коллекционер',
+    description: 'Соберите 10+ элементов',
+    icon: '🏆',
+    gradient: CATEGORY_COLORS.collections.gradient,
+    category: 'collections',
+    categoryLabel: CATEGORY_COLORS.collections.label,
+  },
+
+  // ── Цели (Goals) ──
+  {
+    id: 'first_goal_set',
+    name: 'Первая цель',
+    description: 'Создайте первую цель',
+    icon: '🎯',
+    gradient: CATEGORY_COLORS.goals.gradient,
+    category: 'goals',
+    categoryLabel: CATEGORY_COLORS.goals.label,
+  },
+  {
+    id: 'first_goal_completed',
+    name: 'Цель достигнута',
+    description: 'Завершите первую цель',
+    icon: '🎉',
+    gradient: CATEGORY_COLORS.goals.gradient,
+    category: 'goals',
+    categoryLabel: CATEGORY_COLORS.goals.label,
+  },
+
+  // ── Лента (Feed) ──
+  {
+    id: 'first_post',
+    name: 'Первый пост',
+    description: 'Опубликуйте первую запись',
+    icon: '📢',
+    gradient: CATEGORY_COLORS.feed.gradient,
+    category: 'feed',
+    categoryLabel: CATEGORY_COLORS.feed.label,
   },
 
   // ── Общие (General) ──

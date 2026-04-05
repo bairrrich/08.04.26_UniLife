@@ -437,6 +437,21 @@ model Follow {
   @@id([followerId, followingId])
 }
 
+// ============ ACHIEVEMENTS ============
+
+model Achievement {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  title       String
+  description String
+  icon        String
+  category    String   // "diary", "finance", "habits", "workout", "nutrition", "collections", "goals", "feed", "general"
+  earnedAt    DateTime @default(now())
+  userId      String   @default("user_demo_001")
+
+  @@index([userId, category])
+}
+
 // ============ GOALS ============
 
 model Goal {
