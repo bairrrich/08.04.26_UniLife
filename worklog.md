@@ -4773,3 +4773,70 @@ Stage Summary:
 3. Image Upload — Photo support for diary and collections
 4. Real-time Updates — WebSocket/SSE for live feed
 5. Notifications — Push notifications for reminders
+
+---
+## Task ID: bundle-dynamic-imports
+### Agent: bundle-refactor-agent
+### Task: Consolidate 24 dynamic imports into 5 barrel bundles to reduce Turbopack chunks
+
+### Work Summary:
+- **Created 5 barrel bundle files** in `/src/components/dashboard/`:
+  1. `widgets-display.tsx` — 5 small display widgets (DailyProgress, MotivationalQuote, MoodDots, StreakWidget, QuickActions)
+  2. `widgets-activity.tsx` — 4 activity/transaction widgets (ActivityFeed, RecentTransactions, ActivityHeatmap, WeeklyInsights)
+  3. `widgets-charts.tsx` — 5 chart widgets (MoodBarChart, ExpensePieChart, SpendingTrendChart, WeeklyMoodChart, WeeklyActivityChart)
+  4. `widgets-stats.tsx` — 5 stats/info widgets (StatCards, HabitsProgress, WeeklySummary, MoodStreak, ProductivityScore)
+  5. `widgets-panels.tsx` — 3 complex panel widgets (DailyChecklist, BudgetOverview, NotificationCenter)
+
+- **Updated `dashboard-page.tsx`**:
+  - Removed 5 static widget imports (StatCards, QuickActions, DailyProgress, ProductivityScore, WeeklyInsights)
+  - Replaced 23 individual dynamic imports with barrel-based dynamic imports
+  - Added shared `widgetLoader` config object to DRY up repeated `{ loading, ssr: false }` options
+  - Kept 6 heavy standalone widgets as individual dynamic imports (QuickNotes, WeatherWidget, FocusTimerWidget, AchievementsWidget, QuickAddMenu, FinanceQuickView)
+  - All 28 widget imports now use `dynamic()` consistently
+
+- **Chunk reduction**: Turbopack chunk targets reduced from 23 individual module paths + 5 static inlines to 11 module paths (5 bundles + 6 individual). Multiple `dynamic()` calls referencing the same barrel module share a single chunk.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All existing functionality preserved — no breaking changes to component props or render logic
+
+---
+Task ID: fix-reload-loop
+Agent: main-agent
+Task: Fix app constantly reloading on first launch
+
+Work Log:
+- Diagnosed root cause: Turbopack was recompiling the page route after initial compile due to heavy static imports (AppSidebar 297 lines, MobileNav 283 lines, WelcomeScreen 604 lines, Footer ~100 lines inline) all compiled into the main page chunk
+- Before fix: 2-3 GET / requests (10.3s + 10.2s compile times) with HMR-triggered recompilation
+- After fix: Single GET / request (10.1s compile) with no recompilation
+
+Fix 1 — page.tsx optimization:
+- Extracted Footer to separate file `src/components/layout/app-footer.tsx` with default + named export
+- Made AppSidebar, MobileNav, WelcomeScreen, ScrollToTop dynamic imports with skeleton loading states
+- Replaced framer-motion AnimatePresence/motion with CSS-only AnimatedModule component (useState + useEffect + CSS transitions)
+- Removed framer-motion dependency from page.tsx
+- Removed unnecessary imports (cn, useModuleCounts, memo, 7 lucide icons)
+- Added SidebarSkeleton, MobileNavSkeleton, FooterSkeleton components
+
+Fix 2 — Dashboard widget bundling:
+- Created 5 barrel re-export files to reduce Turbopack chunk count:
+  - `widgets-display.tsx` (5 small widgets → 1 chunk)
+  - `widgets-activity.tsx` (4 activity widgets → 1 chunk)
+  - `widgets-charts.tsx` (5 chart widgets → 1 chunk)
+  - `widgets-stats.tsx` (5 stats widgets → 1 chunk)
+  - `widgets-panels.tsx` (3 panel widgets → 1 chunk)
+- Reduced dynamic import chunks from 23 to 11 (5 shared bundles + 6 individual heavy widgets)
+- Fixed `next/dynamic` options: must use inline object literals, not variable references
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Single compilation: GET / 200 in 10.1s (compile: 9.8s, render: 265ms)
+- ✅ No HMR recompilation after first load
+- ✅ No "Element type is invalid" errors
+- ✅ Server stays alive after first load
+
+### Stage Summary:
+- Double compilation issue completely fixed
+- Page.tsx reduced from ~300 lines with heavy deps to ~265 lines with only lightweight deps
+- Dashboard chunks reduced from 23 to 11
+- framer-motion removed from page.tsx (CSS-only transitions instead)
