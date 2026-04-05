@@ -8,6 +8,7 @@ import {
   BookOpen,
   Dumbbell,
   Target,
+  Clock,
 } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import {
@@ -86,6 +87,7 @@ const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, lo
 const QuickNotesWidget = dynamic(() => import('./quick-notes-widget'), { ssr: false, loading: widgetLoad })
 const DailyProgressWidget = dynamic(() => import('./daily-progress-widget'), { ssr: false, loading: widgetLoad })
 const MoodWeatherIndicator = dynamic(() => import('./mood-weather-indicator'), { ssr: false, loading: () => <div className="h-[56px] w-[280px] skeleton-shimmer rounded-xl" /> })
+const NutritionSummaryWidget = dynamic(() => import('./nutrition-summary-widget'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -229,6 +231,30 @@ export default function DashboardPage() {
 
   // ── Derived Data ───────────────────────────────────────────────────────
   const now = useMemo(() => new Date(), [])
+
+  // ── Current time (updates every minute) ────────────────────────────────
+  const [currentTime, setCurrentTime] = useState('')
+  useEffect(() => {
+    const updateTime = () => {
+      const n = new Date()
+      setCurrentTime(
+        `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
+      )
+    }
+    updateTime()
+    const interval = setInterval(updateTime, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // ── Most recent diary mood emoji ──────────────────────────────────────
+  const recentMoodEmoji = useMemo(() => {
+    if (diaryEntries.length === 0) return null
+    const sorted = [...diaryEntries].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    const latest = sorted.find((e) => e.mood)
+    return latest?.mood ? MOOD_EMOJI[latest.mood] : null
+  }, [diaryEntries])
 
   const todayEntry = diaryEntries.find((e) => {
     const d = new Date(e.date)
@@ -477,9 +503,27 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               {getGreeting()}, <span className="text-gradient-emerald">{userName}</span>! 👋
             </h1>
-            <p className="mt-1 text-sm capitalize text-muted-foreground">
-              {formatDate(now)}
-            </p>
+            <div className="mt-1 flex items-center gap-2">
+              <p className="text-sm capitalize text-muted-foreground">
+                {formatDate(now)}
+              </p>
+              {/* Current time badge */}
+              <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
+                <Clock className="h-3 w-3" />
+                {currentTime}
+              </span>
+              {/* Mood emoji from most recent diary entry */}
+              {recentMoodEmoji && (
+                <span className="inline-flex items-center text-sm" title="Настроение из последней записи">
+                  {recentMoodEmoji}
+                </span>
+              )}
+              {!recentMoodEmoji && !loading && (
+                <span className="inline-flex items-center text-sm opacity-50" title="Нет записей о настроении">
+                  😐
+                </span>
+              )}
+            </div>
           </div>
           {/* Weather-like Mood Indicator */}
           {!loading && (
@@ -645,6 +689,9 @@ export default function DashboardPage() {
         <WeatherWidget />
         <FocusTimerWidget />
       </div>
+
+      {/* ── Nutrition Summary Widget ────────────────────────── */}
+      <NutritionSummaryWidget />
 
       {/* ── Finance Quick View ────────────────────────────────── */}
       {!loading && financeStats && (

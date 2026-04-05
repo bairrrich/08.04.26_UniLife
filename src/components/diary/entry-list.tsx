@@ -219,7 +219,7 @@ export function EntryList({
                     )}
 
                     {/* Tags */}
-                    {entry.tags.length > 0 && (
+                    {entry.tags.length > 0 ? (
                       <div className="flex flex-wrap gap-1.5 mt-2.5">
                         {entry.tags.map((tag) => (
                           <Badge
@@ -234,6 +234,8 @@ export function EntryList({
                           </Badge>
                         ))}
                       </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40 italic mt-2 block">Нет тегов</span>
                     )}
 
                     {/* Word count + reading time badge */}
@@ -243,8 +245,8 @@ export function EntryList({
                         {wordCount} слов
                       </Badge>
                       <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
-                        <Clock className="h-2.5 w-2.5" />
-                        {readTime}
+                        <BookOpen className="h-2.5 w-2.5" />
+                        {readTime} чтения
                       </Badge>
                     </div>
                   </div>

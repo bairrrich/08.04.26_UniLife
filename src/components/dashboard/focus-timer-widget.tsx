@@ -344,6 +344,150 @@ function playCompletionSound() {
   }
 }
 
+// ─── Ambient Sound Engine (Web Audio API) ────────────────────────────────────
+
+class AmbientSoundEngine {
+  private ctx: AudioContext | null = null
+  private nodes: { osc: OscillatorNode; gain: GainNode }[] = []
+  private masterGain: GainNode | null = null
+  private isPlaying = false
+  private currentType: AmbientSound = 'silence'
+  private fadeInTimeout: ReturnType<typeof setTimeout> | null = null
+
+  async start(type: AmbientSound) {
+    if (type === 'silence') {
+      this.stop()
+      return
+    }
+    this.stop()
+    try {
+      this.ctx = new (window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext })
+          .webkitAudioContext)()
+      this.masterGain = this.ctx.createGain()
+      this.masterGain.gain.setValueAtTime(0, this.ctx.currentTime)
+      this.masterGain.connect(this.ctx.destination)
+
+      this.currentType = type
+      this.isPlaying = true
+
+      if (type === 'rain') {
+        // Rain: multiple layered sine waves at different frequencies to simulate rain
+        // Using subtle chord-like frequencies with slight detuning
+        const rainFreqs = [
+          { freq: 200, vol: 0.03, type: 'sine' as OscillatorType },
+          { freq: 400, vol: 0.02, type: 'sine' as OscillatorType },
+          { freq: 800, vol: 0.015, type: 'sine' as OscillatorType },
+          { freq: 1200, vol: 0.01, type: 'sine' as OscillatorType },
+          { freq: 2400, vol: 0.008, type: 'sine' as OscillatorType },
+          { freq: 300, vol: 0.025, type: 'triangle' as OscillatorType },
+        ]
+        for (const cfg of rainFreqs) {
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+          osc.type = cfg.type
+          osc.frequency.setValueAtTime(cfg.freq, this.ctx.currentTime)
+          // Add subtle frequency modulation for natural feel
+          const lfo = this.ctx.createOscillator()
+          const lfoGain = this.ctx.createGain()
+          lfo.frequency.setValueAtTime(0.1 + Math.random() * 0.3, this.ctx.currentTime)
+          lfoGain.gain.setValueAtTime(cfg.freq * 0.01, this.ctx.currentTime)
+          lfo.connect(lfoGain)
+          lfoGain.connect(osc.frequency)
+          lfo.start()
+
+          gain.gain.setValueAtTime(0, this.ctx.currentTime)
+          osc.connect(gain)
+          gain.connect(this.masterGain)
+          osc.start()
+          this.nodes.push({ osc, gain })
+
+          // Fade in each layer
+          const delay = this.nodes.length * 200
+          gain.gain.linearRampToValueAtTime(cfg.vol, this.ctx.currentTime + delay / 1000 + 1)
+        }
+      } else if (type === 'cafe') {
+        // Cafe: warm low frequencies (brown-noise-like) with subtle murmur
+        const cafeFreqs = [
+          { freq: 80, vol: 0.04, type: 'sine' as OscillatorType },
+          { freq: 120, vol: 0.035, type: 'sine' as OscillatorType },
+          { freq: 180, vol: 0.025, type: 'triangle' as OscillatorType },
+          { freq: 250, vol: 0.02, type: 'sine' as OscillatorType },
+          { freq: 350, vol: 0.015, type: 'triangle' as OscillatorType },
+          { freq: 500, vol: 0.01, type: 'sine' as OscillatorType },
+        ]
+        for (const cfg of cafeFreqs) {
+          const osc = this.ctx.createOscillator()
+          const gain = this.ctx.createGain()
+          osc.type = cfg.type
+          osc.frequency.setValueAtTime(cfg.freq, this.ctx.currentTime)
+          // Slow modulation for warmth
+          const lfo = this.ctx.createOscillator()
+          const lfoGain = this.ctx.createGain()
+          lfo.frequency.setValueAtTime(0.05 + Math.random() * 0.15, this.ctx.currentTime)
+          lfoGain.gain.setValueAtTime(cfg.freq * 0.02, this.ctx.currentTime)
+          lfo.connect(lfoGain)
+          lfoGain.connect(osc.frequency)
+          lfo.start()
+
+          gain.gain.setValueAtTime(0, this.ctx.currentTime)
+          osc.connect(gain)
+          gain.connect(this.masterGain)
+          osc.start()
+          this.nodes.push({ osc, gain })
+
+          const delay = this.nodes.length * 150
+          gain.gain.linearRampToValueAtTime(cfg.vol, this.ctx.currentTime + delay / 1000 + 1.5)
+        }
+      }
+
+      // Master fade in
+      if (this.masterGain) {
+        this.masterGain.gain.linearRampToValueAtTime(1, this.ctx.currentTime + 2)
+      }
+    } catch {
+      // Audio not supported
+    }
+  }
+
+  stop() {
+    if (this.fadeInTimeout) {
+      clearTimeout(this.fadeInTimeout)
+      this.fadeInTimeout = null
+    }
+    if (this.ctx && this.masterGain && this.isPlaying) {
+      try {
+        // Fade out master
+        this.masterGain.gain.linearRampToValueAtTime(0, this.ctx.currentTime + 0.5)
+        const ctxRef = this.ctx
+        setTimeout(() => {
+          try { ctxRef.close() } catch { /* already closed */ }
+        }, 600)
+      } catch {
+        // ignore
+      }
+    }
+    this.nodes = []
+    this.ctx = null
+    this.masterGain = null
+    this.isPlaying = false
+    this.currentType = 'silence'
+  }
+
+  getIsPlaying() {
+    return this.isPlaying
+  }
+}
+
+// Singleton ambient sound engine
+let ambientEngine: AmbientSoundEngine | null = null
+function getAmbientEngine(): AmbientSoundEngine {
+  if (!ambientEngine) {
+    ambientEngine = new AmbientSoundEngine()
+  }
+  return ambientEngine
+}
+
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
 function formatTime(seconds: number): string {
@@ -408,6 +552,9 @@ export default function FocusTimerWidget() {
     (currentMode: TimerMode, currentSessions: number) => {
       if (completionHandledRef.current) return
       completionHandledRef.current = true
+
+      // Stop ambient sound on completion
+      getAmbientEngine().stop()
 
       if (soundRef.current) {
         playCompletionSound()
@@ -512,10 +659,17 @@ export default function FocusTimerWidget() {
         clearInterval(intervalRef.current)
         intervalRef.current = null
       }
+      // Stop ambient sound when timer stops
+      getAmbientEngine().stop()
       return
     }
 
     completionHandledRef.current = false
+
+    // Start ambient sound if enabled and a non-silence sound is selected
+    if (ambientSound !== 'silence') {
+      getAmbientEngine().start(ambientSound)
+    }
 
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -533,7 +687,7 @@ export default function FocusTimerWidget() {
         intervalRef.current = null
       }
     }
-  }, [isRunning, handleCompletion])
+  }, [isRunning, handleCompletion, ambientSound])
 
   // ── Handlers ─────────────────────────────────────────────────────────
   const handleModeChange = useCallback((newMode: TimerMode) => {
@@ -600,9 +754,16 @@ export default function FocusTimerWidget() {
   const cycleAmbientSound = useCallback(() => {
     setAmbientSound((prev) => {
       const idx = AMBIENT_SOUNDS.findIndex((s) => s.id === prev)
-      return AMBIENT_SOUNDS[(idx + 1) % AMBIENT_SOUNDS.length].id
+      const nextSound = AMBIENT_SOUNDS[(idx + 1) % AMBIENT_SOUNDS.length].id
+      // Start/stop ambient sound based on selection
+      if (nextSound !== 'silence' && isRunning) {
+        getAmbientEngine().start(nextSound)
+      } else {
+        getAmbientEngine().stop()
+      }
+      return nextSound
     })
-  }, [])
+  }, [isRunning])
 
   // ── Derived values ───────────────────────────────────────────────────
   const config = MODE_CONFIG[mode]

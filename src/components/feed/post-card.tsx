@@ -17,6 +17,29 @@ import { cn } from '@/lib/utils'
 import type { FeedPost, FeedComment, ReactionType, ReactionCounts } from './types'
 import { ENTITY_COLORS, ENTITY_ICONS, ENTITY_BORDER, ENTITY_LABELS, ENTITY_ICON_BG, REACTION_EMOJI, REACTION_OPTIONS, formatRelativeTime, MAX_COMMENT_LENGTH, parsePostTags } from './constants'
 
+// ─── Comment avatar colors (pastel) ──────────────────────────────────────────
+const COMMENT_AVATAR_COLORS = [
+  'bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300',
+  'bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300',
+  'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+  'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300',
+  'bg-violet-100 text-violet-700 dark:bg-violet-900/50 dark:text-violet-300',
+  'bg-teal-100 text-teal-700 dark:bg-teal-900/50 dark:text-teal-300',
+  'bg-pink-100 text-pink-700 dark:bg-pink-900/50 dark:text-pink-300',
+  'bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300',
+]
+
+// ─── Simple hash for deterministic color ─────────────────────────────────────
+function hashCode(str: string): number {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash
+  }
+  return Math.abs(hash)
+}
+
 // ─── useLocalStorage helper ──────────────────────────────────────────────────
 function useLocalStorage<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
   const [value, setValue] = useState<T>(() => {
@@ -221,7 +244,7 @@ export function PostCard({
                 {ENTITY_ICONS[post.entityType]}
                 {ENTITY_LABELS[post.entityType]}
               </span>
-              <span className="text-xs text-muted-foreground flex items-center gap-1">
+              <span className="text-xs text-muted-foreground flex items-center gap-1 tabular-nums">
                 <Clock className="h-3 w-3" />
                 {formatRelativeTime(post.createdAt)}
               </span>
@@ -461,6 +484,42 @@ export function PostCard({
             </Button>
           </div>
         </div>
+
+        {/* Inline comment preview — always visible when there are comments */}
+        {!showCommentSection && post.comments.length > 0 && (
+          <div className="rounded-lg bg-muted/40 p-3 space-y-2">
+            <div className="space-y-2">
+              {post.comments.slice(0, 2).map((comment) => (
+                <div key={comment.id} className="flex gap-2">
+                  <div className={cn(
+                    'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 flex-shrink-0',
+                    COMMENT_AVATAR_COLORS[hashCode(comment.user.name || 'U') % COMMENT_AVATAR_COLORS.length]
+                  )}>
+                    {(comment.user.name || 'U').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium">{comment.user.name || 'Пользователь'}</span>
+                      <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                        {formatRelativeTime(comment.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{comment.content}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => onToggleCommentSection(post.id)}
+              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors w-full text-center"
+            >
+              {post.comments.length > 2
+                ? `Показать все ${post.comments.length} комментариев`
+                : 'Написать комментарий'}
+            </button>
+          </div>
+        )}
 
         {/* Comments section with reply threading */}
         {showCommentSection && (

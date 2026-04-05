@@ -111,25 +111,20 @@ export function formatRelativeTime(dateStr: string): string {
     if (lastDigit >= 2 && lastDigit <= 4) return `${diffHours} часа назад`
     return `${diffHours} часов назад`
   }
-  if (diffDays === 1) return 'вчера'
-  if (diffDays < 7) {
-    const lastDigit = diffDays % 10
-    const lastTwo = diffDays % 100
-    if (lastTwo >= 11 && lastTwo <= 19) return `${diffDays} дней назад`
-    if (lastDigit === 1) return `${diffDays} день назад`
-    if (lastDigit >= 2 && lastDigit <= 4) return `${diffDays} дня назад`
-    return `${diffDays} дней назад`
+
+  // For posts older than 24 hours, show formatted date: "5 апр. в 14:30"
+  const day = date.getDate()
+  const months = ['янв.', 'фев.', 'мар.', 'апр.', 'мая', 'июн.', 'июл.', 'авг.', 'сен.', 'окт.', 'ноя.', 'дек.']
+  const month = months[date.getMonth()]
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+
+  // Check if same year
+  if (date.getFullYear() === now.getFullYear()) {
+    return `${day} ${month} в ${hours}:${minutes}`
   }
-  if (diffDays < 30) {
-    const weeks = Math.floor(diffDays / 7)
-    const lastDigit = weeks % 10
-    const lastTwo = weeks % 100
-    if (lastTwo >= 11 && lastTwo <= 19) return `${weeks} недель назад`
-    if (lastDigit === 1) return `${weeks} неделю назад`
-    if (lastDigit >= 2 && lastDigit <= 4) return `${weeks} недели назад`
-    return `${weeks} недель назад`
-  }
-  return date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+  // Different year
+  return `${day} ${month} ${date.getFullYear()} в ${hours}:${minutes}`
 }
 
 export function getTimeGroup(dateStr: string): string {

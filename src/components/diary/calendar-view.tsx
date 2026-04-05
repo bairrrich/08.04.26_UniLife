@@ -2,11 +2,72 @@
 
 import { useMemo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { RU_DAYS_SHORT, MOOD_DOT_COLORS, MOOD_EMOJI, MOOD_LABELS } from '@/lib/format'
-import { Badge } from '@/components/ui/badge'
 import { DiaryEntry, CalendarCell } from './types'
 import { getDaysInMonth, getFirstDayOfMonth, formatDateKey } from './helpers'
+
+// ─── Streak calculation ─────────────────────────────────────────────────────
+
+/** Returns a Set of date keys (yyyy-MM-dd) that are part of a streak ≥ minStreak */
+function computeStreakDates(
+  entriesByDate: Map<string, DiaryEntry[]>,
+  currentYear: number,
+  currentMonth: number,
+  minStreak: number
+): Set<string> {
+  const daysInMonth = getDaysInMonth(currentYear, currentMonth)
+
+  // Collect all dates that have entries in the current month
+  const entryDates = new Set<string>()
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = formatDateKey(new Date(currentYear, currentMonth, d))
+    if (entriesByDate.has(key) && (entriesByDate.get(key)!.length ?? 0) > 0) {
+      entryDates.add(key)
+    }
+  }
+
+  const streakDates = new Set<string>()
+
+  // For each entry date, check if it's part of a streak of ≥ minStreak consecutive days
+  for (const startDate of entryDates) {
+    const start = new Date(startDate + 'T00:00:00')
+    // Walk backwards to find the beginning of a consecutive run
+    let runStart = new Date(start)
+    while (true) {
+      const prev = new Date(runStart)
+      prev.setDate(prev.getDate() - 1)
+      const prevKey = formatDateKey(prev)
+      if (entryDates.has(prevKey)) {
+        runStart = new Date(prev)
+      } else {
+        break
+      }
+    }
+
+    // Count consecutive days from runStart
+    let count = 0
+    const check = new Date(runStart)
+    while (entryDates.has(formatDateKey(check))) {
+      count++
+      check.setDate(check.getDate() + 1)
+    }
+
+    if (count >= minStreak) {
+      // Mark all dates in this run
+      const mark = new Date(runStart)
+      while (entryDates.has(formatDateKey(mark))) {
+        streakDates.add(formatDateKey(mark))
+        mark.setDate(mark.getDate() + 1)
+      }
+    }
+  }
+
+  return streakDates
+}
+
+// ─── Component ──────────────────────────────────────────────────────────────
 
 interface CalendarViewProps {
   currentYear: number
@@ -66,9 +127,39 @@ export function CalendarView({
     return cells
   }, [currentYear, currentMonth])
 
+  // Compute streak dates (3+ day consecutive entries)
+  const streakDates = useMemo(
+    () => computeStreakDates(entriesByDate, currentYear, currentMonth, 3),
+    [entriesByDate, currentYear, currentMonth]
+  )
+
+  // Count entries for the current month
+  const monthEntryCount = useMemo(() => {
+    let count = 0
+    for (let day = 1; day <= getDaysInMonth(currentYear, currentMonth); day++) {
+      const key = formatDateKey(new Date(currentYear, currentMonth, day))
+      const dayEntries = entriesByDate.get(key)
+      if (dayEntries) count += dayEntries.length
+    }
+    return count
+  }, [entriesByDate, currentYear, currentMonth])
+
   return (
     <Card className="w-full rounded-xl">
       <CardContent className="p-3 sm:p-4">
+        {/* Month entry counter */}
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-medium text-muted-foreground">
+            Записей в этом месяце:{' '}
+            <span className="text-foreground tabular-nums font-semibold">{monthEntryCount}</span>
+          </span>
+          {streakDates.size > 0 && (
+            <Badge variant="outline" className="text-[10px] h-5 gap-1 border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
+              🔥 Стрики: {streakDates.size} дн.
+            </Badge>
+          )}
+        </div>
+
         {/* Day names header */}
         <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1">
           {RU_DAYS_SHORT.map((day) => (
@@ -98,6 +189,7 @@ export function CalendarView({
               cell.date.getDate() === selectedDate.getDate()
             const isCurrentMonth = cell.month === 'current'
             const primaryMood = hasEntries ? dayEntries![0].mood : null
+            const isStreakDay = streakDates.has(dateKey)
 
             return (
               <button
@@ -115,13 +207,24 @@ export function CalendarView({
                   hasEntries && !isSelected && 'bg-accent/50'
                 )}
               >
-                <span className="text-sm">{cell.day}</span>
+                <span className="text-sm tabular-nums">{cell.day}</span>
                 {primaryMood && (
                   <span className={cn(
                     'text-[10px] sm:text-xs leading-none mt-0.5 transition-transform',
                     hasEntries && !isSelected && 'group-hover:scale-125'
                   )}>
                     {MOOD_EMOJI[primaryMood]}
+                  </span>
+                )}
+                {/* Streak flame indicator */}
+                {isStreakDay && !isSelected && (
+                  <span className="absolute -top-0.5 -left-0.5 sm:-top-1 sm:-left-1 text-[8px] sm:text-[10px] leading-none pointer-events-none">
+                    🔥
+                  </span>
+                )}
+                {isStreakDay && isSelected && (
+                  <span className="absolute -top-0.5 -left-0.5 sm:-top-1 sm:-left-1 text-[8px] sm:text-[10px] leading-none">
+                    🔥
                   </span>
                 )}
                 {hasEntries && dayEntries!.length > 1 && (
@@ -154,7 +257,7 @@ export function CalendarView({
         </div>
 
         {/* Enhanced mood heatmap legend */}
-        <div className="flex items-center justify-center gap-2 sm:gap-4 mt-3 pt-3 border-t">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-4 mt-3 pt-3 border-t">
           <span className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider">Настроение:</span>
           <div className="flex items-center gap-1.5 sm:gap-2">
             {[1, 2, 3, 4, 5].map((m) => (
@@ -172,6 +275,10 @@ export function CalendarView({
           <div className="flex items-center gap-1 ml-2 sm:ml-4 pl-2 sm:pl-4 border-l">
             <div className="h-3 w-3 rounded-sm bg-muted border border-border" />
             <span className="text-[10px] text-muted-foreground">Нет записи</span>
+          </div>
+          <div className="flex items-center gap-1 pl-2 sm:pl-4 border-l">
+            <span className="text-[10px] leading-none">🔥</span>
+            <span className="text-[10px] text-muted-foreground">Стрик (3+ дн.)</span>
           </div>
         </div>
       </CardContent>

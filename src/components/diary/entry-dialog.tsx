@@ -239,9 +239,23 @@ export function EntryDialog({
             <label className="text-sm font-medium">Теги</label>
             <div className="flex items-center gap-2">
               <Input
-                placeholder="Добавить тег..."
+                placeholder="Теги через запятую..."
                 value={tagInput}
-                onChange={(e) => onTagInputChange(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value
+                  // Auto-split on comma
+                  if (val.includes(',')) {
+                    const parts = val.split(',').map((t) => t.trim()).filter(Boolean)
+                    for (const part of parts) {
+                      if (part && !form.tags.includes(part)) {
+                        onFormChange((f) => ({ ...f, tags: [...f.tags, part] }))
+                      }
+                    }
+                    onTagInputChange('')
+                  } else {
+                    onTagInputChange(val)
+                  }
+                }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault()
