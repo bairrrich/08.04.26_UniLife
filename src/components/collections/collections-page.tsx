@@ -1,6 +1,6 @@
 'use client'
 
-import { Library, Plus, ArrowUpDown, Search, LayoutGrid, List, SortAsc, Star } from 'lucide-react'
+import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star, Heart, Clock, CheckCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select'
 import type { CollectionType, CollectionStatus } from './types'
 import type { SortOption } from './constants'
-import { TYPE_LABELS, STATUS_LABELS, SORT_OPTIONS, QUICK_ADD_TEMPLATES } from './constants'
+import { TYPE_LABELS, STATUS_LABELS, STATUS_COLORS, SORT_OPTIONS, QUICK_ADD_TEMPLATES, TYPE_ICONS_LARGE, getCoverGradient, formatDaysAgo } from './constants'
 import { useCollections } from './hooks'
 import { StatsBar } from './stats-bar'
 import { ItemCard } from './item-card'
@@ -43,7 +43,7 @@ export default function CollectionsPage() {
     handleSubmit, handleStatusUpdate, handleDelete,
     handleRatingUpdate, openDetail, startEditing,
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
-    totalCount, completedCount, inProgressCount, averageRating,
+    totalCount, wantCount, completedCount, inProgressCount, averageRating,
     typeCounts,
     formNotes, setFormNotes,
     getRelatedItems,
@@ -111,6 +111,7 @@ export default function CollectionsPage() {
         <StatsBar
           loading={loading}
           totalCount={totalCount}
+          wantCount={wantCount}
           completedCount={completedCount}
           inProgressCount={inProgressCount}
           averageRating={averageRating}
@@ -139,11 +140,15 @@ export default function CollectionsPage() {
             <Button variant={activeStatus === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus('all')}>
               Все статусы
             </Button>
-            {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(([key, label]) => (
-              <Button key={key} variant={activeStatus === key ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus(key)}>
-                {label}
-              </Button>
-            ))}
+            {(Object.entries(STATUS_LABELS) as [CollectionStatus, string][]).map(([key, label]) => {
+              const StatusIcon = key === 'WANT' ? Heart : key === 'IN_PROGRESS' ? Clock : CheckCircle
+              return (
+                <Button key={key} variant={activeStatus === key ? 'default' : 'outline'} size="sm" onClick={() => setActiveStatus(key)} className="gap-1.5">
+                  <StatusIcon className="h-3.5 w-3.5" />
+                  {label}
+                </Button>
+              )
+            })}
           </div>
 
           <div className="flex items-center gap-2">
@@ -340,47 +345,4 @@ export default function CollectionsPage() {
   )
 }
 
-// ─── Re-export for list view ────────────────────────────────────────────────────
 
-function getCoverGradient(id: string): string {
-  let hash = 0
-  for (let i = 0; i < id.length; i++) {
-    hash = id.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  const COVER_COLORS = [
-    'from-rose-400 to-pink-500',
-    'from-blue-400 to-indigo-500',
-    'from-emerald-400 to-teal-500',
-    'from-amber-400 to-orange-500',
-    'from-purple-400 to-violet-500',
-    'from-cyan-400 to-sky-500',
-    'from-fuchsia-400 to-pink-500',
-    'from-lime-400 to-green-500',
-  ]
-  return COVER_COLORS[Math.abs(hash) % COVER_COLORS.length]
-}
-
-function formatDaysAgo(dateStr: string): string {
-  const now = new Date()
-  const date = new Date(dateStr)
-  const diffMs = now.getTime() - date.getTime()
-  const diffDays = Math.floor(diffMs / 86400000)
-  if (diffDays === 0) return 'Добавлено сегодня'
-  if (diffDays === 1) return 'Добавлено вчера'
-  if (diffDays < 21) {
-    const lastDigit = diffDays % 10
-    const lastTwo = diffDays % 100
-    if (lastTwo >= 11 && lastTwo <= 19) return `Добавлено ${diffDays} дней назад`
-    if (lastDigit === 1) return `Добавлено ${diffDays} день назад`
-    if (lastDigit >= 2 && lastDigit <= 4) return `Добавлено ${diffDays} дня назад`
-    return `Добавлено ${diffDays} дней назад`
-  }
-  const diffMonths = Math.floor(diffDays / 30)
-  if (diffMonths === 1) return 'Добавлено 1 месяц назад'
-  if (diffMonths < 5) return `Добавлено ${diffMonths} месяца назад`
-  return `Добавлено ${diffMonths} месяцев назад`
-}
-
-function TYPE_ICONS_LARGE(type: CollectionType): React.ReactNode {
-  return <div />
-}

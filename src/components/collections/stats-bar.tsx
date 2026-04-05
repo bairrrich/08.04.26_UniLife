@@ -1,12 +1,13 @@
 import { Badge } from '@/components/ui/badge'
-import { Star, ListChecks, CheckCircle, Loader2 } from 'lucide-react'
+import { Star, ListChecks, CheckCircle, Loader2, Heart } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { TYPE_EMOJIS, TYPE_LABELS } from './constants'
+import { TYPE_EMOJIS, TYPE_LABELS, STATUS_LABELS } from './constants'
 import type { CollectionType } from './types'
 
 interface StatsBarProps {
   loading: boolean
   totalCount: number
+  wantCount: number
   completedCount: number
   inProgressCount: number
   averageRating: number
@@ -58,13 +59,49 @@ function StarDisplay({ rating }: { rating: number }) {
   )
 }
 
-export function StatsBar({ loading, totalCount, completedCount, inProgressCount, averageRating, typeCounts }: StatsBarProps) {
+export function StatsBar({ loading, totalCount, wantCount, completedCount, inProgressCount, averageRating, typeCounts }: StatsBarProps) {
   if (loading || totalCount === 0) return null
 
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0
 
   return (
-    <div className="mt-4 p-4 rounded-xl border bg-card">
+    <div className="mt-4 p-4 rounded-xl border bg-card space-y-4">
+      {/* Status Pipeline - Visual flow */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        <StatusPill
+          icon={<Heart className="h-3.5 w-3.5" />}
+          label="Хочу"
+          count={wantCount}
+          color="bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+          active
+        />
+        {/* Arrow connector */}
+        <div className="flex items-center text-muted-foreground/40 shrink-0">
+          <div className="h-px w-4 sm:w-8 bg-gradient-to-r from-blue-300 to-amber-300 dark:from-blue-700 dark:to-amber-700" />
+          <span className="text-[10px] mx-0.5">→</span>
+        </div>
+        <StatusPill
+          icon={<Loader2 className="h-3.5 w-3.5" />}
+          label="В процессе"
+          count={inProgressCount}
+          color="bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
+          active={inProgressCount > 0}
+        />
+        {/* Arrow connector */}
+        <div className="flex items-center text-muted-foreground/40 shrink-0">
+          <div className="h-px w-4 sm:w-8 bg-gradient-to-r from-amber-300 to-emerald-300 dark:from-amber-700 dark:to-emerald-700" />
+          <span className="text-[10px] mx-0.5">→</span>
+        </div>
+        <StatusPill
+          icon={<CheckCircle className="h-3.5 w-3.5" />}
+          label="Завершено"
+          count={completedCount}
+          color="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
+          active={completedCount > 0}
+        />
+      </div>
+
+      {/* Stats grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
         {/* Total count */}
         <div className="flex items-center gap-3">
@@ -73,7 +110,7 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Всего</p>
-            <p className="text-lg font-bold">{totalCount}</p>
+            <p className="text-lg font-bold tabular-nums">{totalCount}</p>
           </div>
         </div>
 
@@ -87,7 +124,7 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Завершено</p>
-            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
+            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
               {completedCount}
               <span className="text-xs font-normal text-muted-foreground ml-1">({progressPercent}%)</span>
             </p>
@@ -101,7 +138,7 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
           </div>
           <div>
             <p className="text-xs text-muted-foreground">В процессе</p>
-            <p className="text-lg font-bold text-amber-600 dark:text-amber-400">{inProgressCount}</p>
+            <p className="text-lg font-bold text-amber-600 dark:text-amber-400 tabular-nums">{inProgressCount}</p>
           </div>
         </div>
 
@@ -113,7 +150,7 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
           <div>
             <p className="text-xs text-muted-foreground">Средний рейтинг</p>
             <div className="flex items-center gap-1.5">
-              <p className="text-lg font-bold">
+              <p className="text-lg font-bold tabular-nums">
                 {averageRating > 0 ? averageRating.toFixed(1) : '—'}
               </p>
               {averageRating > 0 && <StarDisplay rating={averageRating} />}
@@ -123,7 +160,7 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
       </div>
 
       {/* Per-type counts */}
-      <div className="flex gap-2 flex-wrap mt-3">
+      <div className="flex gap-2 flex-wrap">
         {(Object.entries(TYPE_EMOJIS) as [CollectionType, string][]).map(([key, emoji]) => {
           const count = typeCounts[key] || 0
           if (count === 0) return null
@@ -135,11 +172,27 @@ export function StatsBar({ loading, totalCount, completedCount, inProgressCount,
           )
         })}
       </div>
+    </div>
+  )
+}
 
-      {/* Progress text */}
-      <p className="text-xs text-muted-foreground mt-2 tabular-nums">
-        {completedCount} из {totalCount} выполнено
-      </p>
+// ─── Status Pipeline Pill ──────────────────────────────────────────────────────
+
+function StatusPill({ icon, label, count, color, active }: {
+  icon: React.ReactNode
+  label: string
+  count: number
+  color: string
+  active: boolean
+}) {
+  return (
+    <div className={cn(
+      'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all shrink-0',
+      active ? color : 'bg-muted/50 text-muted-foreground',
+    )}>
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+      <span className="font-bold tabular-nums">{count}</span>
     </div>
   )
 }

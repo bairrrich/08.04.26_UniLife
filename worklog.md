@@ -7204,3 +7204,60 @@ Task: QA testing, mobile nav enhancement, new dashboard widgets (quick mood, bre
 8. **Data Import** — CSV import in addition to JSON
 9. **Budget Alerts** — In-app threshold notifications
 10. **Localization** — i18n beyond Russian
+
+---
+## Task ID: collections-status-fix+enhance
+### Agent: main-agent
+### Task: Fix critical bugs in Collections module and enhance status feature
+
+### Work Log:
+
+**Bug Fixes (4 critical):**
+1. **Missing imports in `collections-page.tsx`**: List view section used `STATUS_COLORS`, `TYPE_ICONS_LARGE`, `getCoverGradient`, `formatDaysAgo` but these were NOT imported from `./constants`. Added proper imports.
+2. **Duplicate functions**: Removed local `getCoverGradient()` (line 345) and `formatDaysAgo()` (line 363) that duplicated the ones already in `constants.tsx`.
+3. **Broken `TYPE_ICONS_LARGE` function**: Removed local function at line 384 that returned `<div />` (empty), which was shadowing the proper `TYPE_ICONS_LARGE` constant from `constants.tsx`. The list view was rendering empty cover icons.
+4. **Missing status sort in `hooks.ts`**: The sort switch had no `case 'status':` handler, causing "По статусу" sort to fall through to date sort. Added proper status ordering: WANT(0) → IN_PROGRESS(1) → COMPLETED(2).
+
+**Status Feature Enhancements:**
+1. **Visual Status Pipeline** in StatsBar: Added a horizontal flow showing WANT → IN_PROGRESS → COMPLETED with colored pills, icons (Heart/Clock/CheckCircle), counts, and gradient arrow connectors between stages.
+2. **Status Filter Icons**: Each status filter button now has a matching icon (Heart for Хочу, Clock for В процессе, CheckCircle for Завершено).
+3. **wantCount computed stat**: Added `wantCount` to `useCollections` hook, passed to `StatsBar` for display in the status pipeline.
+4. **StatsBar restructured**: Added `wantCount` prop, introduced new `StatusPill` component for the pipeline, improved spacing with `space-y-4`.
+
+### Files Modified:
+- `/src/components/collections/collections-page.tsx` — Fixed imports, removed duplicates, added status filter icons
+- `/src/components/collections/hooks.ts` — Added `case 'status':` sort handler, added `wantCount` computed stat
+- `/src/components/collections/stats-bar.tsx` — Complete rewrite with status pipeline, StatusPill component, wantCount
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly (Turbopack)
+- ✅ Collections API: 69 items, statuses WANT:12 IN_PROGRESS:15 COMPLETED:42
+- ✅ All 4 bugs fixed, status feature enhanced
+- ✅ Dark mode supported for all new elements
+
+### Stage Summary:
+- 4 critical bugs fixed (missing imports, duplicate functions, broken icon function, missing sort)
+- Status feature significantly enhanced with visual pipeline and icons
+- Collections module fully functional
+
+---
+
+### 项目当前状态描述/判断
+- **整体健康度**: ✅ 稳定 — 11个模块全部正常运行（Dashboard/Diary/Finance/Nutrition/Workout/Collections/Feed/Habits/Goals/Settings/Analytics）
+- **数据库**: SQLite + Prisma，15+ 模型，69 个收藏项
+- **Lint**: 0 errors, 0 warnings
+- **Build**: Turbopack 编译成功
+- **本阶段重点**: 修复 Collections 模块4个关键 bug + 增强状态功能
+
+### 当前目标/已完成的修改/验证结果
+- ✅ 修复4个Collections模块bug（imports、duplicate functions、broken TYPE_ICONS_LARGE、missing status sort）
+- ✅ 增强状态功能（可视化状态管道、状态筛选按钮图标、wantCount统计）
+- ✅ ESLint 0 errors, dev server编译正常, API 69 items全部正常
+
+### 未解决问题或风险，建议下一阶段优先事项
+1. **User Authentication** — NextAuth.js 多用户支持（最高优先级）
+2. **PWA Support** — Service worker + manifest
+3. **Image Upload** — 日记和收藏项图片支持
+4. **Advanced Analytics** — 周/月趋势报告
+5. **Real-time Updates** — WebSocket/SSE

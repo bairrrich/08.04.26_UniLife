@@ -86,12 +86,16 @@ export function useCollections() {
       )
     }
     // Sort
+    const STATUS_ORDER: Record<string, number> = { WANT: 0, IN_PROGRESS: 1, COMPLETED: 2 }
     switch (sortBy) {
       case 'rating':
         filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0))
         break
       case 'name':
         filtered.sort((a, b) => a.title.localeCompare(b.title, 'ru'))
+        break
+      case 'status':
+        filtered.sort((a, b) => (STATUS_ORDER[a.status] ?? 0) - (STATUS_ORDER[b.status] ?? 0))
         break
       case 'date':
       default:
@@ -103,6 +107,7 @@ export function useCollections() {
 
   // ── Computed stats ──────────────────────────────────────────────────────────
   const totalCount = items.length
+  const wantCount = items.filter((i) => i.status === 'WANT').length
   const completedCount = items.filter((i) => i.status === 'COMPLETED').length
   const inProgressCount = items.filter((i) => i.status === 'IN_PROGRESS').length
   const averageRating = useMemo(() => {
@@ -327,7 +332,7 @@ export function useCollections() {
     handleEditSave, closeDetail, cancelEdit, openQuickAdd,
 
     // computed
-    totalCount, completedCount, inProgressCount, averageRating,
+    totalCount, wantCount, completedCount, inProgressCount, averageRating,
     typeCounts, getRelatedItems,
   }
 }
