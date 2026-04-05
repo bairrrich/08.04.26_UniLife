@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { getCurrentMonthStr } from '@/lib/format'
 import { toast } from 'sonner'
 
-import type { Transaction, Category, Account, StatsResponse, ChartDataPoint, Investment, InvestmentsResponse, SavingsGoal } from './types'
+import type { Transaction, Category, Account, StatsResponse, ChartDataPoint, Investment, InvestmentsResponse, SavingsGoal, RecurringTransaction } from './types'
 
 export interface SpendingInsights {
   avgDaily: number
@@ -23,6 +23,7 @@ export function useFinance() {
   const [previousMonthStats, setPreviousMonthStats] = useState<StatsResponse | null>(null)
   const [investmentsData, setInvestmentsData] = useState<InvestmentsResponse | null>(null)
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([])
+  const [recurringTransactions, setRecurringTransactions] = useState<RecurringTransaction[]>([])
   const [showNewDialog, setShowNewDialog] = useState(false)
   const [month, setMonth] = useState(getCurrentMonthStr())
   const [isLoading, setIsLoading] = useState(true)
@@ -77,6 +78,9 @@ export function useFinance() {
 
       // Fetch savings goals
       await fetchSavingsGoals()
+
+      // Fetch recurring transactions
+      await fetchRecurringTransactions()
 
       // Fetch previous month stats for % change comparison
       const [prevYear, prevMon] = month.split('-').map(Number)
@@ -392,6 +396,58 @@ export function useFinance() {
     } catch { toast.error('Ошибка') }
   }
 
+  // ─── Recurring Transaction Actions ─────────────────────────────
+  const fetchRecurringTransactions = async () => {
+    try {
+      const res = await fetch('/api/finance/recurring')
+      if (res.ok) { const d = await res.json(); setRecurringTransactions(d.data || []) }
+    } catch (err) { console.error('Failed to fetch recurring transactions:', err) }
+  }
+
+  const createRecurring = async (data: { type: string; amount: number; categoryId: string; description?: string; note?: string; frequency: string; startDate?: string }) => {
+    try {
+      const res = await fetch('/api/finance/recurring', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Повторяющаяся транзакция создана'); fetchRecurringTransactions(); return await res.json() }
+      else { toast.error('Ошибка создания'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }
+
+  const updateRecurring = async (id: string, data: Partial<RecurringTransaction>) => {
+    try {
+      const res = await fetch(`/api/finance/recurring/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Обновлено'); fetchRecurringTransactions(); return await res.json() }
+      else { toast.error('Ошибка обновления'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }
+
+  const deleteRecurring = async (id: string) => {
+    try {
+      const res = await fetch(`/api/finance/recurring/${id}`, { method: 'DELETE' })
+      if (res.ok) { toast.success('Удалено'); fetchRecurringTransactions() }
+      else { toast.error('Ошибка удаления') }
+    } catch { toast.error('Ошибка') }
+  }
+
+  const executeRecurring = async (id: string) => {
+    try {
+      const res = await fetch('/api/finance/recurring/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recurringId: id }),
+      })
+      if (res.ok) { toast.success('Транзакция выполнена'); fetchData(); fetchRecurringTransactions(); return await res.json() }
+      else { const err = await res.json(); toast.error(err.error || 'Ошибка выполнения'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }
+
   const deleteInvestmentTx = async (investmentId: string, txId: string) => {
     // Since we don't have a dedicated delete route for investment transactions,
     // we'll refetch to keep the UI in sync
@@ -460,5 +516,12 @@ export function useFinance() {
     updateSavingsGoal,
     deleteSavingsGoal,
     addFundsToSavingsGoal,
+    // Recurring transactions
+    recurringTransactions,
+    fetchRecurringTransactions,
+    createRecurring,
+    updateRecurring,
+    deleteRecurring,
+    executeRecurring,
   }
 }

@@ -114,3 +114,21 @@ export interface SavingsGoal {
   createdAt: string
   updatedAt: string
 }
+
+// ─── Recurring Transaction Types ──────────────────────────────────────
+
+export interface RecurringTransaction {
+  id: string
+  type: string // INCOME | EXPENSE
+  amount: number
+  categoryId: string
+  description?: string | null
+  note?: string | null
+  frequency: string // DAILY | WEEKLY | MONTHLY | YEARLY
+  nextDate: string
+  lastExecuted?: string | null
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  category?: Category
+}

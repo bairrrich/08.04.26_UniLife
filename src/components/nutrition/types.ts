@@ -41,3 +41,11 @@ export interface WaterStats {
   goalMl: number
   percentage: number
 }
+
+export interface NutritionGoals {
+  dailyKcal: number
+  dailyProtein: number
+  dailyFat: number
+  dailyCarbs: number
+  dailyWater: number
+}

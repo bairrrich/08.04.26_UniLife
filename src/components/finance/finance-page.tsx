@@ -1,6 +1,6 @@
 'use client'
 
-import { Wallet, Plus, Filter, Receipt, PiggyBank } from 'lucide-react'
+import { Wallet, Plus, Filter, Receipt, PiggyBank, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCurrentMonthStr } from '@/lib/format'
@@ -23,6 +23,7 @@ import { MonthComparison } from './month-comparison'
 import { InvestmentsManager } from './investments-manager'
 import { AccountsManager } from './accounts-manager'
 import { SavingsGoalsManager } from './savings-goals-manager'
+import { RecurringManager } from './recurring-manager'
 import { useFinance } from './hooks'
 
 export default function FinancePage() {
@@ -40,6 +41,11 @@ export default function FinancePage() {
     categories,
     newFromAccountId, newToAccountId, setNewFromAccountId, setNewToAccountId,
     editFromAccountId, editToAccountId, setEditFromAccountId, setEditToAccountId,
+    recurringTransactions,
+    createRecurring,
+    updateRecurring,
+    deleteRecurring,
+    executeRecurring,
   } = useFinance()
 
   const currentMonthStr = getCurrentMonthStr()
@@ -98,6 +104,9 @@ export default function FinancePage() {
           </TabsTrigger>
           <TabsTrigger value="budget" className="gap-1.5">
             <Wallet className="h-4 w-4" />Бюджет
+          </TabsTrigger>
+          <TabsTrigger value="recurring" className="gap-1.5">
+            <RefreshCw className="h-4 w-4" />Повторяющиеся
           </TabsTrigger>
         </TabsList>
 
@@ -172,6 +181,18 @@ export default function FinancePage() {
 
         <TabsContent value="budget">
           <BudgetManager month={month} categories={categories} />
+        </TabsContent>
+
+        <TabsContent value="recurring">
+          <RecurringManager
+            recurringTransactions={recurringTransactions}
+            categories={categories}
+            isLoading={isLoading}
+            onCreateRecurring={createRecurring}
+            onUpdateRecurring={updateRecurring}
+            onDeleteRecurring={deleteRecurring}
+            onExecuteRecurring={executeRecurring}
+          />
         </TabsContent>
       </Tabs>
 

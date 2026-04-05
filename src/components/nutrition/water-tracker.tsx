@@ -9,13 +9,14 @@ import {
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Droplets, RotateCcw } from 'lucide-react'
-import type { WaterStats } from './types'
-import { WATER_GOAL, TOTAL_GLASSES } from './constants'
+import type { WaterStats, NutritionGoals } from './types'
+import { DEFAULT_GLASS_ML } from './constants'
 
 interface WaterTrackerProps {
   waterStats: WaterStats
   waterAnimating: boolean
   waterChartDays: { date: string; dayLabel: string; ml: number; isToday: boolean }[]
+  goals?: NutritionGoals | null
   onAddWater: () => void
   onResetWater: () => void
 }
@@ -24,9 +25,13 @@ export function WaterTracker({
   waterStats,
   waterAnimating,
   waterChartDays,
+  goals,
   onAddWater,
   onResetWater,
 }: WaterTrackerProps) {
+  const waterGoal = goals?.dailyWater ?? 2000
+  const totalGlasses = Math.ceil(waterGoal / DEFAULT_GLASS_ML)
+
   return (
     <Card className="mb-6">
       <CardHeader className="pb-2">
@@ -56,7 +61,7 @@ export function WaterTracker({
               {waterStats.totalMl}
             </span>
             <span className="text-sm font-normal text-muted-foreground">
-              {' '} / {waterStats.goalMl} мл
+              {' '} / {waterGoal} мл
             </span>
           </p>
           <Badge
@@ -69,7 +74,7 @@ export function WaterTracker({
 
         {/* Glass grid */}
         <div className="mb-3 grid grid-cols-4 gap-3 sm:grid-cols-8">
-          {Array.from({ length: TOTAL_GLASSES }).map((_, i) => {
+          {Array.from({ length: totalGlasses }).map((_, i) => {
             const isFilled = i < waterStats.glasses
             return (
               <button
@@ -105,7 +110,7 @@ export function WaterTracker({
                   )}
                 </div>
                 <span className="text-[10px] text-muted-foreground">
-                  {(i + 1) * 250}
+                  {(i + 1) * DEFAULT_GLASS_ML}
                 </span>
               </button>
             )
@@ -129,7 +134,7 @@ export function WaterTracker({
             className={`gap-2 text-blue-600 hover:bg-blue-50 hover:text-blue-700 transition-transform duration-200 ${waterAnimating ? 'scale-110' : 'hover:scale-[1.02]'}`}
           >
             <Droplets className="size-4" />
-            Добавить воду ({waterStats.glasses}/8)
+            Добавить воду ({waterStats.glasses}/{totalGlasses})
           </Button>
           {waterStats.totalMl > 0 && (
             <span className="text-[11px] text-muted-foreground">
@@ -146,8 +151,8 @@ export function WaterTracker({
             </p>
             <div className="flex items-end justify-between gap-1.5">
               {waterChartDays.map((day) => {
-                const heightPct = Math.min((day.ml / WATER_GOAL) * 100, 100)
-                const reachedGoal = day.ml >= WATER_GOAL
+                const heightPct = Math.min((day.ml / waterGoal) * 100, 100)
+                const reachedGoal = day.ml >= waterGoal
                 return (
                   <div key={day.date} className="flex flex-1 flex-col items-center gap-1.5">
                     <span className={`text-[9px] font-medium tabular-nums ${day.ml > 0 ? 'text-foreground' : 'text-muted-foreground/50'}`}>

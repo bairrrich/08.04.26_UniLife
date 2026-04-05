@@ -1,7 +1,8 @@
 'use client'
 
-import { Plus } from 'lucide-react'
+import { Plus, Settings2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 import { useNutrition } from './hooks'
 import { MacroRings } from './macro-ring'
@@ -9,11 +10,14 @@ import { WaterTracker } from './water-tracker'
 import { MealTimeline } from './meal-timeline'
 import { AddMealDialog, EditMealDialog } from './meal-dialog'
 import { TimeIndicator } from './time-indicator'
+import { NutritionGoalsDialog } from './nutrition-goals-dialog'
+import { WeeklyNutritionChart } from './weekly-nutrition-chart'
 
 export default function NutritionPage() {
   const {
     meals,
     stats,
+    goals,
     waterStats,
     waterAnimating,
     waterChartDays,
@@ -42,6 +46,9 @@ export default function NutritionPage() {
     toggleExpandMeal,
     handleAddWater,
     handleResetWater,
+    showGoalsDialog,
+    setShowGoalsDialog,
+    handleGoalsSaved,
   } = useNutrition()
 
   return (
@@ -53,19 +60,35 @@ export default function NutritionPage() {
             <h1 className="text-2xl font-bold tracking-tight">Питание</h1>
             <p className="text-sm text-muted-foreground">Отслеживай своё питание и воду</p>
           </div>
-          <Badge variant="secondary" className="text-xs font-normal">
-            {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs font-normal">
+              {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
+            </Badge>
+            <Button
+              variant="outline"
+              size="icon"
+              className="size-8"
+              onClick={() => setShowGoalsDialog(true)}
+            >
+              <Settings2 className="size-4 text-muted-foreground" />
+            </Button>
+          </div>
         </div>
 
-        <MacroRings stats={stats} />
+        <MacroRings stats={stats} goals={goals} />
         <WaterTracker
           waterStats={waterStats}
           waterAnimating={waterAnimating}
           waterChartDays={waterChartDays}
+          goals={goals}
           onAddWater={handleAddWater}
           onResetWater={handleResetWater}
         />
+
+        {/* Weekly Nutrition Chart */}
+        <div className="mb-6">
+          <WeeklyNutritionChart goals={goals} />
+        </div>
 
         {/* Meal Timeline */}
         <div className="mb-4 flex items-center justify-between">
@@ -107,6 +130,14 @@ export default function NutritionPage() {
         onMealItemsChange={setEditMealItems}
         onNoteChange={setEditNote}
         onSubmit={handleEditMeal}
+      />
+
+      {/* Goals Dialog */}
+      <NutritionGoalsDialog
+        open={showGoalsDialog}
+        onOpenChange={setShowGoalsDialog}
+        goals={goals}
+        onGoalsSaved={handleGoalsSaved}
       />
 
       {/* FAB Button */}

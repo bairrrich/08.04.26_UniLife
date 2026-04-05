@@ -5,7 +5,7 @@ import { toast } from 'sonner'
 import { getTodayStr } from '@/lib/format'
 import { WATER_HISTORY_KEY } from './constants'
 
-import type { MealWithItems, NutritionStats, WaterStats } from './types'
+import type { MealWithItems, NutritionStats, WaterStats, NutritionGoals } from './types'
 import type { MealFormItem } from './meal-dialog'
 
 // ─── Empty form item helper ─────────────────────────────────────────────────
@@ -84,12 +84,21 @@ function useWaterHistory(waterTotalMl: number) {
 
 // ─── Main nutrition hook — all state & handlers ────────────────────────────
 
+const DEFAULT_GOALS: NutritionGoals = {
+  dailyKcal: 2200,
+  dailyProtein: 150,
+  dailyFat: 80,
+  dailyCarbs: 250,
+  dailyWater: 2000,
+}
+
 export function useNutrition() {
   const today = getTodayStr()
 
   // Data state
   const [meals, setMeals] = useState<MealWithItems[]>([])
   const [stats, setStats] = useState<NutritionStats | null>(null)
+  const [goals, setGoals] = useState<NutritionGoals>(DEFAULT_GOALS)
   const [waterStats, setWaterStats] = useState<WaterStats>({
     totalMl: 0,
     glasses: 0,
@@ -100,6 +109,7 @@ export function useNutrition() {
   // Dialog state
   const [showNewMealDialog, setShowNewMealDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showGoalsDialog, setShowGoalsDialog] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
@@ -123,18 +133,43 @@ export function useNutrition() {
 
   // ─── Data fetching ───────────────────────────────────────────────────────
 
+  const fetchGoals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/nutrition/goals')
+      if (res.ok) {
+        const d = await res.json()
+        if (d.success) setGoals(d.data)
+      }
+    } catch (err) {
+      console.error('Failed to fetch nutrition goals:', err)
+    }
+  }, [])
+
   const fetchData = useCallback(async () => {
     try {
-      const mealsRes = await fetch(`/api/nutrition?date=${today}`)
-      if (mealsRes.ok) { const d = await mealsRes.json(); if (d.success) setMeals(d.data) }
-      await new Promise(r => setTimeout(r, 100))
+      const [mealsRes, statsRes, waterRes, goalsRes] = await Promise.allSettled([
+        fetch(`/api/nutrition?date=${today}`),
+        fetch(`/api/nutrition/stats?date=${today}`),
+        fetch(`/api/nutrition/water?date=${today}`),
+        fetch('/api/nutrition/goals'),
+      ])
 
-      const statsRes = await fetch(`/api/nutrition/stats?date=${today}`)
-      if (statsRes.ok) { const d = await statsRes.json(); if (d.success) setStats(d.data) }
-      await new Promise(r => setTimeout(r, 100))
-
-      const waterRes = await fetch(`/api/nutrition/water?date=${today}`)
-      if (waterRes.ok) { const d = await waterRes.json(); if (d.success) setWaterStats(d.data) }
+      if (mealsRes.status === 'fulfilled' && mealsRes.value.ok) {
+        const d = await mealsRes.value.json()
+        if (d.success) setMeals(d.data)
+      }
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const d = await statsRes.value.json()
+        if (d.success) setStats(d.data)
+      }
+      if (waterRes.status === 'fulfilled' && waterRes.value.ok) {
+        const d = await waterRes.value.json()
+        if (d.success) setWaterStats(d.data)
+      }
+      if (goalsRes.status === 'fulfilled' && goalsRes.value.ok) {
+        const d = await goalsRes.value.json()
+        if (d.success) setGoals(d.data)
+      }
     } catch (err) {
       console.error('Failed to fetch nutrition data:', err)
     }
@@ -291,16 +326,21 @@ export function useNutrition() {
     }
   }, [today, fetchData])
 
+  const handleGoalsSaved = useCallback((newGoals: NutritionGoals) => {
+    setGoals(newGoals)
+  }, [])
+
   const handleResetWater = useCallback(() => {
     toast.dismiss()
     toast.info('Водный баланс сброшен')
-    setWaterStats({ totalMl: 0, glasses: 0, goalMl: 2000, percentage: 0 })
-  }, [])
+    setWaterStats({ totalMl: 0, glasses: 0, goalMl: goals.dailyWater, percentage: 0 })
+  }, [goals.dailyWater])
 
   return {
     // Data
     meals,
     stats,
+    goals,
     waterStats,
     waterAnimating,
     waterChartDays,
@@ -320,6 +360,11 @@ export function useNutrition() {
     // Edit meal dialog
     showEditDialog,
     setShowEditDialog,
+
+    // Goals dialog
+    showGoalsDialog,
+    setShowGoalsDialog,
+    handleGoalsSaved,
     editMealType,
     setEditMealType,
     editMealItems,
@@ -337,5 +382,8 @@ export function useNutrition() {
     // Water actions
     handleAddWater,
     handleResetWater,
+
+    // Goals
+    fetchGoals,
   }
 }

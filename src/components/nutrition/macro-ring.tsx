@@ -1,7 +1,8 @@
 'use client'
 
 import { Card } from '@/components/ui/card'
-import { MACRO_GOALS, formatMacro } from './constants'
+import { formatMacro } from './constants'
+import type { NutritionStats, NutritionGoals } from './types'
 
 interface MacroRingProps {
   value: number
@@ -89,53 +90,70 @@ export function MacroRing({
 // ─── All Macro Rings Container ──────────────────────────────────────────────
 
 import { Flame, Beef, Milk, Wheat } from 'lucide-react'
-import type { NutritionStats } from './types'
+
+const MACRO_COLORS = {
+  kcal: { color: '#f97316', bgColor: '#fff7ed', darkBgColor: '#431407', label: 'Ккал', unit: '' },
+  protein: { color: '#3b82f6', bgColor: '#eff6ff', darkBgColor: '#172554', label: 'Белки', unit: 'г' },
+  fat: { color: '#f59e0b', bgColor: '#fffbeb', darkBgColor: '#451a03', label: 'Жиры', unit: 'г' },
+  carbs: { color: '#22c55e', bgColor: '#f0fdf4', darkBgColor: '#052e16', label: 'Углеводы', unit: 'г' },
+}
+
+const DEFAULT_GOALS: NutritionGoals = {
+  dailyKcal: 2200,
+  dailyProtein: 150,
+  dailyFat: 80,
+  dailyCarbs: 250,
+  dailyWater: 2000,
+}
 
 interface MacroRingsProps {
   stats: NutritionStats | null
+  goals?: NutritionGoals | null
 }
 
-export function MacroRings({ stats }: MacroRingsProps) {
+export function MacroRings({ stats, goals }: MacroRingsProps) {
+  const g = goals ?? DEFAULT_GOALS
+
   return (
     <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4 stagger-children">
       <MacroRing
         value={stats?.totalKcal ?? 0}
-        goal={MACRO_GOALS.kcal.value}
-        color={MACRO_GOALS.kcal.color}
-        label={MACRO_GOALS.kcal.label}
-        unit={MACRO_GOALS.kcal.unit}
-        bgColor={MACRO_GOALS.kcal.bgColor}
-        darkBgColor={MACRO_GOALS.kcal.darkBgColor}
+        goal={g.dailyKcal}
+        color={MACRO_COLORS.kcal.color}
+        label={MACRO_COLORS.kcal.label}
+        unit={MACRO_COLORS.kcal.unit}
+        bgColor={MACRO_COLORS.kcal.bgColor}
+        darkBgColor={MACRO_COLORS.kcal.darkBgColor}
         icon={<Flame className="size-4" />}
       />
       <MacroRing
         value={stats?.totalProtein ?? 0}
-        goal={MACRO_GOALS.protein.value}
-        color={MACRO_GOALS.protein.color}
-        label={MACRO_GOALS.protein.label}
-        unit={MACRO_GOALS.protein.unit}
-        bgColor={MACRO_GOALS.protein.bgColor}
-        darkBgColor={MACRO_GOALS.protein.darkBgColor}
+        goal={g.dailyProtein}
+        color={MACRO_COLORS.protein.color}
+        label={MACRO_COLORS.protein.label}
+        unit={MACRO_COLORS.protein.unit}
+        bgColor={MACRO_COLORS.protein.bgColor}
+        darkBgColor={MACRO_COLORS.protein.darkBgColor}
         icon={<Beef className="size-4" />}
       />
       <MacroRing
         value={stats?.totalFat ?? 0}
-        goal={MACRO_GOALS.fat.value}
-        color={MACRO_GOALS.fat.color}
-        label={MACRO_GOALS.fat.label}
-        unit={MACRO_GOALS.fat.unit}
-        bgColor={MACRO_GOALS.fat.bgColor}
-        darkBgColor={MACRO_GOALS.fat.darkBgColor}
+        goal={g.dailyFat}
+        color={MACRO_COLORS.fat.color}
+        label={MACRO_COLORS.fat.label}
+        unit={MACRO_COLORS.fat.unit}
+        bgColor={MACRO_COLORS.fat.bgColor}
+        darkBgColor={MACRO_COLORS.fat.darkBgColor}
         icon={<Milk className="size-4" />}
       />
       <MacroRing
         value={stats?.totalCarbs ?? 0}
-        goal={MACRO_GOALS.carbs.value}
-        color={MACRO_GOALS.carbs.color}
-        label={MACRO_GOALS.carbs.label}
-        unit={MACRO_GOALS.carbs.unit}
-        bgColor={MACRO_GOALS.carbs.bgColor}
-        darkBgColor={MACRO_GOALS.carbs.darkBgColor}
+        goal={g.dailyCarbs}
+        color={MACRO_COLORS.carbs.color}
+        label={MACRO_COLORS.carbs.label}
+        unit={MACRO_COLORS.carbs.unit}
+        bgColor={MACRO_COLORS.carbs.bgColor}
+        darkBgColor={MACRO_COLORS.carbs.darkBgColor}
         icon={<Wheat className="size-4" />}
       />
     </div>

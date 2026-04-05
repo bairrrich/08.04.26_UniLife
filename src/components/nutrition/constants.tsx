@@ -39,3 +39,4 @@ export const formatMacro = (val: number, unit: string) => `${Math.round(val)}${u
 export const WATER_HISTORY_KEY = 'unilife-water-history'
 export const WATER_GOAL = 2000
 export const TOTAL_GLASSES = 8
+export const DEFAULT_GLASS_ML = 250

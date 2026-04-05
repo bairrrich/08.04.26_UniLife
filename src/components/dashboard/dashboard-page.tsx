@@ -135,6 +135,10 @@ const DailyChecklist = dynamic(() => import('./daily-checklist').then(m => ({ de
   loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />,
   ssr: false,
 })
+const AchievementsWidget = dynamic(() => import('./achievements/achievements-widget').then(m => ({ default: m.AchievementsWidget })), {
+  loading: () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />,
+  ssr: false,
+})
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -697,6 +701,23 @@ export default function DashboardPage() {
 
       {/* ── Streak Tracking Widget ─────────────────────────────── */}
       <StreakWidget loading={loading} streakItems={streakItems} maxStreak={maxStreak} />
+
+      {/* ── Achievements / Badges ──────────────────────────────── */}
+      <AchievementsWidget
+        loading={loading}
+        diaryEntries={diaryEntries}
+        financeStats={financeStats}
+        transactionsData={transactionsData}
+        workouts={workouts}
+        habitsData={habitsData}
+        nutritionStats={nutritionStats}
+        waterTodayMl={waterTodayMl}
+        hasMealsToday={hasMealsToday}
+        todayMood={todayMood}
+        todayWorkoutDone={todayWorkout}
+        allHabitsCompleted={allHabitsCompleted}
+        budgetData={budgetData}
+      />
 
       {/* ── Weekly Summary ──────────────────────────────────────── */}
       <WeeklySummary

@@ -10,47 +10,48 @@ datasource db {
 // ============ USER & PROFILE ============
 
 model User {
-  id            String   @id @default(cuid())
-  email         String   @unique
-  name          String?
-  avatar        String?
-  bio           String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  avatar    String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  diaryEntries    DiaryEntry[]
-  transactions    Transaction[]
-  budgets         Budget[]
-  accounts        Account[]
-  investments     Investment[]
-  savingsGoals    SavingsGoal[]
-  meals           Meal[]
-  waterLogs       WaterLog[]
-  workouts        Workout[]
-  collectionItems CollectionItem[]
-  posts           Post[]
-  likes           Like[]
-  comments        Comment[]
-  followers       Follow[] @relation("FollowedBy")
-  following       Follow[] @relation("Following")
-  goals           Goal[]
+  diaryEntries          DiaryEntry[]
+  transactions          Transaction[]
+  budgets               Budget[]
+  accounts              Account[]
+  investments           Investment[]
+  savingsGoals          SavingsGoal[]
+  recurringTransactions RecurringTransaction[]
+  meals                 Meal[]
+  waterLogs             WaterLog[]
+  workouts              Workout[]
+  collectionItems       CollectionItem[]
+  posts                 Post[]
+  likes                 Like[]
+  comments              Comment[]
+  followers             Follow[]               @relation("FollowedBy")
+  following             Follow[]               @relation("Following")
+  goals                 Goal[]
 }
 
 // ============ DIARY ============
 
 model DiaryEntry {
-  id          String   @id @default(cuid())
-  userId      String
-  date        DateTime
-  title       String?
-  content     String
-  mood        Int?     // 1-5 stars
-  photos      String   @default("[]") // JSON array of URLs
-  tags        String   @default("[]") // JSON array of strings
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  title     String?
+  content   String
+  mood      Int? // 1-5 stars
+  photos    String   @default("[]") // JSON array of URLs
+  tags      String   @default("[]") // JSON array of strings
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([date])
@@ -59,125 +60,152 @@ model DiaryEntry {
 // ============ FINANCE ============
 
 model Category {
-  id            String         @id @default(cuid())
-  name          String
-  type          String         @default("EXPENSE") // INCOME | EXPENSE | TRANSFER
-  icon          String         @default("circle")
-  color         String         @default("#6b7280")
-  userId        String?
-  isDefault     Boolean        @default(false)
+  id        String  @id @default(cuid())
+  name      String
+  type      String  @default("EXPENSE") // INCOME | EXPENSE | TRANSFER
+  icon      String  @default("circle")
+  color     String  @default("#6b7280")
+  userId    String?
+  isDefault Boolean @default(false)
 
-  subCategories SubCategory[]
-  transactions  Transaction[]
-  budgets       Budget[]
+  subCategories         SubCategory[]
+  transactions          Transaction[]
+  budgets               Budget[]
+  recurringTransactions RecurringTransaction[]
 
   @@index([userId])
 }
 
 model SubCategory {
-  id          String     @id @default(cuid())
-  name        String
-  categoryId  String
-  icon        String     @default("circle")
+  id         String @id @default(cuid())
+  name       String
+  categoryId String
+  icon       String @default("circle")
 
-  category    Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@index([categoryId])
 }
 
 model Transaction {
-  id               String   @id @default(cuid())
+  id               String                @id @default(cuid())
   userId           String
-  type             String   @default("EXPENSE") // INCOME | EXPENSE | TRANSFER
+  type             String                @default("EXPENSE") // INCOME | EXPENSE | TRANSFER
   amount           Float
-  currency         String   @default("RUB")
+  currency         String                @default("RUB")
   categoryId       String
   subCategoryId    String?
   date             DateTime
   description      String?
-  isRecurring      Boolean  @default(false)
+  isRecurring      Boolean               @default(false)
   recurringGroupId String?
+  recurringId      String?
   note             String?
   fromAccountId    String?
   toAccountId      String?
-  fromAccount      Account?  @relation("FromAccount", fields: [fromAccountId], references: [id])
-  toAccount        Account?  @relation("ToAccount", fields: [toAccountId], references: [id])
+  fromAccount      Account?              @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccount        Account?              @relation("ToAccount", fields: [toAccountId], references: [id])
+  recurring        RecurringTransaction? @relation(fields: [recurringId], references: [id])
 
-  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category         Category     @relation(fields: [categoryId], references: [id])
-  subCategory      SubCategory? @relation(fields: [subCategoryId], references: [id])
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category    Category     @relation(fields: [categoryId], references: [id])
+  subCategory SubCategory? @relation(fields: [subCategoryId], references: [id])
 
   @@index([userId])
   @@index([date])
   @@index([categoryId])
+  @@index([recurringId])
+}
+
+model RecurringTransaction {
+  id           String    @id @default(cuid())
+  userId       String
+  type         String // INCOME | EXPENSE
+  amount       Float
+  categoryId   String
+  description  String?
+  note         String?
+  frequency    String // DAILY | WEEKLY | MONTHLY | YEARLY
+  nextDate     DateTime
+  lastExecuted DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category     Category      @relation(fields: [categoryId], references: [id])
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([isActive])
 }
 
 model Budget {
-  id          String   @id @default(cuid())
-  userId      String
-  categoryId  String
-  amount      Float
-  period      String   @default("MONTH") // MONTH | YEAR
-  startDate   DateTime
-  endDate     DateTime?
+  id         String    @id @default(cuid())
+  userId     String
+  categoryId String
+  amount     Float
+  period     String    @default("MONTH") // MONTH | YEAR
+  startDate  DateTime
+  endDate    DateTime?
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category    Category @relation(fields: [categoryId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
 
   @@index([userId])
 }
 
 model Account {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  type        String   @default("CASH") // CASH | BANK | SAVINGS | INVESTMENT | CRYPTO
-  icon        String   @default("wallet")
-  color       String   @default("#6b7280")
-  balance     Float    @default(0)
-  currency    String   @default("RUB")
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  type      String   @default("CASH") // CASH | BANK | SAVINGS | INVESTMENT | CRYPTO
+  icon      String   @default("wallet")
+  color     String   @default("#6b7280")
+  balance   Float    @default(0)
+  currency  String   @default("RUB")
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fromTxns     Transaction[] @relation("FromAccount")
-  toTxns       Transaction[] @relation("ToAccount")
+  user     User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromTxns Transaction[] @relation("FromAccount")
+  toTxns   Transaction[] @relation("ToAccount")
 
   @@index([userId])
 }
 
 model Investment {
-  id            String   @id @default(cuid())
-  userId        String
-  name          String
-  type          String   @default("STOCK") // STOCK | BOND | FUND | CRYPTO | DEPOSIT | METAL | OTHER
-  icon          String   @default("trending-up")
-  color         String   @default("#6b7280")
-  targetAmount  Float?
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  type         String   @default("STOCK") // STOCK | BOND | FUND | CRYPTO | DEPOSIT | METAL | OTHER
+  icon         String   @default("trending-up")
+  color        String   @default("#6b7280")
+  targetAmount Float?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions  InvestmentTx[]
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions InvestmentTx[]
 
   @@index([userId])
 }
 
 model InvestmentTx {
-  id              String   @id @default(cuid())
-  investmentId    String
-  type            String   @default("BUY") // BUY | SELL | DEPOSIT | WITHDRAWAL | DIVIDEND
-  amount          Float
-  units           Float?
-  pricePerUnit    Float?
-  date            DateTime
-  note            String?
-  createdAt       DateTime @default(now())
+  id           String   @id @default(cuid())
+  investmentId String
+  type         String   @default("BUY") // BUY | SELL | DEPOSIT | WITHDRAWAL | DIVIDEND
+  amount       Float
+  units        Float?
+  pricePerUnit Float?
+  date         DateTime
+  note         String?
+  createdAt    DateTime @default(now())
 
-  investment      Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  investment Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
 
   @@index([investmentId])
   @@index([date])
@@ -196,51 +224,65 @@ model SavingsGoal {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 // ============ NUTRITION ============
 
-model Meal {
-  id          String    @id @default(cuid())
-  userId      String
-  type        String    @default("LUNCH") // BREAKFAST | LUNCH | DINNER | SNACK
-  date        DateTime
-  note        String?
+model NutritionGoal {
+  id           String   @id @default(cuid())
+  userId       String   @default("default-user")
+  dailyKcal    Int      @default(2200)
+  dailyProtein Int      @default(150)
+  dailyFat     Int      @default(80)
+  dailyCarbs   Int      @default(250)
+  dailyWater   Int      @default(2000)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items       MealItem[]
+  @@unique([userId])
+}
+
+model Meal {
+  id     String   @id @default(cuid())
+  userId String
+  type   String   @default("LUNCH") // BREAKFAST | LUNCH | DINNER | SNACK
+  date   DateTime
+  note   String?
+
+  user  User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items MealItem[]
 
   @@index([userId])
   @@index([date])
 }
 
 model MealItem {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   mealId      String
   name        String
-  kcal        Float  @default(0)
-  protein     Float  @default(0)
-  fat         Float  @default(0)
-  carbs       Float  @default(0)
+  kcal        Float   @default(0)
+  protein     Float   @default(0)
+  fat         Float   @default(0)
+  carbs       Float   @default(0)
   servingSize String?
   servingUnit String?
 
-  meal        Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  meal Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
 
   @@index([mealId])
 }
 
 model WaterLog {
-  id          String   @id @default(cuid())
-  userId      String
-  date        DateTime
-  amountMl    Int      @default(250)
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  amountMl  Int      @default(250)
+  createdAt DateTime @default(now())
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([date])
@@ -258,22 +300,22 @@ model Workout {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  exercises   WorkoutExercise[]
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises WorkoutExercise[]
 
   @@index([userId])
   @@index([date])
 }
 
 model WorkoutExercise {
-  id          String @id @default(cuid())
-  workoutId   String
-  name        String
-  sets        String @default("[]") // JSON: [{weight, reps, time, completed}]
-  notes       String?
-  order       Int    @default(0)
+  id        String  @id @default(cuid())
+  workoutId String
+  name      String
+  sets      String  @default("[]") // JSON: [{weight, reps, time, completed}]
+  notes     String?
+  order     Int     @default(0)
 
-  workout     Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  workout Workout @relation(fields: [workoutId], references: [id], onDelete: Cascade)
 
   @@index([workoutId])
 }
@@ -281,22 +323,22 @@ model WorkoutExercise {
 // ============ COLLECTIONS ============
 
 model CollectionItem {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
-  type        String   @default("BOOK") // BOOK | MOVIE | RECIPE | SUPPLEMENT | PRODUCT
+  type        String    @default("BOOK") // BOOK | MOVIE | RECIPE | SUPPLEMENT | PRODUCT
   title       String
   author      String?
   description String?
   coverUrl    String?
-  rating      Int?     // 1-5
-  status      String   @default("WANT") // WANT | IN_PROGRESS | COMPLETED
+  rating      Int? // 1-5
+  status      String    @default("WANT") // WANT | IN_PROGRESS | COMPLETED
   date        DateTime?
-  tags        String   @default("[]") // JSON array
+  tags        String    @default("[]") // JSON array
   notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
@@ -305,17 +347,17 @@ model CollectionItem {
 // ============ FEED ============
 
 model Post {
-  id          String   @id @default(cuid())
-  userId      String
-  entityType  String   // "diary" | "transaction" | "meal" | "workout" | "collection"
-  entityId    String   // id of the linked record
-  caption     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  userId     String
+  entityType String // "diary" | "transaction" | "meal" | "workout" | "collection"
+  entityId   String // id of the linked record
+  caption    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes       Like[]
-  comments    Comment[]
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes    Like[]
+  comments Comment[]
 
   @@index([userId])
   @@index([entityType])
@@ -323,28 +365,28 @@ model Post {
 }
 
 model Like {
-  id          String   @id @default(cuid())
-  postId      String
-  userId      String
-  createdAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
 
-  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([postId, userId])
   @@index([userId])
 }
 
 model Comment {
-  id          String   @id @default(cuid())
-  postId      String
-  userId      String
-  content     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([postId])
   @@index([userId])
@@ -358,24 +400,24 @@ model Habit {
   name        String
   emoji       String   @default("✅")
   color       String   @default("#10b981")
-  frequency   String   @default("daily")  // daily, weekly
+  frequency   String   @default("daily") // daily, weekly
   targetCount Int      @default(1)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  logs        HabitLog[]
+  logs HabitLog[]
 
   @@index([userId])
 }
 
 model HabitLog {
-  id        String   @id @default(cuid())
-  habitId   String
-  date      DateTime @default(now())
-  count     Int      @default(1)
-  note      String?
+  id      String   @id @default(cuid())
+  habitId String
+  date    DateTime @default(now())
+  count   Int      @default(1)
+  note    String?
 
-  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
 
   @@unique([habitId, date])
   @@index([habitId, date])
@@ -388,8 +430,8 @@ model Follow {
   followingId String
   createdAt   DateTime @default(now())
 
-  follower    User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
-  following   User @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
+  follower  User @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("FollowedBy", fields: [followingId], references: [id], onDelete: Cascade)
 
   @@id([followerId, followingId])
 }
@@ -397,20 +439,20 @@ model Follow {
 // ============ GOALS ============
 
 model Goal {
-  id            String   @id @default(cuid())
-  title         String
-  description   String?
-  category      String   @default("personal") // personal, health, finance, career, learning
-  targetValue   Int?
-  currentValue  Int      @default(0)
-  unit          String?  // e.g. "кг", "раз", "час", "₽"
-  deadline      DateTime?
-  status        String   @default("active") // active, completed, abandoned
-  progress      Int      @default(0) // 0-100 percentage
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  userId        String
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  category     String    @default("personal") // personal, health, finance, career, learning
+  targetValue  Int?
+  currentValue Int       @default(0)
+  unit         String? // e.g. "кг", "раз", "час", "₽"
+  deadline     DateTime?
+  status       String    @default("active") // active, completed, abandoned
+  progress     Int       @default(0) // 0-100 percentage
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([status])
