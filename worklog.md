@@ -4875,3 +4875,19 @@ Stage Summary:
 - Fixes applied to layout.tsx: removed manifest link, SW registration, disabled system theme
 - Cron job (ID: 63718) created for automatic server restart every 5 minutes
 - Server stability improved but still subject to sandbox environment limitations
+---
+Task ID: server-healthcheck
+Agent: cron-agent
+Task: Check if Next.js dev server is running on port 3000, restart if needed
+
+Work Log:
+- Checked server: curl returned 000 (connection refused)
+- Killed existing processes, cleared .next cache
+- Started server with NODE_OPTIONS="--max-old-space-size=2048" npx next dev -p 3000
+- Server compiled successfully: GET / 200 in ~9s
+- Confirmed HTTP 200 response and process alive
+
+Stage Summary:
+- Server restarted successfully, returning HTTP 200
+- Running on port 3000 (PID 27245)
+
