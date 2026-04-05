@@ -19,6 +19,17 @@ import { DailyNutritionScore } from './daily-nutrition-score'
 import { QuickFoodBar } from './quick-food-bar'
 
 export default function NutritionPage() {
+  // ── Hydration guard for timezone-dependent date display ──
+  const [mounted, setMounted] = useState(false)
+  const todayFormatted = useMemo(() => {
+    if (!mounted) return ''
+    return new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
+  }, [mounted])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true)
+  }, [])
+
   const {
     meals,
     stats,
@@ -71,10 +82,12 @@ export default function NutritionPage() {
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="text-xl font-bold">Питание</h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  <CalendarDays className="h-3 w-3" />
-                  {new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}
-                </span>
+                {todayFormatted && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    <CalendarDays className="h-3 w-3" />
+                    {todayFormatted}
+                  </span>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">Отслеживай питание, макронутриенты и воду</p>
             </div>

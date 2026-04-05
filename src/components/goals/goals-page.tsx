@@ -112,6 +112,15 @@ const SAMPLE_GOALS = [
 ]
 
 export default function GoalsPage() {
+  // ── Hydration guard — timezone-dependent date formatting ──
+  const [mounted, setMounted] = useState(false)
+  const todayBadge = useMemo(() => mounted ? getTodayBadge() : '', [mounted])
+  const motivationalSubtitle = useMemo(() => mounted ? getMotivationalSubtitle() : '', [mounted])
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true)
+  }, [])
+
   const {
     goals, stats, loading, filterTab, setFilterTab,
     categoryFilter, setCategoryFilter,

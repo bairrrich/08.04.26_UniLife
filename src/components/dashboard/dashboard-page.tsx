@@ -105,6 +105,12 @@ export default function DashboardPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const { userName } = useUserPrefs()
 
+  // ── Hydration guard — timezone-dependent rendering causes mismatch ────
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   // ── State ───────────────────────────────────────────────────────────────
   const [loading, setLoading] = useState(true)
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>([])
@@ -529,6 +535,22 @@ export default function DashboardPage() {
   }, [])
 
   // ── Render ─────────────────────────────────────────────────────────
+
+  // Show skeleton during SSR to avoid hydration mismatch from timezone-dependent content
+  if (!mounted) {
+    return (
+      <div className="animate-slide-up space-y-8">
+        <div className="skeleton-shimmer h-[200px] rounded-xl" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="skeleton-shimmer h-[130px] rounded-xl" />
+          ))}
+        </div>
+        <div className="skeleton-shimmer h-[300px] rounded-xl" />
+        <div className="skeleton-shimmer h-[200px] rounded-xl" />
+      </div>
+    )
+  }
 
   return (
     <div className="animate-slide-up space-y-8">

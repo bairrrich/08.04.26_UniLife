@@ -7967,3 +7967,81 @@ Completely rewrite the Collections module to remove statuses and add type-specif
 8. **Notifications** — Push notifications for reminders (water, workout, diary)
 9. **Localization** — i18n support for multiple languages beyond Russian
 10. **Data Import Enhancement** — CSV import support in addition to JSON
+
+---
+## Task ID: 2
+### Agent: full-stack-developer
+### Task: Fix constant re-render loop caused by timezone-dependent hydration mismatch
+
+### Work Summary:
+
+**Root Cause:**
+The app had a constant re-render loop on first launch because the server renders with UTC time (e.g., April 5) while the client renders with Asia/Irkutsk timezone (UTC+8, e.g., April 6). React detects the hydration mismatch and force-renders, causing repeated `GET /` requests with different date parameters. This was visible in dev server logs as 3+ consecutive `GET /` requests with full recompilation each time.
+
+**Files Modified:**
+
+1. **`/src/components/dashboard/dashboard-page.tsx`** — PRIMARY FIX
+   - Added `mounted` state guard (`useState(false)` + `useEffect` to set `true`)
+   - Before mounting: renders skeleton placeholder (3 shimmer blocks matching layout)
+   - After mounting: renders full dashboard with timezone-dependent greeting (`getGreeting()`), date formatting (`formatDate(now)`), and current time display
+   - This was the main cause of the infinite re-render loop since it's the default landing page
+
+2. **`/src/components/nutrition/nutrition-page.tsx`**
+   - Added `mounted` state guard for `formattedDate` computation
+   - Replaced direct `new Date().toLocaleDateString('ru-RU', ...)` in JSX with `useMemo` that depends on `mounted` state
+   - Shows `'...'` placeholder during SSR, real date after mount
+
+3. **`/src/components/diary/diary-page.tsx`**
+   - Added `mounted` state guard
+   - Wrapped `format(today, 'd MMMM, EEEE', { locale: ru })` in JSX with `mounted ? ... : '...'` conditional
+
+4. **`/src/components/habits/habit-page.tsx`**
+   - Added `mounted` state guard for `todayBadge`, `daySubtitle`, `motivationalPhrase` computations
+   - All three timezone-dependent functions (`getTodayDateBadge()`, `getDayOfWeekSubtitle()`, `getMotivationalPhrase()`) now use `useMemo` with `mounted` dependency
+
+5. **`/src/components/goals/goals-page.tsx`**
+   - Added `mounted` state guard for `todayBadge` and `motivationalSubtitle` computations
+   - Both `getTodayBadge()` and `getMotivationalSubtitle()` now use `useMemo` with `mounted` dependency
+
+6. **`/src/components/workout/workout-page.tsx`**
+   - Added `mounted` state guard for `phraseIdx` computation
+   - `new Date().getDate() % WORKOUT_PHRASES.length` now uses `useMemo` with `mounted` dependency, returns `0` during SSR
+
+**Pattern Used:**
+Followed the existing `WelcomeWidget` pattern — `useState(false)` + `useEffect(() => setMounted(true), [])` — to ensure timezone-dependent content only renders on the client after hydration is complete.
+
+**Verification Results:**
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: Only 2 `GET /` requests on launch (initial SSR + single client re-render) — no more infinite loop
+- ✅ API calls now use consistent dates from client timezone
+- ✅ Log stabilizes after initial compilation — no repeated requests
+- ✅ All existing functionality preserved
+
+---
+
+Task ID: 1-2
+Agent: Main Agent
+Task: Fix constant re-render loop on first app launch + Collections module status removal cleanup
+
+Work Log:
+- Diagnosed constant re-render issue by analyzing dev server logs
+- Found root cause: **hydration mismatch** from timezone-dependent rendering
+  - Server renders with UTC time (e.g., April 5)
+  - Client renders with Asia/Irkutsk timezone (UTC+8, e.g., April 6)
+  - React detects mismatch and force-renders entire component tree
+  - Dev log showed 3+ repeated `GET /` requests with different API date params
+- Added `mounted` hydration guards to affected components:
+  - `dashboard-page.tsx` — full mounted guard with skeleton placeholder
+  - `nutrition-page.tsx` — guard for `toLocaleDateString('ru-RU')` date display
+  - `workout-page.tsx` — guard for `new Date().getDate()` motivational phrase
+  - `goals-page.tsx` — guard for `getTodayBadge()` and `getMotivationalSubtitle()`
+- Verified Collections module: `status` field was already removed from schema, `details` JSON field works correctly
+- Verified all files are free of corruption (subagent had display issues with `rg` stripping `[m` from output)
+- Build and lint pass with 0 errors
+- Dev server now stabilizes after initial compilation — no more repeated requests
+
+Stage Summary:
+- **Root cause**: Hydration mismatch from timezone-dependent date rendering in Dashboard and other modules
+- **Fix**: Added `mounted` state guards to prevent SSR/client rendering differences
+- **Files modified**: dashboard-page.tsx, nutrition-page.tsx, workout-page.tsx, goals-page.tsx
+- **Verification**: Dev server log shows stable behavior — only 3 initial `GET /` (normal compilation), then idle

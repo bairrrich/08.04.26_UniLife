@@ -47,7 +47,7 @@ export function WorkoutPage() {
     onExercisesChange: setFormExercises, onApplyPreset: handleApplyPreset,
   }
 
-  const phraseIdx = new Date().getDate() % WORKOUT_PHRASES.length
+  const phraseIdx = typeof window !== 'undefined' ? new Date().getDate() % WORKOUT_PHRASES.length : 0
 
   return (
     <div className="space-y-6 animate-slide-up">
