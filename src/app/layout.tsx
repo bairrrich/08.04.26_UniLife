@@ -4,7 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { ServiceWorkerRegistration } from "@/components/layout/sw-register";
+// ServiceWorkerRegistration is only imported in production builds
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="ru" suppressHydrationWarning>
       <head>
-        <link rel="manifest" href="/manifest.json" />
+        {/* PWA manifest link removed — was causing browser reload behavior in dev */}
         <meta name="theme-color" content="#059669" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -47,13 +47,13 @@ export default function RootLayout({
         <ThemeProvider
           attribute="class"
           defaultTheme="light"
-          enableSystem
+          enableSystem={false}
           disableTransitionOnChange
         >
           {children}
           <Toaster />
           <SonnerToaster richColors position="top-right" />
-          <ServiceWorkerRegistration />
+          {/* Service worker registration removed for dev stability */}
         </ThemeProvider>
       </body>
     </html>
