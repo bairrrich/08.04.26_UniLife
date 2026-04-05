@@ -18,19 +18,21 @@ model User {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  diaryEntries  DiaryEntry[]
-  transactions  Transaction[]
-  budgets       Budget[]
-  meals         Meal[]
-  waterLogs     WaterLog[]
-  workouts      Workout[]
+  diaryEntries    DiaryEntry[]
+  transactions    Transaction[]
+  budgets         Budget[]
+  accounts        Account[]
+  investments     Investment[]
+  meals           Meal[]
+  waterLogs       WaterLog[]
+  workouts        Workout[]
   collectionItems CollectionItem[]
-  posts         Post[]
-  likes         Like[]
-  comments      Comment[]
-  followers     Follow[] @relation("FollowedBy")
-  following     Follow[] @relation("Following")
-  goals         Goal[]
+  posts           Post[]
+  likes           Like[]
+  comments        Comment[]
+  followers       Follow[] @relation("FollowedBy")
+  following       Follow[] @relation("Following")
+  goals           Goal[]
 }
 
 // ============ DIARY ============
@@ -96,6 +98,10 @@ model Transaction {
   isRecurring      Boolean  @default(false)
   recurringGroupId String?
   note             String?
+  fromAccountId    String?
+  toAccountId      String?
+  fromAccount      Account?  @relation("FromAccount", fields: [fromAccountId], references: [id])
+  toAccount        Account?  @relation("ToAccount", fields: [toAccountId], references: [id])
 
   user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   category         Category     @relation(fields: [categoryId], references: [id])
@@ -119,6 +125,61 @@ model Budget {
   category    Category @relation(fields: [categoryId], references: [id])
 
   @@index([userId])
+}
+
+model Account {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  type        String   @default("CASH") // CASH | BANK | SAVINGS | INVESTMENT | CRYPTO
+  icon        String   @default("wallet")
+  color       String   @default("#6b7280")
+  balance     Float    @default(0)
+  currency    String   @default("RUB")
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromTxns     Transaction[] @relation("FromAccount")
+  toTxns       Transaction[] @relation("ToAccount")
+
+  @@index([userId])
+}
+
+model Investment {
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  type          String   @default("STOCK") // STOCK | BOND | FUND | CRYPTO | DEPOSIT | METAL | OTHER
+  icon          String   @default("trending-up")
+  color         String   @default("#6b7280")
+  targetAmount  Float?
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  InvestmentTx[]
+
+  @@index([userId])
+}
+
+model InvestmentTx {
+  id              String   @id @default(cuid())
+  investmentId    String
+  type            String   @default("BUY") // BUY | SELL | DEPOSIT | WITHDRAWAL | DIVIDEND
+  amount          Float
+  units           Float?
+  pricePerUnit    Float?
+  date            DateTime
+  note            String?
+  createdAt       DateTime @default(now())
+
+  investment      Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  @@index([investmentId])
+  @@index([date])
 }
 
 // ============ NUTRITION ============

@@ -4299,3 +4299,121 @@ Stage Summary:
 - Root cause: `flex-1` (flex-shrink:1, flex-basis:0%) constrained content height in flex-col container, causing overflow over footer
 - Fix: Removed `flex-1`, increased `md:pb-10`
 - Footer now always appears below all content, regardless of page length
+
+---
+## Task ID: 1a+1b
+### Agent: finance-schema-api-agent
+### Work Task
+Update Prisma schema with Account, Investment, InvestmentTx models; add account relations to Transaction and User; create API routes for accounts, investments, and transfers; update seed data.
+
+### Work Summary
+
+**Schema Changes (`prisma/schema.prisma`):**
+- Added `Account` model with fields: id, userId, name, type (CASH|BANK|SAVINGS|INVESTMENT|CRYPTO), icon, color, balance, currency, isDefault, timestamps
+- Added `Investment` model with fields: id, userId, name, type (STOCK|BOND|FUND|CRYPTO|DEPOSIT|METAL|OTHER), icon, color, targetAmount, description, timestamps
+- Added `InvestmentTx` model with fields: id, investmentId, type (BUY|SELL|DEPOSIT|WITHDRAWAL|DIVIDEND), amount, units, pricePerUnit, date, note, createdAt
+- Updated `Transaction` model: added fromAccountId, toAccountId, fromAccount, toAccount relations
+- Updated `User` model: added accounts and investments relations
+
+**API Routes Created:**
+- `GET /api/finance/accounts` — List all accounts ordered by isDefault desc, name asc
+- `POST /api/finance/accounts` — Create account (auto-unsets other defaults when isDefault=true)
+- `PUT /api/finance/accounts/[id]` — Update account fields
+- `DELETE /api/finance/accounts/[id]` — Delete account (ownership check)
+- `GET /api/finance/investments` — List investments with aggregated totals (totalInvested, totalReturned, totalUnits, profit)
+- `POST /api/finance/investments` — Create investment
+- `PUT /api/finance/investments/[id]` — Update investment
+- `DELETE /api/finance/investments/[id]` — Delete investment (ownership check)
+- `POST /api/finance/investments/[id]` — Add transaction to investment (BUY|SELL|DEPOSIT|WITHDRAWAL|DIVIDEND)
+
+**Updated Routes:**
+- `GET /api/finance` — Now includes fromAccount and toAccount in response
+- `POST /api/finance` — Now accepts fromAccountId and toAccountId in request body
+
+**Seed Data Updates (`src/lib/seed.ts`):**
+- Added TRANSFER category: "Перевод" with arrow-right-left icon
+- Added 4 default accounts: Наличные (5,420₽), Сбербанк (85,300₽), Тинькофф (142,700₽), Накопления (300,000₽)
+- Added 3 investments: Индексный фонд (FUND), Вклад Сбербанк (DEPOSIT), ОФЗ 26234 (BOND)
+- Added 7 investment transactions (BUY, DIVIDEND, DEPOSIT, WITHDRAWAL)
+- Added 3 transfer transactions between accounts
+
+**Verification:**
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ db:push successful
+- ✅ Dev server compiles cleanly
+
+---
+Task ID: finance-transfers-investments
+Agent: main-agent
+Task: Add TRANSFER transaction type and Investment/Savings management to finance module
+
+Work Log:
+- **Prisma Schema** (`prisma/schema.prisma`):
+  - Added `Account` model: id, userId, name, type (CASH|BANK|SAVINGS|INVESTMENT|CRYPTO), icon, color, balance, currency, isDefault
+  - Added `Investment` model: id, userId, name, type (STOCK|BOND|FUND|CRYPTO|DEPOSIT|METAL|OTHER), icon, color, targetAmount, description
+  - Added `InvestmentTx` model: id, investmentId, type (BUY|SELL|DEPOSIT|WITHDRAWAL|DIVIDEND), amount, units, pricePerUnit, date, note
+  - Updated `Transaction` model: added fromAccountId, toAccountId + fromAccount/toAccount relations
+  - Updated `User` model: added accounts and investments relations
+  - Ran `bun run db:push` successfully
+
+- **API Routes**:
+  - Created `/api/finance/accounts/route.ts` — GET (list accounts), POST (create account with default toggle)
+  - Created `/api/finance/accounts/[id]/route.ts` — PUT (update), DELETE
+  - Created `/api/finance/investments/route.ts` — GET (list with aggregated totals: totalInvested, totalReturned, profit), POST (create)
+  - Created `/api/finance/investments/[id]/route.ts` — PUT, DELETE, POST (add transaction to investment)
+  - Updated `/api/finance/route.ts` — POST now accepts fromAccountId/toAccountId; GET includes fromAccount/toAccount
+
+- **Frontend Types** (`types.ts`):
+  - Added `Account` interface
+  - Added `Investment`, `InvestmentTx`, `InvestmentsResponse` interfaces
+  - Updated `Transaction` with fromAccountId, toAccountId, fromAccount, toAccount fields
+  - Updated `ChartDataPoint` with transfer field
+  - Updated `StatsResponse` with totalTransfers
+
+- **Constants** (`constants.tsx`):
+  - Added `ACCOUNT_ICON_MAP` with Wallet, Landmark, PiggyBank, TrendingUp, Bitcoin, Banknote, BarChart3, Gem, CreditCard icons
+  - Added `ACCOUNT_TYPE_LABELS`, `INVESTMENT_TYPE_LABELS`, `INVESTMENT_TX_TYPE_LABELS`, `INVESTMENT_TX_TYPE_COLORS`
+  - Added `getAccountIcon()` helper
+
+- **Hooks** (`hooks.ts`):
+  - Added accounts state + fetching from /api/finance/accounts
+  - Added investmentsData state + fetching from /api/finance/investments
+  - Added totalTransfers computed value
+  - Added fromAccountId/toAccountId form state for new/edit
+  - Updated handleSubmit to handle TRANSFER type (uses fromAccountId/toAccountId instead of categoryId)
+  - Updated handleEditSubmit, handleDuplicate for TRANSFER support
+  - Added createAccount, deleteAccount, createInvestment, deleteInvestment, addInvestmentTx actions
+
+- **Transaction Dialog** (`transaction-dialog.tsx`):
+  - Added 3-button type toggle: Расход (red), Доход (green), Перевод (violet)
+  - Added transfer section: from/to account selectors with balance display, arrow icon between them
+  - Category field hidden for TRANSFER type
+  - Added proper validation for each type
+
+- **Transaction List** (`transaction-list.tsx`):
+  - Added "Переводы" tab with ArrowRightLeft icon
+  - Transfer transactions show: violet left border, purple icon circle, from→to account names
+  - Transfer amounts displayed with ⇄ prefix in violet color
+
+- **Finance Page** (`finance-page.tsx`):
+  - Added "Инвестиции" tab
+  - Integrated InvestmentsManager component
+  - Passed accounts, fromAccountId/toAccountId to all dialogs
+
+- **Investments Manager** (`investments-manager.tsx` — new):
+  - Summary cards: Всего вложено, Возвращено, Прибыль/Убыток (with color coding)
+  - Create Investment dialog: name, type selector, target amount, description
+  - Investment cards with: type icon, name, type badge, invested/returned amounts, profit badge
+  - Progress bar towards target amount
+  - Expandable transaction history per investment (last 5 shown)
+  - Add transaction dialog: BUY/SELL/DEPOSIT/WITHDRAWAL/DIVIDEND with amount, units, price per unit, date, note
+  - Delete investment support
+  - Empty state with gradient icon and CTA button
+
+Stage Summary:
+- ✅ 3 transaction types: Доход, Расход, Перевод (with account selectors)
+- ✅ Account management: 4 default account types with CRUD API
+- ✅ Investment portfolio: 7 investment types with transaction tracking
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server compiles successfully (HTTP 200)
+- ✅ All API endpoints verified working

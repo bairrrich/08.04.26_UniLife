@@ -42,6 +42,8 @@ export async function GET(request: NextRequest) {
           },
         },
         subCategory: true,
+        fromAccount: true,
+        toAccount: true,
       },
     })
 
@@ -59,7 +61,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, amount, categoryId, subCategoryId, date, description, note } = body
+    const { type, amount, categoryId, subCategoryId, date, description, note, fromAccountId, toAccountId } = body
 
     // Validate required fields
     if (!type || !amount || !date) {
@@ -98,10 +100,14 @@ export async function POST(request: NextRequest) {
         date: new Date(date),
         description: description || null,
         note: note || null,
+        fromAccountId: fromAccountId || null,
+        toAccountId: toAccountId || null,
       },
       include: {
         category: true,
         subCategory: true,
+        fromAccount: true,
+        toAccount: true,
       },
     })
 

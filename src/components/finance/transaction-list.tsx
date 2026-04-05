@@ -18,9 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy } from 'lucide-react'
+import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy, ArrowRightLeft } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
-import { getCategoryIcon } from './constants'
+import { getCategoryIcon, getAccountIcon } from './constants'
 import { cn } from '@/lib/utils'
 import type { Transaction, Category } from './types'
 
@@ -165,6 +165,9 @@ export function TransactionList({
                 <TabsTrigger value="all" className="text-xs px-2.5 h-7 transition-all duration-200">Все</TabsTrigger>
                 <TabsTrigger value="income" className="text-xs px-2.5 h-7 transition-all duration-200">Доходы</TabsTrigger>
                 <TabsTrigger value="expense" className="text-xs px-2.5 h-7 transition-all duration-200">Расходы</TabsTrigger>
+                <TabsTrigger value="transfer" className="text-xs px-2.5 h-7 transition-all duration-200 gap-1">
+                  <ArrowRightLeft className="h-3 w-3" />Переводы
+                </TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -270,6 +273,7 @@ export function TransactionList({
                       </div>
                       {group.items.map((tx) => {
                         const isIncome = tx.type === 'INCOME'
+                        const isTransfer = tx.type === 'TRANSFER'
                         const cat = tx.category || { id: '', name: 'Другое', type: 'EXPENSE', icon: 'circle', color: '#6b7280' } as Category
                         const isExpanded = expandedTxId === tx.id
                         return (
@@ -277,23 +281,40 @@ export function TransactionList({
                             <div
                               className={cn(
                                 'flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer',
-                                isExpanded && 'bg-muted/40'
+                                isExpanded && 'bg-muted/40',
+                                isTransfer && 'border-l-violet-500'
                               )}
-                              style={{ borderColor: cat.color }}
+                              style={{ borderColor: isTransfer ? undefined : cat.color }}
                               onClick={() => toggleExpanded(tx.id)}
                             >
-                              <div
-                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
-                                style={{ backgroundColor: `${cat.color}18`, color: cat.color }}
-                              >
-                                {getCategoryIcon(cat.icon)}
-                              </div>
+                              {isTransfer ? (
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400">
+                                  <ArrowRightLeft className="h-4 w-4" />
+                                </div>
+                              ) : (
+                                <div
+                                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full"
+                                  style={{ backgroundColor: `${cat.color}18`, color: cat.color }}
+                                >
+                                  {getCategoryIcon(cat.icon)}
+                                </div>
+                              )}
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium truncate">{tx.description || cat.name}</p>
+                                <p className="text-sm font-medium truncate">
+                                  {tx.description || (isTransfer ? 'Перевод' : cat.name)}
+                                </p>
                                 <div className="flex items-center gap-2 mt-0.5">
-                                  <span className="text-xs text-muted-foreground truncate">
-                                    {tx.subCategory?.name || cat.name}
-                                  </span>
+                                  {isTransfer ? (
+                                    <span className="text-xs text-muted-foreground truncate">
+                                      <span className="font-medium">{tx.fromAccount?.name || 'Счёт'}</span>
+                                      <ArrowRightLeft className="inline h-3 w-3 mx-1 text-violet-500" />
+                                      <span className="font-medium">{tx.toAccount?.name || 'Счёт'}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground truncate">
+                                      {tx.subCategory?.name || cat.name}
+                                    </span>
+                                  )}
                                   <span className="text-[10px] text-muted-foreground/70">
                                     {formatRelativeTime(tx.date)}
                                   </span>
@@ -357,9 +378,9 @@ export function TransactionList({
                                 <div className="text-right">
                                   <p className={cn(
                                     'text-sm font-semibold tabular-nums',
-                                    isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400'
+                                    isIncome ? 'text-emerald-600 dark:text-emerald-400' : isTransfer ? 'text-violet-600 dark:text-violet-400' : 'text-red-500 dark:text-red-400'
                                   )}>
-                                    {isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
+                                    {isTransfer ? '⇄' : isIncome ? '+' : '-'}{formatCurrency(tx.amount)}
                                   </p>
                                 </div>
                                 {/* Expand/collapse chevron */}

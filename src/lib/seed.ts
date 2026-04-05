@@ -39,7 +39,11 @@ export async function seed() {
     { name: 'Подарки', icon: 'Gift', color: '#f97316', type: 'INCOME' },
   ]
 
-  for (const cat of [...expenseCategories, ...incomeCategories]) {
+  const transferCategories = [
+    { name: 'Перевод', icon: 'arrow-right-left', color: '#8b5cf6', type: 'TRANSFER' },
+  ]
+
+  for (const cat of [...expenseCategories, ...incomeCategories, ...transferCategories]) {
     await db.category.upsert({
       where: { id: `cat_${cat.name.toLowerCase().replace(/\s+/g, '_')}` },
       update: {},
@@ -70,6 +74,88 @@ export async function seed() {
       create: {
         id: `sub_${sub.name.toLowerCase().replace(/\s+/g, '_')}`,
         ...sub,
+      },
+    })
+  }
+
+  // Seed accounts
+  const accountData = [
+    { id: 'acc_cash', name: 'Наличные', type: 'CASH', icon: 'wallet', color: '#10b981', balance: 5420, isDefault: true },
+    { id: 'acc_sber', name: 'Сбербанк', type: 'BANK', icon: 'credit-card', color: '#21a038', balance: 85300 },
+    { id: 'acc_tinkoff', name: 'Тинькофф', type: 'BANK', icon: 'landmark', color: '#ffdd2d', balance: 142700 },
+    { id: 'acc_savings', name: 'Накопления', type: 'SAVINGS', icon: 'piggy-bank', color: '#6366f1', balance: 300000 },
+  ]
+
+  for (const acc of accountData) {
+    await db.account.upsert({
+      where: { id: acc.id },
+      update: {},
+      create: { ...acc, userId: USER_ID, currency: 'RUB' },
+    })
+  }
+
+  // Seed investments
+  const investmentData = [
+    { name: 'Индексный фонд', type: 'FUND', icon: 'bar-chart-2', color: '#10b981', targetAmount: 500000, description: 'Индекс Мосбиржи (IMOEX)' },
+    { name: 'Вклад Сбербанк', type: 'DEPOSIT', icon: 'landmark', color: '#21a038', targetAmount: 200000, description: 'Вклад на 12 месяцев, 18% годовых' },
+    { name: 'ОФЗ 26234', type: 'BOND', icon: 'file-text', color: '#6366f1', targetAmount: 100000, description: 'ОФЗ с постоянным доходом' },
+  ]
+
+  const createdInvestments: { id: string }[] = []
+  for (const inv of investmentData) {
+    const created = await db.investment.create({
+      data: { userId: USER_ID, ...inv },
+    })
+    createdInvestments.push(created)
+  }
+
+  // Seed investment transactions
+  const investmentTxData: { investmentId: string; type: string; amount: number; units: number | null; pricePerUnit: number | null; daysAgo: number; note: string | null }[] = [
+    { investmentId: createdInvestments[0].id, type: 'BUY', amount: 15000, units: 3.5, pricePerUnit: 4285.71, daysAgo: 30, note: 'Покупка индексного фонда' },
+    { investmentId: createdInvestments[0].id, type: 'BUY', amount: 10000, units: 2.3, pricePerUnit: 4347.83, daysAgo: 15, note: 'Докупка' },
+    { investmentId: createdInvestments[0].id, type: 'DIVIDEND', amount: 1200, units: null, pricePerUnit: null, daysAgo: 5, note: 'Дивиденды' },
+    { investmentId: createdInvestments[1].id, type: 'DEPOSIT', amount: 100000, units: null, pricePerUnit: null, daysAgo: 60, note: 'Открытие вклада' },
+    { investmentId: createdInvestments[1].id, type: 'WITHDRAWAL', amount: 2000, units: null, pricePerUnit: null, daysAgo: 30, note: 'Частичное снятие процентов' },
+    { investmentId: createdInvestments[2].id, type: 'BUY', amount: 50000, units: 50, pricePerUnit: 1000, daysAgo: 20, note: 'Покупка ОФЗ' },
+    { investmentId: createdInvestments[2].id, type: 'BUY', amount: 30000, units: 30, pricePerUnit: 1000, daysAgo: 10, note: 'Докупка ОФЗ' },
+  ]
+
+  for (const itx of investmentTxData) {
+    const txDate = new Date(now)
+    txDate.setDate(txDate.getDate() - itx.daysAgo)
+    await db.investmentTx.create({
+      data: {
+        investmentId: itx.investmentId,
+        type: itx.type,
+        amount: itx.amount,
+        units: itx.units,
+        pricePerUnit: itx.pricePerUnit,
+        date: txDate,
+        note: itx.note,
+      },
+    })
+  }
+
+  // Seed transfer transactions
+  const transferTxData = [
+    { amount: 5000, daysAgo: 7, description: 'Перевод на карту Сбербанк', fromAccountId: 'acc_cash', toAccountId: 'acc_sber' },
+    { amount: 10000, daysAgo: 3, description: 'Пополнение накоплений', fromAccountId: 'acc_tinkoff', toAccountId: 'acc_savings' },
+    { amount: 3000, daysAgo: 1, description: 'Снятие наличных', fromAccountId: 'acc_sber', toAccountId: 'acc_cash' },
+  ]
+
+  for (const ttx of transferTxData) {
+    const txDate = new Date(now)
+    txDate.setDate(txDate.getDate() - ttx.daysAgo)
+    await db.transaction.create({
+      data: {
+        userId: USER_ID,
+        type: 'TRANSFER',
+        amount: ttx.amount,
+        categoryId: 'cat_перевод',
+        date: txDate,
+        description: ttx.description,
+        fromAccountId: ttx.fromAccountId,
+        toAccountId: ttx.toAccountId,
       },
     })
   }

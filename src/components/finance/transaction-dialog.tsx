@@ -2,7 +2,6 @@
 
 import {
   Dialog,
-  DialogClose,
   DialogContent,
   DialogDescription,
   DialogHeader,
@@ -19,10 +18,10 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { ArrowUpRight, ArrowDownRight, Plus, UtensilsCrossed, Car, TrainFront, Coffee } from 'lucide-react'
-import { QUICK_EXPENSES } from './constants'
+import { ArrowUpRight, ArrowDownRight, ArrowRightLeft, Plus } from 'lucide-react'
+import { QUICK_EXPENSES, getAccountIcon, ACCOUNT_TYPE_LABELS } from './constants'
 import { cn } from '@/lib/utils'
-import type { Category } from './types'
+import type { Category, Account } from './types'
 
 // ─── Amount Presets ──────────────────────────────────────────────────────────
 
@@ -38,6 +37,7 @@ function TransactionForm({
   date,
   note,
   categories,
+  accounts,
   isSubmitting,
   submitLabel,
   onTypeChange,
@@ -49,17 +49,22 @@ function TransactionForm({
   onSubmit,
   showQuickExpenses,
   onQuickExpense,
+  fromAccountId,
+  toAccountId,
+  onFromAccountIdChange,
+  onToAccountIdChange,
 }: {
-  txType: 'INCOME' | 'EXPENSE'
+  txType: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   amount: string
   categoryId: string
   description: string
   date: string
   note: string
   categories: Category[]
+  accounts: Account[]
   isSubmitting: boolean
   submitLabel: string
-  onTypeChange: (type: 'INCOME' | 'EXPENSE') => void
+  onTypeChange: (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => void
   onAmountChange: (val: string) => void
   onCategoryIdChange: (val: string) => void
   onDescriptionChange: (val: string) => void
@@ -68,13 +73,19 @@ function TransactionForm({
   onSubmit: () => void
   showQuickExpenses?: boolean
   onQuickExpense?: (label: string, amount: number) => void
+  fromAccountId: string
+  toAccountId: string
+  onFromAccountIdChange: (val: string) => void
+  onToAccountIdChange: (val: string) => void
 }) {
+  const isTransfer = txType === 'TRANSFER'
+
   return (
     <div className="space-y-4 pt-2">
       {/* Type Toggle */}
       <div className="space-y-2">
         <Label>Тип</Label>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             type="button"
             variant={txType === 'EXPENSE' ? 'default' : 'outline'}
@@ -82,7 +93,8 @@ function TransactionForm({
             onClick={() => { onTypeChange('EXPENSE'); onCategoryIdChange('') }}
           >
             <ArrowDownRight className="mr-1 h-4 w-4" />
-            Расход
+            <span className="hidden sm:inline">Расход</span>
+            <span className="sm:hidden">−</span>
           </Button>
           <Button
             type="button"
@@ -91,12 +103,23 @@ function TransactionForm({
             onClick={() => { onTypeChange('INCOME'); onCategoryIdChange('') }}
           >
             <ArrowUpRight className="mr-1 h-4 w-4" />
-            Доход
+            <span className="hidden sm:inline">Доход</span>
+            <span className="sm:hidden">+</span>
+          </Button>
+          <Button
+            type="button"
+            variant={txType === 'TRANSFER' ? 'default' : 'outline'}
+            className={txType === 'TRANSFER' ? 'bg-violet-500 hover:bg-violet-600 text-white' : ''}
+            onClick={() => { onTypeChange('TRANSFER'); onCategoryIdChange('') }}
+          >
+            <ArrowRightLeft className="mr-1 h-4 w-4" />
+            <span className="hidden sm:inline">Перевод</span>
+            <span className="sm:hidden">⇄</span>
           </Button>
         </div>
       </div>
 
-      {/* Quick Expense Presets */}
+      {/* Quick Expense Presets — only for EXPENSE */}
       {showQuickExpenses && txType === 'EXPENSE' && onQuickExpense && (
         <div className="space-y-2">
           <Label className="text-xs text-muted-foreground">Быстрый расход</Label>
@@ -143,30 +166,90 @@ function TransactionForm({
         </div>
       </div>
 
-      {/* Category */}
-      <div className="space-y-2">
-        <Label>Категория</Label>
-        <Select value={categoryId} onValueChange={onCategoryIdChange}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Выберите категорию" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((cat) => (
-              <SelectItem key={cat.id} value={cat.id}>
-                <span className="flex items-center gap-2">
-                  <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
-                  {cat.name}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Transfer: From/To Account Selectors */}
+      {isTransfer && (
+        <div className="space-y-3 rounded-lg border border-violet-200 bg-violet-50/50 p-3 dark:border-violet-500/20 dark:bg-violet-500/5">
+          <Label className="text-xs font-medium text-violet-700 dark:text-violet-400">Перевод между счетами</Label>
+          <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Откуда</Label>
+              <Select value={fromAccountId} onValueChange={onFromAccountIdChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Выберите счёт" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts.map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      <span className="flex items-center gap-2">
+                        <span style={{ color: acc.color }}>{getAccountIcon(acc.icon)}</span>
+                        <span className="truncate">{acc.name}</span>
+                        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                          {acc.balance.toLocaleString('ru-RU')}₽
+                        </span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex justify-center">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-500/20">
+                <ArrowRightLeft className="h-3 w-3 text-violet-600 dark:text-violet-400" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Куда</Label>
+              <Select value={toAccountId} onValueChange={onToAccountIdChange}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Выберите счёт" />
+                </SelectTrigger>
+                <SelectContent>
+                  {accounts
+                    .filter((a) => a.id !== fromAccountId)
+                    .map((acc) => (
+                    <SelectItem key={acc.id} value={acc.id}>
+                      <span className="flex items-center gap-2">
+                        <span style={{ color: acc.color }}>{getAccountIcon(acc.icon)}</span>
+                        <span className="truncate">{acc.name}</span>
+                        <span className="ml-auto text-[10px] text-muted-foreground tabular-nums">
+                          {acc.balance.toLocaleString('ru-RU')}₽
+                        </span>
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category — only for INCOME/EXPENSE */}
+      {!isTransfer && (
+        <div className="space-y-2">
+          <Label>Категория</Label>
+          <Select value={categoryId} onValueChange={onCategoryIdChange}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Выберите категорию" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.id}>
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: cat.color }} />
+                    {cat.name}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       {/* Description */}
       <div className="space-y-2">
         <Label>Описание</Label>
-        <Input placeholder="Например: обед в кафе" value={description} onChange={(e) => onDescriptionChange(e.target.value)} />
+        <Input placeholder={isTransfer ? 'Например: перевод на накопления' : 'Например: обед в кафе'} value={description} onChange={(e) => onDescriptionChange(e.target.value)} />
       </div>
 
       {/* Date */}
@@ -182,7 +265,14 @@ function TransactionForm({
       </div>
 
       {/* Submit */}
-      <Button className="w-full" onClick={onSubmit} disabled={isSubmitting || !amount || !categoryId || !date}>
+      <Button
+        className="w-full"
+        onClick={onSubmit}
+        disabled={
+          isSubmitting || !amount || !date ||
+          (isTransfer ? (!fromAccountId || !toAccountId) : !categoryId)
+        }
+      >
         {isSubmitting ? 'Сохранение...' : submitLabel}
       </Button>
     </div>
@@ -194,7 +284,7 @@ function TransactionForm({
 interface AddTransactionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  newType: 'INCOME' | 'EXPENSE'
+  newType: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   newAmount: string
   newCategoryId: string
   newDescription: string
@@ -202,7 +292,8 @@ interface AddTransactionDialogProps {
   newNote: string
   isSubmitting: boolean
   categories: Category[]
-  onNewTypeChange: (type: 'INCOME' | 'EXPENSE') => void
+  accounts: Account[]
+  onNewTypeChange: (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => void
   onNewAmountChange: (val: string) => void
   onNewCategoryIdChange: (val: string) => void
   onNewDescriptionChange: (val: string) => void
@@ -210,6 +301,10 @@ interface AddTransactionDialogProps {
   onNewNoteChange: (val: string) => void
   onQuickExpense: (label: string, amount: number) => void
   onSubmit: () => void
+  newFromAccountId: string
+  newToAccountId: string
+  onNewFromAccountIdChange: (val: string) => void
+  onNewToAccountIdChange: (val: string) => void
 }
 
 export function AddTransactionDialog({
@@ -223,6 +318,7 @@ export function AddTransactionDialog({
   newNote,
   isSubmitting,
   categories,
+  accounts,
   onNewTypeChange,
   onNewAmountChange,
   onNewCategoryIdChange,
@@ -231,13 +327,17 @@ export function AddTransactionDialog({
   onNewNoteChange,
   onQuickExpense,
   onSubmit,
+  newFromAccountId,
+  newToAccountId,
+  onNewFromAccountIdChange,
+  onNewToAccountIdChange,
 }: AddTransactionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Новая транзакция</DialogTitle>
-          <DialogDescription>Добавьте доход или расход для текущего месяца</DialogDescription>
+          <DialogDescription>Добавьте доход, расход или перевод</DialogDescription>
         </DialogHeader>
         <TransactionForm
           txType={newType}
@@ -247,6 +347,7 @@ export function AddTransactionDialog({
           date={newDate}
           note={newNote}
           categories={categories}
+          accounts={accounts}
           isSubmitting={isSubmitting}
           submitLabel="Сохранить"
           onTypeChange={onNewTypeChange}
@@ -258,6 +359,10 @@ export function AddTransactionDialog({
           onSubmit={onSubmit}
           showQuickExpenses
           onQuickExpense={onQuickExpense}
+          fromAccountId={newFromAccountId}
+          toAccountId={newToAccountId}
+          onFromAccountIdChange={onNewFromAccountIdChange}
+          onToAccountIdChange={onNewToAccountIdChange}
         />
       </DialogContent>
     </Dialog>
@@ -269,7 +374,7 @@ export function AddTransactionDialog({
 interface EditTransactionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  editType: 'INCOME' | 'EXPENSE'
+  editType: 'INCOME' | 'EXPENSE' | 'TRANSFER'
   editAmount: string
   editCategoryId: string
   editDescription: string
@@ -277,13 +382,18 @@ interface EditTransactionDialogProps {
   editNote: string
   isSubmitting: boolean
   categories: Category[]
-  onEditTypeChange: (type: 'INCOME' | 'EXPENSE') => void
+  accounts: Account[]
+  onEditTypeChange: (type: 'INCOME' | 'EXPENSE' | 'TRANSFER') => void
   onEditAmountChange: (val: string) => void
   onEditCategoryIdChange: (val: string) => void
   onEditDescriptionChange: (val: string) => void
   onEditDateChange: (val: string) => void
   onEditNoteChange: (val: string) => void
   onSubmit: () => void
+  editFromAccountId: string
+  editToAccountId: string
+  onEditFromAccountIdChange: (val: string) => void
+  onEditToAccountIdChange: (val: string) => void
 }
 
 export function EditTransactionDialog({
@@ -297,6 +407,7 @@ export function EditTransactionDialog({
   editNote,
   isSubmitting,
   categories,
+  accounts,
   onEditTypeChange,
   onEditAmountChange,
   onEditCategoryIdChange,
@@ -304,6 +415,10 @@ export function EditTransactionDialog({
   onEditDateChange,
   onEditNoteChange,
   onSubmit,
+  editFromAccountId,
+  editToAccountId,
+  onEditFromAccountIdChange,
+  onEditToAccountIdChange,
 }: EditTransactionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -320,6 +435,7 @@ export function EditTransactionDialog({
           date={editDate}
           note={editNote}
           categories={categories}
+          accounts={accounts}
           isSubmitting={isSubmitting}
           submitLabel="Сохранить изменения"
           onTypeChange={onEditTypeChange}
@@ -329,6 +445,10 @@ export function EditTransactionDialog({
           onDateChange={onEditDateChange}
           onNoteChange={onEditNoteChange}
           onSubmit={onSubmit}
+          fromAccountId={editFromAccountId}
+          toAccountId={editToAccountId}
+          onFromAccountIdChange={onEditFromAccountIdChange}
+          onToAccountIdChange={onEditToAccountIdChange}
         />
       </DialogContent>
     </Dialog>

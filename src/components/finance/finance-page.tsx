@@ -20,13 +20,14 @@ import { ExportButton } from './export-button'
 import { FinancialHealthScore } from './financial-health-score'
 import { SpendingForecast } from './spending-forecast'
 import { MonthComparison } from './month-comparison'
+import { InvestmentsManager } from './investments-manager'
 import { useFinance } from './hooks'
 
 export default function FinancePage() {
   const {
     stats, isLoading, activeTab, setActiveTab,
     showNewDialog, setShowNewDialog, monthLabel, month,
-    transactions, previousMonthStats,
+    transactions, previousMonthStats, accounts,
     newType, newAmount, newCategoryId, newDescription, newDate, newNote, isSubmitting,
     setNewType, setNewAmount, setNewCategoryId, setNewDescription, setNewDate, setNewNote,
     showEditDialog, setShowEditDialog, editType, editAmount, editCategoryId, editDescription, editDate, editNote, isEditSubmitting,
@@ -35,6 +36,8 @@ export default function FinancePage() {
     spendingInsights, getCategoryForTx,
     handleQuickExpense, navigateMonth, goToToday, openEditDialog, handleSubmit, handleEditSubmit, handleDelete, handleDuplicate,
     categories,
+    newFromAccountId, newToAccountId, setNewFromAccountId, setNewToAccountId,
+    editFromAccountId, editToAccountId, setEditFromAccountId, setEditToAccountId,
   } = useFinance()
 
   const currentMonthStr = getCurrentMonthStr()
@@ -58,7 +61,7 @@ export default function FinancePage() {
                   <Filter className="h-3 w-3" />{monthLabel}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">Учёт доходов и расходов</p>
+              <p className="text-sm text-muted-foreground">Учёт доходов, расходов и инвестиций</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -81,6 +84,9 @@ export default function FinancePage() {
         <TabsList>
           <TabsTrigger value="overview" className="gap-1.5">
             <Receipt className="h-4 w-4" />Обзор
+          </TabsTrigger>
+          <TabsTrigger value="investments" className="gap-1.5">
+            <Wallet className="h-4 w-4" />Инвестиции
           </TabsTrigger>
           <TabsTrigger value="budget" className="gap-1.5">
             <Wallet className="h-4 w-4" />Бюджет
@@ -144,6 +150,10 @@ export default function FinancePage() {
           />
         </TabsContent>
 
+        <TabsContent value="investments">
+          <InvestmentsManager isLoading={isLoading} />
+        </TabsContent>
+
         <TabsContent value="budget">
           <BudgetManager month={month} categories={categories} />
         </TabsContent>
@@ -161,6 +171,7 @@ export default function FinancePage() {
         newNote={newNote}
         isSubmitting={isSubmitting}
         categories={filteredCategories}
+        accounts={accounts}
         onNewTypeChange={setNewType}
         onNewAmountChange={setNewAmount}
         onNewCategoryIdChange={setNewCategoryId}
@@ -169,6 +180,10 @@ export default function FinancePage() {
         onNewNoteChange={setNewNote}
         onQuickExpense={handleQuickExpense}
         onSubmit={handleSubmit}
+        newFromAccountId={newFromAccountId}
+        newToAccountId={newToAccountId}
+        onNewFromAccountIdChange={setNewFromAccountId}
+        onNewToAccountIdChange={setNewToAccountId}
       />
       <EditTransactionDialog
         open={showEditDialog}
@@ -181,6 +196,7 @@ export default function FinancePage() {
         editNote={editNote}
         isSubmitting={isEditSubmitting}
         categories={editFilteredCategories}
+        accounts={accounts}
         onEditTypeChange={setEditType}
         onEditAmountChange={setEditAmount}
         onEditCategoryIdChange={setEditCategoryId}
@@ -188,6 +204,10 @@ export default function FinancePage() {
         onEditDateChange={setEditDate}
         onEditNoteChange={setEditNote}
         onSubmit={handleEditSubmit}
+        editFromAccountId={editFromAccountId}
+        editToAccountId={editToAccountId}
+        onEditFromAccountIdChange={setEditFromAccountId}
+        onEditToAccountIdChange={setEditToAccountId}
       />
     </div>
   )
