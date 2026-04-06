@@ -9,8 +9,8 @@ import {
   ChevronRight,
   CalendarDays,
   List,
-  Flame,
 } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
@@ -350,57 +350,24 @@ export default function DiaryPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header with decorative gradient blobs */}
-      <div className="relative overflow-hidden">
-        {/* Decorative blobs */}
-        <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/25 to-teal-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-28 w-28 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-6 left-1/3 h-20 w-20 rounded-full bg-gradient-to-br from-violet-400/15 to-purple-500/10 blur-2xl" />
-
-        <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-500/20">
-                  <BookOpen className="h-4.5 w-4.5 text-white" />
-                </div>
-                Дневник
-              </h1>
-              <div className="flex items-center gap-2 mt-1.5 ml-[42px]">
-                <p className="text-sm text-muted-foreground">
-                  Записывайте мысли, отслеживайте настроение
-                </p>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
-                  <CalendarDays className="h-3 w-3" />
-                  {format(today, 'd MMMM, EEEE', { locale: ru })}
-                </span>
-              </div>
-              {/* Streak Indicator */}
-              {!isLoading && entries.length > 0 && (
-                <div className="mt-2 ml-[42px] flex items-center gap-3">
-                  <MoodTrend entries={entries} today={today} className="flex-1" />
-                  <WritingStreakBadge entries={entries} today={today} />
-                </div>
-              )}
-            </div>
-          </div>
-
+      <PageHeader
+        icon={BookOpen}
+        title="Дневник"
+        description="Записывайте мысли, отслеживайте настроение"
+        accent="emerald"
+        badge={
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+            <CalendarDays className="h-3 w-3" />
+            {format(today, 'd MMMM, EEEE', { locale: ru })}
+          </span>
+        }
+        actions={
           <div className="flex items-center gap-2">
             <div className="flex items-center border rounded-xl overflow-hidden">
-              <Button
-                variant={viewMode === 'calendar' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('calendar')}
-                className="rounded-none px-3"
-              >
+              <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')} className="rounded-none px-3">
                 <CalendarDays className="h-4 w-4" />
               </Button>
-              <Button
-                variant={viewMode === 'list' ? 'default' : 'ghost'}
-                size="sm"
-                onClick={() => setViewMode('list')}
-                className="rounded-none px-3"
-              >
+              <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('list')} className="rounded-none px-3">
                 <List className="h-4 w-4" />
               </Button>
             </div>
@@ -409,8 +376,16 @@ export default function DiaryPage() {
               Запись
             </Button>
           </div>
-        </div>
-      </div>
+        }
+        extra={
+          !isLoading && entries.length > 0 && (
+            <div className="mt-2 flex items-center gap-3">
+              <MoodTrend entries={entries} today={today} className="flex-1" />
+              <WritingStreakBadge entries={entries} today={today} />
+            </div>
+          )
+        }
+      />
 
       {/* Writing Streak Card */}
       <WritingStreakCard entries={entries} today={today} isLoading={isLoading} className="card-hover" />

@@ -11,6 +11,7 @@ import { FeedEmptyState } from './empty-state'
 import { useFeed } from './hooks'
 import { getTimeGroup } from './constants'
 import { useState, useMemo } from 'react'
+import { PageHeader } from '@/components/layout/page-header'
 import { cn } from '@/lib/utils'
 
 // Suggested hashtags for the feed header
@@ -100,45 +101,29 @@ export default function FeedPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header — enhanced with gradient blobs, stats, and prominent CTA */}
-      <div className="relative overflow-hidden">
-        {/* Gradient decorative blobs */}
-        <div className="pointer-events-none absolute -top-12 -left-12 h-36 w-36 rounded-full bg-gradient-to-br from-emerald-400/25 to-teal-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute -top-6 right-16 h-28 w-28 rounded-full bg-gradient-to-br from-rose-400/20 to-pink-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute top-8 right-48 h-20 w-20 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl" />
-
-        <div className="relative flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25">
-              <Rss className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold flex items-center gap-2">
-                Лента
-                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal tabular-nums">
-                  {totalPosts}
-                </Badge>
-              </h1>
-              <p className="text-sm text-muted-foreground">
-                {todayPosts > 0
-                  ? `${todayPosts} ${todayPosts === 1 ? 'новая запись' : 'новых записей'} сегодня · ${totalComments} ${totalComments === 1 ? 'комментарий' : 'комментариев'}`
-                  : 'Делитесь достижениями и моментами'}
-              </p>
-            </div>
-          </div>
-
-          {/* Prominent "Написать пост" button with gradient */}
-          <Button
-            onClick={() => setDialogOpen(true)}
-            size="sm"
-            className="gap-1.5 shrink-0 bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:from-rose-600 hover:to-pink-700 border-0 active-press"
-          >
+      {/* Header */}
+      <PageHeader
+        icon={Rss}
+        title="Лента"
+        description={
+          todayPosts > 0
+            ? `${todayPosts} ${todayPosts === 1 ? 'новая запись' : 'новых записей'} сегодня · ${totalComments} ${totalComments === 1 ? 'комментарий' : 'комментариев'}`
+            : 'Делитесь достижениями и моментами'
+        }
+        accent="rose"
+        badge={
+          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal tabular-nums">
+            {totalPosts}
+          </Badge>
+        }
+        actions={
+          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0 bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:from-rose-600 hover:to-pink-700 border-0 active-press">
             <PenLine className="h-4 w-4" />
             <span className="hidden sm:inline">Написать пост</span>
             <span className="sm:hidden">Пост</span>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filter tabs */}
       {!loading && posts.length > 0 && (

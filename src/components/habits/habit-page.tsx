@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Target, Calendar, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, Tag, Sparkles, TrendingUp, Zap, Rocket } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -122,38 +123,30 @@ export default function HabitsPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
-              <Target className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Привычки</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>{getDayOfWeekSubtitle()}</span>
-                <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
-                  <Calendar className="h-3 w-3" />
-                  {getTodayDateBadge()}
-                </Badge>
-                {hasStreakFlame && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500/15 to-amber-500/15 px-2 py-0.5 text-sm" role="img" aria-label="streak">
-                    <Flame className="h-4 w-4 text-orange-500" />
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить привычку</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <PageHeader
+        icon={Target}
+        title="Привычки"
+        description={
+          <span className="flex items-center gap-2 flex-wrap">
+            <span>{getDayOfWeekSubtitle()}</span>
+            <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
+              <Calendar className="h-3 w-3" />
+              {getTodayDateBadge()}
+            </Badge>
+            {hasStreakFlame && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500/15 to-amber-500/15 px-2 py-0.5 text-sm" role="img" aria-label="streak">
+                <Flame className="h-4 w-4 text-orange-500" />
+              </span>
+            )}
+          </span>
+        }
+        accent="emerald"
+        actions={
+          <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} className="gap-1.5 shrink-0">
+            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить привычку</span>
+          </Button>
+        }
+      />
 
       {/* Habit Dialogs */}
       <HabitDialog

@@ -42,6 +42,7 @@ import {
   AnimatedNumber,
 } from '@/components/ui/animated-number'
 import { RU_DAYS_SHORT, formatCurrency } from '@/lib/format'
+import { PageHeader } from '@/components/layout/page-header'
 import type { ChartConfig } from '@/components/ui/chart'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -178,32 +179,18 @@ export default function AnalyticsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -right-16 -top-20 h-72 w-72 rounded-full bg-gradient-to-br from-blue-400/20 to-violet-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -left-20 top-0 h-56 w-56 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
-
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-500 shadow-sm">
-                <BarChart3 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold tracking-tight">Аналитика</h1>
-                  <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
-                    <CalendarDays className="h-2.5 w-2.5" />
-                    {periodLabel}
-                  </Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Полная статистика по всем модулям
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Period Selector */}
+      <PageHeader
+        icon={BarChart3}
+        title="Аналитика"
+        description="Полная статистика по всем модулям"
+        accent="blue"
+        badge={
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-2.5 w-2.5" />
+            {periodLabel}
+          </Badge>
+        }
+        actions={
           <Tabs
             value={period}
             onValueChange={(v) => setPeriod(v as Period)}
@@ -215,8 +202,8 @@ export default function AnalyticsPage() {
               <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
             </TabsList>
           </Tabs>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (

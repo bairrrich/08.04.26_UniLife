@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCurrentMonthStr } from '@/lib/format'
 
+import { PageHeader } from '@/components/layout/page-header'
+
 import { SummaryCards } from './summary-cards'
 import { SavingsGoal } from './savings-goal'
 import { ExpenseChart } from './expense-chart'
@@ -60,32 +62,25 @@ export default function FinancePage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400">
-              <Wallet className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">Финансы</h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                  <Filter className="h-3 w-3" />{monthLabel}
-                </span>
-              </div>
-              <p className="text-sm text-muted-foreground">Учёт доходов, расходов и инвестиций</p>
-            </div>
-          </div>
+      <PageHeader
+        icon={Wallet}
+        title="Финансы"
+        description="Учёт доходов, расходов и инвестиций"
+        accent="emerald"
+        badge={
+          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+            <Filter className="h-3 w-3" />{monthLabel}
+          </span>
+        }
+        actions={
           <div className="flex items-center gap-2 shrink-0">
             <ExportButton transactions={transactions} monthLabel={monthLabel} />
             <Button size="sm" className="gap-1.5" onClick={() => setShowNewDialog(true)}>
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <MonthNav
         monthLabel={monthLabel}

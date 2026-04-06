@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { useGoals } from './hooks'
+import { PageHeader } from '@/components/layout/page-header'
 import { getMotivationalPhrase, getMotivationalQuote } from './constants'
 import { GoalStats } from './goal-stats'
 import { GoalCard } from './goal-card'
@@ -185,31 +186,24 @@ export default function GoalsPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/4 bottom-0 h-32 w-32 rounded-full bg-gradient-to-br from-amber-400/10 to-orange-500/5 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
-              <Crosshair className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Цели</h1>
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Трекер целей и достижений</span>
-                <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
-                  <Calendar className="h-3 w-3" />
-                  {todayBadge}
-                </Badge>
-              </div>
-            </div>
-          </div>
+      <PageHeader
+        icon={Crosshair}
+        title="Цели"
+        description={
+          <span className="flex items-center gap-2 flex-wrap">
+            <span>Трекер целей и достижений</span>
+            <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
+              <Calendar className="h-3 w-3" />
+              {todayBadge}
+            </Badge>
+          </span>
+        }
+        accent="violet"
+        actions={
           <div className="flex items-center gap-2 shrink-0">
             <Button onClick={openAddDialog} className="gap-1.5 shrink-0">
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
             </Button>
-            {/* Search input — visible when goals exist */}
             {goals.length > 0 && (
               <div className="relative max-w-xs shrink-0">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -250,8 +244,8 @@ export default function GoalsPage() {
               submitting={submitting} onSubmit={handleSubmit}
             />
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {loading ? (
         <div className="space-y-6">

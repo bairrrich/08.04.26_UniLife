@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { Plus, Settings2, Flame, UtensilsCrossed, CalendarDays } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -71,43 +72,30 @@ export default function NutritionPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header — standard pattern with gradient blobs and icon */}
-      <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-orange-400/20 to-amber-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/15 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-950 dark:text-orange-400">
-              <UtensilsCrossed className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-xl font-bold">Питание</h1>
-                {todayFormatted && (
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                    <CalendarDays className="h-3 w-3" />
-                    {todayFormatted}
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-muted-foreground">Отслеживай питание, макронутриенты и воду</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="icon"
-              className="size-8"
-              onClick={() => setShowGoalsDialog(true)}
-            >
+      <PageHeader
+        icon={UtensilsCrossed}
+        title="Питание"
+        description="Отслеживай питание, макронутриенты и воду"
+        accent="orange"
+        badge={
+          todayFormatted ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <CalendarDays className="h-3 w-3" />
+              {todayFormatted}
+            </span>
+          ) : undefined
+        }
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="icon" className="size-8" onClick={() => setShowGoalsDialog(true)}>
               <Settings2 className="size-4 text-muted-foreground" />
             </Button>
             <Button size="sm" className="gap-1.5" onClick={() => setShowNewMealDialog(true)}>
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
             </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Macro Rings + Daily Score — side by side on desktop */}
       <div className="grid gap-4 lg:grid-cols-2 stagger-children">

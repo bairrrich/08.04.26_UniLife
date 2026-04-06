@@ -656,7 +656,8 @@ export function SearchDialog() {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent
         showCloseButton={false}
-        className="sm:max-w-lg p-0 gap-0 overflow-hidden top-[15%] translate-y-0 search-gradient-border rounded-xl"
+        className="sm:max-w-lg p-0 gap-0 overflow-hidden search-gradient-border rounded-xl"
+        style={{ top: '15%', transform: 'translate(-50%, 0)' }}
       >
         <DialogTitle className="sr-only">
           {mode === 'search' ? 'Поиск' : mode === 'navigate' ? 'Навигация' : 'Действия'}
