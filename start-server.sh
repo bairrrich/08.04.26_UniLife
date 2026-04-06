@@ -1,4 +1,5 @@
 #!/bin/bash
 cd /home/z/my-project
-rm -rf .next
-NODE_OPTIONS='--max-old-space-size=2048' npx next dev -p 3000 >> /home/z/my-project/dev.log 2>&1
+rm -rf .next 2>/dev/null
+export NODE_OPTIONS="--max-old-space-size=2048"
+exec npx next dev -p 3000 -H 0.0.0.0 --turbopack
