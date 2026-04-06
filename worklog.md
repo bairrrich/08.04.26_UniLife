@@ -10296,3 +10296,75 @@ Stage Summary:
 - 7 derived data computations memoized in DashboardPage
 - ESLint: 0 errors
 - App stable with no unnecessary re-renders
+
+---
+## Task ID: 6
+### Agent: ui-unify-search-dialog
+### Work Task
+Fix the search dialog (Ctrl+K / Cmd+K) positioning. The dialog appeared at the bottom of the screen instead of centered due to an inline style override.
+
+### Work Summary
+- **Issue**: The `DialogContent` in `/src/components/layout/search-dialog.tsx` (line 660) had an inline `style={{ top: '15%', transform: 'translate(-50%, 0)' }}` that overrode the default shadcn dialog centering (`top: 50%; transform: translate(-50%, -50%)`). The `translate(-50%, 0)` removed the Y-axis centering, causing the dialog to appear near the top of the viewport instead of centered.
+- **Fix**: Removed the entire inline `style` prop from `DialogContent`. The default shadcn dialog CSS (from Radix UI primitives) handles centering correctly with `top: 50%; left: 50%; transform: translate(-50%, -50%)`.
+- **Verification**: ESLint passes with 0 errors on the modified file.
+
+---
+## Task ID: 4
+### Agent: ui-unify-accent-colors
+### Work Task
+Align PageHeader accent colors across all pages to match the sidebar module accent colors defined in `app-sidebar.tsx`.
+
+### Work Summary
+Updated the `accent` prop on `PageHeader` components in 7 files to match the sidebar's module accent color scheme:
+
+| File | Old Value | New Value | Line |
+|------|-----------|-----------|------|
+| `diary-page.tsx` | `emerald` | `amber` | 357 |
+| `finance-page.tsx` | `emerald` | `blue` | 69 |
+| `workout-page.tsx` | `blue` | `red` | 74 |
+| `habit-page.tsx` | `emerald` | `cyan` | 143 |
+| `goals-page.tsx` | `violet` | `indigo` | 201 |
+| `analytics-page.tsx` | `blue` | `teal` | 186 |
+| `feed-page.tsx` | `rose` | `pink` | 113 |
+
+Two files (`nutrition-page.tsx` with `orange`, `settings-page.tsx` with `zinc`) were already correct and required no changes. Only the `accent` prop was modified — no other code was touched. ESLint passes with 0 errors after all changes.
+
+---
+## Task ID: 5
+### Agent: ui-unify-buttons
+### Work Task
+Standardize action button patterns across all pages to use consistent `size="sm"` styling.
+
+### Work Summary
+Applied `size="sm"` to header action buttons across 3 pages to unify button styling:
+
+1. **`/src/components/habits/habit-page.tsx`** (line ~145): Added `size="sm"` to the "Добавить привычку" Button in PageHeader actions.
+
+2. **`/src/components/goals/goals-page.tsx`** (line ~204): Added `size="sm"` to the "Новая цель" Button in PageHeader actions.
+
+3. **`/src/components/feed/feed-page.tsx`** (line ~120): Removed custom gradient styling (`bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:from-rose-600 hover:to-pink-700 border-0 active-press`) from the "Написать пост" Button, keeping the standard default variant with `size="sm"` and `className="gap-1.5 shrink-0"` to match other pages.
+
+All three header action buttons now consistently use `<Button size="sm" className="gap-1.5 shrink-0">` pattern.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, no errors
+- ✅ No functional changes — only visual styling consistency improvement
+
+---
+## Task ID: 3
+### Agent: ui-unify-collections
+### Work Task
+Migrate the Collections page to use the PageHeader component instead of the manual header with hardcoded gradient blobs.
+
+### Work Summary
+- Added `import { PageHeader } from '@/components/layout/page-header'` to `collections-page.tsx`
+- Replaced the manual header block (`<div className="relative overflow-hidden">` with hardcoded emerald/teal and amber/orange gradient blobs) with the reusable `PageHeader` component
+- Configured `PageHeader` with: `icon={Library}`, `title="Коллекции"`, `description="Книги, фильмы, рецепты и полезные находки"`, `accent="violet"` (matching sidebar color)
+- Moved `<kbd>N</kbd>` shortcut badge into `badge` prop (hidden on mobile via `hidden sm:inline-flex`)
+- Moved the "Добавить" `<Button>` into `actions` prop
+- Extracted `<AddItemDialog>` out of the header into a sibling element after `PageHeader` for cleaner structure
+- `motion` import preserved (used in the recently-added horizontal scroll section)
+- `Library` icon import already present — no duplicate added
+- ESLint: 0 errors, 0 warnings
+- Dev server compiles cleanly, GET / returns HTTP 200

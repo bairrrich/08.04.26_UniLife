@@ -110,14 +110,14 @@ export default function FeedPage() {
             ? `${todayPosts} ${todayPosts === 1 ? 'новая запись' : 'новых записей'} сегодня · ${totalComments} ${totalComments === 1 ? 'комментарий' : 'комментариев'}`
             : 'Делитесь достижениями и моментами'
         }
-        accent="rose"
+        accent="pink"
         badge={
           <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal tabular-nums">
             {totalPosts}
           </Badge>
         }
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0 bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:from-rose-600 hover:to-pink-700 border-0 active-press">
+          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
             <PenLine className="h-4 w-4" />
             <span className="hidden sm:inline">Написать пост</span>
             <span className="sm:hidden">Пост</span>

@@ -71,7 +71,7 @@ export function WorkoutPage() {
             )}
           </>
         }
-        accent="blue"
+        accent="red"
         actions={
           <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
             <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>

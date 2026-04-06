@@ -24,6 +24,7 @@ import { ItemCard } from './item-card'
 import { AddItemDialog } from './add-item-dialog'
 import { ItemDialog } from './item-dialog'
 import { cn } from '@/lib/utils'
+import { PageHeader } from '@/components/layout/page-header'
 
 // Empty state messages per type
 const EMPTY_STATE_MESSAGES: Record<string, { title: string; description: string }> = {
@@ -111,45 +112,36 @@ export default function CollectionsPage() {
 
   return (
     <div className="animate-slide-up space-y-6">
-      {/* Header with decorative gradient blob */}
-      <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/15 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-400/10 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
-              <Library className="h-5 w-5" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold">Коллекции</h1>
-              <p className="text-sm text-muted-foreground truncate">
-                Книги, фильмы, рецепты и полезные находки
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
-              N
-            </kbd>
-            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
-            </Button>
-            <AddItemDialog
-              open={dialogOpen} onOpenChange={setDialogOpen}
-              formType={formType} setFormType={setFormType}
-              formTitle={formTitle} setFormTitle={setFormTitle}
-              formAuthor={formAuthor} setFormAuthor={setFormAuthor}
-              formDescription={formDescription} setFormDescription={setFormDescription}
-              formRating={formRating} setFormRating={setFormRating}
-              formTags={formTags} setFormTags={setFormTags}
-              formNotes={formNotes} setFormNotes={setFormNotes}
-              formCoverUrl={formCoverUrl} setFormCoverUrl={setFormCoverUrl}
-              formDetails={formDetails} setFormDetails={setFormDetails}
-              onSubmit={handleSubmit}
-            />
-          </div>
-        </div>
-      </div>
+      {/* Header */}
+      <PageHeader
+        icon={Library}
+        title="Коллекции"
+        description="Книги, фильмы, рецепты и полезные находки"
+        accent="violet"
+        badge={
+          <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
+            N
+          </kbd>
+        }
+        actions={
+          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
+          </Button>
+        }
+      />
+      <AddItemDialog
+        open={dialogOpen} onOpenChange={setDialogOpen}
+        formType={formType} setFormType={setFormType}
+        formTitle={formTitle} setFormTitle={setFormTitle}
+        formAuthor={formAuthor} setFormAuthor={setFormAuthor}
+        formDescription={formDescription} setFormDescription={setFormDescription}
+        formRating={formRating} setFormRating={setFormRating}
+        formTags={formTags} setFormTags={setFormTags}
+        formNotes={formNotes} setFormNotes={setFormNotes}
+        formCoverUrl={formCoverUrl} setFormCoverUrl={setFormCoverUrl}
+        formDetails={formDetails} setFormDetails={setFormDetails}
+        onSubmit={handleSubmit}
+      />
 
       {/* Search Input */}
       <div className="relative">

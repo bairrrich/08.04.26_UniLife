@@ -198,10 +198,10 @@ export default function GoalsPage() {
             </Badge>
           </span>
         }
-        accent="violet"
+        accent="indigo"
         actions={
           <div className="flex items-center gap-2 shrink-0">
-            <Button onClick={openAddDialog} className="gap-1.5 shrink-0">
+            <Button onClick={openAddDialog} size="sm" className="gap-1.5 shrink-0">
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
             </Button>
             {goals.length > 0 && (

@@ -140,9 +140,9 @@ export default function HabitsPage() {
             )}
           </span>
         }
-        accent="emerald"
+        accent="cyan"
         actions={
-          <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} className="gap-1.5 shrink-0">
+          <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} size="sm" className="gap-1.5 shrink-0">
             <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить привычку</span>
           </Button>
         }

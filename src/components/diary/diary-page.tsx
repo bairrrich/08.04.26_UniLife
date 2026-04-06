@@ -354,7 +354,7 @@ export default function DiaryPage() {
         icon={BookOpen}
         title="Дневник"
         description="Записывайте мысли, отслеживайте настроение"
-        accent="emerald"
+        accent="amber"
         badge={
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
             <CalendarDays className="h-3 w-3" />

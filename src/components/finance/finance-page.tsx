@@ -66,7 +66,7 @@ export default function FinancePage() {
         icon={Wallet}
         title="Финансы"
         description="Учёт доходов, расходов и инвестиций"
-        accent="emerald"
+        accent="blue"
         badge={
           <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
             <Filter className="h-3 w-3" />{monthLabel}

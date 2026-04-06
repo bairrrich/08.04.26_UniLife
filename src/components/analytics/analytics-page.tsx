@@ -183,7 +183,7 @@ export default function AnalyticsPage() {
         icon={BarChart3}
         title="Аналитика"
         description="Полная статистика по всем модулям"
-        accent="blue"
+        accent="teal"
         badge={
           <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
             <CalendarDays className="h-2.5 w-2.5" />
