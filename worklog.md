@@ -8984,3 +8984,121 @@ Stage Summary:
 - 9 duplicate/overlapping widgets removed
 - New DashboardSection component enables user-customizable layout (collapse/expand with persistence)
 - Less cluttered, better organized, faster initial load (fewer lazy-loaded chunks)
+
+---
+## Task ID: widget-dedup+sort
+### Agent: widget-dedup-agent
+### Work Task
+Dashboard widget deduplication + sorting/grouping system
+
+### Work Summary
+
+**Files Created:**
+
+1. **`/src/components/dashboard/widget-config.ts`** — Widget section configuration system:
+   - `WidgetSectionConfig` interface with id, title, icon, defaultCollapsed, defaultVisible, defaultOrder
+   - `DEFAULT_SECTIONS` array defining 10 dashboard sections (Обзор, Сегодня, Быстрый доступ, Аналитика недели, Привычки и здоровье, Графики, Финансы, Вдохновение, Инструменты, Активность и цели)
+   - `SavedWidgetConfig` interface with visible (Record<string, boolean>) and order (string[])
+   - `loadWidgetConfig()` / `saveWidgetConfig()` / `resetWidgetConfig()` functions using localStorage with `unilife-widget-config` key
+   - SSR-safe with typeof window check in loadWidgetConfig
+
+2. **`/src/components/dashboard/widget-customizer.tsx`** — Widget customization dialog:
+   - Uses shadcn Dialog, Switch, Button components
+   - Shows all 10 sections as rows with: GripVertical handle, emoji icon, title, up/down ChevronUp/ChevronDown buttons, Switch toggle
+   - "Сбросить настройки" (Reset) button at bottom with RotateCcw icon
+   - Sections sorted by current config order via useMemo
+   - Calls parent `onConfigChange` on every toggle/move/reset
+   - Uses "state update during render" pattern (prevOpen tracking) to reload config from localStorage when dialog opens — avoids `react-hooks/set-state-in-effect` lint rule
+   - Clean styling with rounded-xl borders, opacity-60 for hidden sections, disabled states for move buttons at boundaries
+
+**Files Modified:**
+
+3. **`/src/components/dashboard/dashboard-page.tsx`** — Major refactoring:
+
+   **Removed Duplicate Widgets:**
+   - Removed inline header section (lines 507-547): greeting, date, time, mood emoji, gradient blobs — all already in WelcomeWidget
+   - Removed `DailyChecklist` dynamic import and usage from "Сегодня" section — ProductivityScore already tracks same tasks with scoring
+   - Removed `DailyProgress` dynamic import and usage — WelcomeWidget already has progress bar
+   - Removed `MoodStreak` dynamic import and usage from "Привычки и здоровье" section — CurrentStreaks + MoodDots already cover this
+   - Removed `MoodWeatherIndicator` dynamic import — only used in removed header
+
+   **Removed Unused Imports:**
+   - `BookOpen, Dumbbell, Target, Clock` from lucide-react (unused)
+   - `getGreeting, MOOD_EMOJI` from `@/lib/format` (only used in removed header)
+   - `formatDate` from `./constants` (only used in removed header)
+   - `useUserPrefs` from `@/lib/use-user-prefs` (userName only used in removed header)
+
+   **Removed Unused Hooks/State:**
+   - `const { userName } = useUserPrefs()` — only used in header
+   - `const [currentTime, setCurrentTime] = useState('')` + its setInterval useEffect — only used in header
+   - `const recentMoodEmoji = useMemo(...)` — only used in header
+
+   **Added Widget Sorting/Grouping System:**
+   - Added `Settings2` icon import from lucide-react
+   - Added imports from widget-config and widget-customizer
+   - Added `widgetConfig` state (SavedWidgetConfig | null) and `customizerOpen` state
+   - Added useEffect to load widget config on mount (after hydration guard)
+   - Added `handleConfigChange` callback that updates both state and localStorage
+   - Added Settings2 gear button in top-right of dashboard (next to WelcomeWidget)
+   - Created `renderSection(sectionId: string)` function with switch statement for all 10 sections
+   - Sections now render dynamically from `widgetConfig.order.filter(id => widgetConfig.visible[id])`
+   - Loading skeleton shown when widgetConfig is null
+   - WelcomeWidget and NotificationCenter always visible (not part of config)
+   - "Сегодня" section simplified to just QuickMoodWidget + MiniCalendar grid (DailyChecklist removed)
+   - "Привычки и здоровье" section: CurrentStreaks now full-width (removed 2-col grid with MoodStreak)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All existing dashboard data fetching hooks preserved
+- ✅ All remaining widgets render correctly
+- ✅ Widget customizer dialog opens/closes properly
+- ✅ localStorage persistence working for widget config
+
+---
+## Task ID: dashboard-dedup+widget-sort
+### Agent: main-agent
+### Task: Remove duplicate dashboard widgets and implement widget sorting/grouping system
+
+### Work Log:
+- **Analyzed all 35 dashboard widgets** across 10 sections to identify duplicates
+- **Identified 4 duplicate widget pairs:**
+  1. WelcomeWidget vs Inline Header Section — both show greeting, date, time, mood, progress bar
+  2. DailyChecklist vs ProductivityScore — both track daily tasks (diary, meals, workout, habits)
+  3. DailyProgress vs WelcomeWidget progress bar — identical progress bar
+  4. MoodStreak vs CurrentStreaks + MoodDots — diary streak shown in both, mood dots redundant
+- **Removed 4 duplicate widgets/components:**
+  - Inline header section (lines 507-547 in dashboard-page.tsx)
+  - DailyChecklist widget import and rendering
+  - DailyProgress widget import and rendering
+  - MoodStreak widget import and rendering
+  - MoodWeatherIndicator (only used in removed header)
+- **Cleaned up unused imports:** BookOpen, Dumbbell, Target, Clock, getGreeting, MOOD_EMOJI, formatDate, useUserPrefs
+- **Created widget sorting/grouping system:**
+  - Created `/src/components/dashboard/widget-config.ts` — 10 section definitions with id, title, icon, defaultCollapsed, defaultVisible, defaultOrder. localStorage persistence with load/save/reset functions.
+  - Created `/src/components/dashboard/widget-customizer.tsx` — Dialog with shadcn components showing all sections as sortable rows with toggle switches, up/down reorder buttons, and reset button. Russian UI text.
+- **Refactored dashboard-page.tsx:**
+  - Added widgetConfig state + customizerOpen state
+  - Created renderSection() function using switch/case for all 10 sections
+  - Sections now render based on saved config (order + visibility from localStorage)
+  - Added Settings2 gear button in top-right area of dashboard
+  - WidgetCustomizer dialog opens on click, changes apply immediately
+  - WelcomeWidget and NotificationCenter remain always visible
+- **10 configurable sections:** Обзор, Сегодня, Быстрый доступ, Аналитика недели, Привычки и здоровье, Графики, Финансы, Вдохновение, Инструменты, Активность и цели
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: HTTP 200, no runtime errors
+- ✅ Dashboard renders correctly with all sections
+- ✅ Widget Customizer dialog opens and shows all 10 sections
+- ✅ Section toggle (on/off) works and persists in localStorage
+- ✅ Section reorder (up/down) works and persists
+- ✅ Reset button restores defaults
+- ✅ Page reload preserves widget configuration
+- ✅ All data fetching hooks preserved (no data loss)
+
+### Stage Summary:
+- 4 duplicate widgets removed, dashboard is cleaner and less repetitive
+- New widget customization system with 10 configurable sections
+- Users can toggle section visibility and reorder sections
+- Configuration persists via localStorage

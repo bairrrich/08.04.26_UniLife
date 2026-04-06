@@ -4,23 +4,15 @@ import { useEffect, useState, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { useAppStore } from '@/store/use-app-store'
 import { AppModule } from '@/store/use-app-store'
-import {
-  BookOpen,
-  Dumbbell,
-  Target,
-  Clock,
-} from 'lucide-react'
+import { Settings2 } from 'lucide-react'
 import {
   toDateStr,
   getTodayStr,
   getCurrentMonthStr,
   getWeekRange,
-  getGreeting,
   calculateStreak,
   getRelativeTime,
-  MOOD_EMOJI,
 } from '@/lib/format'
-import { useUserPrefs } from '@/lib/use-user-prefs'
 
 import DashboardSection from './dashboard-section'
 
@@ -39,21 +31,25 @@ import {
   moodLabels,
   dayNamesShort,
   PIE_COLORS,
-  formatDate,
 } from './constants'
+
+import {
+  loadWidgetConfig,
+  saveWidgetConfig,
+  DEFAULT_SECTIONS,
+  type SavedWidgetConfig,
+} from './widget-config'
+import WidgetCustomizer from './widget-customizer'
 
 const widgetLoad = () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />
 const smallLoad = () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" />
 
 // ─── Lazy-loaded Widgets ──────────────────────────────────────────────
 const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, loading: widgetLoad })
-const DailyProgress = dynamic(() => import('./daily-progress'), { ssr: false, loading: smallLoad })
-const MoodWeatherIndicator = dynamic(() => import('./mood-weather-indicator'), { ssr: false, loading: () => <div className="h-[56px] w-[280px] skeleton-shimmer rounded-xl" /> })
 
 const ProductivityScore = dynamic(() => import('./productivity-score'), { ssr: false, loading: widgetLoad })
 const StatCards = dynamic(() => import('./stat-cards'), { ssr: false, loading: widgetLoad })
 
-const DailyChecklist = dynamic(() => import('./daily-checklist'), { ssr: false, loading: widgetLoad })
 const QuickMoodWidget = dynamic(() => import('./quick-mood-widget'), { ssr: false, loading: smallLoad })
 const MiniCalendar = dynamic(() => import('./mini-calendar'), { ssr: false, loading: widgetLoad })
 
@@ -74,7 +70,6 @@ const BudgetOverview = dynamic(() => import('./budget-overview'), { ssr: false, 
 const HabitsProgress = dynamic(() => import('./habits-progress'), { ssr: false, loading: widgetLoad })
 const ActivityHeatmap = dynamic(() => import('./activity-heatmap'), { ssr: false, loading: widgetLoad })
 const CurrentStreaks = dynamic(() => import('./current-streaks'), { ssr: false, loading: widgetLoad })
-const MoodStreak = dynamic(() => import('./mood-streak'), { ssr: false, loading: widgetLoad })
 const MoodDots = dynamic(() => import('./mood-dots'), { ssr: false, loading: widgetLoad })
 const NutritionSummaryWidget = dynamic(() => import('./nutrition-summary-widget'), { ssr: false, loading: widgetLoad })
 
@@ -95,12 +90,26 @@ const NotificationCenter = dynamic(() => import('./notification-center'), { ssr:
 
 export default function DashboardPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
-  const { userName } = useUserPrefs()
 
   // ── Hydration guard ──────────────────────────────────────────────────
   const [mounted, setMounted] = useState(false)
   useEffect(() => {
     setMounted(true)
+  }, [])
+
+  // ── Widget Config ────────────────────────────────────────────────────
+  const [widgetConfig, setWidgetConfig] = useState<SavedWidgetConfig | null>(null)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
+  useEffect(() => {
+    if (mounted) {
+      setWidgetConfig(loadWidgetConfig())
+    }
+  }, [mounted])
+
+  const handleConfigChange = useCallback((newConfig: SavedWidgetConfig) => {
+    setWidgetConfig(newConfig)
+    saveWidgetConfig(newConfig)
   }, [])
 
   // ── State ────────────────────────────────────────────────────────────
@@ -233,28 +242,6 @@ export default function DashboardPage() {
 
   // ── Derived Data ────────────────────────────────────────────────────
   const now = useMemo(() => new Date(), [])
-
-  const [currentTime, setCurrentTime] = useState('')
-  useEffect(() => {
-    const updateTime = () => {
-      const n = new Date()
-      setCurrentTime(
-        `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`
-      )
-    }
-    updateTime()
-    const interval = setInterval(updateTime, 30000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const recentMoodEmoji = useMemo(() => {
-    if (diaryEntries.length === 0) return null
-    const sorted = [...diaryEntries].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-    )
-    const latest = sorted.find((e) => e.mood)
-    return latest?.mood ? MOOD_EMOJI[latest.mood] : null
-  }, [diaryEntries])
 
   const todayEntry = diaryEntries.find((e) => {
     const d = new Date(e.date)
@@ -472,6 +459,205 @@ export default function DashboardPage() {
       .slice(0, 5)
   }, [transactionsData])
 
+  // ── Section renderer ────────────────────────────────────────────────
+  const renderSection = (sectionId: string) => {
+    const sectionDef = DEFAULT_SECTIONS.find(s => s.id === sectionId)
+    const icon = <span>{sectionDef?.icon ?? '📌'}</span>
+    const title = sectionDef?.title ?? sectionId
+    const defaultCollapsed = sectionDef?.defaultCollapsed ?? false
+
+    switch (sectionId) {
+      case 'overview':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <ProductivityScore
+              loading={loading}
+              diaryWritten={!!todayEntry}
+              waterMl={waterTodayMl}
+              workoutDone={todayWorkout}
+              habitsCompleted={completedToday}
+              habitsTotal={totalActive}
+              nutritionLogged={hasMealsToday}
+              score={productivityScore}
+            />
+            <StatCards
+              loading={loading}
+              todayMood={todayMood}
+              weekEntries={weekEntryCount}
+              totalIncome={financeStats?.totalIncome ?? 0}
+              totalExpense={financeStats?.totalExpense ?? 0}
+              todayKcal={todayKcal}
+              workoutsCount={workouts.length}
+              kcalGoal={kcalGoal}
+            />
+          </DashboardSection>
+        )
+
+      case 'today':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <div className="grid gap-4 md:grid-cols-2">
+              <QuickMoodWidget />
+              <MiniCalendar />
+            </div>
+          </DashboardSection>
+        )
+
+      case 'quick-access':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <QuickActions onNavigate={setActiveModule} />
+          </DashboardSection>
+        )
+
+      case 'weekly':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <WeeklyInsights
+              loading={loading}
+              diaryEntries={diaryEntries}
+              workouts={workouts}
+              transactionsData={transactionsData}
+              habitsData={habitsData}
+              recentMoods={recentMoods}
+              hasMealsToday={hasMealsToday}
+              waterTodayMl={waterTodayMl}
+              dailyProgress={dailyProgress}
+              maxStreak={maxStreak}
+            />
+            <WeeklyActivityChart loading={loading} data={weeklyActivity} />
+          </DashboardSection>
+        )
+
+      case 'health':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <HabitsProgress
+              loading={loading}
+              totalActive={totalActive}
+              completedToday={completedToday}
+              habitsPercentage={habitsPercentage}
+              circumference={circumference}
+              dashOffset={dashOffset}
+              uncompletedHabits={uncompletedHabits}
+              allHabitsCompleted={allHabitsCompleted}
+              onNavigate={setActiveModule}
+            />
+            <CurrentStreaks />
+            <MoodDots recentMoods={recentMoods} diaryStreak={diaryStreak} now={now} />
+            <ActivityHeatmap loading={loading} activityData={heatmapData} />
+            <NutritionSummaryWidget />
+          </DashboardSection>
+        )
+
+      case 'charts':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <SpendingTrendChart loading={loading} weeklySpendingData={weeklySpendingData} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <WeeklyMoodChart
+                loading={loading}
+                moodData={weeklyMoodData.map((d) => ({
+                  day: d.day,
+                  mood: d.mood > 0 ? d.mood : null,
+                  date: d.label,
+                }))}
+              />
+              <ExpensePieChart loading={loading} expensePieData={expensePieData} />
+            </div>
+          </DashboardSection>
+        )
+
+      case 'finances':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <RecentTransactions
+              loading={loading}
+              transactions={recentTransactions}
+              getRelativeTime={getTimeAgo}
+              onNavigateToFinance={() => setActiveModule('finance')}
+            />
+            {!loading && financeStats && (
+              <FinanceQuickView
+                loading={loading}
+                categories={
+                  [...financeStats.byCategory]
+                    .sort((a, b) => b.total - a.total)
+                    .slice(0, 5)
+                    .map((cat) => ({
+                      name: cat.categoryName,
+                      amount: cat.total,
+                      color: cat.categoryColor,
+                    }))
+                }
+                totalExpense={financeStats.totalExpense}
+                totalIncome={financeStats.totalIncome}
+              />
+            )}
+            <BudgetOverview
+              loading={loading}
+              budgetData={budgetData}
+              onNavigateToFinance={() => setActiveModule('finance')}
+            />
+          </DashboardSection>
+        )
+
+      case 'inspiration':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <DailyInspiration />
+            <AiInsightsWidget />
+          </DashboardSection>
+        )
+
+      case 'tools':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <QuickNotesWidget />
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <WeatherWidget />
+              <FocusTimerWidget />
+              <BreathingWidget />
+            </div>
+          </DashboardSection>
+        )
+
+      case 'activity':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <ActivityFeed
+              loading={loading}
+              feedPosts={feedPosts}
+              getTimeAgo={getTimeAgo}
+              onNavigateToFeed={() => setActiveModule('feed')}
+            />
+            <AchievementsWidget
+              loading={loading}
+              diaryEntries={diaryEntries}
+              financeStats={financeStats}
+              transactionsData={transactionsData}
+              workouts={workouts}
+              habitsData={habitsData}
+              nutritionStats={nutritionStats}
+              waterTodayMl={waterTodayMl}
+              hasMealsToday={hasMealsToday}
+              todayMood={todayMood}
+              todayWorkoutDone={todayWorkout}
+              allHabitsCompleted={allHabitsCompleted}
+              budgetData={budgetData}
+            />
+            <div className="grid gap-4 md:grid-cols-2">
+              <RecentGoals />
+              <RecentDiary loading={loading} diaryEntries={diaryEntries} />
+            </div>
+          </DashboardSection>
+        )
+
+      default:
+        return null
+    }
+  }
+
   // ── Render ──────────────────────────────────────────────────────────
 
   if (!mounted) {
@@ -492,243 +678,41 @@ export default function DashboardPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Welcome Widget (hero) ──────────────────────────────────── */}
-      <WelcomeWidget
-        loading={loading}
-        diaryStreak={diaryStreak}
-        dailyProgress={dailyProgress}
-        todayMood={todayMood}
-        hasMealsToday={hasMealsToday}
-        todayWorkoutDone={todayWorkout}
-        habitsCompletedToday={completedToday}
-        habitsTotal={totalActive}
-      />
-
-      {/* ── Header with greeting, time, mood ───────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background via-muted/20 to-background p-5 sm:p-6">
-        <div className="pointer-events-none absolute inset-0 dot-pattern opacity-30" />
-        <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/10 blur-3xl" />
-        <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl" />
-
-        <div className="relative flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              {getGreeting()}, <span className="text-gradient-emerald">{userName}</span>! 👋
-            </h1>
-            <div className="mt-1 flex items-center gap-2">
-              <p className="text-sm capitalize text-muted-foreground">
-                {formatDate(now)}
-              </p>
-              <span className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-muted/50 px-2 py-0.5 text-xs font-medium tabular-nums text-muted-foreground">
-                <Clock className="h-3 w-3" />
-                {currentTime}
-              </span>
-              {recentMoodEmoji && (
-                <span className="inline-flex items-center text-sm" title="Настроение из последней записи">
-                  {recentMoodEmoji}
-                </span>
-              )}
-              {!recentMoodEmoji && !loading && (
-                <span className="inline-flex items-center text-sm opacity-50" title="Нет записей о настроении">
-                  😐
-                </span>
-              )}
-            </div>
-          </div>
-          {!loading && (
-            <MoodWeatherIndicator
-              todayMood={todayMood}
-              recentMoods={recentMoods}
-              weekEntryCount={weekEntryCount}
-            />
-          )}
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <WelcomeWidget
+            loading={loading}
+            diaryStreak={diaryStreak}
+            dailyProgress={dailyProgress}
+            todayMood={todayMood}
+            hasMealsToday={hasMealsToday}
+            todayWorkoutDone={todayWorkout}
+            habitsCompletedToday={completedToday}
+            habitsTotal={totalActive}
+          />
         </div>
-
-        {!loading && <DailyProgress progress={dailyProgress} />}
+        <button
+          type="button"
+          onClick={() => setCustomizerOpen(true)}
+          className="mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background/80 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+          aria-label="Настроить виджеты"
+          title="Настроить виджеты"
+        >
+          <Settings2 className="h-4 w-4" />
+        </button>
       </div>
 
-      {/* ── Section 1: Overview ───────────────────────────────────── */}
-      <DashboardSection id="overview" title="Обзор" icon={<span>📊</span>}>
-        <ProductivityScore
-          loading={loading}
-          diaryWritten={!!todayEntry}
-          waterMl={waterTodayMl}
-          workoutDone={todayWorkout}
-          habitsCompleted={completedToday}
-          habitsTotal={totalActive}
-          nutritionLogged={hasMealsToday}
-          score={productivityScore}
-        />
-        <StatCards
-          loading={loading}
-          todayMood={todayMood}
-          weekEntries={weekEntryCount}
-          totalIncome={financeStats?.totalIncome ?? 0}
-          totalExpense={financeStats?.totalExpense ?? 0}
-          todayKcal={todayKcal}
-          workoutsCount={workouts.length}
-          kcalGoal={kcalGoal}
-        />
-      </DashboardSection>
-
-      {/* ── Section 2: Today ──────────────────────────────────────── */}
-      <DashboardSection id="today" title="Сегодня" icon={<span>☀️</span>}>
-        <DailyChecklist
-          loading={loading}
-          hasDiaryToday={!!todayMood}
-          hasMealsToday={hasMealsToday}
-          workoutDone={todayWorkout}
-          habitsCompleted={completedToday}
-          habitsTotal={totalActive}
-          waterMl={waterTodayMl}
-          onNavigate={(module) => setActiveModule(module as AppModule)}
-        />
-        <div className="grid gap-4 md:grid-cols-2">
-          <QuickMoodWidget />
-          <MiniCalendar />
+      {/* ── Configurable Sections ──────────────────────────────────── */}
+      {widgetConfig ? (
+        widgetConfig.order
+          .filter((id) => widgetConfig.visible[id])
+          .map(renderSection)
+      ) : (
+        <div className="space-y-4">
+          <div className="skeleton-shimmer h-[300px] rounded-xl" />
+          <div className="skeleton-shimmer h-[200px] rounded-xl" />
         </div>
-      </DashboardSection>
-
-      {/* ── Section 3: Inspiration ────────────────────────────────── */}
-      <DashboardSection id="inspiration" title="Вдохновение" defaultCollapsed={true} icon={<span>✨</span>}>
-        <DailyInspiration />
-        <AiInsightsWidget />
-      </DashboardSection>
-
-      {/* ── Section 4: Quick Access ───────────────────────────────── */}
-      <DashboardSection id="quick-access" title="Быстрый доступ" icon={<span>⚡</span>}>
-        <QuickActions onNavigate={setActiveModule} />
-      </DashboardSection>
-
-      {/* ── Section 5: Weekly Analytics ───────────────────────────── */}
-      <DashboardSection id="weekly" title="Аналитика недели" icon={<span>📈</span>}>
-        <WeeklyInsights
-          loading={loading}
-          diaryEntries={diaryEntries}
-          workouts={workouts}
-          transactionsData={transactionsData}
-          habitsData={habitsData}
-          recentMoods={recentMoods}
-          hasMealsToday={hasMealsToday}
-          waterTodayMl={waterTodayMl}
-          dailyProgress={dailyProgress}
-          maxStreak={maxStreak}
-        />
-        <WeeklyActivityChart loading={loading} data={weeklyActivity} />
-      </DashboardSection>
-
-      {/* ── Section 6: Charts ─────────────────────────────────────── */}
-      <DashboardSection id="charts" title="Графики" defaultCollapsed={true} icon={<span>📉</span>}>
-        <SpendingTrendChart loading={loading} weeklySpendingData={weeklySpendingData} />
-        <div className="grid gap-4 md:grid-cols-2">
-          <WeeklyMoodChart
-            loading={loading}
-            moodData={weeklyMoodData.map((d) => ({
-              day: d.day,
-              mood: d.mood > 0 ? d.mood : null,
-              date: d.label,
-            }))}
-          />
-          <ExpensePieChart loading={loading} expensePieData={expensePieData} />
-        </div>
-      </DashboardSection>
-
-      {/* ── Section 7: Finances ───────────────────────────────────── */}
-      <DashboardSection id="finances" title="Финансы" defaultCollapsed={true} icon={<span>💰</span>}>
-        <RecentTransactions
-          loading={loading}
-          transactions={recentTransactions}
-          getRelativeTime={getTimeAgo}
-          onNavigateToFinance={() => setActiveModule('finance')}
-        />
-        {!loading && financeStats && (
-          <FinanceQuickView
-            loading={loading}
-            categories={
-              [...financeStats.byCategory]
-                .sort((a, b) => b.total - a.total)
-                .slice(0, 5)
-                .map((cat) => ({
-                  name: cat.categoryName,
-                  amount: cat.total,
-                  color: cat.categoryColor,
-                }))
-            }
-            totalExpense={financeStats.totalExpense}
-            totalIncome={financeStats.totalIncome}
-          />
-        )}
-        <BudgetOverview
-          loading={loading}
-          budgetData={budgetData}
-          onNavigateToFinance={() => setActiveModule('finance')}
-        />
-      </DashboardSection>
-
-      {/* ── Section 8: Habits & Health ────────────────────────────── */}
-      <DashboardSection id="health" title="Привычки и здоровье" icon={<span>💪</span>}>
-        <HabitsProgress
-          loading={loading}
-          totalActive={totalActive}
-          completedToday={completedToday}
-          habitsPercentage={habitsPercentage}
-          circumference={circumference}
-          dashOffset={dashOffset}
-          uncompletedHabits={uncompletedHabits}
-          allHabitsCompleted={allHabitsCompleted}
-          onNavigate={setActiveModule}
-        />
-        <div className="grid gap-4 lg:grid-cols-2">
-          <CurrentStreaks />
-          <MoodStreak
-            loading={loading}
-            recentMoods={recentMoods}
-            streak={diaryStreak}
-            todayMood={todayMood}
-          />
-        </div>
-        <MoodDots recentMoods={recentMoods} diaryStreak={diaryStreak} now={now} />
-        <ActivityHeatmap loading={loading} activityData={heatmapData} />
-        <NutritionSummaryWidget />
-      </DashboardSection>
-
-      {/* ── Section 9: Tools ──────────────────────────────────────── */}
-      <DashboardSection id="tools" title="Инструменты" defaultCollapsed={true} icon={<span>🛠️</span>}>
-        <QuickNotesWidget />
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <WeatherWidget />
-          <FocusTimerWidget />
-          <BreathingWidget />
-        </div>
-      </DashboardSection>
-
-      {/* ── Section 10: Activity & Goals ──────────────────────────── */}
-      <DashboardSection id="activity" title="Активность и цели" defaultCollapsed={true} icon={<span>🎯</span>}>
-        <ActivityFeed
-          loading={loading}
-          feedPosts={feedPosts}
-          getTimeAgo={getTimeAgo}
-          onNavigateToFeed={() => setActiveModule('feed')}
-        />
-        <AchievementsWidget
-          loading={loading}
-          diaryEntries={diaryEntries}
-          financeStats={financeStats}
-          transactionsData={transactionsData}
-          workouts={workouts}
-          habitsData={habitsData}
-          nutritionStats={nutritionStats}
-          waterTodayMl={waterTodayMl}
-          hasMealsToday={hasMealsToday}
-          todayMood={todayMood}
-          todayWorkoutDone={todayWorkout}
-          allHabitsCompleted={allHabitsCompleted}
-          budgetData={budgetData}
-        />
-        <div className="grid gap-4 md:grid-cols-2">
-          <RecentGoals />
-          <RecentDiary loading={loading} diaryEntries={diaryEntries} />
-        </div>
-      </DashboardSection>
+      )}
 
       {/* ── Notification Center (always visible) ──────────────────── */}
       <NotificationCenter
@@ -737,6 +721,13 @@ export default function DashboardPage() {
         hasMealsToday={hasMealsToday}
         uncompletedHabitsCount={totalActive - completedToday}
         onNavigate={(module) => setActiveModule(module as AppModule)}
+      />
+
+      {/* ── Widget Customizer Dialog ──────────────────────────────── */}
+      <WidgetCustomizer
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        onConfigChange={handleConfigChange}
       />
     </div>
   )
