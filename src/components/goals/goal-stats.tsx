@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Target, Trophy, TrendingUp, Clock, CalendarClock, Zap, AlertTriangle, CalendarCheck, BarChart3 } from 'lucide-react'
+import { Target, Trophy, TrendingUp, Clock, AlertTriangle, CalendarCheck, BarChart3, ShieldCheck, ShieldAlert } from 'lucide-react'
 import type { GoalData } from './types'
 import { cn } from '@/lib/utils'
+import { isGoalAtRisk, isGoalOnTrack } from './constants'
 
 interface GoalStatsProps {
   goals: GoalData[]
@@ -124,6 +125,21 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
   const activeCount = useMemo(() => {
     return goals.filter((g) => g.status === 'active').length
   }, [goals])
+
+  // ─── NEW: On track vs At risk counts ─────────────────────────────────────
+  const onTrackCount = useMemo(() => {
+    return goals.filter((g) => isGoalOnTrack(g)).length
+  }, [goals])
+
+  const atRiskCount = useMemo(() => {
+    return goals.filter((g) => isGoalAtRisk(g)).length
+  }, [goals])
+
+  // ─── NEW: Average completion rate ────────────────────────────────────────
+  const completionRate = useMemo(() => {
+    if (stats.totalGoals === 0) return 0
+    return Math.round((stats.completedGoals / stats.totalGoals) * 100)
+  }, [stats.totalGoals, stats.completedGoals])
 
   // Count goals with deadlines within 7 days
   const approachingDeadlineCount = useMemo(() => {
@@ -300,7 +316,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
       </Card>
 
       {/* Stats Row — Enhanced with all new stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 stagger-children">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 stagger-children">
         {/* Total Goals */}
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5" />
@@ -426,33 +442,70 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
 
-        {/* ─── NEW: Overdue Goals with red warning ─────────────────────────── */}
+        {/* ─── NEW: Average completion rate ──────────────────────────────── */}
+        <Card className="card-hover overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-indigo-600/5" />
+          <CardContent className="relative flex items-center gap-3 p-4">
+            <div className="h-10 w-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
+              <BarChart3 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <div className="min-w-0">
+              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
+                completionRate >= 50
+                  ? 'text-indigo-600 dark:text-indigo-400'
+                  : 'text-muted-foreground',
+              )}>
+                {completionRate}%
+              </p>
+              <p className="text-xs text-muted-foreground truncate">Доля завершённых</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── NEW: On Track goals ─────────────────────────────────────────── */}
+        <Card className="card-hover overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-600/5" />
+          <CardContent className="relative flex items-center gap-3 p-4">
+            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <div className="min-w-0">
+              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
+                onTrackCount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
+              )}>
+                {onTrackCount}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">В ритме</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* ─── NEW: At Risk goals ──────────────────────────────────────────── */}
         <Card className={cn(
-          'card-hover overflow-hidden relative col-span-2 sm:col-span-1',
-          overdueCount > 0 && 'ring-1 ring-rose-200 dark:ring-rose-800/50',
+          'card-hover overflow-hidden relative',
+          atRiskCount > 0 && 'ring-1 ring-amber-200 dark:ring-amber-800/50',
         )}>
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-rose-600/5" />
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-amber-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
             <div className={cn(
               'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
-              overdueCount > 0 ? 'bg-rose-100 dark:bg-rose-900/30' : 'bg-slate-100 dark:bg-slate-900/30',
+              atRiskCount > 0 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-900/30',
             )}>
-              <AlertTriangle className={cn(
+              <ShieldAlert className={cn(
                 'h-5 w-5',
-                overdueCount > 0
-                  ? 'text-rose-500 animate-pulse-soft'
+                atRiskCount > 0
+                  ? 'text-amber-500'
                   : 'text-slate-400 dark:text-slate-500',
               )} />
             </div>
             <div className="min-w-0">
-              <p className={cn(
-                'text-2xl font-bold tabular-nums animate-count-fade-in',
-                overdueCount > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground',
+              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
+                atRiskCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
               )}>
-                {overdueCount}
+                {atRiskCount}
               </p>
               <p className="text-[10px] text-muted-foreground truncate">
-                {overdueCount > 0 ? 'Просрочено — требуется внимание!' : 'Нет просроченных'}
+                {atRiskCount > 0 ? 'Требуют внимания' : 'Нет проблемных'}
               </p>
             </div>
           </CardContent>

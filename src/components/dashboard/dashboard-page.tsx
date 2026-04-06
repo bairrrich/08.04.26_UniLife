@@ -95,6 +95,7 @@ const QuickMoodWidget = dynamic(() => import('./quick-mood-widget'), { ssr: fals
 const BreathingWidget = dynamic(() => import('./breathing-widget'), { ssr: false, loading: widgetLoad })
 const AiInsightsWidget = dynamic(() => import('./ai-insights-widget'), { ssr: false, loading: widgetLoad })
 const ProductivityBreakdown = dynamic(() => import('./productivity-breakdown'), { ssr: false, loading: widgetLoad })
+const DailyInspiration = dynamic(() => import('./daily-inspiration'), { ssr: false, loading: widgetLoad })
 
 
 // AnimatedNumber is now used inside leaf components to isolate animation state
@@ -740,6 +741,9 @@ export default function DashboardPage() {
         quoteRefreshing={quoteRefreshing}
         onRefresh={handleRefreshQuote}
       />
+
+      {/* ── Daily Inspiration & Challenge Widget ──────────────────── */}
+      <DailyInspiration />
 
       {/* ── Mood Streak ──────────────────────────────────────────────── */}
       <MoodStreak

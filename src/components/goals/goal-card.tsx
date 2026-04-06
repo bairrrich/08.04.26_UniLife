@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Star, Tag, Zap, ChevronRight, Flag, ArrowUp, Minus, ArrowDown, AlertTriangle } from 'lucide-react'
+import { Pencil, TrendingUp, CheckCircle, Target, Clock, Trash2, Calendar, Sparkles, Tag, Zap, ChevronRight, Flag, ArrowUp, Minus, ArrowDown, AlertTriangle, Gauge } from 'lucide-react'
 import type { GoalData, Milestone } from './types'
 import {
   CATEGORY_CONFIG,
@@ -14,6 +14,7 @@ import {
   STATUS_CONFIG,
   DEFAULT_STATUS,
   PRIORITY_CONFIG,
+  SUBCATEGORIES,
   getDeadlineCountdown,
   getDeadlineDaysLeft,
   getDeadlineBadgeClass,
@@ -24,6 +25,9 @@ import {
   getDeadlineWarning,
   getDeadlineUrgencyColor,
   getDeadlineIconColor,
+  getProgressTrend,
+  getRequiredPace,
+  getDaysRemaining,
 } from './constants'
 import { cn } from '@/lib/utils'
 
@@ -52,14 +56,7 @@ const TIMELINE_MILESTONES = [
   { pct: 100, label: '100%', emoji: '🏆' },
 ]
 
-// Predefined subcategory tags
-const SUBCATEGORY_TAGS: Record<string, string[]> = {
-  personal: ['здоровье', 'саморазвитие', 'хобби', 'отношения', 'путешествия'],
-  health: ['спорт', 'питание', 'сон', 'медицина', 'ментальное'],
-  finance: ['накопления', 'инвестиции', 'экономия', 'доход', 'бюджет'],
-  career: ['навыки', 'нетворкинг', 'проекты', 'повышение', 'портфолио'],
-  learning: ['языки', 'программирование', 'чтение', 'курсы', 'сертификация'],
-}
+// Predefined subcategory tags — using SUBCATEGORIES from constants
 
 function getMilestone(progress: number) {
   return MILESTONES.find((m) => progress >= m.threshold && progress < m.threshold + 5) || null
@@ -161,8 +158,17 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
 
   const isCompleted = goal.status === 'completed'
 
-  // ─── Suggested tags based on category ─────────────────────────────────────
-  const suggestedTags = SUBCATEGORY_TAGS[goal.category] || []
+  // ─── Suggested tags based on category (with icons from SUBCATEGORIES) ────
+  const subcategoryDefs = SUBCATEGORIES[goal.category] || []
+
+  // ─── Progress trend (on track / behind / ahead) ─────────────────────────
+  const progressTrend = useMemo(() => getProgressTrend(goal), [goal])
+
+  // ─── Required pace to reach goal ───────────────────────────────────────────
+  const requiredPace = useMemo(() => getRequiredPace(goal), [goal])
+
+  // ─── Days remaining ─────────────────────────────────────────────────────────
+  const daysRemaining = useMemo(() => getDaysRemaining(goal), [goal])
 
   // ─── Priority badge ──────────────────────────────────────────────────────
   const priorityConfig = goal.priority ? PRIORITY_CONFIG[goal.priority] : null
@@ -561,19 +567,70 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           </div>
         )}
 
-        {/* Subcategory tags */}
-        {suggestedTags.length > 0 && totalMilestones === 0 && (
+        {/* Subcategory tags with colored icons and gradients */}
+        {subcategoryDefs.length > 0 && totalMilestones === 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
             <Tag className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-            {suggestedTags.slice(0, 3).map((tag) => (
-              <Badge
-                key={tag}
-                variant="secondary"
-                className="text-[9px] px-1.5 py-0 h-4 font-normal bg-muted/50"
-              >
-                {tag}
-              </Badge>
-            ))}
+            {subcategoryDefs.slice(0, 4).map((sub) => {
+              const SubIcon = sub.icon
+              return (
+                <Badge
+                  key={sub.label}
+                  variant="secondary"
+                  className={cn(
+                    'text-[9px] px-1.5 py-0 h-4 font-normal gap-1 border',
+                    catConfig.badgeClass,
+                  )}
+                >
+                  <SubIcon className="h-2.5 w-2.5" />
+                  {sub.label}
+                </Badge>
+              )
+            })}
+          </div>
+        )}
+
+        {/* ─── Required Pace & Days Remaining ─────────────────────────────── */}
+        {(requiredPace || daysRemaining !== null) && !isCompleted && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {requiredPace && requiredPace.value > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-medium border',
+                    progressTrend.trend === 'ahead' || progressTrend.trend === 'on_track'
+                      ? 'bg-sky-50 text-sky-600 dark:bg-sky-900/20 dark:text-sky-400 border-sky-200 dark:border-sky-800/50'
+                      : progressTrend.trend === 'behind'
+                        ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20 dark:text-amber-400 border-amber-200 dark:border-amber-800/50'
+                        : 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
+                  )}>
+                    <Gauge className="h-3 w-3" />
+                    <span className="tabular-nums">{requiredPace.value}%/день</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {requiredPace.label}
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {daysRemaining !== null && daysRemaining > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className={cn(
+                    'flex items-center gap-1.5 rounded-lg px-2 py-1 text-[10px] font-medium',
+                    daysRemaining <= 7
+                      ? 'text-rose-600 dark:text-rose-400'
+                      : 'text-muted-foreground',
+                  )}>
+                    <Clock className="h-3 w-3" />
+                    <span className="tabular-nums">осталось {daysRemaining} дн.</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {goal.deadline ? new Date(goal.deadline).toLocaleDateString('ru-RU') : ''}
+                </TooltipContent>
+              </Tooltip>
+            )}
           </div>
         )}
 
@@ -605,6 +662,46 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               )}
               <span className="text-xs tabular-nums">{isCompleted ? 'Завершено в срок' : countdown}</span>
             </div>
+          )}
+          {/* Progress trend indicator (on track / behind / ahead) */}
+          {progressTrend.trend !== 'no_data' && !isCompleted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border shrink-0',
+                  progressTrend.bgClass, progressTrend.borderClass, progressTrend.color,
+                )}>
+                  <span className="text-[10px]">{progressTrend.emoji}</span>
+                  {progressTrend.label}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {progressTrend.trend === 'ahead' ? 'Вы опережаете график'
+                  : progressTrend.trend === 'on_track' ? 'Прогресс соответствует графику'
+                    : progressTrend.trend === 'behind' ? 'Немного отстаёте от графика'
+                      : 'Цель под угрозой — нужно ускориться'}
+              </TooltipContent>
+            </Tooltip>
+          )}
+          {/* Progress trend indicator (on track / behind / ahead) */}
+          {progressTrend.trend !== 'no_data' && !isCompleted && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border shrink-0',
+                  progressTrend.bgClass, progressTrend.borderClass, progressTrend.color,
+                )}>
+                  <span className="text-[10px]">{progressTrend.emoji}</span>
+                  {progressTrend.label}
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs">
+                {progressTrend.trend === 'ahead' ? 'Вы опережаете график'
+                  : progressTrend.trend === 'on_track' ? 'Прогресс соответствует графику'
+                    : progressTrend.trend === 'behind' ? 'Немного отстаёте от графика'
+                      : 'Цель под угрозой — нужно ускориться'}
+              </TooltipContent>
+            </Tooltip>
           )}
           {/* Progress velocity */}
           {velocityText && !isCompleted && (

@@ -2,6 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from '@/components/ui/tooltip'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAppStore } from '@/store/use-app-store'
 import { RU_MONTHS, RU_DAYS_SHORT } from '@/lib/format'
@@ -30,13 +35,27 @@ function dateKey(year: number, month: number, day: number): string {
 }
 
 function pluralizeRecords(n: number): string {
-  if (n === 0) return 'Нет записей'
+  if (n === 0) return 'Нет записей в дневнике'
   const abs = Math.abs(n) % 100
   const last = abs % 10
-  if (abs > 10 && abs < 20) return `${n} записей`
-  if (last > 1 && last < 5) return `${n} записи`
-  if (last === 1) return `${n} запись`
-  return `${n} записей`
+  if (abs > 10 && abs < 20) return `${n} записей в дневнике`
+  if (last > 1 && last < 5) return `${n} записи в дневнике`
+  if (last === 1) return `${n} запись в дневнике`
+  return `${n} записей в дневнике`
+}
+
+function buildDayTooltip(
+  hasDiary: boolean,
+  hasWorkout: boolean,
+  hasHabits: boolean,
+  dayNum: number,
+): string {
+  const parts: string[] = []
+  if (hasDiary) parts.push('📝 Дневник')
+  if (hasWorkout) parts.push('💪 Тренировка')
+  if (hasHabits) parts.push('✅ Привычки')
+  if (parts.length === 0) return ''
+  return `${dayNum}: ${parts.join(' · ')}`
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -56,6 +75,9 @@ export default function MiniCalendar() {
   const [workoutDates, setWorkoutDates] = useState<Set<string>>(new Set())
   const [habitDates, setHabitDates] = useState<Set<string>>(new Set())
   const [loading, setLoading] = useState(true)
+  const [slideDir, setSlideDir] = useState<'left' | 'right' | null>(null)
+
+  const isCurrentMonth = year === todayDate.getFullYear() && month === todayDate.getMonth()
 
   // ── Fetch data when month changes ───────────────────────────────────────
   useEffect(() => {
@@ -151,26 +173,37 @@ export default function MiniCalendar() {
     return cells
   }, [year, month])
 
-  // ── Navigation ───────────────────────────────────────────────────────────
+  // ── Navigation with animation direction ─────────────────────────────────
   const prevMonth = useCallback(() => {
-    setMonth((m) => {
-      if (m === 0) {
-        setYear((y) => y - 1)
-        return 11
-      }
-      return m - 1
-    })
+    setSlideDir('left')
+    setTimeout(() => {
+      setMonth((m) => {
+        if (m === 0) {
+          setYear((y) => y - 1)
+          return 11
+        }
+        return m - 1
+      })
+    }, 50)
   }, [])
 
   const nextMonth = useCallback(() => {
-    setMonth((m) => {
-      if (m === 11) {
-        setYear((y) => y + 1)
-        return 0
-      }
-      return m + 1
-    })
+    setSlideDir('right')
+    setTimeout(() => {
+      setMonth((m) => {
+        if (m === 11) {
+          setYear((y) => y + 1)
+          return 0
+        }
+        return m + 1
+      })
+    }, 50)
   }, [])
+
+  const goToToday = useCallback(() => {
+    setYear(todayDate.getFullYear())
+    setMonth(todayDate.getMonth())
+  }, [todayDate])
 
   // ── Day click → navigate to diary ───────────────────────────────────────
   const handleDayClick = useCallback(
@@ -183,28 +216,33 @@ export default function MiniCalendar() {
   // ── Subtitle ─────────────────────────────────────────────────────────────
   const subtitle = useMemo(() => pluralizeRecords(diaryDates.size), [diaryDates])
 
+  // ── Slide animation class ───────────────────────────────────────────────
+  const slideClass = slideDir
+    ? `animate-in fade-in-0 duration-200 ${slideDir === 'left' ? 'slide-in-from-right-2' : 'slide-in-from-left-2'}`
+    : ''
+
   // ── Render ───────────────────────────────────────────────────────────────
   return (
     <Card className="animate-slide-up card-hover rounded-xl border">
-      <CardHeader className="pb-3">
+      <CardHeader className="pb-2">
         <CardTitle className="flex items-center gap-2 text-base">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20">
             <CalendarDays className="h-4 w-4 text-primary" />
           </div>
-          <span className="flex-1 truncate">
+          <span className={`flex-1 truncate ${slideClass}`}>
             {RU_MONTHS[month]} {year}
           </span>
           <div className="flex items-center gap-0.5">
             <button
               onClick={prevMonth}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted"
+              className="active-press inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted"
               aria-label="Предыдущий месяц"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={nextMonth}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted"
+              className="active-press inline-flex h-7 w-7 items-center justify-center rounded-md transition-colors hover:bg-muted"
               aria-label="Следующий месяц"
             >
               <ChevronRight className="h-4 w-4" />
@@ -231,13 +269,13 @@ export default function MiniCalendar() {
           </div>
         ) : (
           /* ── Calendar ──────────────────────────────────────────────────── */
-          <>
+          <div className={slideClass}>
             {/* Day-of-week header */}
             <div className="mb-1 grid grid-cols-7 gap-1">
               {RU_DAYS_SHORT.map((dayName) => (
                 <div
                   key={dayName}
-                  className="flex h-5 items-center justify-center text-[10px] font-medium text-muted-foreground"
+                  className="flex h-6 items-center justify-center text-[11px] font-semibold uppercase tracking-wide text-muted-foreground/70"
                 >
                   {dayName}
                 </div>
@@ -257,16 +295,17 @@ export default function MiniCalendar() {
                 const hasWorkout = workoutDates.has(key)
                 const hasHabits = habitDates.has(key)
                 const hasAny = hasDiary || hasWorkout || hasHabits
+                const tooltipText = buildDayTooltip(hasDiary, hasWorkout, hasHabits, cell)
 
-                return (
+                const dayButton = (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleDayClick(cell)}
-                    className={`relative flex h-8 min-w-[32px] flex-col items-center justify-center rounded-lg text-xs transition-colors
+                    className={`active-press relative flex h-8 min-w-[28px] flex-col items-center justify-center rounded-lg text-xs transition-all duration-150
                       ${
                         isTodayCell
-                          ? 'bg-primary text-primary-foreground shadow-sm'
+                          ? 'bg-primary text-primary-foreground shadow-sm font-bold'
                           : hasAny
                             ? 'font-semibold text-foreground hover:bg-muted'
                             : 'text-muted-foreground hover:bg-muted'
@@ -276,7 +315,7 @@ export default function MiniCalendar() {
 
                     {/* Indicator dots */}
                     {(hasDiary || hasWorkout || hasHabits) && (
-                      <span className="mt-0.5 flex h-1.5 items-center gap-0.5">
+                      <span className="mt-0.5 flex h-1.5 items-center justify-center gap-px">
                         {hasDiary && (
                           <span
                             className={`h-1.5 w-1.5 rounded-full ${
@@ -308,14 +347,40 @@ export default function MiniCalendar() {
                     )}
                   </button>
                 )
+
+                // Wrap with tooltip only if there are activities
+                if (hasAny && !isTodayCell) {
+                  return (
+                    <Tooltip key={key}>
+                      <TooltipTrigger asChild>
+                        {dayButton}
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={4}>
+                        <p>{tooltipText}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                }
+
+                return dayButton
               })}
             </div>
 
-            {/* Subtitle */}
-            <p className="mt-2 text-[11px] text-muted-foreground">
-              {subtitle}
-            </p>
-          </>
+            {/* Footer row */}
+            <div className="mt-2 flex items-center justify-between">
+              <p className="text-[11px] text-muted-foreground">
+                {subtitle}
+              </p>
+              {!isCurrentMonth && (
+                <button
+                  onClick={goToToday}
+                  className="active-press text-[11px] font-medium text-primary hover:text-primary/80 transition-colors"
+                >
+                  Сегодня
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

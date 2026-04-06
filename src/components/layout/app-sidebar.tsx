@@ -1,7 +1,7 @@
 'use client'
 
-import { LucideIcon, icons, Bell, Menu } from 'lucide-react'
-import { NotificationsPanel } from '@/components/notifications/notifications-panel'
+import { LucideIcon, icons, Menu } from 'lucide-react'
+import { NotificationsPopover } from '@/components/layout/notifications-panel'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { navItems } from '@/lib/nav-items'
@@ -18,18 +18,7 @@ import { motion } from 'framer-motion'
 import { memo, useEffect } from 'react'
 import { useUserPrefs } from '@/lib/use-user-prefs'
 
-// ─── Notifications Panel connector (uses zustand for open state) ────────
-function NotificationsPanelConnector() {
-  const notificationsOpen = useAppStore((s) => s.notificationsOpen)
-  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
-
-  return (
-    <NotificationsPanel
-      open={notificationsOpen}
-      onOpenChange={setNotificationsOpen}
-    />
-  )
-}
+// ─── Notifications Panel connector (uses Popover) ───────────────────────
 
 // ─── Module-specific accent colors for the active dot indicator ───────
 const MODULE_ACCENT_COLORS: Record<string, string> = {
@@ -81,32 +70,18 @@ function NavBadge({ count, isActive }: { count: number; isActive: boolean }) {
 const MemoizedNavBadge = memo(NavBadge)
 
 function MobileNotificationBell() {
-  const notificationCount = useAppStore((s) => s.notificationCount)
-  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
-
   return (
-    <button
-      className="relative flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-      aria-label="Уведомления"
-      onClick={() => setNotificationsOpen(true)}
-    >
-      <Bell className={cn('h-4.5 w-4.5', notificationCount > 0 && 'bell-pulse')} />
-      {notificationCount > 0 && (
-        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
-          {notificationCount > 9 ? '9+' : notificationCount}
-        </span>
-      )}
-    </button>
+    <div className="flex items-center justify-center h-9 w-9">
+      <NotificationsPopover />
+    </div>
   )
 }
 
 const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
   const activeModule = useAppStore((s) => s.activeModule)
   const setActiveModule = useAppStore((s) => s.setActiveModule)
-  const notificationCount = useAppStore((s) => s.notificationCount)
-  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
   const moduleCounts = useModuleCounts()
-  const { userName } = useUserPrefs()
+  const { userName, userAvatar } = useUserPrefs()
 
   const handleNavClick = (id: AppModule) => {
     setActiveModule(id)
@@ -196,10 +171,16 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
       <div className="p-3">
         <div className="flex items-center gap-3 rounded-lg px-3 py-2.5">
           <div className="relative">
-            <Avatar className="h-8 w-8">
-              <AvatarImage src="/unilife-logo.png" alt="Avatar" />
-              <AvatarFallback>А</AvatarFallback>
-            </Avatar>
+            {userName !== 'Пользователь' ? (
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-sm shadow-sm">
+                {userAvatar}
+              </div>
+            ) : (
+              <Avatar className="h-8 w-8">
+                <AvatarImage src="/unilife-logo.png" alt="Avatar" />
+                <AvatarFallback>U</AvatarFallback>
+              </Avatar>
+            )}
             {/* Online indicator dot */}
             <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center">
               <span className="h-2.5 w-2.5 rounded-full border-2 border-sidebar bg-emerald-500" />
@@ -212,14 +193,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <button className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground" aria-label="Уведомления" onClick={() => setNotificationsOpen(true)}>
-              <Bell className={cn('h-4 w-4', notificationCount > 0 && 'bell-pulse')} />
-              {notificationCount > 0 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground">
-                  {notificationCount > 9 ? '9+' : notificationCount}
-                </span>
-              )}
-            </button>
+            <NotificationsPopover />
             <ThemeToggle />
           </div>
         </div>
@@ -279,8 +253,7 @@ export function AppSidebar() {
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog />
 
-      {/* Notifications Panel */}
-      <NotificationsPanelConnector />
+      {/* Notifications handled via Popover inline in sidebar */}
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">

@@ -188,6 +188,7 @@ export default function GoalsPage() {
       <div className="relative overflow-hidden">
         <div className="pointer-events-none absolute -right-20 -top-16 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/10 blur-3xl" />
         <div className="pointer-events-none absolute -left-10 top-8 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/10 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/4 bottom-0 h-32 w-32 rounded-full bg-gradient-to-br from-amber-400/10 to-orange-500/5 blur-3xl" />
         <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-3 min-w-0">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400">
@@ -199,7 +200,7 @@ export default function GoalsPage() {
                 <span>Трекер целей и достижений</span>
                 <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
                   <Calendar className="h-3 w-3" />
-                  {getTodayBadge()}
+                  {todayBadge}
                 </Badge>
               </div>
             </div>

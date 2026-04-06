@@ -1,5 +1,6 @@
 // ─── Goals Constants & Helpers ────────────────────────────────────────────────
 
+import type { GoalData } from './types'
 import {
   Heart,
   Zap,
@@ -18,6 +19,23 @@ import {
   ArrowUp,
   Minus,
   ArrowDown,
+  BookOpen,
+  Utensils,
+  BedDouble,
+  Stethoscope,
+  Brain,
+  Wallet,
+  LineChart,
+  Receipt,
+  HandCoins,
+  Code2,
+  Globe,
+  BookMarked,
+  Award,
+  Users,
+  FolderGit2,
+  Rocket,
+  type LucideIcon,
 } from 'lucide-react'
 
 // ─── Category Config ─────────────────────────────────────────────────────────
@@ -110,6 +128,63 @@ export const CATEGORY_CONFIG: Record<string, {
     borderColor: '#f97316',
     hoverGlow: 'group-hover:shadow-orange-500/10',
   },
+}
+
+// ─── Subcategory definitions per category ─────────────────────────────────
+
+export interface SubcategoryDef {
+  label: string
+  icon: LucideIcon
+}
+
+export const SUBCATEGORIES: Record<string, SubcategoryDef[]> = {
+  personal: [
+    { label: 'здоровье', icon: Heart },
+    { label: 'саморазвитие', icon: TrendingUp },
+    { label: 'хобби', icon: BookOpen },
+    { label: 'отношения', icon: Users },
+    { label: 'путешествия', icon: Globe },
+  ],
+  health: [
+    { label: 'спорт', icon: Dumbbell },
+    { label: 'питание', icon: Utensils },
+    { label: 'сон', icon: BedDouble },
+    { label: 'медицина', icon: Stethoscope },
+    { label: 'ментальное', icon: Brain },
+  ],
+  finance: [
+    { label: 'накопления', icon: PiggyBank },
+    { label: 'инвестиции', icon: LineChart },
+    { label: 'экономия', icon: Receipt },
+    { label: 'доход', icon: HandCoins },
+    { label: 'бюджет', icon: Wallet },
+  ],
+  career: [
+    { label: 'навыки', icon: Code2 },
+    { label: 'нетворкинг', icon: Users },
+    { label: 'проекты', icon: FolderGit2 },
+    { label: 'повышение', icon: Rocket },
+    { label: 'портфолио', icon: Briefcase },
+  ],
+  learning: [
+    { label: 'языки', icon: Globe },
+    { label: 'программирование', icon: Code2 },
+    { label: 'чтение', icon: BookMarked },
+    { label: 'курсы', icon: GraduationCap },
+    { label: 'сертификация', icon: Award },
+  ],
+  education: [
+    { label: 'экзамены', icon: GraduationCap },
+    { label: 'курсы', icon: BookMarked },
+    { label: 'наука', icon: Brain },
+    { label: 'диплом', icon: Award },
+  ],
+  fitness: [
+    { label: 'сила', icon: Dumbbell },
+    { label: 'кардио', icon: Heart },
+    { label: 'гибкость', icon: User },
+    { label: 'выносливость', icon: Zap },
+  ],
 }
 
 // Default fallback for unknown categories
@@ -358,4 +433,170 @@ export function getProgressSpeed(
   if (daysElapsed <= 0) return null
   const dailyProgress = progress / daysElapsed
   return { value: Math.round(dailyProgress * 10) / 10, unit: '% в день' }
+}
+
+// ─── Progress Trend (On Track / Behind / Ahead) ─────────────────────────────
+
+export type ProgressTrend = 'ahead' | 'on_track' | 'behind' | 'at_risk' | 'no_data'
+
+export interface ProgressTrendInfo {
+  trend: ProgressTrend
+  label: string
+  emoji: string
+  colorClass: string
+  bgClass: string
+  borderClass: string
+  dotColor: string
+}
+
+const TREND_CONFIG: Record<ProgressTrend, ProgressTrendInfo> = {
+  ahead: {
+    trend: 'ahead',
+    label: 'Опережает',
+    emoji: '🚀',
+    colorClass: 'text-emerald-600 dark:text-emerald-400',
+    bgClass: 'bg-emerald-100 dark:bg-emerald-900/30',
+    borderClass: 'border-emerald-200 dark:border-emerald-800/50',
+    dotColor: 'bg-emerald-500',
+  },
+  on_track: {
+    trend: 'on_track',
+    label: 'В ритме',
+    emoji: '✅',
+    colorClass: 'text-sky-600 dark:text-sky-400',
+    bgClass: 'bg-sky-100 dark:bg-sky-900/30',
+    borderClass: 'border-sky-200 dark:border-sky-800/50',
+    dotColor: 'bg-sky-500',
+  },
+  behind: {
+    trend: 'behind',
+    label: 'Отстаёт',
+    emoji: '⚠️',
+    colorClass: 'text-amber-600 dark:text-amber-400',
+    bgClass: 'bg-amber-100 dark:bg-amber-900/30',
+    borderClass: 'border-amber-200 dark:border-amber-800/50',
+    dotColor: 'bg-amber-500',
+  },
+  at_risk: {
+    trend: 'at_risk',
+    label: 'Под угрозой',
+    emoji: '🔴',
+    colorClass: 'text-rose-600 dark:text-rose-400',
+    bgClass: 'bg-rose-100 dark:bg-rose-900/30',
+    borderClass: 'border-rose-200 dark:border-rose-800/50',
+    dotColor: 'bg-rose-500',
+  },
+  no_data: {
+    trend: 'no_data',
+    label: 'Нет данных',
+    emoji: '—',
+    colorClass: 'text-muted-foreground',
+    bgClass: 'bg-muted',
+    borderClass: 'border-muted',
+    dotColor: 'bg-muted-foreground/40',
+  },
+}
+
+export function getProgressTrend(goal: GoalData): ProgressTrendInfo {
+  // No meaningful calculation for completed/paused/cancelled
+  if (goal.status !== 'active') return TREND_CONFIG.no_data
+  if (goal.progress === 0) return TREND_CONFIG.no_data
+
+  const now = new Date()
+  const created = goal.startDate ? new Date(goal.startDate) : new Date(goal.createdAt)
+  const deadline = goal.deadline ? new Date(goal.deadline) : null
+
+  // If no deadline, use progress speed as heuristic
+  if (!deadline) {
+    const daysElapsed = Math.max(1, Math.ceil((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+    const dailyProgress = goal.progress / daysElapsed
+    if (dailyProgress >= 2) return TREND_CONFIG.ahead
+    if (dailyProgress >= 0.5) return TREND_CONFIG.on_track
+    return TREND_CONFIG.behind
+  }
+
+  const totalDays = Math.max(1, Math.ceil((deadline.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+  const elapsedDays = Math.max(1, Math.ceil((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24)))
+  const daysLeft = Math.max(0, Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+
+  // Expected progress at this point based on linear interpolation
+  const expectedProgress = Math.min(100, (elapsedDays / totalDays) * 100)
+  const remainingProgress = 100 - goal.progress
+
+  // Required pace to finish on time
+  const requiredPace = daysLeft > 0 ? remainingProgress / daysLeft : 999
+
+  // Compare actual vs expected progress
+  const diff = goal.progress - expectedProgress
+
+  // Already past deadline
+  if (now > deadline) {
+    if (goal.progress >= 90) return TREND_CONFIG.on_track
+    return TREND_CONFIG.at_risk
+  }
+
+  // Check required pace
+  if (requiredPace > 5) return TREND_CONFIG.at_risk
+  if (requiredPace > 3) return TREND_CONFIG.behind
+  if (diff > 15) return TREND_CONFIG.ahead
+  if (diff > -10) return TREND_CONFIG.on_track
+  return TREND_CONFIG.behind
+}
+
+// ─── Required pace calculation ───────────────────────────────────────────────
+
+export function getRequiredPace(goal: GoalData): { value: number; unit: string; label: string } | null {
+  if (goal.status !== 'active' || goal.progress >= 100) return null
+
+  const now = new Date()
+  const created = goal.startDate ? new Date(goal.startDate) : new Date(goal.createdAt)
+  const deadline = goal.deadline ? new Date(goal.deadline) : null
+
+  if (!deadline) return null
+  if (now >= deadline) return { value: 0, unit: '% в день', label: 'Дедлайн прошёл' }
+
+  const daysLeft = Math.max(1, Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)))
+  const remainingProgress = 100 - goal.progress
+  const pace = Math.round((remainingProgress / daysLeft) * 10) / 10
+
+  if (pace <= 0) return { value: 0, unit: '% в день', label: 'Цель достигнута! 🎉' }
+
+  // Russian pluralization
+  const lastDigit = daysLeft % 10
+  const lastTwo = daysLeft % 100
+  let dayWord = 'дней'
+  if (lastTwo >= 11 && lastTwo <= 19) {
+    dayWord = 'дней'
+  } else if (lastDigit === 1) {
+    dayWord = 'день'
+  } else if (lastDigit >= 2 && lastDigit <= 4) {
+    dayWord = 'дня'
+  }
+
+  return {
+    value: pace,
+    unit: '% в день',
+    label: `Нужно ${pace}% в день (${daysLeft} ${dayWord} осталось)`,
+  }
+}
+
+// ─── Days remaining helper ───────────────────────────────────────────────────
+
+export function getDaysRemaining(goal: GoalData): number | null {
+  if (!goal.deadline || goal.status === 'completed') return null
+  const now = new Date()
+  const dl = new Date(goal.deadline)
+  return Math.ceil((dl.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+}
+
+// ─── Check if goal is "at risk" or "on track" for stats ────────────────────
+
+export function isGoalAtRisk(goal: GoalData): boolean {
+  const trend = getProgressTrend(goal)
+  return trend.trend === 'at_risk' || trend.trend === 'behind'
+}
+
+export function isGoalOnTrack(goal: GoalData): boolean {
+  const trend = getProgressTrend(goal)
+  return trend.trend === 'on_track' || trend.trend === 'ahead'
 }
