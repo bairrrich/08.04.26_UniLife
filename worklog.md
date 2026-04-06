@@ -8313,3 +8313,22 @@ Task: QA testing, styling improvements, and new features for UniLife app
 8. **Offline Support** — Service worker caching
 9. **Data Visualization Export** — PDF/CSV export of analytics
 10. **Onboarding Flow** — Smoother first-time user experience
+
+---
+Task ID: bugfix-missing-imports
+Agent: main
+Task: Fix runtime ReferenceError - useEffect not defined in goals-page.tsx, useState not defined in nutrition-page.tsx
+
+Work Log:
+- Fixed `goals-page.tsx`: Added `useEffect` to existing React import (`import { useMemo, useCallback, useState }` → `import { useMemo, useCallback, useState, useEffect }`)
+- Fixed `nutrition-page.tsx`: Added missing React import line (`import { useState, useMemo, useEffect } from 'react'`)
+- Verified all other page files (collections, habits, feed, diary, analytics, dashboard) have correct React hook imports — no other missing imports found
+- Verified collections API routes — `status` references are all HTTP response status codes (e.g., `{ status: 500 }`), not collection item status fields. No cleanup needed.
+- Verified collections hooks.ts — no infinite loop in useEffect dependency chain (fetchItems only changes when activeType changes)
+- ESLint passes with 0 errors
+
+Stage Summary:
+- 2 runtime errors fixed (missing React hook imports)
+- No remaining status field references in API routes
+- No infinite re-render loops in hooks
+- App should render correctly on first load now

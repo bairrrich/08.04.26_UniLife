@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useCallback, useState } from 'react'
+import { useMemo, useCallback, useState, useEffect } from 'react'
 import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Heart, Briefcase, ArrowRight, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
