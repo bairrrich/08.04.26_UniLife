@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useCallback } from 'react'
+import React, { useCallback, memo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -40,7 +40,7 @@ function saveCollapsedState(state: Record<string, boolean>) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function DashboardSection({
+export default memo(function DashboardSection({
   id,
   title,
   icon,
@@ -48,9 +48,12 @@ export default function DashboardSection({
   defaultCollapsed = false,
   className,
 }: DashboardSectionProps) {
-  // Read collapsed state from localStorage synchronously (will be null on server)
-  const persisted = typeof window !== 'undefined' ? loadCollapsedState() : null
-  const initiallyCollapsed = persisted && id in persisted ? persisted[id] : defaultCollapsed
+  // Read collapsed state from localStorage via lazy initializer (runs once)
+  const initiallyCollapsed = useMemo(() => {
+    if (typeof window === 'undefined') return defaultCollapsed
+    const persisted = loadCollapsedState()
+    return persisted && id in persisted ? persisted[id] : defaultCollapsed
+  }, [id, defaultCollapsed])
 
   const [collapsed, setCollapsed] = React.useState(initiallyCollapsed)
 
@@ -107,4 +110,4 @@ export default function DashboardSection({
       </AnimatePresence>
     </div>
   )
-}
+})

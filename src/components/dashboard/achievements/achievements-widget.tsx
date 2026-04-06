@@ -307,7 +307,8 @@ export const AchievementsWidget = memo(function AchievementsWidget({
         if (newlyEarned.length > 0) {
           setNewlyEarnedKeys(new Set(newlyEarned.map((a: { key: string }) => a.key)))
           // Clear newly earned flag after 5 seconds
-          setTimeout(() => setNewlyEarnedKeys(new Set()), 5000)
+          const timer = setTimeout(() => setNewlyEarnedKeys(new Set()), 5000)
+          return () => clearTimeout(timer)
         }
       } catch {
         // Silently fail — fall back to client-side evaluation

@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import {
   Card,
   CardContent,
@@ -106,7 +107,7 @@ function getHabitWord(count: number): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function NotificationCenter(props: NotificationCenterProps) {
+export default memo(function NotificationCenter(props: NotificationCenterProps) {
   const reminders = buildReminders(props)
 
   if (props.loading) {
@@ -204,4 +205,4 @@ export default function NotificationCenter(props: NotificationCenterProps) {
       </CardContent>
     </Card>
   )
-}
+})

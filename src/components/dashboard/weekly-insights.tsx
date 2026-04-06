@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
@@ -66,7 +66,7 @@ interface InsightItem {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function WeeklyInsights({
+export default memo(function WeeklyInsights({
   loading,
   diaryEntries,
   workouts,
@@ -353,4 +353,4 @@ export default function WeeklyInsights({
       </CardContent>
     </Card>
   )
-}
+})

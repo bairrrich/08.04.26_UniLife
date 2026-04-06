@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Card,
@@ -552,7 +552,7 @@ function formatTimeHHMM(isoString: string): string {
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export default function FocusTimerWidget() {
+export default memo(function FocusTimerWidget() {
   const [mounted, setMounted] = useState(false)
   const [mode, setMode] = useState<TimerMode>('focus')
   const [timeLeft, setTimeLeft] = useState(MODE_CONFIG.focus.duration)
@@ -1362,4 +1362,4 @@ export default function FocusTimerWidget() {
       </CardContent>
     </Card>
   )
-}
+})

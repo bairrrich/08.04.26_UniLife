@@ -242,30 +242,31 @@ export default function DashboardPage() {
     return () => clearTimeout(timer)
   }, [now])
 
-  // ── Derived Data ────────────────────────────────────────────────────
+  // ── Derived Data (memoized) ────────────────────────────────────────────
 
-  const todayEntry = diaryEntries.find((e) => {
+  const { from: weekFrom, to: weekTo } = getWeekRange()
+
+  const todayEntry = useMemo(() => diaryEntries.find((e) => {
     const d = new Date(e.date)
     return (
       d.getFullYear() === now.getFullYear() &&
       d.getMonth() === now.getMonth() &&
       d.getDate() === now.getDate()
     )
-  })
+  }), [diaryEntries, now])
   const todayMood = todayEntry?.mood ?? null
 
-  const { from: weekFrom, to: weekTo } = getWeekRange()
-  const weekEntryCount = diaryEntries.filter((e) => {
+  const weekEntryCount = useMemo(() => diaryEntries.filter((e) => {
     const d = new Date(e.date).getTime()
     return d >= new Date(weekFrom).getTime() && d <= new Date(weekTo).getTime()
-  }).length
+  }).length, [diaryEntries, weekFrom, weekTo])
 
-  const weekWorkoutCount = workouts.filter((w) => {
+  const weekWorkoutCount = useMemo(() => workouts.filter((w) => {
     const d = new Date(w.date).getTime()
     return d >= new Date(weekFrom).getTime() && d <= new Date(weekTo).getTime()
-  }).length
+  }).length, [workouts, weekFrom, weekTo])
 
-  const weekExpenseSum = transactionsData
+  const weekExpenseSum = useMemo(() => transactionsData
     .filter((t) => {
       const d = new Date(t.date).getTime()
       return (
@@ -274,12 +275,12 @@ export default function DashboardPage() {
         d <= new Date(weekTo).getTime()
       )
     })
-    .reduce((sum, t) => sum + t.amount, 0)
+    .reduce((sum, t) => sum + t.amount, 0), [transactionsData, weekFrom, weekTo])
 
   const totalActive = habitsData?.stats.totalActive ?? 0
   const completedToday = habitsData?.stats.completedToday ?? 0
   const habitsPercentage = totalActive > 0 ? Math.round((completedToday / totalActive) * 100) : 0
-  const uncompletedHabits = (habitsData?.data ?? []).filter((h) => !h.todayCompleted).slice(0, 3)
+  const uncompletedHabits = useMemo(() => (habitsData?.data ?? []).filter((h) => !h.todayCompleted).slice(0, 3), [habitsData?.data])
   const allHabitsCompleted = totalActive > 0 && completedToday === totalActive
   const circumference = 251.3
   const dashOffset = circumference * (1 - habitsPercentage / 100)
@@ -320,8 +321,8 @@ export default function DashboardPage() {
   }, [diaryEntries, transactionsData, workouts, completedToday])
 
   // ── Streaks ─────────────────────────────────────────────────────────
-  const diaryStreak = calculateStreak(diaryEntries.map((e) => e.date))
-  const workoutStreak = calculateStreak(workouts.map((w) => w.date))
+  const diaryStreak = useMemo(() => calculateStreak(diaryEntries.map((e) => e.date)), [diaryEntries])
+  const workoutStreak = useMemo(() => calculateStreak(workouts.map((w) => w.date)), [workouts])
   const habitsStreak = habitsData?.stats.bestStreak ?? 0
   const maxStreak = Math.max(diaryStreak, workoutStreak, habitsStreak)
 
@@ -491,12 +492,12 @@ export default function DashboardPage() {
   const navigateToFeed = useCallback(() => setActiveModule('feed'), [setActiveModule])
   const handleNotificationCenterNavigate = useCallback((module: AppModule) => setActiveModule(module), [setActiveModule])
 
-  const expensePieData =
+  const expensePieData = useMemo(() =>
     financeStats?.byCategory.map((cat, i) => ({
       name: cat.categoryName,
       value: cat.total,
       fill: PIE_COLORS[i % PIE_COLORS.length],
-    })) ?? []
+    })) ?? [], [financeStats?.byCategory])
 
   const recentTransactions = useMemo(() => {
     return [...transactionsData]

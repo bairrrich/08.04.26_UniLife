@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef, memo } from 'react'
 import {
   Card,
   CardContent,
@@ -118,7 +118,7 @@ function formatTime(seconds: number): string {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-export function FocusTimer() {
+export const FocusTimer = memo(function FocusTimer() {
   const [mode, setMode] = useState<TimerMode>('work')
   const [timeLeft, setTimeLeft] = useState(TIMER_MODES.work.duration)
   const [isRunning, setIsRunning] = useState(false)
@@ -340,4 +340,4 @@ export function FocusTimer() {
       </CardContent>
     </Card>
   )
-}
+})

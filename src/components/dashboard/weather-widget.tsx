@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Cloud, Sun, CloudRain, Snowflake, Wind, Thermometer, CloudLightning, CloudFog, CloudDrizzle } from 'lucide-react'
 
@@ -122,7 +122,7 @@ function WeatherError({ onRetry }: { onRetry: () => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────
 
-export default function WeatherWidget() {
+export default memo(function WeatherWidget() {
   const [weather, setWeather] = useState<OpenMeteoWeather | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -212,4 +212,4 @@ export default function WeatherWidget() {
       </CardContent>
     </Card>
   )
-}
+})

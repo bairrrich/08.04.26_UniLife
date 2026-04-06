@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo, memo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   Card,
@@ -97,7 +97,7 @@ function formatDate(iso: string): string {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function QuickNotesWidget() {
+export default memo(function QuickNotesWidget() {
   const [mounted, setMounted] = useState(false)
   const [notes, setNotes] = useState<QuickNote[]>([])
   const [editingNote, setEditingNote] = useState<QuickNote | null>(null)
@@ -648,4 +648,4 @@ export default function QuickNotesWidget() {
       </CardContent>
     </Card>
   )
-}
+})

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   Tooltip,
@@ -60,7 +60,7 @@ function buildDayTooltip(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function MiniCalendar() {
+export default memo(function MiniCalendar() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
 
   const todayDate = useMemo(() => new Date(), [])
@@ -385,4 +385,4 @@ export default function MiniCalendar() {
       </CardContent>
     </Card>
   )
-}
+})

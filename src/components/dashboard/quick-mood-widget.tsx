@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { MOOD_EMOJI, MOOD_LABELS, getTodayStr } from '@/lib/format'
 import { safeJson } from '@/lib/safe-fetch'
@@ -70,7 +70,7 @@ const MOODS: MoodOption[] = [
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
-export default function QuickMoodWidget() {
+export default memo(function QuickMoodWidget() {
   const [selectedMood, setSelectedMood] = useState<number | null>(null)
   const [todayEntryId, setTodayEntryId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -204,4 +204,4 @@ export default function QuickMoodWidget() {
       </CardContent>
     </Card>
   )
-}
+})

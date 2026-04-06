@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef, memo } from 'react'
 import {
   Card,
   CardContent,
@@ -85,7 +85,7 @@ function AnimatedFlame({ count, streak }: { count: number; streak: number }) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function CurrentStreaks() {
+export default memo(function CurrentStreaks() {
   const [loading, setLoading] = useState(true)
   const [streaks, setStreaks] = useState<StreakData[]>([])
   const [prevStreaks, setPrevStreaks] = useState<number[]>([])
@@ -309,7 +309,7 @@ export default function CurrentStreaks() {
       </CardContent>
     </Card>
   )
-}
+})
 
 // ─── Streak Calculator (local) ────────────────────────────────────────────────
 

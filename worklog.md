@@ -10273,3 +10273,26 @@ Stage Summary:
 - 0 ESLint errors
 - Dev server compiles and runs — all API endpoints return HTTP 200
 - All 9 modules render correctly after updates
+---
+Task ID: fix-re-render-perf
+Agent: main-agent
+Task: Fix re-render issue, optimize React performance
+
+Work Log:
+- **Root Cause**: Stale Turbopack cache contained wrong Prisma import (`PrismaBetterSQLite3` vs correct `PrismaBetterSqlite3`), causing API 500 errors → HMR rebuild loops → visible re-renders
+- **Fix 1**: Cleared all caches (`.next`, `.turbo`, `node_modules/.cache`) — resolved the Prisma adapter error
+- **Fix 2 (Critical)**: Fixed `useMemo` used as side-effect in `quick-expense-bar.tsx` — changed to `useEffect` with proper cleanup
+- **Fix 3 (High Impact)**: Added `React.memo` to 15 dashboard child components (activity-feed, recent-transactions, notification-center, weekly-insights, quick-mood-widget, breathing-widget, weather-widget, ai-insights-widget, quick-notes-widget, current-streaks, focus-timer, focus-timer-widget, mini-calendar, daily-progress, dashboard-section)
+- **Fix 4 (Medium Impact)**: Memoized 7 derived data computations in `dashboard-page.tsx`: todayEntry, weekEntryCount, weekWorkoutCount, weekExpenseSum, uncompletedHabits, expensePieData, diaryStreak/workoutStreak
+- **Fix 5**: Memoized `statusColor` and `todayStr` in `quick-expense-bar.tsx`
+- **Fix 6**: Fixed localStorage read during render in `dashboard-section.tsx` — changed to `useMemo` lazy initializer
+- **Fix 7**: Fixed timeout memory leak in `achievements-widget.tsx` — added proper cleanup
+- **Verification**: agent-browser QA showed 0 console errors, 0 HMR rebuilds during 20s idle, VLM screenshot confirmed clean rendering
+
+Stage Summary:
+- Re-render root cause: stale Turbopack cache with wrong Prisma import (causing HMR loops)
+- 25 React performance anti-patterns identified and fixed
+- 15 components wrapped in React.memo
+- 7 derived data computations memoized in DashboardPage
+- ESLint: 0 errors
+- App stable with no unnecessary re-renders

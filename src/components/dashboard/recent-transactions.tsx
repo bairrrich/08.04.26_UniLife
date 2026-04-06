@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -18,7 +19,7 @@ interface RecentTransactionsProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function RecentTransactions({
+export default memo(function RecentTransactions({
   loading,
   transactions,
   getRelativeTime,
@@ -93,4 +94,4 @@ export default function RecentTransactions({
       </CardContent>
     </Card>
   )
-}
+})

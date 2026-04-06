@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -206,7 +206,7 @@ function InsightsError({ onRetry }: { onRetry: () => void }) {
 
 // ── Main Widget ─────────────────────────────────────────────────────────
 
-export default function AiInsightsWidget() {
+export default memo(function AiInsightsWidget() {
   const [insights, setInsights] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -382,4 +382,4 @@ export default function AiInsightsWidget() {
       </Card>
     </div>
   )
-}
+})

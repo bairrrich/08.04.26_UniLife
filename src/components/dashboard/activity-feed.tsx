@@ -1,5 +1,6 @@
 'use client'
 
+import { memo } from 'react'
 import Image from 'next/image'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,7 +21,7 @@ interface ActivityFeedProps {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function ActivityFeed({ loading, feedPosts, getTimeAgo, onNavigateToFeed }: ActivityFeedProps) {
+export default memo(function ActivityFeed({ loading, feedPosts, getTimeAgo, onNavigateToFeed }: ActivityFeedProps) {
   return (
     <Card className="card-hover rounded-xl border">
       <CardHeader className="flex flex-row items-center justify-between pb-3">
@@ -115,4 +116,4 @@ export default function ActivityFeed({ loading, feedPosts, getTimeAgo, onNavigat
       </CardContent>
     </Card>
   )
-}
+})

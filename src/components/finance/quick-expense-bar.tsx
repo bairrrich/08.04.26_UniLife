@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { Coffee, Bus, UtensilsCrossed, ShoppingBag, Zap, MoreHorizontal, PiggyBank, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatCurrency } from '@/lib/format'
@@ -43,7 +43,7 @@ export function QuickExpenseBar({ onQuickExpense, transactions, totalIncome, isL
   const [showBreakdown, setShowBreakdown] = useState(false)
   const [animWidth, setAnimWidth] = useState(0)
 
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], [])
 
   const dailyData = useMemo(() => {
     const now = new Date()
@@ -82,30 +82,22 @@ export function QuickExpenseBar({ onQuickExpense, transactions, totalIncome, isL
   }, [transactions, totalIncome, todayStr])
 
   // Animate progress bar on mount and data change
-  useMemo(() => {
+  useEffect(() => {
     const timer = setTimeout(() => {
       setAnimWidth(Math.min(dailyData.percentage, 100))
     }, 100)
     return () => clearTimeout(timer)
   }, [dailyData.percentage])
 
-  const getStatusColor = () => {
-    if (dailyData.percentage <= 70) return { bar: 'from-emerald-400 to-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-950/40' }
-    if (dailyData.percentage <= 100) return { bar: 'from-amber-400 to-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-950/40' }
-    return { bar: 'from-red-400 to-red-500', text: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-950/40' }
-  }
-
-  const getStatusLabel = () => {
-    if (dailyData.percentage <= 70) return 'В норме'
-    if (dailyData.percentage <= 100) return 'Осторожно'
-    return 'Превышен!'
-  }
+  const statusColor = useMemo(() => {
+    if (dailyData.percentage <= 70) return { bar: 'from-emerald-400 to-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 dark:bg-emerald-950/40', label: 'В норме' }
+    if (dailyData.percentage <= 100) return { bar: 'from-amber-400 to-amber-500', text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-100 dark:bg-amber-950/40', label: 'Осторожно' }
+    return { bar: 'from-red-400 to-red-500', text: 'text-red-600 dark:text-red-400', bg: 'bg-red-100 dark:bg-red-950/40', label: 'Превышен!' }
+  }, [dailyData.percentage])
 
   if (isLoading) {
     return <div className="skeleton-shimmer h-[100px] rounded-xl" />
   }
-
-  const statusColor = getStatusColor()
 
   return (
     <div className="space-y-3">
@@ -134,7 +126,7 @@ export function QuickExpenseBar({ onQuickExpense, transactions, totalIncome, isL
               </span>
             </div>
             <span className={cn('text-[10px] font-medium', statusColor.text)}>
-              {getStatusLabel()}
+              {statusColor.label}
             </span>
           </div>
         </div>
