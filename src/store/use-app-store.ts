@@ -10,7 +10,6 @@ interface AppState {
   notificationsOpen: boolean
   pendingDialog: boolean
   searchOpen: boolean
-  _hydrated: boolean
   setActiveModule: (module: AppModule) => void
   setSidebarOpen: (open: boolean) => void
   setNotificationCount: (count: number) => void
@@ -29,7 +28,6 @@ export const useAppStore = create<AppState>()(
       notificationsOpen: false,
       pendingDialog: false,
       searchOpen: false,
-      _hydrated: false,
       setActiveModule: (module) => set({ activeModule: module }),
       setSidebarOpen: (open) => set({ sidebarOpen: open }),
       setNotificationCount: (count) => set({ notificationCount: count }),
@@ -41,13 +39,8 @@ export const useAppStore = create<AppState>()(
     {
       name: 'unilife-app-store',
       partialize: (state) => ({ activeModule: state.activeModule }),
-      onRehydrateStorage: () => (state) => {
-        // Mark store as hydrated after localStorage is read
-        if (state) state._hydrated = true
-      },
+      // Use skipHydration to prevent flash — store hydrates silently
+      skipHydration: true,
     },
   ),
 )
-
-// Selector to check hydration without subscribing to other state
-export const useHydrated = () => useAppStore((s) => s._hydrated)

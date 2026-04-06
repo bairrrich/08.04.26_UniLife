@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, Component, type ReactNode, useCallback, useSyncExternalStore } from 'react'
-import { useAppStore, useHydrated, type AppModule } from '@/store/use-app-store'
+import { useState, useEffect, Component, type ReactNode, useCallback } from 'react'
+import { useAppStore, type AppModule } from '@/store/use-app-store'
 import dynamic from 'next/dynamic'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -223,34 +223,6 @@ function FooterSkeleton() {
   )
 }
 
-// ─── Hydration gate — prevents flash of default state ─────────────────
-const subscribe = () => () => {}
-const getSnapshot = () => true
-const getServerSnapshot = () => false
-
-function HydrationGate({ children }: { children: ReactNode }) {
-  const hydrated = useHydrated()
-  const mounted = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
-
-  if (!mounted || !hydrated) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/20">
-            <span className="text-xl font-bold text-white">U</span>
-          </div>
-          <div className="space-y-2 text-center">
-            <Skeleton className="mx-auto h-4 w-32" />
-            <Skeleton className="mx-auto h-3 w-20" />
-          </div>
-        </div>
-      </div>
-    )
-  }
-
-  return <>{children}</>
-}
-
 // ─── CSS-only animated module switcher ─────────────────────────────────
 function AnimatedModule({ activeModule }: { activeModule: string }) {
   const [visible, setVisible] = useState(true)
@@ -292,17 +264,21 @@ function AnimatedModule({ activeModule }: { activeModule: string }) {
 export default function Home() {
   const activeModule = useAppStore((s) => s.activeModule)
 
+  // Manually rehydrate Zustand persist on mount (client-only)
+  // This avoids hydration mismatch because the state update happens AFTER mount
+  useEffect(() => {
+    useAppStore.persist.rehydrate()
+  }, [])
+
   return (
     <div className="min-h-screen bg-background">
       <WelcomeScreen />
       <AppSidebar />
       <main className="main-content md:ml-60 min-h-screen flex flex-col">
-        <HydrationGate>
-          <div className="p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
-            <AnimatedModule activeModule={activeModule} />
-          </div>
-          <AppFooter />
-        </HydrationGate>
+        <div className="p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
+          <AnimatedModule activeModule={activeModule} />
+        </div>
+        <AppFooter />
         <ScrollToTop />
         <MobileNav />
         <QuickAddMenu />
