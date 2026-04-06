@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useAppStore } from '@/store/use-app-store'
 import { AppModule } from '@/store/use-app-store'
@@ -93,21 +93,13 @@ const NotificationCenter = dynamic(() => import('./notification-center'), { ssr:
 export default function DashboardPage() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
 
-  // ── Hydration guard ──────────────────────────────────────────────────
-  const [mounted, setMounted] = useState(false)
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
   // ── Widget Config ────────────────────────────────────────────────────
   const [widgetConfig, setWidgetConfig] = useState<SavedWidgetConfig | null>(null)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   useEffect(() => {
-    if (mounted) {
-      setWidgetConfig(loadWidgetConfig())
-    }
-  }, [mounted])
+    setWidgetConfig(loadWidgetConfig())
+  }, [])
 
   const handleConfigChange = useCallback((newConfig: SavedWidgetConfig) => {
     setWidgetConfig(newConfig)
@@ -292,13 +284,18 @@ export default function DashboardPage() {
   const circumference = 251.3
   const dashOffset = circumference * (1 - habitsPercentage / 100)
 
-  // ── Sync notification count ──────────────────────────────────────────
+  // ── Sync notification count (useRef to avoid triggering re-renders) ──
+  const prevNotificationCountRef = useRef<number | null>(null)
   useEffect(() => {
     if (loading) return
     const hasMoodToday = !!todayMood
     const uncompletedHabitsCount = totalActive - completedToday
     const notificationCount = (hasMoodToday ? 0 : 1) + (hasMealsToday ? 0 : 1) + uncompletedHabitsCount
-    useAppStore.getState().setNotificationCount(notificationCount)
+    // Only update zustand if the count actually changed
+    if (prevNotificationCountRef.current !== notificationCount) {
+      prevNotificationCountRef.current = notificationCount
+      useAppStore.getState().setNotificationCount(notificationCount)
+    }
   }, [loading, todayMood, hasMealsToday, totalActive, completedToday])
 
   const kcalGoal = 2200
@@ -709,21 +706,6 @@ export default function DashboardPage() {
   }
 
   // ── Render ──────────────────────────────────────────────────────────
-
-  if (!mounted) {
-    return (
-      <div className="animate-slide-up space-y-8">
-        <div className="skeleton-shimmer h-[200px] rounded-xl" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="skeleton-shimmer h-[130px] rounded-xl" />
-          ))}
-        </div>
-        <div className="skeleton-shimmer h-[300px] rounded-xl" />
-        <div className="skeleton-shimmer h-[200px] rounded-xl" />
-      </div>
-    )
-  }
 
   return (
     <div className="animate-slide-up space-y-6">

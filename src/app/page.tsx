@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Component, type ReactNode } from 'react'
+import { useState, useEffect, useRef, Component, type ReactNode } from 'react'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
@@ -79,6 +79,21 @@ function Shell() {
   )
 }
 
+// ─── Module loader map (static — no re-creation on render) ─────────────
+const MODULE_MAP: Record<string, { l: () => Promise<{ default: React.ComponentType }>; n: string }> = {
+  dashboard: { l: () => import('@/components/dashboard/dashboard-page'), n: 'Дашборд' },
+  diary: { l: () => import('@/components/diary/diary-page'), n: 'Дневник' },
+  finance: { l: () => import('@/components/finance/finance-page'), n: 'Финансы' },
+  nutrition: { l: () => import('@/components/nutrition/nutrition-page'), n: 'Питание' },
+  workout: { l: () => import('@/components/workout/workout-page'), n: 'Тренировки' },
+  collections: { l: () => import('@/components/collections/collections-page'), n: 'Коллекции' },
+  feed: { l: () => import('@/components/feed/feed-page'), n: 'Лента' },
+  habits: { l: () => import('@/components/habits/habit-page'), n: 'Привычки' },
+  goals: { l: () => import('@/components/goals/goals-page'), n: 'Цели' },
+  analytics: { l: () => import('@/components/analytics/analytics-page'), n: 'Аналитика' },
+  settings: { l: () => import('@/components/layout/settings-page'), n: 'Настройки' },
+}
+
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function Home() {
   const activeModule = useAppStore((s) => s.activeModule)
@@ -93,33 +108,15 @@ export default function Home() {
   const [Welcome, setWelcome] = useState<React.ComponentType | null>(null)
   const [moduleLabel, setModuleLabel] = useState('Дашборд')
 
-  // Rehydrate Zustand persist (after mount — no hydration mismatch)
+  // Ref to avoid re-triggering module load for the same module
+  const loadedModuleRef = useRef<string | null>(null)
+
+  // Rehydrate Zustand persist ONCE on mount (before any other effect)
   useEffect(() => {
     useAppStore.persist.rehydrate()
   }, [])
 
-  // Load active module
-  useEffect(() => {
-    const mods: Record<string, { l: () => Promise<{ default: React.ComponentType }>; n: string }> = {
-      dashboard: { l: () => import('@/components/dashboard/dashboard-page'), n: 'Дашборд' },
-      diary: { l: () => import('@/components/diary/diary-page'), n: 'Дневник' },
-      finance: { l: () => import('@/components/finance/finance-page'), n: 'Финансы' },
-      nutrition: { l: () => import('@/components/nutrition/nutrition-page'), n: 'Питание' },
-      workout: { l: () => import('@/components/workout/workout-page'), n: 'Тренировки' },
-      collections: { l: () => import('@/components/collections/collections-page'), n: 'Коллекции' },
-      feed: { l: () => import('@/components/feed/feed-page'), n: 'Лента' },
-      habits: { l: () => import('@/components/habits/habit-page'), n: 'Привычки' },
-      goals: { l: () => import('@/components/goals/goals-page'), n: 'Цели' },
-      analytics: { l: () => import('@/components/analytics/analytics-page'), n: 'Аналитика' },
-      settings: { l: () => import('@/components/layout/settings-page'), n: 'Настройки' },
-    }
-    const m = mods[activeModule] || mods.dashboard
-    setModuleComp(null)
-    setModuleLabel(m.n)
-    m.l().then((mod) => setModuleComp(() => mod.default))
-  }, [activeModule])
-
-  // Load global components in parallel
+  // Load global components ONCE on mount
   useEffect(() => {
     Promise.all([
       import('@/components/layout/app-sidebar'),
@@ -140,7 +137,18 @@ export default function Home() {
     })
   }, [])
 
-  // Show shell while anything is loading
+  // Load active module — ONLY if it actually changed (avoid flash)
+  useEffect(() => {
+    const m = MODULE_MAP[activeModule] || MODULE_MAP.dashboard
+    setModuleLabel(m.n)
+
+    // Skip if already loaded the same module
+    if (loadedModuleRef.current === activeModule) return
+    loadedModuleRef.current = activeModule
+
+    m.l().then((mod) => setModuleComp(() => mod.default))
+  }, [activeModule])
+
   const isLoading = !ModuleComp || !Sidebar || !MobileNav || !Footer
 
   return (
