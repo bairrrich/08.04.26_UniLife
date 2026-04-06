@@ -31,8 +31,11 @@ export async function PUT(
       currentValue,
       unit,
       deadline,
+      startDate,
       status,
       progress,
+      priority,
+      milestones,
     } = body
 
     const updated = await db.goal.update({
@@ -47,6 +50,9 @@ export async function PUT(
         ...(deadline !== undefined && { deadline: deadline ? new Date(deadline) : null }),
         ...(status !== undefined && { status }),
         ...(progress !== undefined && { progress: Math.min(100, Math.max(0, Number(progress))) }),
+        ...(priority !== undefined && { priority }),
+        ...(milestones !== undefined && { milestones }),
+        ...(startDate !== undefined && { createdAt: startDate ? new Date(startDate) : goal.createdAt }),
       },
     })
 

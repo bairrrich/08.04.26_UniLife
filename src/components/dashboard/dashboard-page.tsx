@@ -240,8 +240,14 @@ export default function DashboardPage() {
     fetchAllData()
   }, [fetchAllData])
 
+  // ── Live clock (updates every minute) ─────────────────────────────
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000)
+    return () => clearInterval(timer)
+  }, [])
+
   // ── Derived Data ────────────────────────────────────────────────────
-  const now = useMemo(() => new Date(), [])
 
   const todayEntry = diaryEntries.find((e) => {
     const d = new Date(e.date)

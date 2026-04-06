@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
         photos: (entry.photos as string) || '[]',
       }))
       if (diaryData.length > 0) {
-        const result = await db.diaryEntry.createMany({ data: diaryData })
+        const result = await db.diaryEntry.createMany({ data: diaryData, skipDuplicates: true })
         imported.diary = result.count
       }
     }
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
           isDefault: (cat.isDefault as boolean) || false,
         }))
         if (catData.length > 0) {
-          const catResult = await db.category.createMany({ data: catData })
+          const catResult = await db.category.createMany({ data: catData, skipDuplicates: true })
           imported.financeCategories = catResult.count
         }
       }
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
             const validCatIds = new Set(validCategories.map(c => c.id))
             const validTxData = txData.filter(tx => validCatIds.has(tx.categoryId))
             if (validTxData.length > 0) {
-              const txResult = await db.transaction.createMany({ data: validTxData })
+              const txResult = await db.transaction.createMany({ data: validTxData, skipDuplicates: true })
               imported.financeTransactions = txResult.count
             }
             imported.finance = (imported.financeCategories || 0) + (imported.financeTransactions || 0)
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
           amountMl: Number(log.amountMl) || 250,
         }))
         if (waterData.length > 0) {
-          const waterResult = await db.waterLog.createMany({ data: waterData })
+          const waterResult = await db.waterLog.createMany({ data: waterData, skipDuplicates: true })
           imported.nutritionWater = waterResult.count
         }
         imported.nutrition = (imported.nutritionMeals || 0) + (imported.nutritionWater || 0)
@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
         notes: (item.notes as string) || null,
       }))
       if (colData.length > 0) {
-        const result = await db.collectionItem.createMany({ data: colData })
+        const result = await db.collectionItem.createMany({ data: colData, skipDuplicates: true })
         imported.collections = result.count
       }
     }
@@ -202,7 +202,7 @@ export async function POST(request: NextRequest) {
         caption: (post.caption as string) || null,
       }))
       if (postData.length > 0) {
-        const result = await db.post.createMany({ data: postData })
+        const result = await db.post.createMany({ data: postData, skipDuplicates: true })
         imported.feed = result.count
       }
     }

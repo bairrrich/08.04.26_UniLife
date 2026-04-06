@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `type must be one of: ${VALID_TYPES.join(', ')}`,
+          error: `Тип должен быть одним из: ${VALID_TYPES.join(', ')}`,
         },
         { status: 400 }
       )

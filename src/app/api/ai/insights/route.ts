@@ -299,7 +299,7 @@ function generateInsights(a: AnalysisResult): InsightsResponse {
     const moodEmoji = moodEmojis[a.todayDiaryMood || 3] || '😐'
     parts.push(`Сегодня в дневнике запись "${a.todayDiaryTitle}" с настроением ${moodEmoji}`)
   } else {
-    parts.push('Ещё нет записи в дневнике — начни день сreflection!')
+    parts.push('Ещё нет записи в дневнике — начни день с рефлексии!')
   }
 
   if (a.habitsRate === 100) {

@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields
     if (!content || typeof content !== "string" || content.trim().length === 0) {
       return NextResponse.json(
-        { error: "Content is required and must be a non-empty string." },
+        { success: false, error: "Содержание записи обязательно и должно быть непустой строкой" },
         { status: 400 }
       );
     }
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
     if (mood !== undefined) {
       if (typeof mood !== "number" || !Number.isInteger(mood) || mood < 1 || mood > 5) {
         return NextResponse.json(
-          { error: "Mood must be an integer between 1 and 5." },
+          { success: false, error: "Настроение должно быть целым числом от 1 до 5" },
           { status: 400 }
         );
       }
@@ -174,7 +174,7 @@ export async function POST(request: NextRequest) {
       entryDate = new Date(date);
       if (isNaN(entryDate.getTime())) {
         return NextResponse.json(
-          { error: "Invalid date format. Use ISO 8601." },
+          { success: false, error: "Неверный формат даты. Используйте ISO 8601" },
           { status: 400 }
         );
       }

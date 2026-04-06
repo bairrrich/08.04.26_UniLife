@@ -111,7 +111,7 @@ function calculateNutritionStreak(waterHistory: { date: string; ml: number }[], 
   let streak = 0
   const checkDate = activeDates.has(todayStr) ? new Date(today) : new Date(yesterday)
 
-  while (true) {
+  while (streak < 365) {
     const checkStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`
     if (activeDates.has(checkStr)) {
       streak++

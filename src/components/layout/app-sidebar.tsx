@@ -1,7 +1,7 @@
 'use client'
 
-import { LucideIcon, icons, Menu } from 'lucide-react'
-import { NotificationsPopover } from '@/components/layout/notifications-panel'
+import { Bell, LucideIcon, icons, Menu } from 'lucide-react'
+import { NotificationsPanel } from '@/components/notifications/notifications-panel'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { navItems } from '@/lib/nav-items'
@@ -18,7 +18,25 @@ import { motion } from 'framer-motion'
 import { memo, useEffect } from 'react'
 import { useUserPrefs } from '@/lib/use-user-prefs'
 
-// ─── Notifications Panel connector (uses Popover) ───────────────────────
+// ─── Notification Bell Trigger ─────────────────────────────────────────────
+
+function NotificationBellTrigger({ onClick }: { onClick: () => void }) {
+  const notificationCount = useAppStore((s) => s.notificationCount)
+  return (
+    <button
+      onClick={onClick}
+      className="relative flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
+      aria-label="Уведомления"
+    >
+      <Bell className={cn('h-4 w-4', notificationCount > 0 && 'bell-pulse')} />
+      {notificationCount > 0 && (
+        <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[9px] font-bold text-destructive-foreground animate-count-fade-in">
+          {notificationCount > 9 ? '9+' : notificationCount}
+        </span>
+      )}
+    </button>
+  )
+}
 
 // ─── Module-specific accent colors for the active dot indicator ───────
 const MODULE_ACCENT_COLORS: Record<string, string> = {
@@ -69,15 +87,15 @@ function NavBadge({ count, isActive }: { count: number; isActive: boolean }) {
 
 const MemoizedNavBadge = memo(NavBadge)
 
-function MobileNotificationBell() {
+function MobileNotificationBell({ onNotificationsOpen }: { onNotificationsOpen: () => void }) {
   return (
     <div className="flex items-center justify-center h-9 w-9">
-      <NotificationsPopover />
+      <NotificationBellTrigger onClick={onNotificationsOpen} />
     </div>
   )
 }
 
-const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate, onNotificationsOpen }: { onNavigate?: () => void; onNotificationsOpen?: () => void }) {
   const activeModule = useAppStore((s) => s.activeModule)
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const moduleCounts = useModuleCounts()
@@ -193,7 +211,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate }: { on
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <NotificationsPopover />
+            <NotificationBellTrigger onClick={onNotificationsOpen} />
             <ThemeToggle />
           </div>
         </div>
@@ -225,6 +243,8 @@ const KEYBOARD_SHORTCUTS: Record<string, AppModule> = {
 export function AppSidebar() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const setSearchOpen = useAppStore((s) => s.setSearchOpen)
+  const notificationsOpen = useAppStore((s) => s.notificationsOpen)
+  const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -254,11 +274,12 @@ export function AppSidebar() {
       {/* Keyboard Shortcuts Dialog */}
       <KeyboardShortcutsDialog />
 
-      {/* Notifications handled via Popover inline in sidebar */}
+      {/* Real Notifications Panel (Sheet) */}
+      <NotificationsPanel open={notificationsOpen} onOpenChange={setNotificationsOpen} />
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">
-        <MemoizedSidebarContent />
+        <MemoizedSidebarContent onNotificationsOpen={() => setNotificationsOpen(true)} />
       </aside>
 
       {/* Mobile Header + Sheet */}
@@ -270,7 +291,7 @@ export function AppSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
-            <MemoizedSidebarContent />
+            <MemoizedSidebarContent onNotificationsOpen={() => setNotificationsOpen(true)} />
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">
@@ -289,7 +310,7 @@ export function AppSidebar() {
         </div>
         <div className="ml-auto flex items-center gap-1">
           {/* Mobile notification bell */}
-          <MobileNotificationBell />
+          <MobileNotificationBell onNotificationsOpen={() => setNotificationsOpen(true)} />
           {/* Mobile search icon trigger */}
           <button
             onClick={() => setSearchOpen(true)}

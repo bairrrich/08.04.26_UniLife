@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
-import { Cloud, Sun, CloudRain, Snowflake, Wind, Droplets, Eye, Thermometer, CloudLightning, CloudFog, CloudDrizzle } from 'lucide-react'
+import { Cloud, Sun, CloudRain, Snowflake, Wind, Thermometer, CloudLightning, CloudFog, CloudDrizzle } from 'lucide-react'
 
 // Open-Meteo API types
 interface OpenMeteoWeather {
@@ -132,7 +132,7 @@ export default function WeatherWidget() {
     setError(false)
     try {
       const res = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&timezone=auto'
+        'https://api.open-meteo.com/v1/forecast?latitude=55.75&longitude=37.62&current_weather=true&timezone=auto'
       )
       if (!res.ok) throw new Error('API error')
       const data: OpenMeteoResponse = await res.json()

@@ -328,6 +328,7 @@ export async function GET() {
           category: def.category,
           userId: USER_ID,
         })),
+        skipDuplicates: true,
       })
     }
 

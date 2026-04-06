@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     // Validate meal type
     if (!type || !VALID_MEAL_TYPES.includes(type.toUpperCase())) {
       return NextResponse.json(
-        { success: false, error: `Invalid meal type. Must be one of: ${VALID_MEAL_TYPES.join(', ')}` },
+        { success: false, error: `Неверный тип приёма пищи. Допустимые значения: ${VALID_MEAL_TYPES.join(', ')}` },
         { status: 400 }
       )
     }

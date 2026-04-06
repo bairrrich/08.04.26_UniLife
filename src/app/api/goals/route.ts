@@ -48,8 +48,11 @@ export async function POST(request: NextRequest) {
       currentValue,
       unit,
       deadline,
+      startDate,
       status,
       progress,
+      priority,
+      milestones,
     } = body
 
     if (!title || !title.trim()) {
@@ -71,6 +74,9 @@ export async function POST(request: NextRequest) {
         deadline: deadline ? new Date(deadline) : null,
         status: status || 'active',
         progress: progress != null ? Math.min(100, Math.max(0, Number(progress))) : 0,
+        priority: priority || 'medium',
+        milestones: milestones || '[]',
+        ...(startDate ? { createdAt: new Date(startDate) } : {}),
       },
     })
 

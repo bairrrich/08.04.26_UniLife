@@ -516,6 +516,107 @@ export async function seed() {
     })
   }
 
+  // Seed goals
+  const goalData = [
+    {
+      title: 'Прочитать 24 книги за год',
+      description: 'Цель на год — читать по 2 книги в месяц для саморазвития и расширения кругозора',
+      category: 'personal',
+      targetValue: 24,
+      currentValue: 8,
+      unit: 'книги',
+      status: 'active',
+      progress: 33,
+      priority: 'high',
+      startDate: new Date(now.getFullYear(), 0, 1),
+      deadline: new Date(now.getFullYear(), 11, 31),
+    },
+    {
+      title: 'Бегать 3 раза в неделю',
+      description: 'Регулярные пробежки для поддержания формы и выносливости',
+      category: 'health',
+      targetValue: 156,
+      currentValue: 45,
+      unit: 'тренировок',
+      status: 'active',
+      progress: 29,
+      priority: 'high',
+      startDate: new Date(now.getFullYear(), 0, 1),
+      deadline: new Date(now.getFullYear(), 11, 31),
+    },
+    {
+      title: 'Накопить 500 000 ₽',
+      description: 'Финансовая подушка безопасности на 6 месяцев расходов',
+      category: 'finance',
+      targetValue: 500000,
+      currentValue: 175000,
+      unit: '₽',
+      status: 'active',
+      progress: 35,
+      priority: 'medium',
+      startDate: new Date(now.getFullYear(), 0, 1),
+      deadline: new Date(now.getFullYear() + 1, 5, 31),
+    },
+    {
+      title: 'Выучить TypeScript',
+      description: 'Освоить TypeScript на продвинутом уровне для профессиональной разработки',
+      category: 'learning',
+      targetValue: 100,
+      currentValue: 60,
+      unit: '%',
+      status: 'active',
+      progress: 60,
+      priority: 'high',
+      startDate: new Date(now.getFullYear(), now.getMonth() - 3, 1),
+      deadline: new Date(now.getFullYear(), now.getMonth() + 3, 1),
+    },
+    {
+      title: 'Получить сертификат',
+      description: 'AWS Cloud Practitioner или аналогичный облачный сертификат',
+      category: 'career',
+      targetValue: 1,
+      currentValue: 0,
+      unit: 'сертификат',
+      status: 'active',
+      progress: 0,
+      priority: 'medium',
+      startDate: new Date(now.getFullYear(), now.getMonth(), 1),
+      deadline: new Date(now.getFullYear(), now.getMonth() + 6, 1),
+    },
+    {
+      title: 'Сбросить 5 кг',
+      description: 'Привести вес к оптимальному значению через правильное питание и спорт',
+      category: 'health',
+      targetValue: 5,
+      currentValue: 2,
+      unit: 'кг',
+      status: 'active',
+      progress: 40,
+      priority: 'low',
+      startDate: new Date(now.getFullYear(), now.getMonth() - 1, 15),
+      deadline: new Date(now.getFullYear(), now.getMonth() + 2, 15),
+    },
+    {
+      title: 'Медитировать 30 дней подряд',
+      description: 'Ежедневная медитация по 10-15 минут для снижения стресса',
+      category: 'personal',
+      targetValue: 30,
+      currentValue: 21,
+      unit: 'дней',
+      status: 'active',
+      progress: 70,
+      priority: 'low',
+      startDate: new Date(now.getFullYear(), now.getMonth(), now.getDate() - 21),
+      deadline: new Date(now.getFullYear(), now.getMonth(), now.getDate() + 9),
+    },
+  ]
+
+  for (const goal of goalData) {
+    await db.goal.create({
+      data: { userId: USER_ID, ...goal },
+    })
+  }
+
   // Seed feed posts (likes/comments only from the demo user to avoid FK issues)
   const postCaptions = [
     'Отличный день для тренировки! 💪',
