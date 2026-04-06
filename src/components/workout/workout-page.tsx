@@ -159,7 +159,7 @@ export function WorkoutPage() {
       ) : workouts.length === 0 ? (
         <Card className="animate-slide-up overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 via-teal-500/5 to-cyan-500/8 pointer-events-none" />
-          <CardContent className="relative flex flex-col items-center justify-center py-14 text-center">
+          <CardContent className="relative flex flex-col items-center justify-center py-14 text-center px-4">
             <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
               <Dumbbell className="h-10 w-10 text-white" />
             </div>

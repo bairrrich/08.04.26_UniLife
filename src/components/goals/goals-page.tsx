@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+// Skeleton component removed — using skeleton-shimmer CSS class instead
 import { cn } from '@/lib/utils'
 import { useGoals } from './hooks'
 import { PageHeader } from '@/components/layout/page-header'
@@ -256,7 +256,7 @@ export default function GoalsPage() {
           </div>
           <div className="flex gap-2">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={`tab-skel-${i}`} className="h-9 w-24 rounded-lg" />
+              <div key={`tab-skel-${i}`} className="skeleton-shimmer h-9 w-24 rounded-lg" />
             ))}
           </div>
           <div className="space-y-3">
@@ -270,7 +270,7 @@ export default function GoalsPage() {
         <div className="space-y-6 animate-slide-up">
           <Card className="overflow-hidden relative">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-            <CardContent className="relative py-12 sm:py-16 text-center">
+            <CardContent className="relative py-14 text-center px-4">
               {/* CSS Illustration — abstract target/bullseye */}
               <div className="relative mx-auto mb-6 w-32 h-32 sm:w-40 sm:h-40">
                 {/* Outer glow */}
@@ -282,8 +282,8 @@ export default function GoalsPage() {
                 <div className="absolute inset-12 rounded-full border-2 border-emerald-400/50 dark:border-emerald-400/40" />
                 {/* Center icon */}
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 float-animation">
-                    <Target className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 float-animation">
+                    <Target className="h-10 w-10 text-white" />
                   </div>
                 </div>
                 {/* Floating decorative elements */}
@@ -393,7 +393,7 @@ export default function GoalsPage() {
           />
 
           {searchedGoals.length === 0 ? (
-            <Card className="animate-slide-up overflow-hidden relative py-12">
+            <Card className="animate-slide-up overflow-hidden relative">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-sky-500/5 pointer-events-none" />
               <CardContent className="relative flex flex-col items-center py-4">
                 <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-400/80 to-sky-400/80 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/15">

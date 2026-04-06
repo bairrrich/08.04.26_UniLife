@@ -176,10 +176,13 @@ function NotificationCard({
   const IconComponent = ICON_MAP[notification.icon] || Bell
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => onNavigate(notification.module, notification.actionUrl)}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate(notification.module, notification.actionUrl) } }}
       className={cn(
-        'group relative w-full text-left rounded-xl p-3 transition-all duration-200',
+        'group relative w-full text-left rounded-xl p-3 transition-all duration-200 cursor-pointer',
         'border-l-[3px]',
         'hover:translate-x-[-2px] active:scale-[0.98]',
         style.border,
@@ -233,7 +236,7 @@ function NotificationCard({
           </div>
         </div>
       </div>
-    </button>
+    </div>
   )
 }
 

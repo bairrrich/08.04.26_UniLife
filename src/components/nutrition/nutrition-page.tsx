@@ -90,7 +90,7 @@ export default function NutritionPage() {
             <Button variant="outline" size="icon" className="size-8" onClick={() => setShowGoalsDialog(true)}>
               <Settings2 className="size-4 text-muted-foreground" />
             </Button>
-            <Button size="sm" className="gap-1.5" onClick={() => setShowNewMealDialog(true)}>
+            <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setShowNewMealDialog(true)}>
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
             </Button>
           </div>

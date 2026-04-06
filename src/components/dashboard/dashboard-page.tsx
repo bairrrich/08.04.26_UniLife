@@ -4,7 +4,8 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useAppStore } from '@/store/use-app-store'
 import { AppModule } from '@/store/use-app-store'
-import { Settings2 } from 'lucide-react'
+import { LayoutDashboard, Settings2 } from 'lucide-react'
+import { PageHeader } from '@/components/layout/page-header'
 import {
   toDateStr,
   getTodayStr,
@@ -41,8 +42,8 @@ import {
 } from './widget-config'
 import WidgetCustomizer from './widget-customizer'
 
-const widgetLoad = () => <div className="h-[200px] rounded-xl bg-muted/30 animate-pulse" />
-const smallLoad = () => <div className="h-[100px] rounded-xl bg-muted/30 animate-pulse" />
+const widgetLoad = () => <div className="h-[200px] rounded-xl skeleton-shimmer" />
+const smallLoad = () => <div className="h-[100px] rounded-xl skeleton-shimmer" />
 
 // ─── Lazy-loaded Widgets ──────────────────────────────────────────────
 const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, loading: widgetLoad })
@@ -710,30 +711,38 @@ export default function DashboardPage() {
 
   return (
     <div className="animate-slide-up space-y-6">
+      {/* ── Page Header ────────────────────────────────────────────── */}
+      <PageHeader
+        icon={LayoutDashboard}
+        title="Главная"
+        description="Ваш личный центр управления жизнью"
+        accent="emerald"
+        noBlobs
+        compact
+        actions={
+          <button
+            type="button"
+            onClick={() => setCustomizerOpen(true)}
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background/80 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
+            aria-label="Настроить виджеты"
+            title="Настроить виджеты"
+          >
+            <Settings2 className="h-4 w-4" />
+          </button>
+        }
+      />
+
       {/* ── Welcome Widget (hero) ──────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <WelcomeWidget
-            loading={loading}
-            diaryStreak={diaryStreak}
-            dailyProgress={dailyProgress}
-            todayMood={todayMood}
-            hasMealsToday={hasMealsToday}
-            todayWorkoutDone={todayWorkout}
-            habitsCompletedToday={completedToday}
-            habitsTotal={totalActive}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={() => setCustomizerOpen(true)}
-          className="mt-2 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border/50 bg-background/80 text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
-          aria-label="Настроить виджеты"
-          title="Настроить виджеты"
-        >
-          <Settings2 className="h-4 w-4" />
-        </button>
-      </div>
+      <WelcomeWidget
+        loading={loading}
+        diaryStreak={diaryStreak}
+        dailyProgress={dailyProgress}
+        todayMood={todayMood}
+        hasMealsToday={hasMealsToday}
+        todayWorkoutDone={todayWorkout}
+        habitsCompletedToday={completedToday}
+        habitsTotal={totalActive}
+      />
 
       {/* ── Configurable Sections ──────────────────────────────────── */}
       {widgetConfig ? (

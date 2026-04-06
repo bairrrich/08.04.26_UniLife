@@ -371,9 +371,9 @@ export default function DiaryPage() {
                 <List className="h-4 w-4" />
               </Button>
             </div>
-            <Button onClick={openNewEntryDialog} size="sm" className="rounded-xl shadow-sm">
-              <Plus className="h-4 w-4 mr-1.5" />
-              Запись
+            <Button onClick={openNewEntryDialog} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">Запись</span>
             </Button>
           </div>
         }
@@ -536,11 +536,11 @@ export default function DiaryPage() {
         <div className="grid gap-6">
           <Card className="rounded-xl">
             <CardContent className="p-6">
-              <div className="animate-pulse space-y-3">
-                <div className="h-6 bg-muted rounded w-1/3" />
+              <div className="space-y-3">
+                <div className="skeleton-shimmer h-6 rounded w-1/3" />
                 <div className="grid grid-cols-7 gap-1">
                   {Array.from({ length: 35 }).map((_, i) => (
-                    <div key={i} className="h-10 bg-muted rounded-md" />
+                    <div key={i} className="skeleton-shimmer h-10 rounded-md" />
                   ))}
                 </div>
               </div>

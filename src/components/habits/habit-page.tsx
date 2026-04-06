@@ -188,11 +188,11 @@ export default function HabitsPage() {
         /* Empty State */
         <Card className="animate-slide-up overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-          <CardContent className="relative py-12 text-center px-6">
-            <div className="h-20 w-20 rounded-3xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
+          <CardContent className="relative py-14 text-center px-4">
+            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
               <Target className="h-10 w-10 text-white" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Начните отслеживать привычки</h3>
+            <h3 className="text-lg font-semibold mb-2">Начните отслеживать привычки</h3>
             <p className="text-muted-foreground text-sm mb-2 max-w-xs mx-auto">
               Привычки помогают формировать дисциплину и достигать целей шаг за шагом.
             </p>
@@ -229,6 +229,7 @@ export default function HabitsPage() {
             </div>
 
             <Button
+              size="lg"
               onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))}
               className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all"
             >

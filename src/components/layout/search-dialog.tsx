@@ -38,7 +38,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+// Skeleton component removed — using skeleton-shimmer CSS class instead
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
 import { useTheme } from 'next-themes'
@@ -1172,12 +1172,12 @@ function SearchSkeleton() {
     <div className="px-4 py-3 space-y-3">
       {[0, 1, 2].map((i) => (
         <div key={i} className="flex items-start gap-3">
-          <Skeleton className="h-8 w-8 rounded-md" />
+          <div className="skeleton-shimmer h-8 w-8 rounded-md" />
           <div className="flex-1 space-y-1.5">
-            <Skeleton className="h-4 w-3/4" />
-            <Skeleton className="h-3 w-1/2" />
+            <div className="skeleton-shimmer h-4 w-3/4" />
+            <div className="skeleton-shimmer h-3 w-1/2" />
           </div>
-          <Skeleton className="h-5 w-16 rounded-full" />
+          <div className="skeleton-shimmer h-5 w-16 rounded-full" />
         </div>
       ))}
     </div>

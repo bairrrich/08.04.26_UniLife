@@ -50,7 +50,7 @@ const MODULE_ACCENT_COLORS: Record<string, string> = {
   habits: 'bg-cyan-500',
   goals: 'bg-indigo-500',
   analytics: 'bg-teal-500',
-  settings: 'bg-zinc-400',
+  settings: 'bg-zinc-500',
 }
 
 function getIcon(iconName: string): LucideIcon {

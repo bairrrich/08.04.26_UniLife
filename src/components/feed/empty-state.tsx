@@ -8,17 +8,17 @@ interface EmptyStateProps {
 
 export function FeedEmptyState({ onOpenDialog }: EmptyStateProps) {
   return (
-    <Card className="rounded-xl overflow-hidden border-0 bg-gradient-to-b from-muted/30 to-background">
-      <CardContent className="py-16 text-center">
+    <Card className="overflow-hidden">
+      <CardContent className="py-14 text-center px-4">
         {/* Gradient icon */}
-        <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-full float-animation">
-          <div className="absolute h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/30 via-primary/20 to-amber-400/20 animate-pulse-soft" />
-          <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
+        <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl float-animation">
+          <div className="absolute h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400/30 via-primary/20 to-amber-400/20 animate-pulse-soft" />
+          <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/30">
             <Rss className="h-8 w-8 text-white" />
           </div>
         </div>
 
-        <p className="text-foreground font-semibold text-xl mb-2">
+        <p className="text-foreground font-semibold text-lg mb-2">
           Лента пуста
         </p>
         <p className="text-muted-foreground/70 text-sm max-w-sm mx-auto leading-relaxed mb-6">

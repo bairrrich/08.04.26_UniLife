@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import {
   BarChart3,
   CalendarDays,
@@ -12,6 +13,7 @@ import {
   Flame,
   Target,
   Inbox,
+  ArrowRight,
   Smile,
   Wallet,
   CheckCircle2,
@@ -207,15 +209,21 @@ export default function AnalyticsPage() {
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (
-        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-muted-foreground/25 bg-gradient-to-b from-muted/30 to-transparent py-16">
-          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-400/20 to-violet-500/20">
-            <Inbox className="h-8 w-8 text-muted-foreground/60" />
-          </div>
-          <h3 className="mb-1 text-lg font-semibold text-muted-foreground">Нет данных</h3>
-          <p className="max-w-xs text-center text-sm text-muted-foreground/70">
-            Начните вести дневник, добавлять расходы или тренировки, чтобы увидеть аналитику
-          </p>
-        </div>
+        <Card className="overflow-hidden">
+          <CardContent className="py-14 text-center px-4">
+            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400/30 to-emerald-500/20">
+              <Inbox className="h-10 w-10 text-muted-foreground/60" />
+            </div>
+            <h3 className="mb-1 text-lg font-semibold">Нет данных</h3>
+            <p className="max-w-xs text-center text-sm text-muted-foreground/70">
+              Начните вести дневник, добавлять расходы или тренировки, чтобы увидеть аналитику
+            </p>
+            <Button size="lg" variant="outline" className="mt-6 gap-2">
+              <ArrowRight className="h-4 w-4" />
+              Перейти к модулям
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Content ─────────────────────────────────────────────────────── */}

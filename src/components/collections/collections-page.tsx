@@ -280,7 +280,7 @@ export default function CollectionsPage() {
               <CardContent className="relative p-0">
                 {/* Subtle gradient card background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
-                <div className="relative flex flex-col items-center justify-center py-12 text-center">
+                <div className="relative flex flex-col items-center justify-center py-14 text-center px-4">
                   {/* Gradient icon circle with type emoji */}
                   <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 to-violet-500 shadow-lg shadow-purple-500/25 text-3xl">
                     {emptyEmoji}
@@ -290,6 +290,7 @@ export default function CollectionsPage() {
                     {emptyState.description}
                   </p>
                   <Button
+                    size="lg"
                     onClick={() => setDialogOpen(true)}
                     className="mt-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-600 transition-all"
                   >
