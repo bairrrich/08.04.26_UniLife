@@ -15,7 +15,7 @@ import { SearchTrigger } from './search-dialog'
 import { SearchDialog } from './search-dialog'
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { motion } from 'framer-motion'
-import { memo } from 'react'
+import { memo, useCallback } from 'react'
 import { useUserPrefs } from '@/lib/use-user-prefs'
 
 // ─── Notification Bell Trigger ─────────────────────────────────────────────
@@ -235,6 +235,8 @@ export function AppSidebar() {
   const notificationsOpen = useAppStore((s) => s.notificationsOpen)
   const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
 
+  const handleNotificationsOpen = useCallback(() => setNotificationsOpen(true), [setNotificationsOpen])
+
   return (
     <>
       {/* Global Search Dialog */}
@@ -248,7 +250,7 @@ export function AppSidebar() {
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex md:w-60 md:flex-col md:border-r bg-sidebar border-sidebar-border fixed inset-y-0 left-0 z-30">
-        <MemoizedSidebarContent onNotificationsOpen={() => setNotificationsOpen(true)} />
+        <MemoizedSidebarContent onNotificationsOpen={handleNotificationsOpen} />
       </aside>
 
       {/* Mobile Header + Sheet */}
@@ -260,7 +262,7 @@ export function AppSidebar() {
             </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-64 p-0">
-            <MemoizedSidebarContent onNotificationsOpen={() => setNotificationsOpen(true)} />
+            <MemoizedSidebarContent onNotificationsOpen={handleNotificationsOpen} />
           </SheetContent>
         </Sheet>
         <div className="flex items-center gap-2">
@@ -279,7 +281,7 @@ export function AppSidebar() {
         </div>
         <div className="ml-auto flex items-center gap-1">
           {/* Mobile notification bell */}
-          <MobileNotificationBell onNotificationsOpen={() => setNotificationsOpen(true)} />
+          <MobileNotificationBell onNotificationsOpen={handleNotificationsOpen} />
           {/* Mobile search icon trigger */}
           <button
             onClick={() => setSearchOpen(true)}

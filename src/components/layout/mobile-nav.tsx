@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
@@ -246,7 +246,7 @@ export function MobileNav() {
     fetchHabitsCount()
   }, [activeModule])
 
-  const habitsBadge = useMemo(() => uncompletedHabitsCount, [uncompletedHabitsCount])
+  const habitsBadge = uncompletedHabitsCount
 
   // ── Clear feed last-seen when user visits feed ──
   useEffect(() => {

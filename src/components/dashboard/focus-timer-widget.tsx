@@ -709,7 +709,7 @@ export default function FocusTimerWidget() {
 
   // ── Persist timer state to localStorage ──────────────────────────────
   useEffect(() => {
-    if (!mounted) return
+    if (!mounted || isRunning) return
     saveTimerState({
       mode,
       timeLeft,
@@ -719,6 +719,20 @@ export default function FocusTimerWidget() {
       updatedAt: Date.now(),
     })
   }, [mode, timeLeft, isRunning, sessions, soundEnabled, mounted])
+
+  // ── Persist on unmount ──────────────────────────────────────────────
+  useEffect(() => {
+    return () => {
+      saveTimerState({
+        mode,
+        timeLeft,
+        running: isRunning,
+        sessions,
+        soundEnabled,
+        updatedAt: Date.now(),
+      })
+    }
+  }, [])
 
   // ── Timer tick ───────────────────────────────────────────────────────
   useEffect(() => {

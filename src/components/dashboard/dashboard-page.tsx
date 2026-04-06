@@ -242,12 +242,13 @@ export default function DashboardPage() {
     fetchAllData()
   }, [fetchAllData])
 
-  // ── Live clock (updates every minute) ─────────────────────────────
+  // ── Live clock (updates at midnight) ─────────────────────────────
   const [now, setNow] = useState(() => new Date())
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60_000)
-    return () => clearInterval(timer)
-  }, [])
+    const msUntilMidnight = new Date().setHours(24, 0, 0, 0) - Date.now()
+    const timer = setTimeout(() => setNow(new Date()), msUntilMidnight)
+    return () => clearTimeout(timer)
+  }, [now])
 
   // ── Derived Data ────────────────────────────────────────────────────
 
@@ -487,6 +488,11 @@ export default function DashboardPage() {
     return getRelativeTime(dateStr)
   }, [])
 
+  // ── Stable navigation callbacks (avoid re-renders in memo'd children) ──
+  const navigateToFinance = useCallback(() => setActiveModule('finance'), [setActiveModule])
+  const navigateToFeed = useCallback(() => setActiveModule('feed'), [setActiveModule])
+  const handleNotificationCenterNavigate = useCallback((module: AppModule) => setActiveModule(module), [setActiveModule])
+
   const expensePieData =
     financeStats?.byCategory.map((cat, i) => ({
       name: cat.categoryName,
@@ -617,7 +623,7 @@ export default function DashboardPage() {
               loading={loading}
               transactions={recentTransactions}
               getRelativeTime={getTimeAgo}
-              onNavigateToFinance={() => setActiveModule('finance')}
+              onNavigateToFinance={navigateToFinance}
             />
             {!loading && financeStats && (
               <FinanceQuickView
@@ -639,7 +645,7 @@ export default function DashboardPage() {
             <BudgetOverview
               loading={loading}
               budgetData={budgetData}
-              onNavigateToFinance={() => setActiveModule('finance')}
+              onNavigateToFinance={navigateToFinance}
             />
           </DashboardSection>
         )
@@ -672,7 +678,7 @@ export default function DashboardPage() {
               loading={loading}
               feedPosts={feedPosts}
               getTimeAgo={getTimeAgo}
-              onNavigateToFeed={() => setActiveModule('feed')}
+              onNavigateToFeed={navigateToFeed}
             />
             <AchievementsWidget
               loading={loading}
@@ -763,7 +769,7 @@ export default function DashboardPage() {
         hasDiaryToday={!!todayMood}
         hasMealsToday={hasMealsToday}
         uncompletedHabitsCount={totalActive - completedToday}
-        onNavigate={(module) => setActiveModule(module as AppModule)}
+        onNavigate={handleNotificationCenterNavigate}
       />
 
       {/* ── Widget Customizer Dialog ──────────────────────────────── */}
