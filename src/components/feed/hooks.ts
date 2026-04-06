@@ -16,13 +16,27 @@ export function useFeed() {
   // ─── Dialog state ────────────────────────────────────────────────────────
   const [dialogOpen, setDialogOpen] = useState(false)
 
-  // ─── Like / Bookmark state ───────────────────────────────────────────────
+  // ─── Like / Bookmark state (persisted to localStorage) ──────────────────
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set())
   const [likeAnimating, setLikeAnimating] = useState<Set<string>>(new Set())
-  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(new Set())
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      return new Set(JSON.parse(localStorage.getItem('unilife-bookmarked-posts') || '[]'))
+    } catch {
+      return new Set()
+    }
+  })
 
-  // ─── Reaction state ─────────────────────────────────────────────────────
-  const [userReactions, setUserReactions] = useState<Record<string, ReactionType>>({})
+  // ─── Reaction state (persisted to localStorage) ──────────────────────────
+  const [userReactions, setUserReactions] = useState<Record<string, ReactionType>>(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      return JSON.parse(localStorage.getItem('unilife-reactions') || '{}')
+    } catch {
+      return {}
+    }
+  })
   const [reactionCounts, setReactionCounts] = useState<Record<string, ReactionCounts>>({})
   const [reactionAnimating, setReactionAnimating] = useState<Set<string>>(new Set())
 
@@ -46,10 +60,7 @@ export function useFeed() {
       const data: FeedPost[] | null = await safeJson<{ success: boolean; data: FeedPost[] }>(res)
       if (data) {
         setPosts(data.data)
-        const liked = new Set<string>(
-          data.data.filter((p: FeedPost) => p._count.likes > 0).map((p: FeedPost) => p.id),
-        )
-        setLikedPosts(liked)
+        setLikedPosts(new Set<string>())
       }
     } catch (err) {
       console.error('Failed to fetch feed:', err)
@@ -161,6 +172,9 @@ export function useFeed() {
         next.add(postId)
         toast.success('Запись сохранена')
       }
+      try {
+        localStorage.setItem('unilife-bookmarked-posts', JSON.stringify([...next]))
+      } catch { /* ignore */ }
       return next
     })
   }
@@ -191,6 +205,9 @@ export function useFeed() {
       } else {
         delete next[postId]
       }
+      try {
+        localStorage.setItem('unilife-reactions', JSON.stringify(next))
+      } catch { /* ignore */ }
       return next
     })
 
@@ -341,20 +358,29 @@ export function useFeed() {
 
   // ─── Submit Post ─────────────────────────────────────────────────────────
 
-  const handleSubmit = async () => {
-    if (!formCaption.trim()) return
+  const handleSubmit = async (data?: { entityType?: EntityType; caption?: string; tags?: string; imageUrl?: string; mood?: string; visibility?: string }) => {
+    const caption = data?.caption || formCaption
+    if (!caption.trim()) return
     toast.dismiss()
     try {
       const entityId = generateRandomId()
-      const tags = formTags.split(',').map((t) => t.trim()).filter(Boolean)
+      const tags = (data?.tags || formTags).split(',').map((t) => t.trim()).filter(Boolean)
+      const enrichedCaption = [
+        caption.trim(),
+        data?.mood ? `\n[настроение: ${data.mood}]` : '',
+        data?.visibility ? `\n[видимость: ${data.visibility}]` : '',
+      ].filter(Boolean).join('')
       const res = await fetch('/api/feed', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          entityType: formEntityType,
+          entityType: data?.entityType || formEntityType,
           entityId,
-          caption: formCaption.trim(),
+          caption: enrichedCaption || null,
           tags: tags.length > 0 ? tags : [],
+          ...(data?.imageUrl ? { imageUrl: data.imageUrl } : {}),
+          ...(data?.mood ? { mood: data.mood } : {}),
+          ...(data?.visibility ? { visibility: data.visibility } : {}),
         }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)

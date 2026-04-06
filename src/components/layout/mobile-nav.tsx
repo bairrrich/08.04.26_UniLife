@@ -244,7 +244,7 @@ export function MobileNav() {
       }
     }
     fetchHabitsCount()
-  }, [])
+  }, [activeModule])
 
   const habitsBadge = useMemo(() => uncompletedHabitsCount, [uncompletedHabitsCount])
 

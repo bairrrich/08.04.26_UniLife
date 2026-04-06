@@ -83,6 +83,8 @@ const AchievementsWidget = dynamic(() => import('./achievements/achievements-wid
 const RecentGoals = dynamic(() => import('./recent-goals-widget'), { ssr: false, loading: widgetLoad })
 const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false, loading: widgetLoad })
 
+const DailyTipsWidget = dynamic(() => import('./daily-tips-widget'), { ssr: false, loading: widgetLoad })
+
 const NotificationCenter = dynamic(() => import('./notification-center'), { ssr: false, loading: widgetLoad })
 
 
@@ -423,12 +425,45 @@ export default function DashboardPage() {
     if (loading) return 0
     let score = 0
     if (todayEntry) score += 25
-    if (waterTodayMl >= 1000) score += 20
+    if (totalActive > 0) score += Math.round((completedToday / totalActive) * 25)
     if (todayWorkout) score += 25
-    if (totalActive > 0) score += Math.round((completedToday / totalActive) * 15)
-    if (hasMealsToday) score += 15
+    if (hasMealsToday) score += 25
     return score
-  }, [loading, todayEntry, waterTodayMl, todayWorkout, totalActive, completedToday, hasMealsToday])
+  }, [loading, todayEntry, todayWorkout, totalActive, completedToday, hasMealsToday])
+
+  // ── 7-Day Productivity Score History ───────────────────────────────
+  const productivityScoreHistory = useMemo((): number[] => {
+    if (loading) return []
+    const history: number[] = []
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now)
+      d.setDate(now.getDate() - i)
+      d.setHours(0, 0, 0, 0)
+      const dayStr = toDateStr(d)
+
+      let dayScore = 0
+      // Diary: any entry on this day → 25 pts
+      const hasDiaryDay = diaryEntries.some((e) => toDateStr(new Date(e.date)) === dayStr)
+      if (hasDiaryDay) dayScore += 25
+
+      // Workout: any workout on this day → 25 pts
+      const hasWorkoutDay = workouts.some((w) => toDateStr(new Date(w.date)) === dayStr)
+      if (hasWorkoutDay) dayScore += 25
+
+      // Meals: any meal on this day → 25 pts
+      // Approximate from transactions on that day (meals are tracked per date)
+      // For now use hasMealsToday for today only
+      const isToday = dayStr === toDateStr(new Date())
+      if (isToday && hasMealsToday) dayScore += 25
+
+      // Habits: cannot compute per-day from current data for past days, skip
+      // For today, use completedToday
+      // For past days, we don't have per-day habit data readily available
+
+      history.push(dayScore)
+    }
+    return history
+  }, [loading, diaryEntries, workouts, hasMealsToday, now])
 
   // ── Productivity Breakdown Data ─────────────────────────────────────
   const productivityBreakdownData = useMemo((): Array<{
@@ -485,6 +520,7 @@ export default function DashboardPage() {
               habitsTotal={totalActive}
               nutritionLogged={hasMealsToday}
               score={productivityScore}
+              scoreHistory={productivityScoreHistory}
             />
             <StatCards
               loading={loading}
@@ -611,6 +647,7 @@ export default function DashboardPage() {
       case 'inspiration':
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <DailyTipsWidget />
             <DailyInspiration />
             <AiInsightsWidget />
           </DashboardSection>

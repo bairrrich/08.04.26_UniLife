@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useAppStore } from '@/store/use-app-store'
 import type { AppModule } from '@/store/use-app-store'
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+  motion,
+  AnimatePresence,
+} from 'framer-motion'
+import { cn } from '@/lib/utils'
 import {
   Plus,
   BookOpen,
@@ -22,8 +21,6 @@ import {
   SmilePlus,
   Rss,
 } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { cn } from '@/lib/utils'
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 
@@ -180,6 +177,48 @@ function writeRecentItem(id: string, module: AppModule, label: string) {
   }
 }
 
+// ─── Animation variants ───────────────────────────────────────────────────
+
+const menuOverlayVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1 },
+}
+
+const menuContentVariants = {
+  hidden: { opacity: 0, scale: 0.92, y: 8 },
+  visible: {
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: {
+      type: 'spring',
+      stiffness: 400,
+      damping: 28,
+    },
+  },
+  exit: {
+    opacity: 0,
+    scale: 0.92,
+    y: 8,
+    transition: {
+      duration: 0.15,
+    },
+  },
+}
+
+const menuItemVariants = {
+  hidden: { opacity: 0, x: 8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: {
+      delay: 0.06 + i * 0.035,
+      duration: 0.2,
+      ease: 'easeOut',
+    },
+  }),
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function QuickAddMenu() {
@@ -188,6 +227,18 @@ export default function QuickAddMenu() {
   const activeModule = useAppStore((s) => s.activeModule)
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const setPendingDialog = useAppStore((s) => s.setPendingDialog)
+
+  // Keyboard: Escape to close
+  useEffect(() => {
+    if (!open) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [open])
 
   const handleSelect = useCallback(
     (item: QuickAddItem) => {
@@ -217,72 +268,108 @@ export default function QuickAddMenu() {
 
   return (
     <div className="fixed bottom-20 right-6 z-50 md:bottom-8 md:right-8">
-      <DropdownMenu open={open} onOpenChange={setOpen}>
-        <DropdownMenuTrigger asChild>
-          <button
-            className={cn(
-              'group flex h-14 w-14 items-center justify-center rounded-full',
-              'bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
-              'shadow-lg shadow-emerald-500/25',
-              'transition-all duration-300',
-              'hover:shadow-xl hover:shadow-emerald-500/30',
-              'active:scale-95',
-              'dark:from-emerald-600 dark:to-teal-700',
-              // Glass morphism on FAB
-              'ring-1 ring-white/20',
-              open && 'scale-110 shadow-xl shadow-emerald-500/40 ring-white/30',
-            )}
-            aria-label="Быстрое добавление"
-          >
-            <Plus
-              className={cn(
-                'h-6 w-6 transition-transform duration-300',
-                open && 'rotate-45',
-              )}
-            />
-          </button>
-        </DropdownMenuTrigger>
-
-        <DropdownMenuContent
-          align="end"
-          sideOffset={12}
-          className={cn(
-            'w-72 rounded-2xl border p-2 shadow-2xl',
-            // Glass morphism card
-            'bg-background/80 backdrop-blur-xl',
-            'dark:bg-background/70 dark:backdrop-blur-2xl',
-            'ring-1 ring-white/10 dark:ring-white/5',
-          )}
+      {/* ─── FAB Button ─────────────────────────────────────── */}
+      <motion.button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        whileTap={{ scale: 0.9 }}
+        className={cn(
+          'group relative flex h-14 w-14 items-center justify-center rounded-full outline-none',
+          'bg-gradient-to-br from-emerald-500 to-teal-600 text-white',
+          'shadow-lg shadow-emerald-500/25',
+          'transition-shadow duration-300',
+          'hover:shadow-xl hover:shadow-emerald-500/30',
+          'dark:from-emerald-600 dark:to-teal-700',
+          'ring-1 ring-white/20',
+          open && 'shadow-xl shadow-emerald-500/40 ring-white/30',
+        )}
+        aria-label="Быстрое добавление"
+      >
+        {/* Animated Plus → X icon */}
+        <motion.div
+          animate={{ rotate: open ? 45 : 0 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 20 }}
         >
-          {/* Header */}
-          <div className="mb-1.5 px-2 py-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Быстрое добавление
-            </p>
-          </div>
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent mb-2" />
+          <Plus className="h-6 w-6" />
+        </motion.div>
 
-          {/* Recently added section */}
-          {recentItems.length > 0 && (
-            <div className="mb-1">
-              <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 flex items-center gap-1.5">
-                <Clock className="h-3 w-3" />
-                Недавно добавленные
+        {/* Pulse ring when open */}
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ scale: 1, opacity: 0.4 }}
+              animate={{ scale: 1.5, opacity: 0 }}
+              exit={{ scale: 1, opacity: 0 }}
+              transition={{ duration: 1, repeat: Infinity }}
+              className="absolute inset-0 rounded-full bg-emerald-400"
+            />
+          )}
+        </AnimatePresence>
+      </motion.button>
+
+      {/* ─── Backdrop Overlay ───────────────────────────────── */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            variants={menuOverlayVariants}
+            initial="hidden"
+            animate="visible"
+            exit="hidden"
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 z-[-1]"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ─── Menu Panel ────────────────────────────────────── */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            key="quick-add-menu-panel"
+            variants={menuContentVariants}
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            className={cn(
+              'absolute bottom-[calc(100%+12px)] right-0 z-10',
+              'w-72 rounded-2xl border p-2 shadow-2xl',
+              'bg-background/95 backdrop-blur-xl',
+              'dark:bg-background/85 dark:backdrop-blur-2xl',
+              'ring-1 ring-white/10 dark:ring-white/5',
+            )}
+          >
+            {/* Header */}
+            <div className="mb-1.5 px-2 py-1">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Быстрое добавление
               </p>
-              {recentItems.map((recent, idx) => {
-                const def = ITEM_BY_ID[recent.id]
-                if (!def) return null
-                return (
-                  <motion.div
-                    key={`recent-${recent.id}`}
-                    initial={{ opacity: 0, x: 8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.15, delay: idx * 0.04 }}
-                  >
-                    <DropdownMenuItem
+            </div>
+            <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent mb-2" />
+
+            {/* Recently added section */}
+            {recentItems.length > 0 && (
+              <div className="mb-1">
+                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 flex items-center gap-1.5">
+                  <Clock className="h-3 w-3" />
+                  Недавно добавленные
+                </p>
+                {recentItems.map((recent, idx) => {
+                  const def = ITEM_BY_ID[recent.id]
+                  if (!def) return null
+                  return (
+                    <motion.button
+                      key={`recent-${recent.id}`}
+                      type="button"
+                      custom={idx}
+                      variants={menuItemVariants}
+                      initial="hidden"
+                      animate="visible"
                       onClick={() => handleSelect(def)}
                       className={cn(
-                        'flex items-center gap-3 rounded-xl px-2.5 py-2 cursor-pointer transition-colors duration-150',
+                        'flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left cursor-pointer',
+                        'transition-all duration-150',
                         def.hoverBg,
                       )}
                     >
@@ -295,69 +382,69 @@ export default function QuickAddMenu() {
                         {def.icon}
                       </div>
                       <span className="text-sm font-medium flex-1">{recent.label}</span>
-                    </DropdownMenuItem>
-                  </motion.div>
-                )
-              })}
-              <div className="h-px w-full bg-gradient-to-r from-transparent via-border/50 to-transparent my-2" />
-            </div>
-          )}
+                    </motion.button>
+                  )
+                })}
+                <div className="h-px w-full bg-gradient-to-r from-transparent via-border/50 to-transparent my-2" />
+              </div>
+            )}
 
-          {/* Main menu sections with staggered animation */}
-          {MENU_SECTIONS.map((section, sectionIdx) => {
-            const startIdx = allItems.findIndex((i) => i.id === section.items[0].id)
+            {/* Main menu sections */}
+            {MENU_SECTIONS.map((section, sectionIdx) => {
+              const startIdx = allItems.findIndex((i) => i.id === section.items[0].id)
 
-            return (
-              <div key={section.label}>
-                {/* Section label */}
-                <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
-                  {section.label}
-                </p>
+              return (
+                <div key={section.label}>
+                  {/* Section label */}
+                  <p className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                    {section.label}
+                  </p>
 
-                {/* Section items */}
-                {section.items.map((item, itemIdx) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, x: 8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{
-                      duration: 0.15,
-                      delay: (startIdx + itemIdx) * 0.04 + (recentItems.length > 0 ? recentItems.length * 0.04 + 0.1 : 0),
-                    }}
-                  >
-                    <DropdownMenuItem
-                      onClick={() => handleSelect(item)}
-                      className={cn(
-                        'flex items-center gap-3 rounded-xl px-2.5 py-2.5 cursor-pointer transition-colors duration-150',
-                        item.hoverBg,
-                      )}
-                    >
-                      <div
+                  {/* Section items */}
+                  {section.items.map((item, itemIdx) => {
+                    const globalIdx = startIdx + itemIdx + (recentItems.length > 0 ? recentItems.length + 1 : 0)
+                    return (
+                      <motion.button
+                        key={item.id}
+                        type="button"
+                        custom={globalIdx}
+                        variants={menuItemVariants}
+                        initial="hidden"
+                        animate="visible"
+                        onClick={() => handleSelect(item)}
                         className={cn(
-                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                          item.iconBg,
+                          'flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left cursor-pointer',
+                          'transition-all duration-150',
+                          item.hoverBg,
                         )}
                       >
-                        {item.icon}
-                      </div>
-                      <span className="text-sm font-medium flex-1">{item.label}</span>
-                      {/* Keyboard shortcut hint — desktop only */}
-                      <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted/50 px-1.5 text-[10px] font-mono text-muted-foreground">
-                        {item.shortcut}
-                      </kbd>
-                    </DropdownMenuItem>
-                  </motion.div>
-                ))}
+                        <div
+                          className={cn(
+                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 hover:scale-110',
+                            item.iconBg,
+                          )}
+                        >
+                          {item.icon}
+                        </div>
+                        <span className="text-sm font-medium flex-1">{item.label}</span>
+                        {/* Keyboard shortcut hint — desktop only */}
+                        <kbd className="hidden md:inline-flex h-5 min-w-5 items-center justify-center rounded border bg-muted/50 px-1.5 text-[10px] font-mono text-muted-foreground">
+                          {item.shortcut}
+                        </kbd>
+                      </motion.button>
+                    )
+                  })}
 
-                {/* Divider between sections */}
-                {sectionIdx < MENU_SECTIONS.length - 1 && (
-                  <div className="h-px w-full bg-gradient-to-r from-transparent via-border/50 to-transparent my-2" />
-                )}
-              </div>
-            )
-          })}
-        </DropdownMenuContent>
-      </DropdownMenu>
+                  {/* Divider between sections */}
+                  {sectionIdx < MENU_SECTIONS.length - 1 && (
+                    <div className="h-px w-full bg-gradient-to-r from-transparent via-border/50 to-transparent my-2" />
+                  )}
+                </div>
+              )
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

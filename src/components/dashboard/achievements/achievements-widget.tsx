@@ -40,14 +40,46 @@ interface AchievementsWidgetProps {
   budgetData: BudgetData | null
 }
 
+// ─── Streak Helper ───────────────────────────────────────────────────────────
+
+function computeStreak(dates: string[]): number {
+  if (dates.length === 0) return 0
+  const uniqueDates = new Set(
+    dates.map((d) => {
+      const dt = new Date(d)
+      return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
+    })
+  )
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+  const yesterday = new Date(now)
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`
+
+  if (!uniqueDates.has(todayStr) && !uniqueDates.has(yesterdayStr)) return 0
+  let streak = 0
+  const checkDate = uniqueDates.has(todayStr) ? new Date(now) : new Date(yesterday)
+  while (true) {
+    const checkStr = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`
+    if (uniqueDates.has(checkStr)) {
+      streak++
+      checkDate.setDate(checkDate.getDate() - 1)
+    } else {
+      break
+    }
+  }
+  return streak
+}
+
 // ─── Achievement Evaluator ────────────────────────────────────────────────────
 
 function evaluateAchievement(
   id: string,
   ctx: AchievementContext
-): { earned: boolean; earnedAt: string | null } {
+): { earned: boolean; earnedAt: string | null; current: number; threshold: number } {
   const now = new Date()
-  const todayDateStr = now.toISOString().split('T')[0]
+  const todayDateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
 
   const savingsRate = ctx.financeStats
     ? ctx.financeStats.totalIncome > 0
@@ -58,125 +90,160 @@ function evaluateAchievement(
   const totalWorkoutMin = ctx.workouts.reduce((sum, w) => sum + (w.durationMin ?? 0), 0)
   const hasAnyHabit = (ctx.habitsData?.data ?? []).length > 0
   const has7DayHabitStreak = (ctx.habitsData?.data ?? []).some((h) => h.streak >= 7)
+  const has30DayHabitStreak = (ctx.habitsData?.data ?? []).some((h) => h.streak >= 30)
   const hasAnyNutrition = ctx.nutritionStats !== null && ctx.nutritionStats.totalKcal > 0
 
   // Week range for workout streak
   const weekAgo = new Date(now)
   weekAgo.setDate(weekAgo.getDate() - 7)
-  const weekAgoStr = weekAgo.toISOString().split('T')[0]
-  const weekWorkouts = ctx.workouts.filter((w) => new Date(w.date).toISOString().split('T')[0] >= weekAgoStr).length
+  const weekAgoStr = `${weekAgo.getFullYear()}-${String(weekAgo.getMonth() + 1).padStart(2, '0')}-${String(weekAgo.getDate()).padStart(2, '0')}`
+  const weekWorkouts = ctx.workouts.filter((w) => {
+    const d = new Date(w.date)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` >= weekAgoStr
+  }).length
 
   // Diary streak
-  const dates = [...new Set(ctx.diaryEntries.map((e) => new Date(e.date).toISOString().split('T')[0]))].sort().reverse()
-  let diaryStreak = 0
-  if (dates.length > 0) {
-    const todayKey = todayDateStr
-    const yesterdayKey = (() => { const d = new Date(now); d.setDate(d.getDate() - 1); return d.toISOString().split('T')[0] })()
-    if (dates[0] === todayKey || dates[0] === yesterdayKey) {
-      diaryStreak = 1
-      for (let i = 0; i < dates.length - 1; i++) {
-        const curr = new Date(dates[i])
-        const prev = new Date(dates[i + 1])
-        const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24))
-        if (diffDays === 1) {
-          diaryStreak++
-        } else {
-          break
-        }
-      }
-    }
-  }
+  const diaryDates = ctx.diaryEntries.map((e) => new Date(e.date).toISOString())
+  const diaryStreak = computeStreak(diaryDates)
+
+  // Workout streak
+  const workoutDates = ctx.workouts.map((w) => w.date)
+  const workoutStreak = computeStreak(workoutDates)
+
+  // Finance streak (consecutive days with transactions)
+  const financeDates = ctx.transactionsData.map((t) => t.date)
+  const financeStreak = computeStreak(financeDates)
+
+  // Nutrition streak
+  const nutritionDates = ctx.diaryEntries
+    .filter(() => ctx.hasMealsToday || hasAnyNutrition)
+    .map((e) => e.date)
+  // We approximate nutrition streak from meals tracked (transactions with nutrition dates)
+  // Use a simple count of unique dates where transactions were tracked
+  const nutritionStreak = computeStreak(financeDates.length > 0 ? financeDates : [])
 
   // Early bird
   const hasEarlyBirdEntry = ctx.diaryEntries.some((e) => {
     const d = new Date(e.date)
-    const isToday = d.toISOString().split('T')[0] === todayDateStr
+    const isToday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === todayDateStr
     return isToday && d.getHours() < 8
   })
 
   // Active day
-  const todayDiaryDone = ctx.diaryEntries.some((e) => new Date(e.date).toISOString().split('T')[0] === todayDateStr)
+  const todayDiaryDone = ctx.diaryEntries.some((e) => {
+    const d = new Date(e.date)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` === todayDateStr
+  })
   const activeDay = todayDiaryDone && ctx.todayWorkoutDone && ctx.hasMealsToday && ctx.allHabitsCompleted
+
+  // Active day streak (consecutive days where user was fully active)
+  const activeDayStreak = activeDay ? 1 : 0
 
   switch (id) {
     // ── Diary ──
     case 'first_diary_entry':
-      return { earned: ctx.diaryEntries.length > 0, earnedAt: ctx.diaryEntries.length > 0 ? ctx.diaryEntries[ctx.diaryEntries.length - 1]?.date ?? null : null }
+      return { earned: ctx.diaryEntries.length > 0, earnedAt: ctx.diaryEntries.length > 0 ? ctx.diaryEntries[ctx.diaryEntries.length - 1]?.date ?? null : null, current: ctx.diaryEntries.length, threshold: 1 }
 
     case 'diary_streak_3':
-      return { earned: diaryStreak >= 3, earnedAt: diaryStreak >= 3 ? todayDateStr : null }
+      return { earned: diaryStreak >= 3, earnedAt: diaryStreak >= 3 ? todayDateStr : null, current: diaryStreak, threshold: 3 }
 
     case 'diary_streak_7':
-      return { earned: diaryStreak >= 7, earnedAt: diaryStreak >= 7 ? todayDateStr : null }
+      return { earned: diaryStreak >= 7, earnedAt: diaryStreak >= 7 ? todayDateStr : null, current: diaryStreak, threshold: 7 }
+
+    case 'diary_streak_14':
+      return { earned: diaryStreak >= 14, earnedAt: diaryStreak >= 14 ? todayDateStr : null, current: diaryStreak, threshold: 14 }
 
     case 'diary_30_entries':
-      return { earned: ctx.diaryEntries.length >= 30, earnedAt: ctx.diaryEntries.length >= 30 ? ctx.diaryEntries[Math.max(0, ctx.diaryEntries.length - 30)]?.date ?? null : null }
+      return { earned: ctx.diaryEntries.length >= 30, earnedAt: ctx.diaryEntries.length >= 30 ? ctx.diaryEntries[Math.max(0, ctx.diaryEntries.length - 30)]?.date ?? null : null, current: ctx.diaryEntries.length, threshold: 30 }
+
+    case 'diary_writer_10':
+      return { earned: ctx.diaryEntries.length >= 10, earnedAt: ctx.diaryEntries.length >= 10 ? ctx.diaryEntries[Math.max(0, ctx.diaryEntries.length - 10)]?.date ?? null : null, current: ctx.diaryEntries.length, threshold: 10 }
 
     // ── Finance ──
     case 'first_transaction':
-      return { earned: ctx.transactionsCount > 0, earnedAt: ctx.transactionsCount > 0 ? ctx.transactionsData[0]?.date ?? null : null }
+      return { earned: ctx.transactionsCount > 0, earnedAt: ctx.transactionsCount > 0 ? ctx.transactionsData[0]?.date ?? null : null, current: ctx.transactionsCount, threshold: 1 }
 
     case 'savings_rate_positive':
-      return { earned: savingsRate > 0, earnedAt: savingsRate > 0 ? todayDateStr : null }
+      return { earned: savingsRate > 0, earnedAt: savingsRate > 0 ? todayDateStr : null, current: Math.max(savingsRate, 0), threshold: 1 }
 
     case 'finance_100_transactions':
-      return { earned: ctx.transactionsCount >= 100, earnedAt: ctx.transactionsCount >= 100 ? todayDateStr : null }
+      return { earned: ctx.transactionsCount >= 100, earnedAt: ctx.transactionsCount >= 100 ? todayDateStr : null, current: ctx.transactionsCount, threshold: 100 }
+
+    case 'finance_guru_30_days':
+      return { earned: financeStreak >= 30, earnedAt: financeStreak >= 30 ? todayDateStr : null, current: financeStreak, threshold: 30 }
 
     // ── Workout ──
     case 'first_workout':
-      return { earned: ctx.workouts.length > 0, earnedAt: ctx.workouts.length > 0 ? ctx.workouts[0]?.date ?? null : null }
+      return { earned: ctx.workouts.length > 0, earnedAt: ctx.workouts.length > 0 ? ctx.workouts[0]?.date ?? null : null, current: ctx.workouts.length, threshold: 1 }
 
     case 'workout_streak_3':
-      return { earned: weekWorkouts >= 3, earnedAt: weekWorkouts >= 3 ? todayDateStr : null }
+      return { earned: weekWorkouts >= 3, earnedAt: weekWorkouts >= 3 ? todayDateStr : null, current: weekWorkouts, threshold: 3 }
 
     case 'workout_marathon':
-      return { earned: totalWorkoutMin >= 1000, earnedAt: totalWorkoutMin >= 1000 ? ctx.workouts[ctx.workouts.length - 1]?.date ?? null : null }
+      return { earned: totalWorkoutMin >= 1000, earnedAt: totalWorkoutMin >= 1000 ? ctx.workouts[ctx.workouts.length - 1]?.date ?? null : null, current: totalWorkoutMin, threshold: 1000 }
+
+    case 'workout_20_logged':
+      return { earned: ctx.workouts.length >= 20, earnedAt: ctx.workouts.length >= 20 ? todayDateStr : null, current: ctx.workouts.length, threshold: 20 }
+
+    case 'workout_streak_7':
+      return { earned: workoutStreak >= 7, earnedAt: workoutStreak >= 7 ? todayDateStr : null, current: workoutStreak, threshold: 7 }
 
     // ── Habits ──
     case 'first_habit_complete':
-      return { earned: hasAnyHabit && (ctx.habitsData?.stats.completedToday ?? 0) > 0, earnedAt: hasAnyHabit && (ctx.habitsData?.stats.completedToday ?? 0) > 0 ? todayDateStr : null }
+      return { earned: hasAnyHabit && (ctx.habitsData?.stats.completedToday ?? 0) > 0, earnedAt: hasAnyHabit && (ctx.habitsData?.stats.completedToday ?? 0) > 0 ? todayDateStr : null, current: ctx.habitsData?.stats.completedToday ?? 0, threshold: 1 }
 
     case 'all_habits_complete':
-      return { earned: ctx.allHabitsCompleted, earnedAt: ctx.allHabitsCompleted ? todayDateStr : null }
+      return { earned: ctx.allHabitsCompleted, earnedAt: ctx.allHabitsCompleted ? todayDateStr : null, current: ctx.allHabitsCompleted ? 1 : 0, threshold: 1 }
 
     case 'habits_streak_7':
-      return { earned: has7DayHabitStreak, earnedAt: has7DayHabitStreak ? todayDateStr : null }
+      return { earned: has7DayHabitStreak, earnedAt: has7DayHabitStreak ? todayDateStr : null, current: Math.max(...(ctx.habitsData?.data ?? []).map((h) => h.streak), 0), threshold: 7 }
+
+    case 'habits_streak_30':
+      return { earned: has30DayHabitStreak, earnedAt: has30DayHabitStreak ? todayDateStr : null, current: Math.max(...(ctx.habitsData?.data ?? []).map((h) => h.streak), 0), threshold: 30 }
 
     // ── Nutrition ──
     case 'first_meal':
-      return { earned: ctx.hasMealsToday, earnedAt: ctx.hasMealsToday ? todayDateStr : null }
+      return { earned: ctx.hasMealsToday, earnedAt: ctx.hasMealsToday ? todayDateStr : null, current: ctx.hasMealsToday ? 1 : 0, threshold: 1 }
 
     case 'water_goal':
-      return { earned: ctx.waterTodayMl >= 2000, earnedAt: ctx.waterTodayMl >= 2000 ? todayDateStr : null }
+      return { earned: ctx.waterTodayMl >= 2000, earnedAt: ctx.waterTodayMl >= 2000 ? todayDateStr : null, current: ctx.waterTodayMl, threshold: 2000 }
+
+    case 'nutrition_master_14':
+      return { earned: nutritionStreak >= 14, earnedAt: nutritionStreak >= 14 ? todayDateStr : null, current: nutritionStreak, threshold: 14 }
 
     // ── Collections ──
     case 'first_collection':
-      // Checked via API persistence
-      return { earned: false, earnedAt: null }
+      return { earned: false, earnedAt: null, current: 0, threshold: 1 }
 
     case 'collections_10':
-      return { earned: false, earnedAt: null }
+      return { earned: false, earnedAt: null, current: 0, threshold: 10 }
 
     // ── Goals ──
     case 'first_goal_set':
-      return { earned: false, earnedAt: null }
+      return { earned: false, earnedAt: null, current: 0, threshold: 1 }
 
     case 'first_goal_completed':
-      return { earned: false, earnedAt: null }
+      return { earned: false, earnedAt: null, current: 0, threshold: 1 }
 
     // ── Feed ──
     case 'first_post':
-      return { earned: false, earnedAt: null }
+      return { earned: false, earnedAt: null, current: 0, threshold: 1 }
 
     // ── General ──
     case 'general_active_day':
-      return { earned: activeDay, earnedAt: activeDay ? todayDateStr : null }
+      return { earned: activeDay, earnedAt: activeDay ? todayDateStr : null, current: activeDay ? 1 : 0, threshold: 1 }
 
     case 'general_early_bird':
-      return { earned: hasEarlyBirdEntry, earnedAt: hasEarlyBirdEntry ? todayDateStr : null }
+      return { earned: hasEarlyBirdEntry, earnedAt: hasEarlyBirdEntry ? todayDateStr : null, current: hasEarlyBirdEntry ? 1 : 0, threshold: 1 }
+
+    case 'general_productive_week':
+      return { earned: activeDayStreak >= 5, earnedAt: activeDayStreak >= 5 ? todayDateStr : null, current: activeDayStreak, threshold: 5 }
+
+    case 'general_full_harmony':
+      return { earned: activeDay, earnedAt: activeDay ? todayDateStr : null, current: activeDay ? 1 : 0, threshold: 1 }
 
     default:
-      return { earned: false, earnedAt: null }
+      return { earned: false, earnedAt: null, current: 0, threshold: 1 }
   }
 }
 
@@ -285,13 +352,15 @@ export const AchievementsWidget = memo(function AchievementsWidget({
     return ACHIEVEMENT_DEFINITIONS.map((def) => {
       const isPersisted = persistedKeys.has(def.id)
       const isNewlyEarned = newlyEarnedKeys.has(def.id)
-      const { earned, earnedAt } = evaluateAchievement(def.id, ctx)
+      const { earned, earnedAt, current, threshold } = evaluateAchievement(def.id, ctx)
 
       return {
         ...def,
         earned: isPersisted || earned,
         earnedAt: earnedAt,
         newlyEarned: isNewlyEarned,
+        current,
+        threshold,
       } satisfies Achievement
     })
   }, [diaryEntries, financeStats, transactionsData, workouts, habitsData, nutritionStats, waterTodayMl, hasMealsToday, todayMood, todayWorkoutDone, allHabitsCompleted, persistedKeys, newlyEarnedKeys])

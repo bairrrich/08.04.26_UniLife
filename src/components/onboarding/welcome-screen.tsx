@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -27,9 +27,74 @@ import {
   Zap,
   Dumbbell,
   Lightbulb,
+  LayoutDashboard,
+  BookOpen,
+  Wallet,
+  Utensils,
+  Flame,
+  Repeat,
 } from 'lucide-react'
 
-const TOTAL_STEPS = 3
+const TOTAL_STEPS = 4
+
+// ─── Module Tour Data ───────────────────────────────────────────────────
+
+const MODULE_TOUR = [
+  {
+    id: 'dashboard',
+    label: 'Дашборд',
+    description: 'Обзор вашего дня, прогресс и аналитика',
+    icon: LayoutDashboard,
+    gradient: 'from-emerald-400 to-teal-500',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+  },
+  {
+    id: 'diary',
+    label: 'Дневник',
+    description: 'Записи, настроение и тренды за неделю',
+    icon: BookOpen,
+    gradient: 'from-blue-400 to-indigo-500',
+    iconBg: 'bg-blue-100 dark:bg-blue-900/40',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+  },
+  {
+    id: 'finance',
+    label: 'Финансы',
+    description: 'Расходы, доходы, бюджеты и аналитика',
+    icon: Wallet,
+    gradient: 'from-amber-400 to-orange-500',
+    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+    iconColor: 'text-amber-600 dark:text-amber-400',
+  },
+  {
+    id: 'nutrition',
+    label: 'Питание',
+    description: 'Калории, макросы и отслеживание воды',
+    icon: Utensils,
+    gradient: 'from-orange-400 to-rose-500',
+    iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+    iconColor: 'text-orange-600 dark:text-orange-400',
+  },
+  {
+    id: 'workout',
+    label: 'Тренировки',
+    description: 'Упражнения, серии и личные рекорды',
+    icon: Dumbbell,
+    gradient: 'from-violet-400 to-purple-500',
+    iconBg: 'bg-violet-100 dark:bg-violet-900/40',
+    iconColor: 'text-violet-600 dark:text-violet-400',
+  },
+  {
+    id: 'habits',
+    label: 'Привычки',
+    description: 'Трекинг, стрики и тепловая карта',
+    icon: Flame,
+    gradient: 'from-rose-400 to-pink-500',
+    iconBg: 'bg-rose-100 dark:bg-rose-900/40',
+    iconColor: 'text-rose-600 dark:text-rose-400',
+  },
+]
 
 const AVATAR_EMOJIS = [
   { id: '😀', label: 'Улыбка' },
@@ -63,6 +128,8 @@ const MOTIVATIONAL_MESSAGES = [
   'Начните сегодня, чтобы быть благодарными завтра.',
 ]
 
+// ─── Animation variants ─────────────────────────────────────────────────
+
 const slideVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 300 : -300,
@@ -81,6 +148,26 @@ const slideVariants = {
 const slideTransition = {
   x: { type: 'spring', stiffness: 300, damping: 30 },
   opacity: { duration: 0.2 },
+}
+
+// Stagger container for children animations
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.07, delayChildren: 0.1 },
+  },
+}
+
+// Stagger child animation
+const staggerItem = {
+  hidden: { y: 20, opacity: 0, scale: 0.95 },
+  show: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: { type: 'spring', stiffness: 300, damping: 24 },
+  },
 }
 
 // ─── Confetti Particle ────────────────────────────────────────────────
@@ -172,13 +259,52 @@ function OnboardingSkeleton() {
   )
 }
 
+// ─── Module Tour Card ────────────────────────────────────────────────
+
+function ModuleTourCard({
+  module,
+  index,
+}: {
+  module: typeof MODULE_TOUR[number]
+  index: number
+}) {
+  const Icon = module.icon
+  return (
+    <motion.div
+      variants={staggerItem}
+      whileHover={{ y: -2, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="group relative flex flex-col items-center gap-2 rounded-xl border border-border/50 bg-gradient-to-br from-muted/40 to-background/60 p-3 text-center transition-shadow duration-200 hover:shadow-md"
+    >
+      {/* Gradient accent line at top */}
+      <div className={`absolute inset-x-0 top-0 h-0.5 rounded-t-xl bg-gradient-to-r ${module.gradient}`} />
+      <div
+        className={`flex h-10 w-10 items-center justify-center rounded-xl ${module.iconBg} transition-transform duration-200 group-hover:scale-110`}
+      >
+        <Icon className={`h-5 w-5 ${module.iconColor}`} />
+      </div>
+      <div>
+        <div className="text-xs font-semibold text-foreground">{module.label}</div>
+        <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+          {module.description}
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Main Component ──────────────────────────────────────────────────
+
 export function WelcomeScreen() {
   const { setTheme } = useTheme()
+  const containerRef = useRef<HTMLDivElement>(null)
 
   // Lazy initializer — reads localStorage once at mount (SSR-safe)
   const [status, setStatus] = useState<'unknown' | 'show' | 'dismissed'>(() => {
     if (typeof window === 'undefined') return 'unknown'
     try {
+      const onboarded = localStorage.getItem('unilife-onboarded')
+      if (onboarded === 'true') return 'dismissed'
       const completed = localStorage.getItem('unilife-onboarding-completed')
         || localStorage.getItem('unilife-onboarding-complete')
       return completed === 'true' ? 'dismissed' : 'show'
@@ -237,6 +363,7 @@ export function WelcomeScreen() {
 
   const saveProfile = useCallback((skip = false) => {
     try {
+      localStorage.setItem('unilife-onboarded', 'true')
       localStorage.setItem('unilife-onboarding-completed', 'true')
       localStorage.setItem('unilife-onboarding-complete', 'true')
 
@@ -272,6 +399,18 @@ export function WelcomeScreen() {
     saveProfile(true)
     setStatus('dismissed')
   }, [saveProfile])
+
+  // Close on Escape
+  useEffect(() => {
+    if (status !== 'show') return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleSkip()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [status, handleSkip])
 
   const handleNext = useCallback(() => {
     if (currentStep < TOTAL_STEPS - 1) {
@@ -315,7 +454,7 @@ export function WelcomeScreen() {
         <div className="absolute inset-0 bg-black/50 backdrop-blur-md dark:bg-black/70" />
 
         {/* Main container */}
-        <div className="relative z-10 mx-4 w-full max-w-lg">
+        <div className="relative z-10 mx-4 w-full max-w-lg" ref={containerRef}>
           {/* Skip button */}
           <div className="absolute -top-1 right-0 z-20">
             <Button
@@ -343,7 +482,7 @@ export function WelcomeScreen() {
               </div>
 
               {/* Steps container */}
-              <div className="relative min-h-[440px] max-h-[72vh] overflow-hidden sm:min-h-[460px]">
+              <div className="relative min-h-[440px] max-h-[72vh] overflow-y-auto sm:min-h-[460px]">
                 <AnimatePresence mode="wait" custom={direction}>
                   <motion.div
                     key={currentStep}
@@ -355,24 +494,25 @@ export function WelcomeScreen() {
                     transition={slideTransition}
                     className="px-6 pb-2 pt-8 sm:px-8 sm:pt-10"
                   >
-                    {/* ──── Step 1: Name + Avatar Emoji Picker ──── */}
+                    {/* ──── Step 0: Welcome + Module Tour ──── */}
                     {currentStep === 0 && (
-                      <div className="flex flex-col items-center text-center">
+                      <motion.div
+                        className="flex flex-col items-center text-center"
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="show"
+                      >
                         {/* Logo */}
                         <motion.div
-                          initial={{ scale: 0.8, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: 0.15, duration: 0.4, type: 'spring', stiffness: 200 }}
-                          className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/25"
+                          variants={staggerItem}
+                          className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/25"
                         >
                           <span className="text-3xl font-bold text-white">U</span>
                         </motion.div>
 
                         <motion.h1
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.25, duration: 0.3 }}
-                          className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl"
+                          variants={staggerItem}
+                          className="mb-1.5 text-2xl font-bold tracking-tight sm:text-3xl"
                         >
                           Добро пожаловать в{' '}
                           <span className="text-gradient">UniLife</span>
@@ -380,23 +520,75 @@ export function WelcomeScreen() {
                         </motion.h1>
 
                         <motion.p
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.3, duration: 0.3 }}
-                          className="mb-6 text-sm text-muted-foreground sm:text-base"
+                          variants={staggerItem}
+                          className="mb-5 text-sm text-muted-foreground sm:text-base"
                         >
                           Вся жизнь в одном месте
                         </motion.p>
 
+                        {/* Module Tour */}
+                        <motion.div variants={staggerItem} className="mb-4 w-full">
+                          <div className="mb-3 flex items-center justify-center gap-2">
+                            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-border" />
+                            <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                              Модули приложения
+                            </span>
+                            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-border" />
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2.5">
+                            {MODULE_TOUR.map((mod, idx) => (
+                              <ModuleTourCard key={mod.id} module={mod} index={idx} />
+                            ))}
+                          </div>
+                        </motion.div>
+
+                        <motion.p
+                          variants={staggerItem}
+                          className="text-xs text-muted-foreground"
+                        >
+                          И многое другое — цели, аналитика, коллекции, лента...
+                        </motion.p>
+                      </motion.div>
+                    )}
+
+                    {/* ──── Step 1: Name + Avatar Emoji Picker ──── */}
+                    {currentStep === 1 && (
+                      <motion.div
+                        className="flex flex-col items-center text-center"
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="show"
+                      >
+                        {/* Logo */}
+                        <motion.div
+                          variants={staggerItem}
+                          className="mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 shadow-lg shadow-emerald-500/25"
+                        >
+                          <span className="text-3xl font-bold text-white">U</span>
+                        </motion.div>
+
+                        <motion.h1
+                          variants={staggerItem}
+                          className="mb-2 text-2xl font-bold tracking-tight sm:text-3xl"
+                        >
+                          Давайте знакомиться
+                        </motion.h1>
+
+                        <motion.p
+                          variants={staggerItem}
+                          className="mb-6 text-sm text-muted-foreground sm:text-base"
+                        >
+                          Как вас зовут? Выберите аватар
+                        </motion.p>
+
                         {/* Name input */}
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.4, duration: 0.3 }}
+                          variants={staggerItem}
                           className="w-full max-w-xs"
                         >
                           <label className="mb-2 block text-sm font-medium text-left">
-                            Как вас зовут?
+                            Имя
                           </label>
                           <div className="relative">
                             <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -412,13 +604,11 @@ export function WelcomeScreen() {
 
                         {/* Avatar Emoji Picker */}
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.5, duration: 0.3 }}
+                          variants={staggerItem}
                           className="mt-6 w-full max-w-xs"
                         >
                           <label className="mb-3 block text-sm font-medium text-left">
-                            Выберите аватар
+                            Аватар
                           </label>
                           <div className="grid grid-cols-6 gap-2">
                             {AVATAR_EMOJIS.map((emoji, idx) => (
@@ -427,7 +617,7 @@ export function WelcomeScreen() {
                                 type="button"
                                 initial={{ scale: 0, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: 0.55 + idx * 0.05, duration: 0.25, type: 'spring', stiffness: 400, damping: 20 }}
+                                transition={{ delay: 0.1 + idx * 0.05, duration: 0.25, type: 'spring', stiffness: 400, damping: 20 }}
                                 onClick={() => setSelectedAvatar(emoji.id)}
                                 className={`relative flex h-14 w-full items-center justify-center rounded-2xl text-2xl transition-all duration-200 active-press ${
                                   selectedAvatar === emoji.id
@@ -453,9 +643,7 @@ export function WelcomeScreen() {
 
                         {/* Preview */}
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.85, duration: 0.3 }}
+                          variants={staggerItem}
                           className="mt-5 flex items-center gap-3 rounded-xl border bg-muted/30 px-4 py-2.5"
                         >
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 text-lg shadow-sm">
@@ -468,23 +656,28 @@ export function WelcomeScreen() {
                             <div className="text-xs text-muted-foreground">Новый участник UniLife</div>
                           </div>
                         </motion.div>
-                      </div>
+                      </motion.div>
                     )}
 
                     {/* ──── Step 2: Select Primary Goals ──── */}
-                    {currentStep === 1 && (
-                      <div className="flex flex-col">
+                    {currentStep === 2 && (
+                      <motion.div
+                        className="flex flex-col"
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="show"
+                      >
                         <div className="mb-5 text-center">
-                          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+                          <motion.div variants={staggerItem} className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
                             <Target className="h-3.5 w-3.5" />
                             Цели
-                          </div>
-                          <h2 className="text-xl font-bold sm:text-2xl">
+                          </motion.div>
+                          <motion.h2 variants={staggerItem} className="text-xl font-bold sm:text-2xl">
                             Что для вас важно?
-                          </h2>
-                          <p className="mt-1 text-sm text-muted-foreground">
+                          </motion.h2>
+                          <motion.p variants={staggerItem} className="mt-1 text-sm text-muted-foreground">
                             Выберите основные направления
-                          </p>
+                          </motion.p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
@@ -494,9 +687,9 @@ export function WelcomeScreen() {
                               <motion.button
                                 key={item.id}
                                 type="button"
-                                initial={{ y: 15, opacity: 0 }}
-                                animate={{ y: 0, opacity: 1 }}
-                                transition={{ delay: idx * 0.06, duration: 0.3 }}
+                                variants={staggerItem}
+                                whileHover={{ y: -1 }}
+                                whileTap={{ scale: 0.97 }}
                                 onClick={() => toggleGoal(item.id)}
                                 className={`group relative rounded-xl border p-3.5 text-left transition-all duration-200 active-press ${
                                   isChecked
@@ -542,19 +735,19 @@ export function WelcomeScreen() {
                             Выбрано: {selectedGoals.length} из {GOALS.length}
                           </motion.p>
                         )}
-                      </div>
+                      </motion.div>
                     )}
 
-                    {/* ──── Step 3: Theme + Motivational Message ──── */}
-                    {currentStep === 2 && (
-                      <div className="flex flex-col items-center text-center">
+                    {/* ──── Step 3: Theme + Motivational Message + Start ──── */}
+                    {currentStep === 3 && (
+                      <motion.div
+                        className="flex flex-col items-center text-center"
+                        variants={staggerContainer}
+                        initial="hidden"
+                        animate="show"
+                      >
                         {/* Avatar Preview */}
-                        <motion.div
-                          initial={{ scale: 0.6, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{ delay: 0.1, duration: 0.4, type: 'spring', stiffness: 200 }}
-                          className="mb-4"
-                        >
+                        <motion.div variants={staggerItem} className="mb-4">
                           <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 shadow-xl">
                             <span className="text-5xl">
                               {selectedAvatar}
@@ -566,18 +759,14 @@ export function WelcomeScreen() {
                         </motion.div>
 
                         <motion.h2
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.2, duration: 0.3 }}
+                          variants={staggerItem}
                           className="mb-1 text-xl font-bold sm:text-2xl"
                         >
                           {userName.trim() ? `${userName.trim()}, отлично!` : 'Отлично!'}
                         </motion.h2>
 
                         <motion.p
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.3, duration: 0.3 }}
+                          variants={staggerItem}
                           className="mb-5 text-sm text-muted-foreground"
                         >
                           Выберите тему оформления
@@ -585,9 +774,7 @@ export function WelcomeScreen() {
 
                         {/* Theme picker */}
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.35, duration: 0.3 }}
+                          variants={staggerItem}
                           className="mb-5 grid grid-cols-3 gap-2 w-full max-w-xs"
                         >
                           {THEME_OPTIONS.map((option) => {
@@ -614,9 +801,7 @@ export function WelcomeScreen() {
 
                         {/* Motivational Message */}
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.45, duration: 0.3 }}
+                          variants={staggerItem}
                           className="w-full max-w-xs rounded-xl bg-gradient-to-br from-emerald-500/10 via-teal-500/5 to-amber-500/10 border border-primary/10 p-4 mb-5"
                         >
                           <div className="flex items-start gap-2.5 text-left">
@@ -631,9 +816,7 @@ export function WelcomeScreen() {
 
                         {/* Profile Summary */}
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.55, duration: 0.3 }}
+                          variants={staggerItem}
                           className="w-full rounded-xl border bg-muted/30 p-4 text-left"
                         >
                           <div className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -692,9 +875,9 @@ export function WelcomeScreen() {
                         </motion.div>
 
                         <motion.div
-                          initial={{ y: 10, opacity: 0 }}
-                          animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.65, duration: 0.3 }}
+                          variants={staggerItem}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
                         >
                           <Button
                             onClick={handleComplete}
@@ -706,7 +889,7 @@ export function WelcomeScreen() {
                             <ArrowRight className="h-4 w-4" />
                           </Button>
                         </motion.div>
-                      </div>
+                      </motion.div>
                     )}
                   </motion.div>
                 </AnimatePresence>

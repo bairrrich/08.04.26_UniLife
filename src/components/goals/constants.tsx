@@ -291,6 +291,7 @@ export const CATEGORY_OPTIONS = [
   { value: 'health', label: 'Здоровье', icon: <Heart className="h-4 w-4" /> },
   { value: 'finance', label: 'Финансы', icon: <PiggyBank className="h-4 w-4" /> },
   { value: 'career', label: 'Карьера', icon: <Briefcase className="h-4 w-4" /> },
+  { value: 'learning', label: 'Обучение', icon: <GraduationCap className="h-4 w-4" /> },
   { value: 'education', label: 'Образование', icon: <GraduationCap className="h-4 w-4" /> },
   { value: 'fitness', label: 'Фитнес', icon: <Dumbbell className="h-4 w-4" /> },
 ]

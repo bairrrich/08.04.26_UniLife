@@ -30,14 +30,22 @@ function formatEarnedDate(dateStr: string): string {
   })
 }
 
+function getProgressPct(achievement: Achievement): number | null {
+  if (achievement.earned) return null
+  const { threshold, current } = achievement
+  if (threshold === undefined || current === undefined || threshold <= 0) return null
+  return Math.min(Math.round((current / threshold) * 100), 100)
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export const AchievementBadge = memo(function AchievementBadge({
   achievement,
   compact = false,
 }: AchievementBadgeProps) {
-  const { icon, name, description, gradient, category, categoryLabel, earned, earnedAt, newlyEarned } = achievement
+  const { icon, name, description, gradient, category, categoryLabel, earned, earnedAt, newlyEarned, threshold, current } = achievement
   const categoryColor = CATEGORY_COLORS[category as keyof typeof CATEGORY_COLORS]
+  const progressPct = getProgressPct(achievement)
 
   const content = (
     <div
@@ -45,7 +53,7 @@ export const AchievementBadge = memo(function AchievementBadge({
         'group relative flex flex-col items-center gap-1.5 rounded-xl p-2.5 transition-all duration-200',
         earned
           ? 'cursor-default bg-background shadow-sm hover:shadow-md'
-          : 'cursor-default bg-muted/40 opacity-50'
+          : 'cursor-default bg-muted/40 opacity-60'
       )}
     >
       {/* Icon Circle */}
@@ -67,6 +75,11 @@ export const AchievementBadge = memo(function AchievementBadge({
         ) : (
           <Lock className="h-4 w-4 text-muted-foreground" />
         )}
+
+        {/* Newly earned glow */}
+        {newlyEarned && (
+          <div className="absolute inset-0 animate-ping rounded-full bg-gradient-to-br opacity-30" style={{ backgroundImage: 'inherit' }} />
+        )}
       </div>
 
       {/* Text */}
@@ -85,6 +98,31 @@ export const AchievementBadge = memo(function AchievementBadge({
           </span>
         )}
       </div>
+
+      {/* Progress indicator for unearned achievements with thresholds */}
+      {!earned && progressPct !== null && progressPct > 0 && (
+        <div className="mt-0.5 w-full px-0.5">
+          <div className="h-1 w-full rounded-full bg-muted/60 overflow-hidden">
+            <div
+              className={cn(
+                'h-full rounded-full bg-gradient-to-r transition-all duration-500',
+                gradient,
+              )}
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+          <p className="mt-0.5 text-[8px] text-muted-foreground tabular-nums">
+            {current ?? 0}/{threshold}
+          </p>
+        </div>
+      )}
+
+      {/* Earned badge */}
+      {earned && !compact && (
+        <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[8px] shadow-sm">
+          ✓
+        </div>
+      )}
     </div>
   )
 
@@ -98,6 +136,30 @@ export const AchievementBadge = memo(function AchievementBadge({
           <p className="mt-1 text-[10px] text-muted-foreground">
             📅 Получено: {formatEarnedDate(earnedAt)}
           </p>
+        </TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  // Tooltip for unearned achievements with progress
+  if (!earned && progressPct !== null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="bottom" className="max-w-[200px]">
+          <p className="font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
+              <div
+                className={cn('h-full rounded-full bg-gradient-to-r', gradient)}
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="text-[10px] tabular-nums text-muted-foreground font-medium">
+              {current ?? 0}/{threshold}
+            </span>
+          </div>
         </TooltipContent>
       </Tooltip>
     )

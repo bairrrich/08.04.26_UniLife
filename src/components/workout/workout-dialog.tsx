@@ -105,7 +105,7 @@ function ExerciseEditor({
       </div>
 
       {exercises.map((exercise, exIdx) => (
-        <Card key={exIdx} className="border-dashed">
+        <Card key={exercise.id || exIdx} className="border-dashed">
           <CardContent className="pt-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-xs font-medium text-muted-foreground w-5">{exIdx + 1}.</span>

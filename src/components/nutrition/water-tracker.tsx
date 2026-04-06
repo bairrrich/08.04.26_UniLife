@@ -18,7 +18,7 @@ interface WaterTrackerProps {
   waterAnimating: boolean
   waterChartDays: { date: string; dayLabel: string; ml: number; isToday: boolean }[]
   goals?: NutritionGoals | null
-  onAddWater: () => void
+  onAddWater: (targetGlassCount?: number) => void
   onResetWater: () => void
 }
 
@@ -64,7 +64,7 @@ function ConfettiParticles({ active }: { active: boolean }) {
             width: `${p.size}px`,
             height: `${p.size}px`,
             backgroundColor: p.color,
-            borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+            borderRadius: p.id % 2 === 0 ? '50%' : '2px',
             animationDelay: `${p.delay}s`,
             opacity: 0,
           }}
@@ -146,7 +146,7 @@ export function WaterTracker({
             return (
               <button
                 key={i}
-                onClick={onAddWater}
+                onClick={() => onAddWater(i + 1)}
                 className="group flex flex-col items-center gap-1 transition-transform hover:scale-110 active:scale-95"
               >
                 <div

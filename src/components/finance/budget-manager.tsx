@@ -148,7 +148,7 @@ export function BudgetManager({ month, categories }: BudgetManagerProps) {
       const res = await fetch('/api/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ categoryId: addCategoryId, amount: addAmount, month }),
+        body: JSON.stringify({ categoryId: addCategoryId, amount: parseFloat(addAmount) || 0, month }),
       })
       if (res.ok) {
         toast.success('Бюджет добавлен')

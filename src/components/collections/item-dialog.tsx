@@ -1,4 +1,5 @@
 import { Star, CalendarDays, Pencil, Save, X, ExternalLink, Copy } from 'lucide-react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -350,7 +351,13 @@ export function ItemDialog({
               <Separator />
 
               <div className="flex gap-2 flex-wrap">
-                <Button variant="outline" className="flex-1 min-w-[100px]">
+                <Button variant="outline" className="flex-1 min-w-[100px]" onClick={() => {
+                  if (item.coverUrl) {
+                    window.open(item.coverUrl, '_blank')
+                  } else {
+                    toast.info('Нет ссылки для открытия')
+                  }
+                }}>
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Открыть
                 </Button>

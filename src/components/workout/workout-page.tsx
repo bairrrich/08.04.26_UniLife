@@ -1,5 +1,6 @@
 'use client'
 
+import { useSyncExternalStore } from 'react'
 import { Dumbbell, Plus, Clock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -47,7 +48,12 @@ export function WorkoutPage() {
     onExercisesChange: setFormExercises, onApplyPreset: handleApplyPreset,
   }
 
-  const phraseIdx = typeof window !== 'undefined' ? new Date().getDate() % WORKOUT_PHRASES.length : 0
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  )
+  const phraseIdx = mounted ? new Date().getDate() % WORKOUT_PHRASES.length : 0
 
   return (
     <div className="space-y-6 animate-slide-up">

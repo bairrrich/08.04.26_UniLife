@@ -78,7 +78,7 @@ export function ExpenseChart({ chartData, isLoading }: ExpenseChartProps) {
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 11 }}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`}
+                tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}к` : `${v}`}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Bar
@@ -108,7 +108,7 @@ export function ExpenseChart({ chartData, isLoading }: ExpenseChartProps) {
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 11 }}
-                tickFormatter={(v) => `${(v / 1000).toFixed(0)}к`}
+                tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(0)}к` : `${v}`}
               />
               <ChartTooltip content={<ChartTooltipContent />} />
               <Line

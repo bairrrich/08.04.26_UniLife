@@ -147,3 +147,55 @@ export async function POST(request: NextRequest) {
     )
   }
 }
+
+// DELETE /api/nutrition/water?date=YYYY-MM-DD — deletes all water logs for a given date
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const dateStr = searchParams.get('date')
+
+    // Default to today if no date provided
+    let startOfDay: Date
+    let endOfDay: Date
+
+    if (dateStr) {
+      startOfDay = new Date(dateStr + 'T00:00:00.000Z')
+      endOfDay = new Date(dateStr + 'T23:59:59.999Z')
+      if (isNaN(startOfDay.getTime())) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid date format. Use YYYY-MM-DD' },
+          { status: 400 }
+        )
+      }
+    } else {
+      const today = new Date()
+      startOfDay = new Date(
+        Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0, 0)
+      )
+      endOfDay = new Date(
+        Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
+      )
+    }
+
+    const result = await db.waterLog.deleteMany({
+      where: {
+        userId: USER_ID,
+        date: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      data: { deleted: result.count },
+    })
+  } catch (error) {
+    console.error('DELETE /api/nutrition/water error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete water logs' },
+      { status: 500 }
+    )
+  }
+}

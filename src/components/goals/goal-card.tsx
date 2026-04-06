@@ -683,26 +683,6 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               </TooltipContent>
             </Tooltip>
           )}
-          {/* Progress trend indicator (on track / behind / ahead) */}
-          {progressTrend.trend !== 'no_data' && !isCompleted && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={cn(
-                  'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border shrink-0',
-                  progressTrend.bgClass, progressTrend.borderClass, progressTrend.color,
-                )}>
-                  <span className="text-[10px]">{progressTrend.emoji}</span>
-                  {progressTrend.label}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">
-                {progressTrend.trend === 'ahead' ? 'Вы опережаете график'
-                  : progressTrend.trend === 'on_track' ? 'Прогресс соответствует графику'
-                    : progressTrend.trend === 'behind' ? 'Немного отстаёте от графика'
-                      : 'Цель под угрозой — нужно ускориться'}
-              </TooltipContent>
-            </Tooltip>
-          )}
           {/* Progress velocity */}
           {velocityText && !isCompleted && (
             <div className="flex items-center gap-1 text-xs text-violet-600 dark:text-violet-400">

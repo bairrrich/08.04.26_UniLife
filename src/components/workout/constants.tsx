@@ -96,6 +96,7 @@ export const WORKOUT_PRESETS: {
 
 export function emptyExercise(index: number): ExerciseData {
   return {
+    id: crypto.randomUUID(),
     name: '',
     sets: [
       { weight: 0, reps: 10, completed: false },

@@ -2,7 +2,7 @@
 
 import type { Achievement, AchievementCategory } from './types'
 
-export type AchievementDef = Omit<Achievement, 'earned' | 'earnedAt' | 'newlyEarned'>
+export type AchievementDef = Omit<Achievement, 'earned' | 'earnedAt' | 'newlyEarned' | 'current'>
 
 // ─── Color Schemes ────────────────────────────────────────────────────────────
 
@@ -57,6 +57,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.diary.gradient,
     category: 'diary',
     categoryLabel: CATEGORY_COLORS.diary.label,
+    threshold: 1,
   },
   {
     id: 'diary_streak_3',
@@ -66,6 +67,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.diary.gradient,
     category: 'diary',
     categoryLabel: CATEGORY_COLORS.diary.label,
+    threshold: 3,
   },
   {
     id: 'diary_streak_7',
@@ -75,6 +77,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.diary.gradient,
     category: 'diary',
     categoryLabel: CATEGORY_COLORS.diary.label,
+    threshold: 7,
   },
   {
     id: 'diary_30_entries',
@@ -84,6 +87,29 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.diary.gradient,
     category: 'diary',
     categoryLabel: CATEGORY_COLORS.diary.label,
+    threshold: 30,
+  },
+  // NEW: "Писатель" — write 10 diary entries
+  {
+    id: 'diary_writer_10',
+    name: 'Писатель',
+    description: 'Напишите 10 записей в дневнике',
+    icon: '✍️',
+    gradient: CATEGORY_COLORS.diary.gradient,
+    category: 'diary',
+    categoryLabel: CATEGORY_COLORS.diary.label,
+    threshold: 10,
+  },
+  // NEW: "Марафонец" — 7 day diary streak (same as diary_streak_7, use 14 days instead)
+  {
+    id: 'diary_streak_14',
+    name: 'Двухнедельный марафон',
+    description: 'Пишите в дневник 14 дней подряд',
+    icon: '🏅',
+    gradient: CATEGORY_COLORS.diary.gradient,
+    category: 'diary',
+    categoryLabel: CATEGORY_COLORS.diary.label,
+    threshold: 14,
   },
 
   // ── Финансы (Finance) ──
@@ -95,6 +121,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.finance.gradient,
     category: 'finance',
     categoryLabel: CATEGORY_COLORS.finance.label,
+    threshold: 1,
   },
   {
     id: 'savings_rate_positive',
@@ -104,6 +131,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.finance.gradient,
     category: 'finance',
     categoryLabel: CATEGORY_COLORS.finance.label,
+    threshold: 1,
   },
   {
     id: 'finance_100_transactions',
@@ -113,6 +141,18 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.finance.gradient,
     category: 'finance',
     categoryLabel: CATEGORY_COLORS.finance.label,
+    threshold: 100,
+  },
+  // NEW: "Финансовый гуру" — track expenses for 30 days
+  {
+    id: 'finance_guru_30_days',
+    name: 'Финансовый гуру',
+    description: 'Отслеживайте расходы 30 дней подряд',
+    icon: '🧮',
+    gradient: CATEGORY_COLORS.finance.gradient,
+    category: 'finance',
+    categoryLabel: CATEGORY_COLORS.finance.label,
+    threshold: 30,
   },
 
   // ── Тренировки (Workout) ──
@@ -124,6 +164,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.workout.gradient,
     category: 'workout',
     categoryLabel: CATEGORY_COLORS.workout.label,
+    threshold: 1,
   },
   {
     id: 'workout_streak_3',
@@ -133,6 +174,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.workout.gradient,
     category: 'workout',
     categoryLabel: CATEGORY_COLORS.workout.label,
+    threshold: 3,
   },
   {
     id: 'workout_marathon',
@@ -142,6 +184,29 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.workout.gradient,
     category: 'workout',
     categoryLabel: CATEGORY_COLORS.workout.label,
+    threshold: 1000,
+  },
+  // NEW: "Здоровый образ жизни" — log 20 workouts
+  {
+    id: 'workout_20_logged',
+    name: 'Здоровый образ жизни',
+    description: 'Запишите 20 тренировок',
+    icon: '🫀',
+    gradient: CATEGORY_COLORS.workout.gradient,
+    category: 'workout',
+    categoryLabel: CATEGORY_COLORS.workout.label,
+    threshold: 20,
+  },
+  // NEW: "Железная воля" — 7 day workout streak
+  {
+    id: 'workout_streak_7',
+    name: 'Железная воля',
+    description: 'Тренируйтесь 7 дней подряд',
+    icon: '⚡',
+    gradient: CATEGORY_COLORS.workout.gradient,
+    category: 'workout',
+    categoryLabel: CATEGORY_COLORS.workout.label,
+    threshold: 7,
   },
 
   // ── Привычки (Habits) ──
@@ -153,6 +218,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.habits.gradient,
     category: 'habits',
     categoryLabel: CATEGORY_COLORS.habits.label,
+    threshold: 1,
   },
   {
     id: 'all_habits_complete',
@@ -162,6 +228,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.habits.gradient,
     category: 'habits',
     categoryLabel: CATEGORY_COLORS.habits.label,
+    threshold: 1,
   },
   {
     id: 'habits_streak_7',
@@ -171,6 +238,18 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.habits.gradient,
     category: 'habits',
     categoryLabel: CATEGORY_COLORS.habits.label,
+    threshold: 7,
+  },
+  // NEW: "Привычка на всю жизнь" — 30 day habits streak
+  {
+    id: 'habits_streak_30',
+    name: 'Привычка на всю жизнь',
+    description: 'Все привычки 30 дней подряд',
+    icon: '🌟',
+    gradient: CATEGORY_COLORS.habits.gradient,
+    category: 'habits',
+    categoryLabel: CATEGORY_COLORS.habits.label,
+    threshold: 30,
   },
 
   // ── Питание (Nutrition) ──
@@ -182,6 +261,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.nutrition.gradient,
     category: 'nutrition',
     categoryLabel: CATEGORY_COLORS.nutrition.label,
+    threshold: 1,
   },
   {
     id: 'water_goal',
@@ -191,6 +271,18 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.nutrition.gradient,
     category: 'nutrition',
     categoryLabel: CATEGORY_COLORS.nutrition.label,
+    threshold: 2000,
+  },
+  // NEW: "Мастер питания" — track meals for 14 days
+  {
+    id: 'nutrition_master_14',
+    name: 'Мастер питания',
+    description: 'Отслеживайте питание 14 дней подряд',
+    icon: '🥗',
+    gradient: CATEGORY_COLORS.nutrition.gradient,
+    category: 'nutrition',
+    categoryLabel: CATEGORY_COLORS.nutrition.label,
+    threshold: 14,
   },
 
   // ── Коллекции (Collections) ──
@@ -202,6 +294,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.collections.gradient,
     category: 'collections',
     categoryLabel: CATEGORY_COLORS.collections.label,
+    threshold: 1,
   },
   {
     id: 'collections_10',
@@ -211,6 +304,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.collections.gradient,
     category: 'collections',
     categoryLabel: CATEGORY_COLORS.collections.label,
+    threshold: 10,
   },
 
   // ── Цели (Goals) ──
@@ -222,6 +316,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.goals.gradient,
     category: 'goals',
     categoryLabel: CATEGORY_COLORS.goals.label,
+    threshold: 1,
   },
   {
     id: 'first_goal_completed',
@@ -231,6 +326,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.goals.gradient,
     category: 'goals',
     categoryLabel: CATEGORY_COLORS.goals.label,
+    threshold: 1,
   },
 
   // ── Лента (Feed) ──
@@ -242,6 +338,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.feed.gradient,
     category: 'feed',
     categoryLabel: CATEGORY_COLORS.feed.label,
+    threshold: 1,
   },
 
   // ── Общие (General) ──
@@ -253,6 +350,7 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.general.gradient,
     category: 'general',
     categoryLabel: CATEGORY_COLORS.general.label,
+    threshold: 1,
   },
   {
     id: 'general_early_bird',
@@ -262,5 +360,28 @@ export const ACHIEVEMENT_DEFINITIONS: AchievementDef[] = [
     gradient: CATEGORY_COLORS.general.gradient,
     category: 'general',
     categoryLabel: CATEGORY_COLORS.general.label,
+    threshold: 1,
+  },
+  // NEW: "Неделя продуктивности" — active day 5 days in a row
+  {
+    id: 'general_productive_week',
+    name: 'Неделя продуктивности',
+    description: 'Будьте активны 5 дней подряд',
+    icon: '📅',
+    gradient: CATEGORY_COLORS.general.gradient,
+    category: 'general',
+    categoryLabel: CATEGORY_COLORS.general.label,
+    threshold: 5,
+  },
+  // NEW: "Полная гармония" — complete all modules in one day
+  {
+    id: 'general_full_harmony',
+    name: 'Полная гармония',
+    description: 'Заполните все модули за один день',
+    icon: '🌈',
+    gradient: CATEGORY_COLORS.general.gradient,
+    category: 'general',
+    categoryLabel: CATEGORY_COLORS.general.label,
+    threshold: 1,
   },
 ]

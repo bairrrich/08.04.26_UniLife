@@ -12,13 +12,13 @@ import { Button } from '@/components/ui/button'
 import {
   Timer, Play, Pause, RotateCcw, Clock, Flame, Zap, Coffee,
   Sparkles, Brain, SkipForward, VolumeX, Trophy, Volume1,
-  CloudRain, Building2, Volume2,
+  CloudRain, Building2, Volume2, Hourglass, Rocket,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 // ─── Types & Config ────────────────────────────────────────────────────────
 
-type TimerMode = 'focus' | 'quickFocus' | 'deepWork' | 'shortBreak' | 'longBreak'
+type TimerMode = 'express' | 'quickFocus' | 'focus' | 'deepWork' | 'marathon' | 'shortBreak' | 'longBreak'
 
 interface ModeConfig {
   label: string
@@ -39,6 +39,23 @@ interface ModeConfig {
 }
 
 const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
+  express: {
+    label: 'Экспресс',
+    shortLabel: '5 мин',
+    duration: 5 * 60,
+    isBreak: false,
+    stroke: 'stroke-rose-500',
+    strokeBg: 'stroke-rose-500/15',
+    textClass: 'text-rose-600 dark:text-rose-400',
+    iconBg: 'bg-rose-100 dark:bg-rose-900/40',
+    iconClass: 'text-rose-600 dark:text-rose-400',
+    ringGradient: 'from-rose-500 to-pink-400',
+    glowClass: 'shadow-rose-500/30',
+    buttonFrom: 'from-rose-500',
+    buttonTo: 'to-pink-500',
+    icon: Hourglass,
+    category: 'focus',
+  },
   focus: {
     label: 'Помодоро',
     shortLabel: 'Фокус',
@@ -75,8 +92,8 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
   },
   deepWork: {
     label: 'Глубокая работа',
-    shortLabel: 'Глубокая',
-    duration: 50 * 60,
+    shortLabel: '45 мин',
+    duration: 45 * 60,
     isBreak: false,
     stroke: 'stroke-violet-500',
     strokeBg: 'stroke-violet-500/15',
@@ -88,6 +105,23 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
     buttonFrom: 'from-violet-500',
     buttonTo: 'to-purple-500',
     icon: Brain,
+    category: 'focus',
+  },
+  marathon: {
+    label: 'Марафон',
+    shortLabel: '60 мин',
+    duration: 60 * 60,
+    isBreak: false,
+    stroke: 'stroke-orange-500',
+    strokeBg: 'stroke-orange-500/15',
+    textClass: 'text-orange-600 dark:text-orange-400',
+    iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+    iconClass: 'text-orange-600 dark:text-orange-400',
+    ringGradient: 'from-orange-500 to-amber-400',
+    glowClass: 'shadow-orange-500/30',
+    buttonFrom: 'from-orange-500',
+    buttonTo: 'to-amber-500',
+    icon: Rocket,
     category: 'focus',
   },
   shortBreak: {
@@ -126,7 +160,7 @@ const MODE_CONFIG: Record<TimerMode, ModeConfig> = {
   },
 }
 
-const FOCUS_MODES: TimerMode[] = ['focus', 'quickFocus', 'deepWork']
+const FOCUS_MODES: TimerMode[] = ['express', 'quickFocus', 'focus', 'deepWork', 'marathon']
 const BREAK_MODES: TimerMode[] = ['shortBreak', 'longBreak']
 const TOTAL_SESSIONS_IN_CYCLE = 4
 const RING_RADIUS = 60
@@ -142,8 +176,18 @@ const AMBIENT_SOUNDS = [
 
 type AmbientSound = typeof AMBIENT_SOUNDS[number]['id']
 
-// Motivational messages after session completion
+// Motivational quotes shown while running and after completion
 const MOTIVATIONAL_MESSAGES = [
+  'Сфокусируйся — ты можешь всё! 💪',
+  'Один шаг за раз — и цель ближе! 🎯',
+  'Тишина — лучший союзник продуктивности 🤫',
+  'Делай лучшее, что можешь, с тем, что имеешь 🌟',
+  'Настоящая дисциплина — делать то, что нужно 🧠',
+  'Каждая минута фокуса — инвестиция в будущее 📈',
+  'Твой потенциал безграничен! ✨',
+  'Маленькие шаги ведут к большим результатам 🏔️',
+  'Останься сосредоточенным — ты на верном пути 💎',
+  'Упорство побеждает талант, когда талант не упорствует 🔥',
   'Отличная работа! Продолжай в том же духе! 🔥',
   'Фокус — это суперсила! 💪',
   'Ещё один шаг к целям! 🎯',
@@ -521,8 +565,10 @@ export default function FocusTimerWidget() {
   const [motivationalMsg, setMotivationalMsg] = useState<string | null>(null)
   const [ambientSound, setAmbientSound] = useState<AmbientSound>('silence')
   const [showCelebration, setShowCelebration] = useState(false)
+  const [runningQuote, setRunningQuote] = useState<string | null>(null)
   const motivationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const celebrationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const runningQuoteIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const modeRef = useRef<TimerMode>(mode)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -610,12 +656,34 @@ export default function FocusTimerWidget() {
     [refreshStats]
   )
 
-  // Cleanup celebration timeout
+  // Cleanup timeouts
   useEffect(() => {
     return () => {
       if (celebrationTimeoutRef.current) clearTimeout(celebrationTimeoutRef.current)
+      if (runningQuoteIntervalRef.current) clearInterval(runningQuoteIntervalRef.current)
     }
   }, [])
+
+  // ── Rotating motivational quote while running ─────────────────────
+  useEffect(() => {
+    if (!isRunning) return
+
+    // Rotate every 30 seconds
+    const tick = () => setRunningQuote(MOTIVATIONAL_MESSAGES[Math.floor(Math.random() * MOTIVATIONAL_MESSAGES.length)])
+    runningQuoteIntervalRef.current = setInterval(tick, 30000)
+    // Show initial quote via setTimeout to avoid sync setState lint
+    const initTimeout = setTimeout(tick, 0)
+
+    return () => {
+      clearTimeout(initTimeout)
+      if (runningQuoteIntervalRef.current) {
+        clearInterval(runningQuoteIntervalRef.current)
+        runningQuoteIntervalRef.current = null
+      }
+      // Clear quote when effect is cleaned up (timer stops)
+      setRunningQuote(null)
+    }
+  }, [isRunning])
 
   // ── Initialize from localStorage ─────────────────────────────────────
   useEffect(() => {
@@ -991,7 +1059,16 @@ export default function FocusTimerWidget() {
             )}
           </AnimatePresence>
 
-          {/* ── Motivational Message ── */}
+          {/* ── Motivational Quote (while running) ── */}
+          {runningQuote && !motivationalMsg && !showCelebration && (
+            <div className="w-full max-w-[280px] rounded-xl border border-emerald-200/40 dark:border-emerald-800/30 bg-gradient-to-r from-emerald-50/80 to-teal-50/80 dark:from-emerald-950/10 dark:to-teal-950/10 px-4 py-2 text-center">
+              <p className="text-[12px] font-medium text-emerald-600/80 dark:text-emerald-400/80 leading-relaxed">
+                {runningQuote}
+              </p>
+            </div>
+          )}
+
+          {/* ── Completion Motivational Message ── */}
           {motivationalMsg && !showCelebration && (
             <div className="motivation-enter w-full max-w-[280px] rounded-xl border border-emerald-200/60 dark:border-emerald-700/40 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/20 dark:to-teal-950/20 px-4 py-2.5 text-center">
               <div className="flex items-center justify-center gap-1.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
@@ -1137,7 +1214,7 @@ export default function FocusTimerWidget() {
                       <cfg.icon className="h-3 w-3" />
                       <span className="hidden sm:inline">{cfg.shortLabel}</span>
                       <span className="sm:hidden">
-                        {key === 'focus' ? '25' : key === 'quickFocus' ? '15' : '50'}
+                        {MODE_CONFIG[key].duration / 60}
                       </span>
                     </span>
                   </button>

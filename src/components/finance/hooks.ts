@@ -57,37 +57,22 @@ export function useFinance() {
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const txRes = await fetch(`/api/finance?month=${month}`)
-      if (txRes.ok) { const d = await txRes.json(); setTransactions(d.data || []) }
-      await new Promise(r => setTimeout(r, 100))
-
-      const catRes = await fetch('/api/finance/categories')
-      if (catRes.ok) { const d = await catRes.json(); setCategories(d.data || []) }
-      await new Promise(r => setTimeout(r, 100))
-
-      const statsRes = await fetch(`/api/finance/stats?month=${month}`)
-      if (statsRes.ok) { const d = await statsRes.json(); setStats(d.data || null) }
-
-      // Fetch accounts
-      const accRes = await fetch('/api/finance/accounts')
-      if (accRes.ok) { const d = await accRes.json(); setAccounts(d.data || []) }
-
-      // Fetch investments
-      const invRes = await fetch('/api/finance/investments')
-      if (invRes.ok) { const d = await invRes.json(); setInvestmentsData(d.data || null) }
-
-      // Fetch savings goals
-      await fetchSavingsGoals()
-
-      // Fetch recurring transactions
-      await fetchRecurringTransactions()
-
       // Fetch previous month stats for % change comparison
       const [prevYear, prevMon] = month.split('-').map(Number)
       const prevDate = new Date(prevYear, prevMon - 2, 1)
       const prevMonthStr = `${prevDate.getFullYear()}-${(prevDate.getMonth() + 1).toString().padStart(2, '0')}`
-      const prevStatsRes = await fetch(`/api/finance/stats?month=${prevMonthStr}`)
-      if (prevStatsRes.ok) { const d = await prevStatsRes.json(); setPreviousMonthStats(d.data || null) } else { setPreviousMonthStats(null) }
+
+      // Parallel fetch all independent data sources
+      const results = await Promise.allSettled([
+        fetch(`/api/finance?month=${month}`).then(r => r.ok ? r.json() : null).then(d => { if (d) setTransactions(d.data || []) }),
+        fetch('/api/finance/categories').then(r => r.ok ? r.json() : null).then(d => { if (d) setCategories(d.data || []) }),
+        fetch(`/api/finance/stats?month=${month}`).then(r => r.ok ? r.json() : null).then(d => { if (d) setStats(d.data || null) }),
+        fetch('/api/finance/accounts').then(r => r.ok ? r.json() : null).then(d => { if (d) setAccounts(d.data || []) }),
+        fetch('/api/finance/investments').then(r => r.ok ? r.json() : null).then(d => { if (d) setInvestmentsData(d.data || null) }),
+        fetchSavingsGoals(),
+        fetchRecurringTransactions(),
+        fetch(`/api/finance/stats?month=${prevMonthStr}`).then(r => r.ok ? r.json() : null).then(d => { if (d) setPreviousMonthStats(d.data || null); else setPreviousMonthStats(null) }),
+      ])
     } catch (err) {
       console.error('Failed to fetch finance data:', err)
     } finally {
@@ -223,13 +208,17 @@ export function useFinance() {
     const expenses = transactions.filter((t) => t.type === 'EXPENSE')
     if (expenses.length === 0) return null
     const totalExpense = expenses.reduce((sum, t) => sum + t.amount, 0)
-    const uniqueDays = new Set(expenses.map((t) => t.date.split('T')[0]))
-    const daysInMonth = uniqueDays.size || 1
-    const avgDaily = totalExpense / daysInMonth
+    const [selYear, selMon] = month.split('-').map(Number)
+    const daysInSelectedMonth = new Date(selYear, selMon, 0).getDate()
+    // Calculate days elapsed: up to today if current month, or full month if past
+    const now = new Date()
+    const isCurrentMonth = selYear === now.getFullYear() && selMon === now.getMonth() + 1
+    const daysElapsed = isCurrentMonth ? now.getDate() : daysInSelectedMonth
+    const avgDaily = totalExpense / Math.max(daysElapsed, 1)
     const biggestExpense = expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0])
     const top3 = (stats?.byCategory || []).slice().sort((a, b) => b.total - a.total).slice(0, 3)
-    return { avgDaily, biggestExpense, top3, totalExpense, daysInMonth }
-  }, [transactions, stats])
+    return { avgDaily, biggestExpense, top3, totalExpense, daysInMonth: daysElapsed }
+  }, [transactions, stats, month])
 
   const getCategoryForTx = (tx: Transaction): Category => {
     return tx.category || categories.find((c) => c.id === tx.categoryId) || { id: '', name: 'Другое', type: 'EXPENSE', icon: 'circle', color: '#6b7280' }
@@ -247,7 +236,9 @@ export function useFinance() {
   }
 
   const handleSubmit = async () => {
-    if (!newAmount || !newDate) return
+    const amount = parseFloat(newAmount)
+    if (!amount || amount <= 0) { toast.error('Сумма должна быть больше нуля'); return }
+    if (!newDate) return
     if (newType === 'TRANSFER' && (!newFromAccountId || !newToAccountId)) return
     if (newType !== 'TRANSFER' && !newCategoryId) return
     setIsSubmitting(true); toast.dismiss()

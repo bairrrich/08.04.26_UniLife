@@ -32,6 +32,10 @@ export interface Achievement {
   earnedAt: string | null
   /** Whether this was just earned (for animation) */
   newlyEarned?: boolean
+  /** Target threshold value (e.g. 7 for "7 day streak") */
+  threshold?: number
+  /** Current progress toward the threshold */
+  current?: number
 }
 
 /** Context data passed to the achievement evaluator */

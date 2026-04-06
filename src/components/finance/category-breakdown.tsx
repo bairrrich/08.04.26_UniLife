@@ -19,10 +19,12 @@ export function CategoryBreakdown({ stats, isLoading, selectedCategoryId, onSele
   const [animated, setAnimated] = useState(false)
 
   useEffect(() => {
+    const resetTimer = setTimeout(() => setAnimated(false), 0)
+    let animTimer: ReturnType<typeof setTimeout>
     if (!isLoading && stats?.byCategory?.length) {
-      const t = setTimeout(() => setAnimated(true), 100)
-      return () => clearTimeout(t)
+      animTimer = setTimeout(() => setAnimated(true), 100)
     }
+    return () => { clearTimeout(resetTimer); clearTimeout(animTimer) }
   }, [isLoading, stats])
 
   if (isLoading) {

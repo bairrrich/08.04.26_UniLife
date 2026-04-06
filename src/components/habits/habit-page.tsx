@@ -464,10 +464,11 @@ export default function HabitsPage() {
             </div>
 
             <div className="stagger-children space-y-3">
-              {/* If showing all, filter out todayRemaining to avoid duplicates */}
+              {/* When showing all, only show completed habits (uncompleted are in "Сегодня" section) */}
+              {/* When hiding completed, show nothing here (uncompleted are in "Сегодня") */}
               {(showCompleted
-                ? filteredHabits
-                : filteredHabits.filter(h => h.todayCompleted)
+                ? categoryFiltered.filter(h => h.todayCompleted)
+                : []
               ).map((habit) => (
                 <HabitCard
                   key={habit.id} habit={habit} last7Days={last7Days}

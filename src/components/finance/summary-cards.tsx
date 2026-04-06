@@ -10,8 +10,8 @@ import type { StatsResponse, Transaction } from './types'
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Compute daily aggregated data for the last N days from transactions */
-function computeDailyData(transactions: Transaction[], type: 'INCOME' | 'EXPENSE', days = 10): { label: string; value: number }[] {
-  const now = new Date()
+function computeDailyData(transactions: Transaction[], type: 'INCOME' | 'EXPENSE', days = 10, baseMonth?: string): { label: string; value: number }[] {
+  const now = baseMonth ? new Date(parseInt(baseMonth.split('-')[0]), parseInt(baseMonth.split('-')[1]) - 1, new Date().getDate()) : new Date()
   const result: { label: string; value: number }[] = []
 
   for (let i = days - 1; i >= 0; i--) {
@@ -28,8 +28,8 @@ function computeDailyData(transactions: Transaction[], type: 'INCOME' | 'EXPENSE
 }
 
 /** Compute cumulative daily balance data for the last N days */
-function computeBalanceData(transactions: Transaction[], days = 10): { label: string; value: number }[] {
-  const now = new Date()
+function computeBalanceData(transactions: Transaction[], days = 10, baseMonth?: string): { label: string; value: number }[] {
+  const now = baseMonth ? new Date(parseInt(baseMonth.split('-')[0]), parseInt(baseMonth.split('-')[1]) - 1, new Date().getDate()) : new Date()
   const result: { label: string; value: number }[] = []
   let cumulative = 0
 
@@ -51,8 +51,8 @@ function computeBalanceData(transactions: Transaction[], days = 10): { label: st
 }
 
 /** Compute daily transaction count for the last N days */
-function computeCountData(transactions: Transaction[], days = 10): { label: string; value: number }[] {
-  const now = new Date()
+function computeCountData(transactions: Transaction[], days = 10, baseMonth?: string): { label: string; value: number }[] {
+  const now = baseMonth ? new Date(parseInt(baseMonth.split('-')[0]), parseInt(baseMonth.split('-')[1]) - 1, new Date().getDate()) : new Date()
   const result: { label: string; value: number }[] = []
 
   for (let i = days - 1; i >= 0; i--) {
@@ -67,8 +67,8 @@ function computeCountData(transactions: Transaction[], days = 10): { label: stri
 }
 
 /** Compute daily savings rate for the last N days */
-function computeSavingsData(transactions: Transaction[], days = 10): { label: string; value: number }[] {
-  const now = new Date()
+function computeSavingsData(transactions: Transaction[], days = 10, baseMonth?: string): { label: string; value: number }[] {
+  const now = baseMonth ? new Date(parseInt(baseMonth.split('-')[0]), parseInt(baseMonth.split('-')[1]) - 1, new Date().getDate()) : new Date()
   const result: { label: string; value: number }[] = []
 
   for (let i = days - 1; i >= 0; i--) {
@@ -178,15 +178,16 @@ interface SummaryCardsProps {
   isLoading: boolean
   transactions: Transaction[]
   previousMonthStats: StatsResponse | null
+  month: string
 }
 
-export function SummaryCards({ stats, isLoading, transactions, previousMonthStats }: SummaryCardsProps) {
+export function SummaryCards({ stats, isLoading, transactions, previousMonthStats, month }: SummaryCardsProps) {
   // Pre-compute sparkline data from real transactions
-  const incomeSparkline = useMemo(() => computeDailyData(transactions, 'INCOME'), [transactions])
-  const expenseSparkline = useMemo(() => computeDailyData(transactions, 'EXPENSE'), [transactions])
-  const balanceSparkline = useMemo(() => computeBalanceData(transactions), [transactions])
-  const savingsSparkline = useMemo(() => computeSavingsData(transactions), [transactions])
-  const countSparkline = useMemo(() => computeCountData(transactions), [transactions])
+  const incomeSparkline = useMemo(() => computeDailyData(transactions, 'INCOME', 10, month), [transactions, month])
+  const expenseSparkline = useMemo(() => computeDailyData(transactions, 'EXPENSE', 10, month), [transactions, month])
+  const balanceSparkline = useMemo(() => computeBalanceData(transactions, 10, month), [transactions, month])
+  const savingsSparkline = useMemo(() => computeSavingsData(transactions, 10, month), [transactions, month])
+  const countSparkline = useMemo(() => computeCountData(transactions, 10, month), [transactions, month])
   const txCount = transactions.length
 
   if (isLoading) {

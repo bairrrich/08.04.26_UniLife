@@ -274,7 +274,7 @@ function TransactionForm({
       {/* Note */}
       <div className="space-y-2">
         <Label>Заметка</Label>
-        <Textarea placeholder="Необязательная заметка..." value={note} onChange={(e) => onNoteChange(e.target.value)} rows={2} />
+        <Textarea placeholder="Необязательная заметка..." value={note} onChange={(e) => onNoteChange(e.target.value)} rows={2} maxLength={200} />
         <span className={cn(
           'text-[10px] tabular-nums',
           note.length > 180 ? 'text-amber-500' : 'text-muted-foreground/50'

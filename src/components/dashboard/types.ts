@@ -35,7 +35,7 @@ export interface FeedPost {
   caption: string | null
   createdAt: string
   user: { name: string; avatar: string | null }
-  _count: { likes: number }
+  _count: { likes: number; comments: number }
 }
 
 export interface Transaction {
@@ -51,6 +51,7 @@ export interface HabitItem {
   emoji: string
   todayCompleted: boolean
   streak: number
+  last7Days?: Record<string, boolean>
 }
 
 export interface BudgetCategory {

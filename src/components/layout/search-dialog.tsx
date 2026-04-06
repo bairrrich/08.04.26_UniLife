@@ -605,6 +605,7 @@ export function SearchDialog() {
     if (!open) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.target as HTMLElement)?.tagName === 'INPUT' || (e.target as HTMLElement)?.tagName === 'TEXTAREA') return
       if (e.key === 'Escape') {
         setOpen(false)
       } else if (e.key === 'ArrowDown') {

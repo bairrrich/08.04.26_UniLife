@@ -15,7 +15,7 @@ import { SearchTrigger } from './search-dialog'
 import { SearchDialog } from './search-dialog'
 import { KeyboardShortcutsDialog } from './keyboard-shortcuts-dialog'
 import { motion } from 'framer-motion'
-import { memo, useEffect } from 'react'
+import { memo } from 'react'
 import { useUserPrefs } from '@/lib/use-user-prefs'
 
 // ─── Notification Bell Trigger ─────────────────────────────────────────────
@@ -230,41 +230,10 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate, onNoti
   )
 })
 
-// Global keyboard shortcut mapping: key → AppModule
-const KEYBOARD_SHORTCUTS: Record<string, AppModule> = {
-  d: 'dashboard',
-  f: 'finance',
-  n: 'nutrition',
-  w: 'workout',
-  h: 'habits',
-  g: 'goals',
-}
-
 export function AppSidebar() {
-  const setActiveModule = useAppStore((s) => s.setActiveModule)
   const setSearchOpen = useAppStore((s) => s.setSearchOpen)
   const notificationsOpen = useAppStore((s) => s.notificationsOpen)
   const setNotificationsOpen = useAppStore((s) => s.setNotificationsOpen)
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only trigger when not typing in an input/textarea/select
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
-      // Ignore if modifier keys are held (Ctrl/Cmd/Alt/Meta)
-      if (e.ctrlKey || e.metaKey || e.altKey) return
-
-      const key = e.key.toLowerCase()
-      const targetModule = KEYBOARD_SHORTCUTS[key]
-      if (targetModule) {
-        e.preventDefault()
-        setActiveModule(targetModule)
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [setActiveModule])
 
   return (
     <>

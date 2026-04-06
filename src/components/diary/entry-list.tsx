@@ -235,7 +235,7 @@ export function EntryList({
                     {/* Content preview */}
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {isLongContent && !isExpanded
-                        ? entry.content.slice(0, 150) + '...'
+                        ? entry.content.slice(0, 150).replace(/\s+\S*$/, '') + '...'
                         : entry.content
                       }
                     </p>

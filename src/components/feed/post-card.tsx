@@ -131,6 +131,13 @@ export function PostCard({
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const [showParticles, setShowParticles] = useState(false)
 
+  // Cleanup delete confirm timer on unmount
+  useEffect(() => {
+    return () => {
+      if (deleteConfirmTimer.current) clearTimeout(deleteConfirmTimer.current)
+    }
+  }, [])
+
   // ─── Pinned posts (localStorage) ────────────────────────────────────────
   const [pinnedPosts, setPinnedPosts] = useLocalStorage<string[]>('unilife-pinned-posts', [])
   const isPinned = pinnedPosts.includes(post.id)

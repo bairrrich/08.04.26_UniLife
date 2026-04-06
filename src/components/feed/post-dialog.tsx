@@ -49,7 +49,7 @@ interface PostDialogProps {
   setFormCaption: (v: string) => void
   formTags: string
   setFormTags: (v: string) => void
-  onSubmit: () => void
+  onSubmit: (data: { entityType: EntityType; entityId?: string; caption: string; tags: string; imageUrl?: string; mood?: string; visibility?: string }) => void
 }
 
 export function PostDialog({
@@ -329,16 +329,20 @@ export function PostDialog({
         )}
 
         <div className="flex gap-2">
-          {showPreview && (
-            <Button className="flex-1" onClick={onSubmit} disabled={!formCaption.trim()}>
-              Опубликовать
-            </Button>
-          )}
-          {!showPreview && (
-            <Button className="flex-1" onClick={onSubmit} disabled={!formCaption.trim()}>
-              Опубликовать
-            </Button>
-          )}
+          <Button
+            className="flex-1"
+            onClick={() => onSubmit({
+              entityType: formEntityType,
+              caption: formCaption,
+              tags: formTags,
+              imageUrl: imageUrl || undefined,
+              mood: selectedMood || undefined,
+              visibility,
+            })}
+            disabled={!formCaption.trim()}
+          >
+            Опубликовать
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

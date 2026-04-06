@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
@@ -254,6 +255,19 @@ function InvestmentCard({
   onDeleteTx: (investmentId: string, txId: string) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
+
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (deleteConfirming) {
+      onDelete(investment.id)
+      setDeleteConfirming(false)
+    } else {
+      setDeleteConfirming(true)
+      toast.info('Нажмите ещё раз для подтверждения удаления')
+      setTimeout(() => setDeleteConfirming(false), 3000)
+    }
+  }
   const totalInvested = investment.totalInvested ?? 0
   const profit = investment.profit ?? 0
   const profitPct = totalInvested > 0 ? (profit / totalInvested) * 100 : 0
@@ -301,8 +315,13 @@ function InvestmentCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-red-500"
-              onClick={(e) => { e.stopPropagation(); onDelete(investment.id) }}
+              className={cn(
+                'h-7 w-7 transition-colors',
+                deleteConfirming
+                  ? 'text-red-500 hover:text-red-600'
+                  : 'text-muted-foreground hover:text-red-500'
+              )}
+              onClick={handleDeleteClick}
             >
               <Trash2 className="h-3.5 w-3.5" />
             </Button>
@@ -326,7 +345,7 @@ function InvestmentCard({
             onClick={() => setExpanded(!expanded)}
             className="mt-3 flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:bg-muted/50 transition-colors"
           >
-            <span>{investment.transactions.length} {investment.transactions.length === 1 ? 'операция' : 'операций'}</span>
+            <span>{investment.transactions.length} {investment.transactions.length === 1 ? 'операция' : (investment.transactions.length < 5 && investment.transactions.length > 1) ? 'операции' : 'операций'}</span>
             {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </button>
         )}

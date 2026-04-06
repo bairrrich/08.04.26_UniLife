@@ -301,7 +301,7 @@ export function useNutrition() {
           note: editNote,
           items: validItems.map((item) => ({
             name: item.name,
-            calories: parseFloat(item.kcal) || 0,
+            kcal: parseFloat(item.kcal) || 0,
             protein: parseFloat(item.protein) || 0,
             fat: parseFloat(item.fat) || 0,
             carbs: parseFloat(item.carbs) || 0,
@@ -354,17 +354,27 @@ export function useNutrition() {
 
   // ─── Water ───────────────────────────────────────────────────────────────
 
-  const handleAddWater = useCallback(async () => {
+  const handleAddWater = useCallback(async (targetGlassCount?: number) => {
     setWaterAnimating(true)
     setTimeout(() => setWaterAnimating(false), 300)
     try {
-      const res = await fetch('/api/nutrition/water', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ date: today, amountMl: 250 }),
-      })
-      if (res.ok) {
-        toast.success('+250 мл воды')
+      const currentGlasses = waterStats.glasses
+      const glassesToAdd = targetGlassCount != null ? targetGlassCount - currentGlasses : 1
+      if (glassesToAdd <= 0) return
+
+      const totalMl = glassesToAdd * 250
+      const promises = Array.from({ length: glassesToAdd }, () =>
+        fetch('/api/nutrition/water', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ date: today, amountMl: 250 }),
+        })
+      )
+      const results = await Promise.allSettled(promises)
+      const succeeded = results.filter((r) => r.status === 'fulfilled' && r.value.ok).length
+
+      if (succeeded > 0) {
+        toast.success(`+${succeeded * 250} мл воды`)
         fetchData()
       } else {
         toast.error('Ошибка при добавлении воды')
@@ -373,17 +383,28 @@ export function useNutrition() {
       console.error('Failed to add water:', err)
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
-  }, [today, fetchData])
+  }, [today, fetchData, waterStats.glasses])
 
   const handleGoalsSaved = useCallback((newGoals: NutritionGoals) => {
     setGoals(newGoals)
   }, [])
 
-  const handleResetWater = useCallback(() => {
+  const handleResetWater = useCallback(async () => {
     toast.dismiss()
-    toast.info('Водный баланс сброшен')
-    setWaterStats({ totalMl: 0, glasses: 0, goalMl: goals.dailyWater, percentage: 0 })
-  }, [goals.dailyWater])
+    try {
+      const res = await fetch(`/api/nutrition/water?date=${today}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.info('Водный баланс сброшен')
+        setWaterStats({ totalMl: 0, glasses: 0, goalMl: goals.dailyWater, percentage: 0 })
+        fetchData()
+      } else {
+        toast.error('Ошибка при сбросе водного баланса')
+      }
+    } catch (err) {
+      console.error('Failed to reset water:', err)
+      toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
+    }
+  }, [today, goals.dailyWater, fetchData])
 
   return {
     // Data

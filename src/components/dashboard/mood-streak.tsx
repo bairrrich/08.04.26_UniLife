@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
 } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -47,6 +48,21 @@ function getDayLabel(dateStr: string): string {
   return dayNamesShort[dayIndex]
 }
 
+function getStreakFlameSize(streak: number): string {
+  if (streak >= 14) return 'text-3xl'
+  if (streak >= 7) return 'text-2xl'
+  return 'text-xl'
+}
+
+function getStreakLabel(streak: number): string {
+  const lastDigit = streak % 10
+  const lastTwo = streak % 100
+  if (lastTwo >= 11 && lastTwo <= 14) return `${streak} дней подряд`
+  if (lastDigit === 1) return `${streak} день подряд`
+  if (lastDigit >= 2 && lastDigit <= 4) return `${streak} дня подряд`
+  return `${streak} дней подряд`
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function MoodStreak({ loading, recentMoods, streak, todayMood }: MoodStreakProps) {
@@ -74,27 +90,36 @@ export default function MoodStreak({ loading, recentMoods, streak, todayMood }: 
   }
 
   const hasNoStreak = streak === 0 && todayMood === null
+  const isToday = (mood: number | null, index: number) => index === recentMoods.length - 1
 
   return (
     <Card className="rounded-xl border card-hover animate-slide-up py-3">
       <CardContent className="flex flex-col items-center gap-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Last 7 days mood circles */}
         <div className="flex items-center gap-2 overflow-x-auto sm:overflow-visible pb-1 sm:pb-0 scrollbar-none">
-          {recentMoods.map((item) => {
+          {recentMoods.map((item, idx) => {
             const mood = item.mood
+            const isTodayEntry = isToday(mood, idx)
 
             return (
               <div key={item.date} className="flex flex-col items-center gap-1">
                 {mood !== null && mood !== undefined ? (
                   <div
-                    className={`flex h-9 w-9 items-center justify-center rounded-full text-base ${moodBgColors[mood]}`}
+                    className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-full text-base transition-transform duration-200',
+                      moodBgColors[mood],
+                      isTodayEntry && 'ring-2 ring-primary ring-offset-1',
+                    )}
                   >
                     {moodEmojis[mood]}
                   </div>
                 ) : (
                   <div className="flex h-9 w-9 items-center justify-center rounded-full border-2 border-muted" />
                 )}
-                <span className="text-[10px] text-muted-foreground">
+                <span className={cn(
+                  'text-[10px]',
+                  isTodayEntry ? 'font-semibold text-foreground' : 'text-muted-foreground'
+                )}>
                   {getDayLabel(item.date)}
                 </span>
               </div>
@@ -103,9 +128,17 @@ export default function MoodStreak({ loading, recentMoods, streak, todayMood }: 
         </div>
 
         {/* Streak info */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {streak >= 3 && (
-            <span className="text-xl" role="img" aria-label="fire">
+            <span
+              className={cn(
+                getStreakFlameSize(streak),
+                'transition-transform duration-200',
+                streak >= 7 && 'animate-pulse',
+              )}
+              role="img"
+              aria-label="fire streak"
+            >
               🔥
             </span>
           )}
@@ -114,10 +147,14 @@ export default function MoodStreak({ loading, recentMoods, streak, todayMood }: 
               Начни серию!
             </p>
           ) : (
-            <>
-              <span className="text-2xl font-bold tabular-nums">{streak}</span>
-              <span className="text-sm text-muted-foreground">дней подряд</span>
-            </>
+            <div className="flex flex-col items-end">
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-bold tabular-nums">{streak}</span>
+              </div>
+              <span className="text-[11px] text-muted-foreground">
+                {getStreakLabel(streak)}
+              </span>
+            </div>
           )}
         </div>
       </CardContent>

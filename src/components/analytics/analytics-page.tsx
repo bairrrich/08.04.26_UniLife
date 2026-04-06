@@ -54,6 +54,7 @@ interface Overview {
   totalCalories: number
   totalDaysTracked: number
   totalHabitsCompleted: number
+  totalTransactions: number
 }
 
 interface MonthlyActivityItem {
@@ -158,7 +159,8 @@ export default function AnalyticsPage() {
     data.overview.totalDiaryEntries > 0 ||
     data.overview.totalWorkouts > 0 ||
     data.overview.totalCalories > 0 ||
-    data.overview.totalHabitsCompleted > 0
+    data.overview.totalHabitsCompleted > 0 ||
+    data.overview.totalTransactions > 0
   )
 
   const periodLabel = useMemo(() => {
@@ -480,7 +482,7 @@ function MoodDistributionChart({ loading, data }: { loading: boolean; data: Anal
                     stroke="none"
                   >
                     {chartData.map((entry, idx) => (
-                      <Cell key={`cell-${idx}`} fill={MOOD_COLORS[entry.mood - 1]} />
+                      <Cell key={`cell-${idx}`} fill={MOOD_COLORS[Math.min(Math.max(entry.mood - 1, 0), MOOD_COLORS.length - 1)]} />
                     ))}
                   </Pie>
                   <ChartTooltip content={<MoodTooltip />} />

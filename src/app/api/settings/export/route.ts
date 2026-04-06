@@ -96,6 +96,19 @@ export async function GET(request: NextRequest) {
         })
         return NextResponse.json({ success: true, data })
       }
+      case 'habits': {
+        const [habits, habitLogs] = await Promise.all([
+          db.habit.findMany({ where: { userId: USER_ID } }),
+          db.habitLog.findMany({
+            where: { habit: { userId: USER_ID } },
+          }),
+        ])
+        return NextResponse.json({ success: true, data: { habits, habitLogs } })
+      }
+      case 'goals': {
+        const data = await db.goal.findMany({ where: { userId: USER_ID } })
+        return NextResponse.json({ success: true, data })
+      }
       default:
         return NextResponse.json(
           { success: false, error: `Unknown module: ${module_}` },

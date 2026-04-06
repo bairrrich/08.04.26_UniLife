@@ -1,9 +1,8 @@
 'use client'
 
-import { Wallet, Plus, Filter, Receipt, PiggyBank, RefreshCw } from 'lucide-react'
+import { Wallet, Plus, Filter, Receipt, PiggyBank, RefreshCw, TrendingUp, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Badge } from '@/components/ui/badge'
 import { getCurrentMonthStr } from '@/lib/format'
 
 import { SummaryCards } from './summary-cards'
@@ -113,10 +112,15 @@ export default function FinancePage() {
         isLoading={isLoading}
       />
 
-      <QuickExpenseBar onQuickExpense={(label, amount) => {
-        handleQuickExpense(label, amount)
-        setShowNewDialog(true)
-      }} />
+      <QuickExpenseBar
+        onQuickExpense={(label, amount) => {
+          handleQuickExpense(label, amount)
+          setShowNewDialog(true)
+        }}
+        transactions={transactions}
+        totalIncome={stats?.totalIncome ?? 0}
+        isLoading={isLoading}
+      />
 
       <Tabs defaultValue="overview">
         <TabsList className="w-full overflow-x-auto flex-nowrap no-scrollbar">
@@ -127,13 +131,13 @@ export default function FinancePage() {
             <Wallet className="h-4 w-4" /><span className="hidden sm:inline">Счёта</span>
           </TabsTrigger>
           <TabsTrigger value="investments" className="gap-1.5 shrink-0">
-            <Wallet className="h-4 w-4" /><span className="hidden sm:inline">Инвестиции</span>
+            <TrendingUp className="h-4 w-4" /><span className="hidden sm:inline">Инвестиции</span>
           </TabsTrigger>
           <TabsTrigger value="savings" className="gap-1.5 shrink-0">
             <PiggyBank className="h-4 w-4" /><span className="hidden sm:inline">Сбережения</span>
           </TabsTrigger>
           <TabsTrigger value="budget" className="gap-1.5 shrink-0">
-            <Wallet className="h-4 w-4" /><span className="hidden sm:inline">Бюджет</span>
+            <Target className="h-4 w-4" /><span className="hidden sm:inline">Бюджет</span>
           </TabsTrigger>
           <TabsTrigger value="recurring" className="gap-1.5 shrink-0">
             <RefreshCw className="h-4 w-4" /><span className="hidden sm:inline">Повторяющиеся</span>
@@ -141,7 +145,7 @@ export default function FinancePage() {
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6">
-          <SummaryCards stats={stats} isLoading={isLoading} transactions={transactions} previousMonthStats={previousMonthStats} />
+          <SummaryCards stats={stats} isLoading={isLoading} transactions={transactions} previousMonthStats={previousMonthStats} month={month} />
 
           <SavingsBalanceBar
             totalIncome={stats?.totalIncome ?? 0}

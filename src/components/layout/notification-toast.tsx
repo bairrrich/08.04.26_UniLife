@@ -71,100 +71,103 @@ export function useNotifications() {
     const hour = new Date().getHours()
     const notifications: NotificationCheck[] = []
 
+    // Build all fetch promises upfront
+    const fetches: Promise<void>[] = []
+
     // 1. Goals with deadlines within 3 days
-    fetch('/api/goals')
-      .then((res) => res.json())
-      .then((json) => {
-        if (!json.success || !json.data) return
-        const goals = json.data as { id: string; title: string; deadline: string | null; status: string; progress: number }[]
+    fetches.push(
+      fetch('/api/goals')
+        .then((res) => res.json())
+        .then((json) => {
+          if (!json.success || !json.data) return
+          const goals = json.data as { id: string; title: string; deadline: string | null; status: string; progress: number }[]
 
-        const upcomingGoals = goals.filter((g) => {
-          if (!g.deadline || g.status === 'completed') return false
-          const days = getDaysUntilDeadline(g.deadline)
-          return days >= 0 && days <= 3
-        })
-
-        // Max 1 goal notification per session
-        if (upcomingGoals.length > 0 && !dismissed.has('goal-deadline')) {
-          const goal = upcomingGoals[0]
-          const days = getDaysUntilDeadline(goal.deadline!)
-          const dayWord = days === 0 ? 'сегодня' : days === 1 ? 'завтра' : `через ${days} дня`
-
-          notifications.push({
-            id: 'goal-deadline',
-            message: `Цель «${goal.title}» — ${dayWord}`,
-            icon: <Target className="h-4 w-4" />,
-            module: 'goals',
+          const upcomingGoals = goals.filter((g) => {
+            if (!g.deadline || g.status === 'completed') return false
+            const days = getDaysUntilDeadline(g.deadline)
+            return days >= 0 && days <= 3
           })
-        }
 
-        return { goals }
-      })
-      .then(({ goals }) => {
-        // 2. Habits not completed by evening (after 5pm)
-        if (hour >= 17 && !dismissed.has('habits-reminder')) {
-          fetch('/api/habits')
-            .then((res) => res.json())
-            .then((json) => {
-              if (!json.success || !json.data) return
-              const activeHabits = (json.data as { todayCompleted: boolean }[]).filter(
-                (h) => !h.todayCompleted
-              )
+          if (upcomingGoals.length > 0 && !dismissed.has('goal-deadline')) {
+            const goal = upcomingGoals[0]
+            const days = getDaysUntilDeadline(goal.deadline!)
+            const dayWord = days === 0 ? 'сегодня' : days === 1 ? 'завтра' : `через ${days} дня`
 
-              if (activeHabits.length > 0) {
-                notifications.push({
-                  id: 'habits-reminder',
-                  message: 'Не забудьте про привычки',
-                  icon: <Sparkles className="h-4 w-4" />,
-                  module: 'habits',
-                })
-              }
-            })
-            .catch(() => {})
-        }
-      })
-      .then(() => {
-        // 3. No diary entry today after 6pm
-        if (hour >= 18 && !dismissed.has('diary-reminder')) {
-          fetch(`/api/diary?date=${today}`)
-            .then((res) => res.json())
-            .then((json) => {
-              if (!json.success || !json.data || json.data.length === 0) {
-                notifications.push({
-                  id: 'diary-reminder',
-                  message: 'Запишите мысли за день',
-                  icon: <BookOpen className="h-4 w-4" />,
-                  module: 'diary',
-                })
-              }
-            })
-            .catch(() => {})
-        }
-      })
-      .then(() => {
-        // Small delay to collect all notifications before showing
-        setTimeout(() => {
-          for (const notif of notifications) {
-            markDismissed(notif.id)
-
-            toast(notif.message, {
-              icon: notif.icon,
-              description: notif.module ? 'Нажмите, чтобы перейти' : undefined,
-              duration: 6000,
-              action: notif.module
-                ? {
-                    label: 'Перейти',
-                    onClick: () => setActiveModule(notif.module!),
-                  }
-                : undefined,
-              closeButton: true,
+            notifications.push({
+              id: 'goal-deadline',
+              message: `Цель «${goal.title}» — ${dayWord}`,
+              icon: <Target className="h-4 w-4" />,
+              module: 'goals',
             })
           }
-        }, 800)
-      })
-      .catch(() => {
-        // Silent fail — notifications are non-critical
-      })
+        })
+        .catch(() => {})
+    )
+
+    // 2. Habits not completed by evening (after 5pm)
+    if (hour >= 17) {
+      fetches.push(
+        fetch('/api/habits')
+          .then((res) => res.json())
+          .then((json) => {
+            if (!json.success || !json.data) return
+            if (dismissed.has('habits-reminder')) return
+            const activeHabits = (json.data as { todayCompleted: boolean }[]).filter(
+              (h) => !h.todayCompleted
+            )
+
+            if (activeHabits.length > 0) {
+              notifications.push({
+                id: 'habits-reminder',
+                message: 'Не забудьте про привычки',
+                icon: <Sparkles className="h-4 w-4" />,
+                module: 'habits',
+              })
+            }
+          })
+          .catch(() => {})
+      )
+    }
+
+    // 3. No diary entry today after 6pm
+    if (hour >= 18) {
+      fetches.push(
+        fetch(`/api/diary?date=${today}`)
+          .then((res) => res.json())
+          .then((json) => {
+            if (dismissed.has('diary-reminder')) return
+            if (!json.success || !json.data || json.data.length === 0) {
+              notifications.push({
+                id: 'diary-reminder',
+                message: 'Запишите мысли за день',
+                icon: <BookOpen className="h-4 w-4" />,
+                module: 'diary',
+              })
+            }
+          })
+          .catch(() => {})
+      )
+    }
+
+    // Wait for ALL fetches to complete, then show notifications
+    Promise.all(fetches).then(() => {
+      for (const notif of notifications) {
+        markDismissed(notif.id)
+
+        toast(notif.message, {
+          icon: notif.icon,
+          description: notif.module ? 'Нажмите, чтобы перейти' : undefined,
+          duration: 6000,
+          action: notif.module
+            ? {
+                label: 'Перейти',
+                onClick: () => setActiveModule(notif.module!),
+              }
+            : undefined,
+          closeButton: true,
+        })
+      }
+    })
   }, [activeModule, setActiveModule])
 }
 

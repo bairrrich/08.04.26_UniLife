@@ -267,7 +267,7 @@ export function OverviewStats({
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-xl font-bold tabular-nums"><AnimatedNumber value={habitsRate} /></p>
+              <p className="text-xl font-bold tabular-nums"><AnimatedNumber value={habitsRate} />%</p>
               <div className="mt-1 flex items-center gap-1">
                 <Sparkles className="h-3 w-3 text-muted-foreground" />
                 <p className="text-xs text-muted-foreground">
