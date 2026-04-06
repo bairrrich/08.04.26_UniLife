@@ -18,6 +18,7 @@ import { AnalyticsSection } from './analytics-section'
 import { MonthNav } from './month-nav'
 import { QuickStatsBar } from './quick-stats-bar'
 import { BudgetProgressBar } from './budget-progress-bar'
+import { BudgetProgress } from './budget-progress'
 import { QuickExpenseBar } from './quick-expense-bar'
 import { BudgetManager } from './budget-manager'
 import { ExportButton } from './export-button'
@@ -104,6 +105,11 @@ export default function FinancePage() {
       <BudgetProgressBar
         totalIncome={stats?.totalIncome ?? 0}
         totalExpense={stats?.totalExpense ?? 0}
+        isLoading={isLoading}
+      />
+
+      <BudgetProgress
+        month={month}
         isLoading={isLoading}
       />
 

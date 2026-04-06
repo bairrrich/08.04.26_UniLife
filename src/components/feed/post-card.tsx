@@ -15,6 +15,7 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import type { FeedPost, FeedComment, ReactionType, ReactionCounts } from './types'
+import { CommentSection, CommentPreview } from './comment-section'
 import { ENTITY_COLORS, ENTITY_ICONS, ENTITY_BORDER, ENTITY_LABELS, ENTITY_ICON_BG, REACTION_EMOJI, REACTION_OPTIONS, formatRelativeTime, MAX_COMMENT_LENGTH, parsePostTags } from './constants'
 
 // ─── Comment avatar colors (pastel) ──────────────────────────────────────────
@@ -152,13 +153,11 @@ export function PostCard({
 
   const handleReplyTo = (commentId: string, userName?: string) => {
     setReplyState({ parentId: commentId, text: '', sending: false })
-    // Also open comment section if not already open
     if (!showCommentSection) onToggleCommentSection(post.id)
   }
 
   const handleReplySubmit = () => {
     if (!replyState.text.trim() || replyState.sending) return
-    // Use the parent comment submit handler
     onCommentTextChange(post.id, replyState.text)
     onCommentSubmit(post.id)
     setReplyState({ parentId: null, text: '', sending: false })
@@ -186,6 +185,28 @@ export function PostCard({
       setTimeout(() => setShowParticles(false), 700)
     }
     onToggleLike(post.id)
+  }
+
+  // Enhanced share: copy post text to clipboard
+  const handleShareClick = () => {
+    const text = post.caption || ''
+    if (!text) {
+      onShare(post)
+      return
+    }
+    if (navigator.clipboard) {
+      navigator.clipboard
+        .writeText(text)
+        .then(() => toast.success('Текст скопирован в буфер обмена'))
+        .catch(() => toast.error('Не удалось скопировать'))
+    } else {
+      toast.info('Не удалось скопировать автоматически')
+    }
+  }
+
+  // Bookmark with localStorage
+  const handleBookmarkClick = () => {
+    onToggleBookmark(post.id)
   }
 
   const likeCount = isLiked ? Math.max(post._count.likes, 1) : post._count.likes
@@ -283,7 +304,7 @@ export function PostCard({
               <DropdownMenuContent align="end" className="w-44">
                 <DropdownMenuItem onClick={() => onShare(post)}>
                   <Share2 className="h-4 w-4 mr-2" />
-                  Поделиться
+                  Поделиться ссылкой
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
                   navigator.clipboard?.writeText(post.caption || '')
@@ -296,7 +317,7 @@ export function PostCard({
                   {isPinned ? <PinOff className="h-4 w-4 mr-2" /> : <Pin className="h-4 w-4 mr-2" />}
                   {isPinned ? 'Открепить' : 'Закрепить запись'}
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onToggleBookmark(post.id)}>
+                <DropdownMenuItem onClick={handleBookmarkClick}>
                   {isBookmarked ? <BookmarkCheck className="h-4 w-4 mr-2" /> : <Bookmark className="h-4 w-4 mr-2" />}
                   {isBookmarked ? 'Убрать из сохранённых' : 'Сохранить'}
                 </DropdownMenuItem>
@@ -316,14 +337,6 @@ export function PostCard({
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              variant="ghost" size="icon"
-              className={cn('h-8 w-8 transition-colors', isBookmarked && 'text-amber-500')}
-              onClick={() => onToggleBookmark(post.id)}
-              title={isBookmarked ? 'Убрать из сохранённых' : 'Сохранить'}
-            >
-              {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
-            </Button>
           </div>
         </div>
 
@@ -386,13 +399,13 @@ export function PostCard({
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex items-center gap-2">
+        {/* Actions row with visible share + bookmark */}
+        <div className="flex items-center gap-1">
           {/* Reaction picker with particle burst */}
           <div className="relative">
             <button
               className={cn(
-                'flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1 relative',
+                'flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1.5 relative',
                 userReaction
                   ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20 dark:text-rose-400'
                   : 'text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20'
@@ -458,9 +471,10 @@ export function PostCard({
             </div>
           )}
 
+          {/* Comment toggle button */}
           <button
             className={cn(
-              'flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1',
+              'flex items-center gap-1.5 text-sm transition-colors rounded-full px-3 py-1.5',
               showCommentSection ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-muted-foreground hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'
             )}
             onClick={() => onToggleCommentSection(post.id)}
@@ -469,218 +483,58 @@ export function PostCard({
             <span className="text-xs font-medium">{post.comments.length > 0 ? post.comments.length : ''}</span>
           </button>
 
-          {/* Share button */}
+          {/* Share button — visible in actions row */}
           <button
-            className="flex items-center gap-1.5 text-sm transition-colors rounded-full px-2 py-1 text-muted-foreground hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
-            onClick={() => onShare(post)}
-            title="Поделиться"
+            className="flex items-center gap-1.5 text-sm transition-colors rounded-full px-2.5 py-1.5 text-muted-foreground hover:text-primary hover:bg-primary/10 dark:hover:bg-primary/20"
+            onClick={handleShareClick}
+            title="Скопировать текст"
           >
             <Share2 className="h-4 w-4" />
           </button>
 
-          <div className="ml-auto">
-            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground">
-              <ThumbsUp className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+          {/* Bookmark button — visible in actions row */}
+          <button
+            className={cn(
+              'flex items-center gap-1 text-sm transition-all rounded-full px-2.5 py-1.5',
+              isBookmarked
+                ? 'text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                : 'text-muted-foreground hover:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+            )}
+            onClick={handleBookmarkClick}
+            title={isBookmarked ? 'Убрать из сохранённых' : 'Сохранить'}
+          >
+            {isBookmarked ? <BookmarkCheck className="h-4 w-4" /> : <Bookmark className="h-4 w-4" />}
+          </button>
         </div>
 
-        {/* Inline comment preview — always visible when there are comments */}
+        {/* Collapsed comment preview — shown when section is closed */}
         {!showCommentSection && post.comments.length > 0 && (
-          <div className="rounded-lg bg-muted/40 p-3 space-y-2">
-            <div className="space-y-2">
-              {post.comments.slice(0, 2).map((comment) => (
-                <div key={comment.id} className="flex gap-2">
-                  <div className={cn(
-                    'h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-semibold shrink-0 flex-shrink-0',
-                    COMMENT_AVATAR_COLORS[hashCode(comment.user.name || 'U') % COMMENT_AVATAR_COLORS.length]
-                  )}>
-                    {(comment.user.name || 'U').charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-medium">{comment.user.name || 'Пользователь'}</span>
-                      <span className="text-[10px] text-muted-foreground/50 tabular-nums">
-                        {formatRelativeTime(comment.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{comment.content}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={() => onToggleCommentSection(post.id)}
-              className="text-xs text-primary hover:text-primary/80 font-medium transition-colors w-full text-center"
-            >
-              {post.comments.length > 2
-                ? `Показать все ${post.comments.length} комментариев`
-                : 'Написать комментарий'}
-            </button>
-          </div>
+          <CommentPreview
+            comments={post.comments}
+            postId={post.id}
+            onToggleSection={onToggleCommentSection}
+          />
         )}
 
-        {/* Comments section with reply threading */}
+        {/* Expandable comment section */}
         {showCommentSection && (
           <>
-            {post.comments.length === 0 && !expandedComments ? (
-              <div className="text-center py-3">
-                <p className="text-xs text-muted-foreground/60 italic">Пока нет комментариев. Будьте первым!</p>
-              </div>
-            ) : (
-              <>
-                <Separator />
-                {/* Reply count */}
-                {post.comments.length > 0 && (
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <MessageCircle className="h-3.5 w-3.5 text-muted-foreground/50" />
-                    <span className="text-xs text-muted-foreground/60 font-medium tabular-nums">
-                      {post.comments.length} {post.comments.length === 1 ? 'комментарий' : post.comments.length < 5 ? 'комментария' : 'комментариев'}
-                    </span>
-                  </div>
-                )}
-                <div className="space-y-2">
-                  {(expandedComments ? post.comments : post.comments.slice(0, 2)).map((comment) => (
-                    <div key={comment.id}>
-                      <CommentItem
-                        comment={comment}
-                        isReplying={replyState.parentId === comment.id}
-                        onReply={() => handleReplyTo(comment.id, comment.user.name || undefined)}
-                      />
-                      {/* Inline reply input when replying to this comment */}
-                      {replyState.parentId === comment.id && (
-                        <div className="flex items-center gap-2 pl-9 mt-1.5">
-                          <Avatar className="h-5 w-5 shrink-0">
-                            <AvatarFallback className="text-[8px]">А</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 focus-within:ring-1 focus-within:ring-primary/20 transition-all">
-                            <input
-                              type="text"
-                              placeholder={`Ответить ${comment.user.name || ''}...`}
-                              value={replyState.text}
-                              onChange={(e) => setReplyState(prev => ({ ...prev, text: e.target.value }))}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                  e.preventDefault()
-                                  handleReplySubmit()
-                                }
-                              }}
-                              className="flex-1 bg-transparent text-xs outline-none placeholder:text-muted-foreground/50"
-                              autoFocus
-                            />
-                            <button
-                              type="button"
-                              onClick={handleReplySubmit}
-                              disabled={!replyState.text.trim()}
-                              className={cn(
-                                'transition-colors shrink-0',
-                                replyState.text.trim() ? 'text-primary' : 'text-muted-foreground/30'
-                              )}
-                            >
-                              <Send className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setReplyState({ parentId: null, text: '', sending: false })}
-                            className="text-[10px] text-muted-foreground hover:text-foreground transition-colors"
-                          >
-                            Отмена
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                  {post.comments.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => onToggleExpandComments(post.id)}
-                      className="text-xs text-muted-foreground hover:text-foreground pl-9 transition-colors"
-                    >
-                      {expandedComments
-                        ? 'Свернуть комментарии'
-                        : `Показать все комментарии (${post.comments.length})`}
-                    </button>
-                  )}
-                </div>
-              </>
-            )}
-
-            {/* Main comment input area */}
-            <div className="flex items-center gap-2 pt-1">
-              <Avatar className="h-7 w-7 shrink-0">
-                <AvatarFallback className="text-[10px]">А</AvatarFallback>
-              </Avatar>
-              <div className="flex-1 flex items-center gap-2 rounded-full border bg-muted/40 px-3 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                <input
-                  type="text"
-                  placeholder={replyState.parentId ? 'Пишите комментарий...' : 'Написать комментарий...'}
-                  maxLength={MAX_COMMENT_LENGTH}
-                  value={commentText}
-                  onChange={(e) => onCommentTextChange(post.id, e.target.value)}
-                  onKeyDown={(e) => onCommentKeyDown(e, post.id)}
-                  className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 disabled:opacity-50"
-                  disabled={sendingComment}
-                />
-                {commentText.length > 0 && (
-                  <span className="text-[10px] text-muted-foreground/50 tabular-nums">
-                    {commentText.length}/{MAX_COMMENT_LENGTH}
-                  </span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => onCommentSubmit(post.id)}
-                  disabled={sendingComment || !commentText.trim()}
-                  className={cn(
-                    'transition-colors shrink-0',
-                    commentText.trim() && !sendingComment
-                      ? 'text-primary hover:text-primary/80'
-                      : 'text-muted-foreground/30'
-                  )}
-                >
-                  <Send className={cn('h-3.5 w-3.5', sendingComment && 'animate-spin')} />
-                </button>
-              </div>
-            </div>
+            <Separator />
+            <CommentSection
+              comments={post.comments}
+              expanded={expandedComments}
+              commentText={commentText}
+              sendingComment={sendingComment}
+              postId={post.id}
+              onToggleExpand={onToggleExpandComments}
+              onToggleSection={onToggleCommentSection}
+              onCommentTextChange={onCommentTextChange}
+              onCommentKeyDown={onCommentKeyDown}
+              onCommentSubmit={onCommentSubmit}
+            />
           </>
         )}
       </CardContent>
     </Card>
-  )
-}
-
-function CommentItem({ comment, isReplying, onReply }: { comment: FeedComment; isReplying: boolean; onReply: () => void }) {
-  return (
-    <div className="flex gap-2.5">
-      <Avatar className="h-7 w-7 shrink-0">
-        <AvatarImage src={comment.user.avatar || undefined} alt={comment.user.name || 'User'} />
-        <AvatarFallback className="text-[10px] bg-gradient-to-br from-primary/20 to-primary/5">
-          {(comment.user.name || 'U').charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <div className="rounded-lg bg-muted/60 px-3 py-2 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <p className="text-xs font-medium">{comment.user.name || 'Пользователь'}</p>
-          <span className="text-[10px] text-muted-foreground/50 flex items-center gap-0.5">
-            <Clock className="h-2.5 w-2.5" />
-            {formatRelativeTime(comment.createdAt)}
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground mt-0.5">{comment.content}</p>
-        {/* Reply button */}
-        <button
-          type="button"
-          onClick={onReply}
-          className={cn(
-            'flex items-center gap-1 text-[10px] mt-1 transition-colors',
-            isReplying ? 'text-primary font-medium' : 'text-muted-foreground/50 hover:text-muted-foreground'
-          )}
-        >
-          <Reply className="h-2.5 w-2.5" />
-          Ответить
-        </button>
-      </div>
-    </div>
   )
 }

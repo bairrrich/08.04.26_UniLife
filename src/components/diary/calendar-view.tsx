@@ -145,16 +145,16 @@ export function CalendarView({
   }, [entriesByDate, currentYear, currentMonth])
 
   return (
-    <Card className="w-full rounded-xl">
+    <Card className="w-full rounded-xl overflow-hidden">
       <CardContent className="p-3 sm:p-4">
         {/* Month entry counter */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <span className="text-xs font-medium text-muted-foreground">
             Записей в этом месяце:{' '}
             <span className="text-foreground tabular-nums font-semibold">{monthEntryCount}</span>
           </span>
           {streakDates.size > 0 && (
-            <Badge variant="outline" className="text-[10px] h-5 gap-1 border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-300">
+            <Badge variant="outline" className="text-[10px] h-5 gap-1 border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/40 dark:text-orange-300 rounded-full">
               🔥 Стрики: {streakDates.size} дн.
             </Badge>
           )}
@@ -162,14 +162,22 @@ export function CalendarView({
 
         {/* Day names header */}
         <div className="grid grid-cols-7 gap-0.5 sm:gap-1 mb-1">
-          {RU_DAYS_SHORT.map((day) => (
-            <div
-              key={day}
-              className="h-6 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs font-medium text-muted-foreground"
-            >
-              {day}
-            </div>
-          ))}
+          {RU_DAYS_SHORT.map((day, idx) => {
+            const isWeekend = idx >= 5
+            return (
+              <div
+                key={day}
+                className={cn(
+                  'h-7 sm:h-8 flex items-center justify-center text-[10px] sm:text-xs font-semibold uppercase tracking-wider',
+                  isWeekend
+                    ? 'text-orange-500/70 dark:text-orange-400/60'
+                    : 'text-muted-foreground'
+                )}
+              >
+                {day}
+              </div>
+            )
+          })}
         </div>
 
         {/* Calendar grid */}
@@ -199,15 +207,21 @@ export function CalendarView({
                 className={cn(
                   'h-10 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm relative transition-all duration-200',
                   'heatmap-cell',
-                  !isCurrentMonth && 'text-muted-foreground/40',
-                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent hover:scale-105',
+                  !isCurrentMonth && 'text-muted-foreground/30',
+                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent hover:scale-105 hover:shadow-sm',
                   isCurrentMonth && !isSelected && hasEntries && 'hover:bg-primary/10 hover:scale-110 hover:shadow-lg',
-                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-lg',
-                  isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background font-semibold',
+                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-lg shadow-primary/25',
+                  // Enhanced today highlight
+                  isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background font-bold bg-primary/5 dark:bg-primary/10',
                   hasEntries && !isSelected && 'bg-accent/50'
                 )}
               >
-                <span className="text-sm tabular-nums">{cell.day}</span>
+                <span className={cn(
+                  'text-sm tabular-nums',
+                  isToday && !isSelected && 'text-primary'
+                )}>
+                  {cell.day}
+                </span>
                 {primaryMood && (
                   <span className={cn(
                     'text-[10px] sm:text-xs leading-none mt-0.5 transition-transform',
@@ -263,7 +277,7 @@ export function CalendarView({
             {[1, 2, 3, 4, 5].map((m) => (
               <div key={m} className="flex items-center gap-1">
                 <div className={cn(
-                  'h-3 w-3 rounded-sm',
+                  'h-3 w-3 rounded-sm shadow-sm',
                   MOOD_DOT_COLORS[m]
                 )} />
                 <span className="text-[10px] text-muted-foreground hidden sm:inline">

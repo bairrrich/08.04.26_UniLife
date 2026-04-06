@@ -34,6 +34,7 @@ import { EntryDetail } from './entry-detail'
 import { EntryDialog } from './entry-dialog'
 import { WeekMoodBar } from './week-mood-bar'
 import { MoodTrend } from './mood-trend'
+import { MoodInsights } from './mood-insights'
 import { WritingStatsWidget } from './writing-stats-widget'
 import { WritingPrompts } from './writing-prompts'
 import { WritingStreakBadge } from './writing-streak-badge'
@@ -349,30 +350,34 @@ export default function DiaryPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header */}
+      {/* Header with decorative gradient blobs */}
       <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
+        {/* Decorative blobs */}
+        <div className="pointer-events-none absolute -top-10 -left-10 h-40 w-40 rounded-full bg-gradient-to-br from-emerald-400/25 to-teal-500/20 blur-3xl" />
+        <div className="pointer-events-none absolute -top-4 right-20 h-28 w-28 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-6 left-1/3 h-20 w-20 rounded-full bg-gradient-to-br from-violet-400/15 to-purple-500/10 blur-2xl" />
 
         <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                <BookOpen className="h-6 w-6" />
+              <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-md shadow-emerald-500/20">
+                  <BookOpen className="h-4.5 w-4.5 text-white" />
+                </div>
                 Дневник
               </h1>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1.5 ml-[42px]">
                 <p className="text-sm text-muted-foreground">
                   Записывайте мысли, отслеживайте настроение
                 </p>
-                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
                   <CalendarDays className="h-3 w-3" />
                   {format(today, 'd MMMM, EEEE', { locale: ru })}
                 </span>
               </div>
               {/* Streak Indicator */}
               {!isLoading && entries.length > 0 && (
-                <div className="mt-2 flex items-center gap-3">
+                <div className="mt-2 ml-[42px] flex items-center gap-3">
                   <MoodTrend entries={entries} today={today} className="flex-1" />
                   <WritingStreakBadge entries={entries} today={today} />
                 </div>
@@ -381,7 +386,7 @@ export default function DiaryPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="flex items-center border rounded-lg overflow-hidden">
+            <div className="flex items-center border rounded-xl overflow-hidden">
               <Button
                 variant={viewMode === 'calendar' ? 'default' : 'ghost'}
                 size="sm"
@@ -399,7 +404,7 @@ export default function DiaryPage() {
                 <List className="h-4 w-4" />
               </Button>
             </div>
-            <Button onClick={openNewEntryDialog} size="sm">
+            <Button onClick={openNewEntryDialog} size="sm" className="rounded-xl shadow-sm">
               <Plus className="h-4 w-4 mr-1.5" />
               Запись
             </Button>
@@ -412,6 +417,11 @@ export default function DiaryPage() {
 
       {/* Writing Stats Widget */}
       <WritingStatsWidget className="stagger-children" />
+
+      {/* Mood Insights Widget */}
+      {!isLoading && entries.length > 0 && (
+        <MoodInsights entries={entries} today={today} className="card-hover" />
+      )}
 
       {/* Writing Prompts */}
       <WritingPrompts
@@ -466,6 +476,7 @@ export default function DiaryPage() {
                   d.getFullYear() === weekFilterDate.getFullYear() &&
                   d.getMonth() === weekFilterDate.getMonth() &&
                   d.getDate() === weekFilterDate.getDate()
+                const isWeekend = i >= 5
 
                 return (
                   <button
@@ -486,26 +497,30 @@ export default function DiaryPage() {
                       }
                     }}
                     className={cn(
-                      'flex flex-col items-center gap-0.5 rounded-lg px-2 py-1.5 transition-all min-w-[42px]',
-                      isToday && !isSelected && 'bg-primary/10 ring-1 ring-primary/30',
-                      isSelected && 'bg-primary text-primary-foreground',
-                      !isToday && !isSelected && 'hover:bg-accent'
+                      'flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 transition-all min-w-[42px] border border-transparent',
+                      isToday && !isSelected && 'bg-primary/10 ring-2 ring-primary/30 border-primary/20',
+                      isSelected && 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20',
+                      !isToday && !isSelected && 'hover:bg-accent hover:border-accent',
+                      isWeekend && !isToday && !isSelected && 'text-muted-foreground/80'
                     )}
                   >
                     <span className={cn(
-                      'text-[10px] font-medium',
-                      isSelected ? 'text-primary-foreground/70' : 'text-muted-foreground'
+                      'text-[10px] font-semibold uppercase tracking-wider',
+                      isSelected ? 'text-primary-foreground/70' : isWeekend ? 'text-orange-500/70 dark:text-orange-400/50' : 'text-muted-foreground'
                     )}>
                       {RU_DAYS_SHORT[i]}
                     </span>
                     <span className={cn(
-                      'text-sm font-semibold tabular-nums',
-                      isSelected ? 'text-primary-foreground' : ''
+                      'text-sm font-bold tabular-nums',
+                      isSelected ? 'text-primary-foreground' : isToday ? 'text-primary' : ''
                     )}>
                       {d.getDate()}
                     </span>
                     {primaryMood && (
-                      <span className="text-[10px] leading-none">{MOOD_EMOJI[primaryMood]}</span>
+                      <span className={cn(
+                        'text-xs leading-none transition-transform',
+                        isSelected && 'scale-110'
+                      )}>{MOOD_EMOJI[primaryMood]}</span>
                     )}
                     {hasEntries && !primaryMood && (
                       <div className={cn(
@@ -528,13 +543,13 @@ export default function DiaryPage() {
       <Card className="w-full rounded-xl">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={goToPrevMonth} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={goToPrevMonth} className="h-8 w-8 rounded-lg">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <h2 className="text-lg font-semibold">
+            <h2 className="text-lg font-bold tracking-tight tabular-nums">
               {RU_MONTHS[currentMonth]} {currentYear}
             </h2>
-            <Button variant="ghost" size="icon" onClick={goToNextMonth} className="h-8 w-8">
+            <Button variant="ghost" size="icon" onClick={goToNextMonth} className="h-8 w-8 rounded-lg">
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -593,7 +608,7 @@ export default function DiaryPage() {
                   : 'Детали'}
               </h3>
               {selectedDate && (
-                <Button size="sm" variant="ghost" onClick={openNewEntryDialog}>
+                <Button size="sm" variant="ghost" onClick={openNewEntryDialog} className="rounded-lg">
                   <Plus className="h-3.5 w-3.5 mr-1" />
                   Новая
                 </Button>
@@ -654,7 +669,7 @@ export default function DiaryPage() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md rounded-xl">
           <DialogHeader>
             <DialogTitle>Удалить запись?</DialogTitle>
           </DialogHeader>
@@ -678,6 +693,7 @@ export default function DiaryPage() {
               variant="outline"
               onClick={() => setShowDeleteDialog(false)}
               disabled={isSubmitting}
+              className="rounded-xl"
             >
               Отмена
             </Button>
@@ -685,6 +701,7 @@ export default function DiaryPage() {
               variant="destructive"
               onClick={handleDelete}
               disabled={isSubmitting}
+              className="rounded-xl"
             >
               {isSubmitting ? 'Удаление...' : 'Удалить'}
             </Button>

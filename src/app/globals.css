@@ -116,6 +116,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+  }
   body {
     @apply bg-background text-foreground;
   }
@@ -252,15 +256,27 @@
 /* ── Focus-visible polish ──────────────────────────────────────────── */
 
 :focus-visible {
-  outline: 2px solid oklch(0.55 0.17 155);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 6px;
+  transition: outline-offset 0.15s ease;
 }
 
-/* ── Selection color ───────────────────────────────────────────────── */
+/* Dark mode focus uses brighter primary */
+.dark :focus-visible {
+  outline-color: var(--ring);
+}
+
+/* ── Selection color (primary at 20% opacity) ────────────────────── */
 
 ::selection {
-  background: oklch(0.55 0.17 155 / 0.25);
+  background: oklch(0.55 0.17 155 / 0.20);
+  color: inherit;
+}
+
+.dark ::selection {
+  background: oklch(0.65 0.17 155 / 0.25);
+  color: inherit;
 }
 
 /* ── Card hover effects ────────────────────────────────────────────── */
@@ -593,7 +609,7 @@
   display: none;
 }
 
-/* ── Custom Scrollbar ─────────────────────────────────────── */
+/* ── Custom Scrollbar (WebKit) ─────────────────────────────── */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -602,14 +618,21 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border));
+  background: oklch(0.82 0.005 155 / 0.6);
   border-radius: 3px;
+  transition: background 0.2s ease;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 0.4);
+  background: oklch(0.65 0.01 240 / 0.5);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 .dark ::-webkit-scrollbar-thumb {
-  background: hsl(var(--border) / 0.5);
+  background: oklch(0.35 0.01 240 / 0.5);
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.50 0.02 240 / 0.6);
 }
 
 /* ── Main content smooth scrollbar ───────────────────────── */
@@ -1275,4 +1298,148 @@
 }
 .heatmap-cell-animate {
   animation: heatmap-fill 0.3s ease-out both;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   Global CSS Micro-interactions & Polish (Round 6)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Smooth scrolling (Firefox fallback) ────────────── */
+@supports (scrollbar-width: thin) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.82 0.005 155 / 0.6) transparent;
+  }
+  .dark * {
+    scrollbar-color: oklch(0.35 0.01 240 / 0.5) transparent;
+  }
+  *:hover {
+    scrollbar-color: oklch(0.65 0.01 240 / 0.5) transparent;
+  }
+  .dark *:hover {
+    scrollbar-color: oklch(0.50 0.02 240 / 0.6) transparent;
+  }
+}
+
+/* ── Animation aliases (matching task spec names) ────── */
+
+/* .animate-fade-in already exists above (0.3s ease-out) */
+/* .animate-scale-in already exists above (0.2s ease-out) */
+
+/* .animate-slide-in-right — alias for slide-in-right */
+.animate-slide-in-right {
+  animation: slide-in-right 0.3s ease-out;
+}
+
+/* .animate-float — alias for float-animation */
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ── Enhanced shimmer border (gradient pseudo-element) ── */
+@keyframes shimmer-border-gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.shimmer-border-gradient {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1rem;
+}
+.shimmer-border-gradient::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: linear-gradient(
+    90deg,
+    oklch(0.55 0.17 155 / 0.2),
+    oklch(0.65 0.15 145 / 0.6),
+    oklch(0.75 0.12 80 / 0.4),
+    oklch(0.55 0.17 155 / 0.2)
+  );
+  background-size: 200% 100%;
+  animation: shimmer-border-gradient 3s ease-in-out infinite;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+.dark .shimmer-border-gradient::before {
+  background: linear-gradient(
+    90deg,
+    oklch(0.65 0.17 155 / 0.15),
+    oklch(0.75 0.15 145 / 0.5),
+    oklch(0.70 0.12 80 / 0.3),
+    oklch(0.65 0.17 155 / 0.15)
+  );
+  background-size: 200% 100%;
+}
+
+/* ── Glow shadow effects ─────────────────────────────── */
+
+/* Emerald glow — subtle emerald box-shadow */
+.glow-emerald {
+  box-shadow: 0 0 20px 2px oklch(0.55 0.17 155 / 0.15),
+              0 0 6px 1px oklch(0.55 0.17 155 / 0.1);
+  transition: box-shadow 0.3s ease;
+}
+.glow-emerald:hover {
+  box-shadow: 0 0 28px 4px oklch(0.55 0.17 155 / 0.25),
+              0 0 10px 2px oklch(0.55 0.17 155 / 0.15);
+}
+.dark .glow-emerald {
+  box-shadow: 0 0 24px 3px oklch(0.65 0.17 155 / 0.12),
+              0 0 8px 1px oklch(0.65 0.17 155 / 0.08);
+}
+.dark .glow-emerald:hover {
+  box-shadow: 0 0 32px 5px oklch(0.65 0.17 155 / 0.2),
+              0 0 12px 2px oklch(0.65 0.17 155 / 0.12);
+}
+
+/* Amber glow — warm amber box-shadow */
+.glow-amber {
+  box-shadow: 0 0 20px 2px oklch(0.75 0.15 70 / 0.15),
+              0 0 6px 1px oklch(0.75 0.15 70 / 0.1);
+  transition: box-shadow 0.3s ease;
+}
+.glow-amber:hover {
+  box-shadow: 0 0 28px 4px oklch(0.75 0.15 70 / 0.25),
+              0 0 10px 2px oklch(0.75 0.15 70 / 0.15);
+}
+.dark .glow-amber {
+  box-shadow: 0 0 24px 3px oklch(0.75 0.15 70 / 0.12),
+              0 0 8px 1px oklch(0.75 0.15 70 / 0.08);
+}
+.dark .glow-amber:hover {
+  box-shadow: 0 0 32px 5px oklch(0.75 0.15 70 / 0.2),
+              0 0 12px 2px oklch(0.75 0.15 70 / 0.12);
+}
+
+/* ── Subtle text shadow for headings ─────────────────── */
+.text-shadow-sm {
+  text-shadow: 0 1px 2px oklch(0 0 0 / 0.06);
+}
+.dark .text-shadow-sm {
+  text-shadow: 0 1px 3px oklch(0 0 0 / 0.25);
+}
+
+/* ── Backdrop blur card effect ────────────────────────── */
+.backdrop-blur-card {
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: oklch(1 0 0 / 0.72);
+  border: 1px solid oklch(0.91 0.01 155 / 0.6);
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 16px -4px oklch(0 0 0 / 0.08),
+              0 1px 3px 0 oklch(0 0 0 / 0.04);
+}
+.dark .backdrop-blur-card {
+  background: oklch(0.18 0.01 240 / 0.72);
+  border: 1px solid oklch(0.28 0.02 240 / 0.5);
+  box-shadow: 0 4px 16px -4px oklch(0 0 0 / 0.3),
+              0 1px 3px 0 oklch(0 0 0 / 0.2);
 }

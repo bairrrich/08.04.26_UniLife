@@ -8609,3 +8609,326 @@ Stage Summary:
 8. **Data Visualization Export** — PDF/CSV export of analytics
 9. **Onboarding Flow** — Smoother transitions, skip animation issue
 10. **User Authentication** — NextAuth.js for multi-user support
+
+---
+## Task ID: feed-comments-enhance
+### Agent: feed-enhance-agent
+### Task: Enhance Feed module with inline comments, filtering, header improvements
+
+### Work Summary:
+
+**Part 1 — Inline Comment System (`/src/components/feed/comment-section.tsx`):**
+- Created dedicated `CommentSection` component with expandable comment list
+- Comments display with emoji avatars (deterministic per user name via hash), username, relative time, and text
+- Thread-like visual style with connecting vertical line (left-side `w-px` line) and connector dots between comments
+- Max 3 comments visible by default, "Показать все (X)" / "Свернуть" toggle button
+- Inline reply input per comment with send button, Escape to cancel
+- "Показать комментарии (X)" header with comment count (Russian pluralization)
+- Optimistic UI support — comments with `opt_` prefix show pulse animation
+- `CommentPreview` component for collapsed state showing 2 preview comments with toggle to expand
+- Small rounded-full input field at bottom for new comments with character counter and send button
+
+**Part 2 — Enhanced Post Cards (`/src/components/feed/post-card.tsx`):**
+- Replaced inline comment rendering with new `CommentSection` and `CommentPreview` components
+- Added visible share button in actions row (copies post text to clipboard with toast)
+- Added visible bookmark button in actions row (uses `onToggleBookmark` with toast from hooks)
+- Both buttons styled as rounded-full pills with hover state transitions
+- All existing functionality preserved: reaction picker, like animation, particle burst, pin/unpin, dropdown menu, reply threading
+
+**Part 3 — Feed Filtering (`/src/components/feed/feed-page.tsx`):**
+- Added shadcn/ui `Tabs` component with 3 filter tabs:
+  - "Все" (All) — default, shows all posts in chronological order
+  - "Мои" (My posts) — filters by `userId === 'user_demo_001'`
+  - "Популярное" (Popular) — sorts by `_count.likes` descending
+- Each tab has icon: Rss, User, Flame
+- "Сбросить" button appears when non-default filter is active
+- "Сортировка по лайкам" helper text shown for popular filter
+- Empty state adapts to active filter (different messages for popular/mine/hashtag)
+- Hashtag filter and tab filter work together (composable)
+
+**Part 4 — Feed Header Enhancement (`/src/components/feed/feed-page.tsx`):**
+- Three gradient decorative blobs: emerald-teal (top-left), rose-pink (top-right), amber-orange (small, right)
+- Logo icon upgraded to gradient background (rose→pink) with shadow
+- Post count badge next to "Лента" title
+- Dynamic subtitle: shows "X новых записей сегодня · X комментариев" or default text
+- "Написать пост" button upgraded with gradient (rose→pink), shadow, responsive text ("Пост" on mobile)
+- Icons: PenLine for CTA, Flame for popular tab, User for mine tab
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: HTTP 200, compiles cleanly
+- ✅ No API routes or database schema modified
+- ✅ All changes in `src/components/feed/` only
+- ✅ Dark mode support maintained
+- ✅ Russian language for all text
+
+### Files Modified/Created:
+- **Created**: `/src/components/feed/comment-section.tsx` (new component)
+- **Modified**: `/src/components/feed/post-card.tsx` (use CommentSection, visible share/bookmark)
+- **Modified**: `/src/components/feed/feed-page.tsx` (filter tabs, enhanced header, gradient blobs)
+
+
+---
+## Task ID: finance-budgets-enhance
+### Agent: finance-enhance-agent
+### Task: Enhance Finance module with budget tracking, recurring transactions, and styling polish
+
+### Work Summary:
+
+**Part 1 — Budget Progress Widget (`/src/components/finance/budget-progress.tsx`):**
+- Created new component `BudgetProgress` that fetches budget data from `/api/budgets?month=...`
+- Displays total budget vs actual spending for the current month
+- Uses shadcn `Progress` component with color-coded indicators: green (< 70%), amber (70-90%), red (> 90%)
+- Shows remaining budget amount in RUB with color-coded background box (emerald for surplus, rose for overspent)
+- Status badge: "В норме", "Внимание", "Критично", "Превышен!"
+- Top 3 categories approaching limit listed with color dots and spent/budget amounts
+- When no budget data exists, shows a "Установить" CTA button that prompts user to go to Budget tab
+- Loading skeleton state for smooth UX
+- Integrated into `finance-page.tsx` below the existing `BudgetProgressBar`
+
+**Part 2 — Enhanced Transaction List (`/src/components/finance/transaction-list.tsx`):**
+- Added **running balance for the day** — computed per-date-group cumulative income minus expense, displayed on desktop (hidden on mobile for space)
+- **Category color dots** preserved next to each transaction description (already existed, kept intact)
+- **Date headers** enhanced with day total showing income (+), expense (-), and net (parenthesized) with color-coded mini dots
+- **Recurring badge**: Added violet `RefreshCw` icon badge next to transaction description when `tx.isRecurring` is true; also shown in expanded details as "Повторяющаяся" label
+- **Swipe-to-delete hint**: Replaced old hint with mobile-visible trash icon + "нажмите значок корзины для удаления" text (shown only on mobile via `md:hidden`)
+- Added `stagger-children` class to transaction groups container for animated entrance
+- Desktop hover-reveal action buttons now use `group-hover:opacity-100` properly
+- Enhanced empty state: gradient background blob behind wallet icon, improved subtitle text
+
+**Part 3 — Monthly Comparison Enhancement (`/src/components/finance/month-comparison.tsx`):**
+- Added **3-month sparkline-style bars** for income and expense trends using `MiniSparkBars` component
+- Sparkline shows 3 bars per metric: previous month, current month, projected next month
+- Hover tooltip shows exact RUB value per bar
+- Added **gradient decorative accents**: emerald gradient blob at top-right, amber gradient blob at bottom-left
+- Wrapped card content in `relative` for proper z-index layering
+- Row comparison bars now use specific color props (barColor, barColorFaded) per metric type
+- New "Тренд за 3 месяца" section with gradient background (`from-emerald-500/5 to-amber-500/5`) and emerald border accent
+- Axis labels: "Прошлый", "Текущий", "Прогноз"
+
+**Part 4 — Finance Page Styling Polish (`/src/components/finance/finance-page.tsx`):**
+- `animate-slide-up` — already present on main container ✅
+- `stagger-children` — added to transaction list groups ✅
+- `card-hover` — already present on summary cards ✅
+- Gradient decorative blobs — already present in header ✅
+- Better empty state — enhanced in transaction list ✅
+
+**Type Updates (`/src/components/finance/types.ts`):**
+- Added `isRecurring?: boolean`, `recurringId?: string | null`, `recurringGroupId?: string | null` to `Transaction` interface to match Prisma schema fields
+
+### Files Modified:
+- `/src/components/finance/budget-progress.tsx` — NEW
+- `/src/components/finance/transaction-list.tsx` — rewritten
+- `/src/components/finance/month-comparison.tsx` — rewritten
+- `/src/components/finance/finance-page.tsx` — added BudgetProgress import and usage
+- `/src/components/finance/types.ts` — added recurring fields to Transaction
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: compiles cleanly, HTTP 200 on localhost:3000
+- ✅ Budgets API: returns HTTP 200 with correct structure
+- ✅ All existing finance functionality preserved
+- ✅ No API routes or database schema modified
+- ✅ Dark mode support for all new elements
+- ✅ Russian language used throughout
+
+---
+## Task ID: diary-mood-insights
+### Agent: diary-enhance-agent
+### Task: Enhance Diary module with mood insights widget, better journaling, writing prompts, and styling polish
+
+### Work Summary:
+
+**Part 1 — Mood Insights Widget (`/src/components/diary/mood-insights.tsx`):**
+- Created new component showing comprehensive weekly mood analytics
+- **Week mood distribution**: 7-column bar chart (Mon-Sun) with emoji indicators on top, colored bars matching mood level, height proportional to mood score (1-5)
+- **Mood streak calculation**: Consecutive days with mood logged, counting backwards from today, displayed with Fire icon and animated counter
+- **Most frequent mood**: Computed from week's mood data, shown with large emoji and Russian label in amber-themed stat card
+- **Average mood score**: Calculated from all days with mood in the week, shown with large emoji and precise 1-decimal score in violet-themed stat card
+- **Mini distribution bars**: Horizontal bar chart showing count of each mood level (😢😕😐🙂😄) with proportional bar widths
+- **3-column stat grid**: Average (violet), Most Frequent (amber), Streak (orange/neutral) with gradient backgrounds and icons
+- All stats use `useMemo` for efficient computation, proper dark mode support
+
+**Part 2 — Enhanced Diary Entry Detail:**
+- **`entry-detail.tsx`**: Made mood emoji significantly larger (h-14 w-14 rounded-2xl text-4xl with shadow-lg and hover:scale-110), placed prominently in the top-right corner
+- Added mood label Badge with colored background next to MoodStars component
+- Improved content line-height (1.8), meta info row with flex-wrap for better responsive display
+- Added stagger-children class to entry detail list
+- **`entry-list.tsx`**: Redesigned layout with mood emoji on the left side (h-12 w-12 rounded-xl text-3xl with shadow-md), content in the middle, mood stars + export on the right
+- Enhanced card hover: `hover:shadow-md` for more noticeable lift effect
+- Improved tag badges with `shadow-sm` and mood label Badge showing MOOD_LABELS text
+- Better empty state and rounded-xl on all buttons
+
+**Part 3 — Writing Prompts Enhancement (`/src/components/diary/writing-prompts.tsx`):**
+- Expanded prompt library from 15 to 30 Russian writing prompts
+- Implemented **daily rotation** using seeded pseudo-random number generator (mulberry32) keyed to day-of-year — same prompts shown all day, changes at midnight
+- Prompts rotate between "daily" set (3 prompts) and "more" set (3 extra) via refresh button
+- **Beautiful gradient card**: amber/orange/yellow gradient background with backdrop blur decorative blobs
+- Each prompt button has glass-morphism styling (bg-white/60 dark:bg-white/5, border-amber-200/30)
+- Hover reveals PenLine + ArrowRight icons with smooth transitions
+- Dot indicator showing active prompt set (filled dots for daily, hollow for more)
+- Gradient Sparkles icon with shadow in header
+
+**Part 4 — Diary Page Styling Polish (`diary-page.tsx`):**
+- **Enhanced gradient blobs**: Added 3 decorative blobs in header (emerald/teal, amber/orange, violet/purple) with varied sizes and positions
+- **Header icon**: Replaced plain BookOpen icon with gradient rounded-xl icon container (from-emerald-400 to-teal-500 with shadow)
+- **Typography**: Added `tracking-tight` to h1 title, `font-bold tracking-tight tabular-nums` to month navigation
+- **Weekly calendar strip**: Enhanced with rounded-xl day buttons, border on today (border-primary/20), weekend days in orange color, uppercase tracking-wider day labels, shadow on selected day
+- **View mode toggle**: Upgraded to rounded-xl container with rounded-none buttons
+- **All buttons**: Consistent rounded-xl throughout the page
+- **MoodInsights integration**: Added new MoodInsights widget between WritingStats and WritingPrompts, shown only when entries exist and not loading
+
+**Calendar View Enhancement (`calendar-view.tsx`):**
+- **Today highlight**: Enhanced with `ring-2 ring-primary ring-offset-2`, `font-bold`, and `bg-primary/5` background for better visibility
+- **Weekend styling**: Added orange-tinted text color for Sat/Sun day headers (text-orange-500/70 dark:text-orange-400/60)
+- **Day header styling**: `text-[10px] font-semibold uppercase tracking-wider` for more refined look
+- **Selected day shadow**: Added `shadow-lg shadow-primary/25` on selected day for depth
+- **Mood dot legend**: Added `shadow-sm` to mood color dots for depth
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ No API routes or database schema modified
+- ✅ All new components use 'use client' directive
+- ✅ All text in Russian language
+- ✅ Dark mode support across all new/modified components
+- ✅ shadcn/ui components used throughout (Card, Badge, Button, etc.)
+- ✅ React hooks properly imported from 'react'
+
+---
+## Task ID: global-css-polish-r6
+### Agent: css-polish-agent
+### Task: Add global CSS micro-interactions and polish to globals.css
+
+### Work Log:
+
+**1. Smooth Scrolling:**
+- Added `scroll-behavior: smooth` and `scroll-padding-top: 5rem` to `html` element inside `@layer base`
+- Ensures anchor links and programmatic scrolling account for fixed headers
+
+**2. Enhanced Scrollbar Styling (WebKit):**
+- Updated global `::-webkit-scrollbar` thumb from `hsl(var(--border))` to oklch color (`oklch(0.82 0.005 155 / 0.6)`) for consistency with the theme
+- Added `transition: background 0.2s ease` for smooth thumb color change on hover
+- Added `::-webkit-scrollbar-corner { background: transparent }` to hide scrollbar corners
+- Updated dark mode thumb colors to oklch format
+- Updated hover state thumb to `oklch(0.65 0.01 240 / 0.5)` (light) / `oklch(0.50 0.02 240 / 0.6)` (dark)
+
+**3. Firefox Scrollbar Styling:**
+- Added `@supports (scrollbar-width: thin)` block with `scrollbar-width: thin` and `scrollbar-color` using oklch muted colors
+- Includes light/dark mode variants and hover state
+
+**4. Selection Styling:**
+- Updated `::selection` background from 0.25 to 0.20 opacity using primary oklch color
+- Added `color: inherit` to preserve text color on selection
+- Added `.dark ::selection` variant with 0.25 opacity and brighter primary for dark backgrounds
+
+**5. Focus Ring Enhancement:**
+- Changed outline from hardcoded oklch to `var(--primary)` for theme consistency
+- Increased `outline-offset` from 2px to 3px with smooth transition
+- Increased `border-radius` from 4px to 6px
+- Added `.dark :focus-visible` using `var(--ring)` (brighter primary in dark mode)
+- Added `transition: outline-offset 0.15s ease` for smooth focus ring appearance
+
+**6. New Animation Utility Classes:**
+- `.animate-slide-in-right` — alias using existing `slide-in-right` keyframes (0.3s ease-out)
+- `.animate-float` — alias using existing `float` keyframes (translateY ±4px, 3s infinite)
+- `.shimmer-border-gradient` — enhanced animated gradient border using `::before` pseudo-element with moving gradient background (3s infinite), mask-composite for border-only effect, light/dark variants
+- `.glow-emerald` — emerald glow box-shadow effect (20px spread at rest, 28px on hover), with dark mode variant
+- `.glow-amber` — amber glow box-shadow effect (warm tone), matching pattern to glow-emerald
+- `.text-shadow-sm` — subtle text shadow for headings (light: 0.06 opacity, dark: 0.25 opacity)
+- `.backdrop-blur-card` — card with `backdrop-filter: blur(16px) saturate(1.2)`, semi-transparent background, themed border, and layered box-shadow
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All existing CSS classes preserved intact (no breaking changes)
+- ✅ No duplicate class definitions
+- ✅ All new classes have section comments for discoverability
+- ✅ Dark mode support for all new utilities
+- ✅ Cross-browser: WebKit scrollbar + Firefox scrollbar-color + @supports fallback
+
+### Stage Summary:
+- Smooth scrolling added for better anchor navigation
+- Scrollbar styling enhanced for both WebKit and Firefox browsers
+- Text selection color refined with proper opacity
+- Focus ring improved with theme variables and better offset
+- 7 new utility classes added: animate-slide-in-right, animate-float, shimmer-border-gradient, glow-emerald, glow-amber, text-shadow-sm, backdrop-blur-card
+- All changes additive only — no existing functionality broken
+
+
+---
+## Task ID: cron-qa-round-6
+### Agent: cron-review-coordinator
+### Task: QA testing, Finance/Diary/Feed enhancements, Global CSS polish
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11 modules render correctly with zero errors
+- **Database**: SQLite via Prisma with 15+ models
+- **Lint**: 0 errors, 0 warnings
+- **Build**: All 20+ routes compile successfully via Turbopack
+- **Browser QA**: All 11 modules tested via agent-browser — zero runtime errors across 11 navigation cycles
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Browser QA: 11 full navigation cycles across all modules — 0 errors
+- ✅ Verified user name persistence from localStorage (Алексей displays correctly after onboarding)
+- ✅ No console errors detected during module navigation
+
+#### New Features & Enhancements (4 major areas)
+
+1. **Finance Module Enhancement** (`src/components/finance/`):
+   - Budget Progress Widget (`budget-progress.tsx`): Color-coded progress bar (green/amber/red), remaining budget in RUB, status badges, top 3 approaching-limit categories
+   - Enhanced Transaction List: Running balance per day, recurring badge icon, enhanced date headers with income/expense totals
+   - Monthly Comparison Widget (`month-comparison.tsx`): 3-month sparkline bars, % change indicators with up/down arrows, gradient decorative accents
+
+2. **Diary Module Enhancement** (`src/components/diary/`):
+   - Mood Insights Widget (`mood-insights.tsx`): Weekly mood distribution bar chart, mood streak with Fire icon, most frequent mood stat, average mood score with emoji
+   - Enhanced Entry Detail: Larger mood emoji (h-14 w-14), mood label Badge, word count display
+   - Writing Prompts (`writing-prompts.tsx`): 30 Russian writing prompts with daily rotation via seeded PRNG, glass-morphism gradient card
+   - Calendar Polish: Enhanced today highlight, weekend coloring, rounded-xl day buttons
+
+3. **Feed Module Enhancement** (`src/components/feed/`):
+   - Inline Comment System (`comment-section.tsx`): Thread-like connecting lines, emoji avatars, inline reply input, optimistic UI, "Показать все" toggle
+   - Enhanced Post Cards: Share button (copies to clipboard), bookmark button (localStorage), prominent action buttons
+   - Feed Filtering: Tabs with 3 filters (Все, Мои, Популярное), composable with hashtag filtering
+   - Header Enhancement: Gradient decorative blobs, prominent "Написать пост" gradient button
+
+4. **Global CSS Polish** (`src/app/globals.css`):
+   - Smooth scrolling (scroll-behavior: smooth, scroll-padding-top)
+   - Enhanced scrollbar styling (WebKit + Firefox, thin, muted colors)
+   - Custom text selection color (primary with 20% opacity)
+   - Enhanced focus ring (primary color, 3px offset, 6px radius)
+   - New animation utilities: animate-slide-in-right, animate-float, shimmer-border-gradient, glow-emerald, glow-amber, text-shadow-sm, backdrop-blur-card
+
+### Files Modified/Created:
+- `src/components/finance/budget-progress.tsx` — NEW
+- `src/components/finance/month-comparison.tsx` — NEW
+- `src/components/finance/finance-page.tsx` — Enhanced
+- `src/components/finance/transaction-list.tsx` — Enhanced
+- `src/components/diary/mood-insights.tsx` — NEW
+- `src/components/diary/writing-prompts.tsx` — Enhanced (30 prompts)
+- `src/components/diary/diary-page.tsx` — Styling polish
+- `src/components/diary/entry-detail.tsx` — Enhanced mood display
+- `src/components/diary/entry-list.tsx` — Redesigned layout
+- `src/components/feed/comment-section.tsx` — NEW
+- `src/components/feed/post-card.tsx` — Enhanced (share, bookmark)
+- `src/components/feed/feed-page.tsx` — Enhanced (filters, header)
+- `src/app/globals.css` — 7 new CSS utilities + scrollbar/focus/selection polish
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All 11 modules verified working after changes
+- ✅ No API routes or database schema modified
+- ✅ Dark mode: Supported across all new components
+
+### Unresolved Issues / Next Phase Priorities:
+1. **Image Upload** — Photo support for diary entries and collection covers
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **User Authentication** — NextAuth.js for multi-user support
+4. **Recurring Transactions** — Automated scheduled finance entries (backend)
+5. **Advanced Goals** — Sub-tasks, dependencies, progress photos
+6. **Collaborative Features** — Shared collections, social features
+7. **Notification Reminders** — Push notifications for water, workout, diary
+8. **Offline Support** — Service worker caching
+9. **Data Visualization Export** — PDF/CSV export of analytics
+10. **Onboarding Flow** — Test "Начать" button dismiss behavior

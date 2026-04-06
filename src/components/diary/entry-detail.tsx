@@ -75,7 +75,7 @@ export function EntryDetail({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 stagger-children">
       {entriesForSelectedDate.map((entry) => {
         const isSelected = selectedEntry?.id === entry.id
         const moodClass = entry.mood ? MOOD_COLORS[entry.mood] : ''
@@ -87,7 +87,7 @@ export function EntryDetail({
           <Card
             key={entry.id}
             className={cn(
-              'card-hover rounded-xl border bg-card transition overflow-hidden',
+              'card-hover rounded-xl border bg-card transition overflow-hidden relative',
               moodBorder,
               isSelected && 'ring-2 ring-primary/40'
             )}
@@ -97,38 +97,41 @@ export function EntryDetail({
               <div className={cn('absolute inset-0 bg-gradient-to-r pointer-events-none rounded-xl', moodGrad)} />
             )}
             <CardHeader className="pb-3 relative">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1">
-                  <CardTitle className="text-xl font-bold">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-xl font-bold leading-tight">
                     {entry.title || 'Без заголовка'}
                   </CardTitle>
-                  <div className="flex items-center gap-2 mt-1">
-                    <p className="text-xs text-muted-foreground tabular-nums">
-                      {format(parseEntryDate(entry.date), 'd MMMM yyyy, HH:mm', { locale: ru })}
-                    </p>
+                  <div className="flex items-center flex-wrap gap-x-2 gap-y-1 mt-1.5">
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {format(parseEntryDate(entry.date), 'd MMMM yyyy', { locale: ru })}
+                    </span>
                     <span className="text-xs text-muted-foreground/50">•</span>
-                    <span className="text-xs text-primary/70 font-medium tabular-nums">
+                    <span className="text-xs text-primary/70 font-medium">
                       {getRelativeTime(entry.createdAt)}
                     </span>
                     <span className="text-xs text-muted-foreground/50">•</span>
-                    <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
+                    <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-1">
                       <Clock className="h-3 w-3" />
-                      {readingTimeMinutes(wordCount)} чтения
+                      {readingTimeMinutes(wordCount)}
                     </span>
                     <span className="text-xs text-muted-foreground/50">•</span>
-                    <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-0.5">
+                    <span className="text-xs text-muted-foreground/60 tabular-nums flex items-center gap-1">
                       <FileText className="h-3 w-3" />
                       <AnimatedNumber value={wordCount} duration={400} className="text-xs" />
                       {' слов'}
                     </span>
                   </div>
                 </div>
+
+                {/* Large prominent mood emoji */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {entry.mood && (
                     <div
                       className={cn(
-                        'h-10 w-10 rounded-full flex items-center justify-center text-2xl shadow-sm',
-                        moodClass
+                        'h-14 w-14 rounded-2xl flex items-center justify-center text-4xl shadow-lg transition-transform hover:scale-110',
+                        moodClass,
+                        isSelected && 'scale-105'
                       )}
                     >
                       {MOOD_EMOJI[entry.mood]}
@@ -142,36 +145,33 @@ export function EntryDetail({
                       onEntrySelect(entry)
                       onEditClick(entry)
                     }}
-                    className="h-7 px-2"
+                    className="h-8 px-2 rounded-lg"
                   >
                     <Edit className="h-3.5 w-3.5" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
+
             <CardContent className="pt-0 space-y-3 relative">
-              {/* Mood stars */}
+              {/* Mood label + stars */}
               <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground">Настроение:</span>
-                <MoodStars mood={entry.mood} />
                 {entry.mood && (
-                  <span className="text-xs text-muted-foreground ml-1">
-                    {MOOD_LABELS[entry.mood]}
-                  </span>
+                  <Badge
+                    variant="secondary"
+                    className={cn('text-xs rounded-full px-2.5 py-0.5 border-0 font-medium', moodClass)}
+                  >
+                    {MOOD_EMOJI[entry.mood]} {MOOD_LABELS[entry.mood]}
+                  </Badge>
                 )}
+                <MoodStars mood={entry.mood} />
               </div>
 
               <Separator />
 
               {/* Content */}
-              <div className="text-sm leading-[1.75] tracking-wide whitespace-pre-wrap text-foreground/90">
+              <div className="text-sm leading-[1.8] tracking-wide whitespace-pre-wrap text-foreground/90">
                 {entry.content}
-              </div>
-
-              {/* Word count & reading time */}
-              <div className="flex items-center gap-3 text-xs text-muted-foreground/50 tabular-nums">
-                <span>{wordCount} слов</span>
-                <span>≈ {readingTimeMinutes(wordCount)} чтения</span>
               </div>
 
               {/* Tags */}
@@ -182,7 +182,7 @@ export function EntryDetail({
                       key={tag}
                       variant="secondary"
                       className={cn(
-                        'text-xs rounded-full px-2.5 py-0 border-0 cursor-pointer hover:opacity-80 transition-opacity',
+                        'text-xs rounded-full px-2.5 py-0.5 border-0 cursor-pointer hover:opacity-80 transition-opacity shadow-sm',
                         TAG_COLORS[hashTagColor(tag)]
                       )}
                     >
@@ -199,7 +199,7 @@ export function EntryDetail({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="text-xs"
+                  className="text-xs rounded-lg"
                   onClick={(e) => {
                     e.stopPropagation()
                     const text = entry.content
@@ -217,6 +217,7 @@ export function EntryDetail({
                   <Button
                     size="sm"
                     variant="outline"
+                    className="rounded-lg"
                     onClick={(e) => {
                       e.stopPropagation()
                       onEntrySelect(entry)
@@ -229,7 +230,7 @@ export function EntryDetail({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="text-destructive hover:text-destructive"
+                    className="text-destructive hover:text-destructive rounded-lg"
                     onClick={(e) => {
                       e.stopPropagation()
                       onEntrySelect(entry)

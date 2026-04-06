@@ -18,7 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy, ArrowRightLeft, RefreshCw } from 'lucide-react'
+import { Wallet, Plus, Receipt, Pencil, Trash2, Search, X, ChevronDown, ChevronUp, SearchX, Copy, ArrowRightLeft, RefreshCw, Sparkles } from 'lucide-react'
 import { formatCurrency } from '@/lib/format'
 import { getCategoryIcon, getAccountIcon } from './constants'
 import { cn } from '@/lib/utils'
@@ -75,6 +75,19 @@ function getTxCountWord(count: number): string {
   if (mod10 === 1) return 'транзакция'
   if (mod10 >= 2 && mod10 <= 4) return 'транзакции'
   return 'транзакций'
+}
+
+/** Compute a running balance (cumulative income - expense) within a single date group */
+function computeRunningBalances(items: Transaction[]): Map<string, number> {
+  const balanceMap = new Map<string, number>()
+  let running = 0
+  for (const tx of items) {
+    if (tx.type === 'INCOME') running += tx.amount
+    else if (tx.type === 'EXPENSE') running -= tx.amount
+    // TRANSFER: no net effect on balance
+    balanceMap.set(tx.id, running)
+  }
+  return balanceMap
 }
 
 export function TransactionList({
@@ -200,14 +213,17 @@ export function TransactionList({
               ))}
             </div>
           ) : groupedTransactions.length === 0 ? (
-            /* No transactions at all */
-            <div className="relative flex flex-col items-center justify-center py-12 text-center">
-              <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-amber-500/25">
-                <Wallet className="h-10 w-10 text-white" />
+            /* No transactions at all — enhanced empty state */
+            <div className="relative flex flex-col items-center justify-center py-14 text-center">
+              <div className="relative">
+                <div className="pointer-events-none absolute -inset-4 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-500/15 blur-xl" />
+                <div className="relative h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
+                  <Wallet className="h-10 w-10 text-white" />
+                </div>
               </div>
               <h3 className="text-lg font-semibold mb-1">Нет транзакций</h3>
-              <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                Добавьте первую транзакцию, чтобы начать отслеживать финансы
+              <p className="text-sm text-muted-foreground max-w-xs mx-auto leading-relaxed">
+                Добавьте первую транзакцию, чтобы начать отслеживать доходы и расходы
               </p>
               <Button
                 size="lg"
@@ -240,7 +256,7 @@ export function TransactionList({
             </div>
           ) : (
             <ScrollArea className="max-h-[500px]">
-              <div className="space-y-1">
+              <div className="space-y-1 stagger-children">
                 {filteredGroups.map((group) => {
                   // Calculate daily totals
                   const dayIncome = group.items
@@ -249,26 +265,43 @@ export function TransactionList({
                   const dayExpense = group.items
                     .filter((tx) => tx.type === 'EXPENSE')
                     .reduce((acc, tx) => acc + tx.amount, 0)
+                  const dayNet = dayIncome - dayExpense
+
+                  // Compute running balances within this date group
+                  const runningBalances = computeRunningBalances(group.items)
 
                   return (
                     <div key={group.date}>
+                      {/* Date header with day totals */}
                       <div className="sticky top-0 z-10 bg-background py-1.5">
-                        <span className="text-xs font-medium text-muted-foreground capitalize">{group.label}</span>
-                        {/* Daily totals */}
-                        {(dayIncome > 0 || dayExpense > 0) && (
-                          <div className="flex items-center gap-3 mt-0.5">
-                            {dayIncome > 0 && (
-                              <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
-                                Доходы: +{formatCurrency(dayIncome)}
-                              </span>
-                            )}
-                            {dayExpense > 0 && (
-                              <span className="text-[11px] text-red-500 dark:text-red-400 font-medium tabular-nums">
-                                Расходы: -{formatCurrency(dayExpense)}
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground capitalize">{group.label}</span>
+                          {/* Day total with income/expense breakdown */}
+                          {(dayIncome > 0 || dayExpense > 0) && (
+                            <div className="flex items-center gap-2.5">
+                              {dayIncome > 0 && (
+                                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium tabular-nums flex items-center gap-0.5">
+                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                                  +{formatCurrency(dayIncome)}
+                                </span>
+                              )}
+                              {dayExpense > 0 && (
+                                <span className="text-[11px] text-red-500 dark:text-red-400 font-medium tabular-nums flex items-center gap-0.5">
+                                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-red-500" />
+                                  -{formatCurrency(dayExpense)}
+                                </span>
+                              )}
+                              {dayNet !== 0 && dayIncome > 0 && dayExpense > 0 && (
+                                <span className={cn(
+                                  'text-[10px] font-medium tabular-nums',
+                                  dayNet >= 0 ? 'text-emerald-500/70' : 'text-red-500/70'
+                                )}>
+                                  ({dayNet >= 0 ? '+' : ''}{formatCurrency(dayNet)})
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
                         <Separator className="mt-1" />
                       </div>
                       {group.items.map((tx, txIdx) => {
@@ -277,11 +310,12 @@ export function TransactionList({
                         const cat = tx.category || { id: '', name: 'Другое', type: 'EXPENSE', icon: 'circle', color: '#6b7280' } as Category
                         const isExpanded = expandedTxId === tx.id
                         const isAlt = txIdx % 2 === 1
+                        const runningBalance = runningBalances.get(tx.id) ?? 0
                         return (
                           <div key={tx.id}>
                             <div
                               className={cn(
-                                'flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer',
+                                'flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group',
                                 isExpanded && 'bg-muted/40',
                                 isTransfer && 'border-l-violet-500',
                                 isAlt && !isExpanded && 'bg-muted/10'
@@ -303,6 +337,7 @@ export function TransactionList({
                               )}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-1.5">
+                                  {/* Category color dot */}
                                   {!isTransfer && (
                                     <span
                                       className="h-2 w-2 rounded-full shrink-0"
@@ -312,6 +347,12 @@ export function TransactionList({
                                   <p className="text-sm font-medium truncate">
                                     {tx.description || (isTransfer ? 'Перевод' : cat.name)}
                                   </p>
+                                  {/* Recurring badge */}
+                                  {tx.isRecurring && (
+                                    <span className="inline-flex items-center gap-0.5 shrink-0 rounded-full bg-violet-100 dark:bg-violet-500/15 px-1.5 py-0.5">
+                                      <RefreshCw className="h-2.5 w-2.5 text-violet-600 dark:text-violet-400" />
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-0.5">
                                   {isTransfer ? (
@@ -331,6 +372,15 @@ export function TransactionList({
                                 </div>
                               </div>
                               <div className="shrink-0 flex items-center gap-1">
+                                {/* Running balance for the day */}
+                                {!isTransfer && (
+                                  <span className={cn(
+                                    'hidden sm:block text-[10px] tabular-nums mr-1',
+                                    runningBalance >= 0 ? 'text-muted-foreground/60' : 'text-red-400/60'
+                                  )}>
+                                    {runningBalance >= 0 ? '+' : ''}{formatCurrency(runningBalance)}
+                                  </span>
+                                )}
                                 {/* Mobile: always visible small buttons */}
                                 <div className="flex items-center gap-0.5 md:hidden">
                                   <Button
@@ -359,7 +409,7 @@ export function TransactionList({
                                   </Button>
                                 </div>
                                 {/* Desktop: hover-reveal buttons */}
-                                <div className="hidden md:flex items-center gap-0.5 group-hover:opacity-100 opacity-0 transition-opacity">
+                                <div className="hidden md:flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <Button
                                     variant="ghost"
                                     size="icon"
@@ -441,6 +491,16 @@ export function TransactionList({
                                       {cat.name}
                                     </span>
                                   </div>
+                                  {/* Recurring indicator */}
+                                  {tx.isRecurring && (
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="font-medium text-foreground/70">Тип:</span>
+                                      <span className="inline-flex items-center gap-1 text-violet-600 dark:text-violet-400">
+                                        <RefreshCw className="h-2.5 w-2.5" />
+                                        Повторяющаяся
+                                      </span>
+                                    </div>
+                                  )}
                                   {/* Note */}
                                   {tx.note && (
                                     <div className="italic text-muted-foreground/80 border-t border-muted-foreground/10 pt-1.5">
@@ -450,17 +510,16 @@ export function TransactionList({
                                 </div>
                               </div>
                             </div>
-                            {/* Swipe-to-delete visual hint — shown on last item */}
-                            {tx === group.items[group.items.length - 1 && filteredGroups[filteredGroups.length - 1]?.items[filteredGroups[filteredGroups.length - 1]?.items.length - 1]] && (
-                              <div className="flex items-center justify-center gap-1.5 pt-2 pb-1 text-[10px] text-muted-foreground/40">
-                                <span>←</span>
-                                <span>свайп влево для удаления</span>
-                                <span>→</span>
-                              </div>
-                            )}
                           </div>
                         )
                       })}
+                      {/* Swipe-to-delete hint on mobile */}
+                      {group === filteredGroups[filteredGroups.length - 1] && (
+                        <div className="flex items-center justify-center gap-1.5 pt-3 pb-1 text-[10px] text-muted-foreground/30 md:hidden">
+                          <Trash2 className="h-2.5 w-2.5" />
+                          <span>нажмите значок корзины для удаления</span>
+                        </div>
+                      )}
                     </div>
                   )
                 })}

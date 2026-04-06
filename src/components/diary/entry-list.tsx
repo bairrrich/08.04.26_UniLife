@@ -8,7 +8,7 @@ import { BookOpen, Plus, Sparkles, Eye, EyeOff, FileText, Clock, CalendarDays } 
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, MOOD_DOT_COLORS, getRelativeTime, countWords, readingTimeMinutes } from '@/lib/format'
+import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, MOOD_LABELS, MOOD_DOT_COLORS, getRelativeTime, countWords, readingTimeMinutes } from '@/lib/format'
 import { DiaryEntry } from './types'
 import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
@@ -94,7 +94,7 @@ export function EntryList({
             <Button
               size="lg"
               onClick={onNewEntryClick}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press rounded-xl"
             >
               <Plus className="h-5 w-5 mr-2" />
               Написать первую запись
@@ -158,7 +158,7 @@ export function EntryList({
             <Card
               key={entry.id}
               className={cn(
-                'card-hover rounded-xl border bg-card hover:shadow-sm transition cursor-pointer overflow-hidden relative',
+                'card-hover rounded-xl border bg-card hover:shadow-md transition-all duration-200 cursor-pointer overflow-hidden relative',
                 moodBorder,
                 selectedEntry?.id === entry.id && 'ring-2 ring-primary/40'
               )}
@@ -170,25 +170,47 @@ export function EntryList({
                 <div className={cn('absolute inset-0 bg-gradient-to-r pointer-events-none rounded-xl', moodGrad)} />
               )}
               <CardContent className="p-4 relative">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-3">
+                  {/* Left: Large mood emoji */}
+                  <div className="flex-shrink-0 mt-0.5">
+                    {entry.mood ? (
+                      <div
+                        className={cn(
+                          'h-12 w-12 rounded-xl flex items-center justify-center text-3xl shadow-md transition-transform duration-200',
+                          'group-hover:scale-110',
+                          moodClass
+                        )}
+                      >
+                        {MOOD_EMOJI[entry.mood]}
+                      </div>
+                    ) : (
+                      <div className="h-12 w-12 rounded-xl bg-muted/50 flex items-center justify-center text-muted-foreground/40">
+                        <BookOpen className="h-5 w-5" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Middle: content */}
                   <div className="flex-1 min-w-0">
-                    {/* Date & mood */}
+                    {/* Date & mood badge */}
                     <div className="flex items-center gap-2 mb-0.5">
                       <span className="text-xs font-medium text-muted-foreground tabular-nums">
                         {format(entryDate, 'd MMMM, EEEE', { locale: ru })}
                       </span>
                       {entry.mood && (
-                        <span
+                        <Badge
+                          variant="secondary"
                           className={cn(
-                            'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium',
+                            'text-[10px] rounded-full px-1.5 py-0 font-medium border-0 shadow-sm',
                             moodClass
                           )}
                         >
-                          {MOOD_EMOJI[entry.mood]} {entry.mood}/5
-                        </span>
+                          {MOOD_LABELS[entry.mood]}
+                        </Badge>
                       )}
                     </div>
-                    {/* Time display: relative + creation time */}
+
+                    {/* Time: relative + creation time */}
                     <div className="flex items-center gap-2 mb-1.5">
                       <div className="flex items-center gap-1">
                         <Clock className="h-3 w-3 text-muted-foreground/50" />
@@ -264,19 +286,19 @@ export function EntryList({
 
                     {/* Word count + reading time badge */}
                     <div className="flex items-center gap-2 mt-2.5">
-                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums rounded-full">
                         <FileText className="h-2.5 w-2.5" />
                         ~{wordCount} слов
                       </Badge>
-                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums">
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/60 border-dashed h-5 px-1.5 gap-1 tabular-nums rounded-full">
                         <BookOpen className="h-2.5 w-2.5" />
-                        {readTime} чтения
+                        {readTime}
                       </Badge>
                     </div>
                   </div>
 
                   {/* Right side: mood stars + export */}
-                  <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                  <div className="flex flex-col items-center gap-2 flex-shrink-0 pt-1">
                     <MoodStars mood={entry.mood} />
                     <ExportEntry entry={entry} />
                   </div>

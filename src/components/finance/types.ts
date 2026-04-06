@@ -35,6 +35,9 @@ export interface Transaction {
   toAccount?: Account | null
   category?: Category
   subCategory?: { id: string; name: string; icon: string } | null
+  isRecurring?: boolean
+  recurringId?: string | null
+  recurringGroupId?: string | null
 }
 
 export interface StatsResponse {

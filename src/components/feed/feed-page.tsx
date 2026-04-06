@@ -1,9 +1,10 @@
 'use client'
 
-import { Rss, Plus, TrendingUp, RefreshCw } from 'lucide-react'
+import { Rss, Plus, TrendingUp, RefreshCw, Flame, User, BarChart3, PenLine } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PostCard } from './post-card'
 import { PostDialog } from './post-dialog'
 import { FeedEmptyState } from './empty-state'
@@ -24,6 +25,8 @@ const SUGGESTED_HASHTAGS = [
   { tag: 'отдых', emoji: '🌅' },
 ]
 
+type FeedFilter = 'all' | 'mine' | 'popular'
+
 export default function FeedPage() {
   const {
     posts, loading, groupedPosts,
@@ -42,19 +45,33 @@ export default function FeedPage() {
   } = useFeed()
 
   const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null)
+  const [activeFilter, setActiveFilter] = useState<FeedFilter>('all')
 
-  // Filter posts by selected hashtag
+  // Apply hashtag + filter together
   const filteredPosts = useMemo(() => {
-    if (!selectedHashtag) return posts
-    return posts.filter((p) => {
-      try {
-        const tags = JSON.parse(p.tags || '[]')
-        return tags.some((t: string) => t.toLowerCase().includes(selectedHashtag.toLowerCase()))
-      } catch {
-        return false
-      }
-    })
-  }, [posts, selectedHashtag])
+    let result = posts
+
+    // Hashtag filter
+    if (selectedHashtag) {
+      result = result.filter((p) => {
+        try {
+          const tags = JSON.parse(p.tags || '[]')
+          return tags.some((t: string) => t.toLowerCase().includes(selectedHashtag.toLowerCase()))
+        } catch {
+          return false
+        }
+      })
+    }
+
+    // Tab filter
+    if (activeFilter === 'mine') {
+      result = result.filter((p) => p.userId === 'user_demo_001')
+    } else if (activeFilter === 'popular') {
+      result = [...result].sort((a, b) => b._count.likes - a._count.likes)
+    }
+
+    return result
+  }, [posts, selectedHashtag, activeFilter])
 
   // Regenerate grouped posts from filtered
   const displayGroups = useMemo(() => {
@@ -76,27 +93,95 @@ export default function FeedPage() {
       .map((g) => ({ label: g, posts: groups[g] }))
   }, [filteredPosts])
 
+  // Stats
+  const totalPosts = posts.length
+  const todayPosts = posts.filter((p) => getTimeGroup(p.createdAt) === 'Сегодня').length
+  const totalComments = posts.reduce((sum, p) => sum + p.comments.length, 0)
+
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header — standard pattern with gradient blobs and icon */}
+      {/* Header — enhanced with gradient blobs, stats, and prominent CTA */}
       <div className="relative overflow-hidden">
-        <div className="pointer-events-none absolute -top-10 -left-10 h-32 w-32 rounded-full bg-gradient-to-br from-rose-400/20 to-pink-500/20 blur-3xl" />
-        <div className="pointer-events-none absolute -top-4 right-20 h-24 w-24 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 blur-3xl" />
-        <div className="relative flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+        {/* Gradient decorative blobs */}
+        <div className="pointer-events-none absolute -top-12 -left-12 h-36 w-36 rounded-full bg-gradient-to-br from-emerald-400/25 to-teal-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -top-6 right-16 h-28 w-28 rounded-full bg-gradient-to-br from-rose-400/20 to-pink-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute top-8 right-48 h-20 w-20 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/10 blur-3xl" />
+
+        <div className="relative flex items-center justify-between gap-3 flex-wrap sm:flex-nowrap">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 text-rose-600 dark:bg-rose-950 dark:text-rose-400">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25">
               <Rss className="h-5 w-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold">Лента</h1>
-              <p className="text-sm text-muted-foreground">Делитесь достижениями и моментами</p>
+              <h1 className="text-xl font-bold flex items-center gap-2">
+                Лента
+                <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal tabular-nums">
+                  {totalPosts}
+                </Badge>
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {todayPosts > 0
+                  ? `${todayPosts} ${todayPosts === 1 ? 'новая запись' : 'новых записей'} сегодня · ${totalComments} ${totalComments === 1 ? 'комментарий' : 'комментариев'}`
+                  : 'Делитесь достижениями и моментами'}
+              </p>
             </div>
           </div>
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Опубликовать</span>
+
+          {/* Prominent "Написать пост" button with gradient */}
+          <Button
+            onClick={() => setDialogOpen(true)}
+            size="sm"
+            className="gap-1.5 shrink-0 bg-gradient-to-r from-rose-500 to-pink-600 text-white shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40 hover:from-rose-600 hover:to-pink-700 border-0 active-press"
+          >
+            <PenLine className="h-4 w-4" />
+            <span className="hidden sm:inline">Написать пост</span>
+            <span className="sm:hidden">Пост</span>
           </Button>
         </div>
       </div>
+
+      {/* Filter tabs */}
+      {!loading && posts.length > 0 && (
+        <div className="flex items-center gap-3 flex-wrap">
+          <Tabs
+            value={activeFilter}
+            onValueChange={(v) => setActiveFilter(v as FeedFilter)}
+          >
+            <TabsList className="h-9 rounded-lg">
+              <TabsTrigger value="all" className="gap-1.5 text-xs px-3">
+                <Rss className="h-3.5 w-3.5" />
+                Все
+              </TabsTrigger>
+              <TabsTrigger value="mine" className="gap-1.5 text-xs px-3">
+                <User className="h-3.5 w-3.5" />
+                Мои
+              </TabsTrigger>
+              <TabsTrigger value="popular" className="gap-1.5 text-xs px-3">
+                <Flame className="h-3.5 w-3.5" />
+                Популярное
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {activeFilter !== 'all' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 px-2 text-xs text-muted-foreground"
+              onClick={() => setActiveFilter('all')}
+            >
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Сбросить
+            </Button>
+          )}
+
+          {activeFilter === 'popular' && (
+            <span className="text-xs text-muted-foreground/60">
+              Сортировка по лайкам
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Trending Topics */}
       <Card className="rounded-xl border overflow-hidden">
@@ -182,31 +267,50 @@ export default function FeedPage() {
               </CardContent>
             </Card>
           ))
-        ) : filteredPosts.length === 0 && !selectedHashtag ? (
+        ) : filteredPosts.length === 0 && !selectedHashtag && activeFilter === 'all' ? (
           <FeedEmptyState onOpenDialog={() => setDialogOpen(true)} />
-        ) : filteredPosts.length === 0 && selectedHashtag ? (
+        ) : filteredPosts.length === 0 && (selectedHashtag || activeFilter !== 'all') ? (
           <div className="text-center py-12">
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-muted/50 flex items-center justify-center">
-              <Badge variant="outline" className="text-2xl font-normal border-0 bg-transparent">
-                #{selectedHashtag}
-              </Badge>
+              {activeFilter === 'popular' ? (
+                <Flame className="h-7 w-7 text-muted-foreground/40" />
+              ) : (
+                <Badge variant="outline" className="text-2xl font-normal border-0 bg-transparent">
+                  #{selectedHashtag}
+                </Badge>
+              )}
             </div>
             <p className="text-sm text-muted-foreground">
-              Пока нет записей с тегом <span className="font-medium text-foreground">#{selectedHashtag}</span>
+              {activeFilter === 'popular'
+                ? 'Пока нет постов с лайками'
+                : activeFilter === 'mine'
+                  ? 'У вас пока нет записей'
+                  : (
+                    <>
+                      Пока нет записей с тегом <span className="font-medium text-foreground">#{selectedHashtag}</span>
+                    </>
+                  )}
             </p>
             <p className="text-xs text-muted-foreground/60 mt-1">
-              Станьте первым, кто напишет об этом!
+              {activeFilter === 'popular'
+                ? 'Лайкайте посты, чтобы они появились здесь'
+                : activeFilter === 'mine'
+                  ? 'Опубликуйте первый пост!'
+                  : 'Станьте первым, кто напишет об этом!'}
             </p>
             <Button
               size="sm"
-              className="mt-4"
+              className="mt-4 gap-1.5"
               onClick={() => {
-                setSelectedHashtag(null)
-                setFormTags(selectedHashtag)
+                if (activeFilter !== 'all') setActiveFilter('all')
+                if (selectedHashtag) {
+                  setSelectedHashtag(null)
+                  setFormTags(selectedHashtag)
+                }
                 setDialogOpen(true)
               }}
             >
-              <Plus className="h-4 w-4 mr-1.5" />
+              <Plus className="h-4 w-4" />
               Написать
             </Button>
           </div>
