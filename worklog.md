@@ -8932,3 +8932,55 @@ Stage Summary:
 8. **Offline Support** — Service worker caching
 9. **Data Visualization Export** — PDF/CSV export of analytics
 10. **Onboarding Flow** — Test "Начать" button dismiss behavior
+
+---
+## Task ID: dashboard-cleanup
+### Agent: main-agent
+### Task: Remove duplicate widgets, add collapsible grouped sections to dashboard
+
+### Work Log:
+- **Analyzed all 60+ dashboard widget files**, identified 9 duplicate/overlapping widgets to remove:
+  1. `QuickNotes` → kept `QuickNotesWidget` (newer, has search, color picker, markdown)
+  2. `DailyProgressWidget` → kept `DailyChecklist` (nearly identical, checklist has nav links)
+  3. `StreakWidget` → kept `CurrentStreaks` (more comprehensive, self-fetching, 4 categories)
+  4. `MotivationalQuote` + `DailyTip` → kept `DailyInspiration` (superset: quote + challenge + weekly streak)
+  5. `ProductivityBreakdown` → kept `ProductivityScore` (more informative with circular gauge + points)
+  6. `WeeklySummary` + `WeeklyScore` → kept `WeeklyInsights` (superset: 6 insights vs basic stats)
+  7. `MoodBarChart` → kept `WeeklyMoodChart` + `MoodDots` (better chart + compact dots view)
+
+- **Created `DashboardSection` component** (`/src/components/dashboard/dashboard-section.tsx`):
+  - Collapsible section wrapper with title, emoji icon, and chevron toggle
+  - Smooth expand/collapse animation via Framer Motion (AnimatePresence)
+  - Collapsed state persisted to localStorage (`unilife-dashboard-sections`)
+  - Accessible: `aria-expanded` attribute on toggle button
+  - Default collapsed state per section configurable via props
+
+- **Refactored `dashboard-page.tsx`** — organized remaining ~30 widgets into 11 logical collapsible sections:
+  1. **Обзор** (Overview) — ProductivityScore + StatCards
+  2. **Сегодня** (Today) — DailyChecklist + QuickMoodWidget + MiniCalendar
+  3. **Вдохновение** (Inspiration) — DailyInspiration + AiInsightsWidget [default collapsed]
+  4. **Быстрый доступ** (Quick Access) — QuickActions
+  5. **Аналитика недели** (Weekly Analytics) — WeeklyInsights + WeeklyActivityChart
+  6. **Графики** (Charts) — SpendingTrendChart + WeeklyMoodChart + ExpensePieChart [default collapsed]
+  7. **Финансы** (Finances) — RecentTransactions + FinanceQuickView + BudgetOverview [default collapsed]
+  8. **Привычки и здоровье** (Habits & Health) — HabitsProgress + CurrentStreaks + MoodStreak + MoodDots + ActivityHeatmap + NutritionSummaryWidget
+  9. **Инструменты** (Tools) — QuickNotesWidget + WeatherWidget + FocusTimerWidget + BreathingWidget [default collapsed]
+  10. **Активность и цели** (Activity & Goals) — ActivityFeed + AchievementsWidget + RecentGoals + RecentDiary [default collapsed]
+  11. NotificationCenter — always visible
+
+- **Cleaned up unused code**: Removed `MOTIVATIONAL_QUOTES`, `getDayOfYear`, `formatCurrency` imports, `streakItems`, `quoteIndex` state, `handleRefreshQuote` handler — all were only used by removed widgets.
+
+- Removed 9 dynamic imports of removed widgets from the file, reducing the widget count from ~49 to ~30.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: HTTP 200, compiles cleanly
+- ✅ agent-browser QA: No console errors, all 10 section headers rendered
+- ✅ Collapsible sections work: "Обзор", "Сегодня", "Быстрый доступ", "Аналитика недели", "Привычки и здоровье" expanded by default; "Вдохновение", "Графики", "Финансы", "Инструменты", "Активность и цели" collapsed by default
+- ✅ localStorage persistence for collapsed state verified
+
+### Stage Summary:
+- Dashboard went from ~49 loosely stacked widgets to 30 widgets organized in 11 collapsible sections
+- 9 duplicate/overlapping widgets removed
+- New DashboardSection component enables user-customizable layout (collapse/expand with persistence)
+- Less cluttered, better organized, faster initial load (fewer lazy-loaded chunks)
