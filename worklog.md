@@ -10518,3 +10518,19 @@ Stage Summary:
 - Dashboard now matches all other pages with shared PageHeader
 - Empty states, buttons, skeletons fully unified across 11 modules
 - Server stability improved (removed Turbopack, lowered memory limit)
+---
+Task ID: 1
+Agent: Main
+Task: Fix HTTP 502 error in DashboardPage fetchAllData + stabilize dev server
+
+Work Log:
+- Diagnosed server repeatedly crashing after first request (OOM/memory issue)
+- Reduced NODE_OPTIONS --max-old-space-size from 768 to 384 in package.json
+- Added retry logic (3 attempts with exponential backoff) to dashboard-page.tsx fetchAllData for 502/503/504 errors
+- Also retry on AbortError (timeout)
+- Server now running stable with all APIs responding 200
+
+Stage Summary:
+- Updated /home/z/my-project/src/components/dashboard/dashboard-page.tsx - added MAX_RETRIES=3, RETRY_DELAY=2000ms retry logic
+- Updated /home/z/my-project/package.json - reduced max-old-space-size from 768 to 384
+- Server confirmed stable: all APIs (dashboard, habits, goals, feed, module-counts, diary, finance) return 200

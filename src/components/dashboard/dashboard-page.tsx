@@ -129,8 +129,11 @@ export default function DashboardPage() {
   const [hasMealsToday, setHasMealsToday] = useState(false)
   const [waterTodayMl, setWaterTodayMl] = useState(0)
 
-  // ── Data Fetching ────────────────────────────────────────────────────
-  const fetchAllData = useCallback(async () => {
+  // ── Data Fetching with retry ─────────────────────────────────────────
+  const MAX_RETRIES = 3
+  const RETRY_DELAY = 2000
+
+  const fetchAllData = useCallback(async (attempt = 0) => {
     setLoading(true)
     const currentMonth = getCurrentMonthStr()
     const today = getTodayStr()
@@ -146,7 +149,15 @@ export default function DashboardPage() {
       )
       clearTimeout(timer)
 
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      if (!res.ok) {
+        // Retry on 502/503/504 server errors
+        if ((res.status === 502 || res.status === 503 || res.status === 504) && attempt < MAX_RETRIES) {
+          console.warn(`Dashboard fetch got HTTP ${res.status}, retry ${attempt + 1}/${MAX_RETRIES} in ${RETRY_DELAY}ms...`)
+          await new Promise((r) => setTimeout(r, RETRY_DELAY * (attempt + 1)))
+          return fetchAllData(attempt + 1)
+        }
+        throw new Error(`HTTP ${res.status}`)
+      }
       const text = await res.text()
       if (text.trimStart().startsWith('<')) throw new Error('Received HTML instead of JSON')
       const json = JSON.parse(text)
@@ -225,6 +236,13 @@ export default function DashboardPage() {
       setBudgetData(data.budgetData || null)
       setWaterTodayMl(data.waterTodayMl || 0)
     } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        // Request was aborted (timeout or unmounted), retry
+        if (attempt < MAX_RETRIES) {
+          console.warn(`Dashboard fetch aborted, retry ${attempt + 1}/${MAX_RETRIES}...`)
+          return fetchAllData(attempt + 1)
+        }
+      }
       console.error('Dashboard fetch error:', err)
     } finally {
       setLoading(false)
