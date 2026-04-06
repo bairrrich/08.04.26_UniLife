@@ -300,8 +300,8 @@ export function WelcomeScreen() {
   const containerRef = useRef<HTMLDivElement>(null)
 
   // Lazy initializer — reads localStorage once at mount (SSR-safe)
-  const [status, setStatus] = useState<'unknown' | 'show' | 'dismissed'>(() => {
-    if (typeof window === 'undefined') return 'unknown'
+  // No 'unknown' state — component is loaded with ssr: false, so window is always available
+  const [status, setStatus] = useState<'show' | 'dismissed'>(() => {
     try {
       const onboarded = localStorage.getItem('unilife-onboarded')
       if (onboarded === 'true') return 'dismissed'
@@ -315,7 +315,6 @@ export function WelcomeScreen() {
   const [currentStep, setCurrentStep] = useState(0)
   const [direction, setDirection] = useState(1)
   const [userName, setUserName] = useState(() => {
-    if (typeof window === 'undefined') return ''
     try {
       const profile = localStorage.getItem('unilife-user-profile')
       if (profile) {
@@ -327,7 +326,6 @@ export function WelcomeScreen() {
     } catch { return '' }
   })
   const [selectedAvatar, setSelectedAvatar] = useState(() => {
-    if (typeof window === 'undefined') return '😀'
     try {
       const profile = localStorage.getItem('unilife-user-profile')
       if (profile) {
@@ -338,7 +336,6 @@ export function WelcomeScreen() {
     } catch { return '😀' }
   })
   const [selectedGoals, setSelectedGoals] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return []
     try {
       const profile = localStorage.getItem('unilife-user-profile')
       if (profile) {
@@ -349,7 +346,6 @@ export function WelcomeScreen() {
     } catch { return [] }
   })
   const [selectedTheme, setSelectedTheme] = useState<'light' | 'dark' | 'system'>(() => {
-    if (typeof window === 'undefined') return 'system'
     try {
       const profile = localStorage.getItem('unilife-user-profile')
       if (profile) {
@@ -434,7 +430,6 @@ export function WelcomeScreen() {
     )
   }, [])
 
-  if (status === 'unknown') return <OnboardingSkeleton />
   if (status === 'dismissed') return null
 
   const progressPercent = ((currentStep + 1) / TOTAL_STEPS) * 100
