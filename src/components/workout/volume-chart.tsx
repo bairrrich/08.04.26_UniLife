@@ -152,8 +152,8 @@ export function WorkoutVolumeChart() {
                 stroke="#8b5cf6"
                 strokeWidth={2}
                 fill="url(#volumeGradient)"
-                dot={(props: { cx: number; cy: number; payload: VolumeDay }) => {
-                  const { cx, cy, payload } = props
+                dot={(props: Record<string, unknown>) => {
+                  const { cx, cy, payload } = props as { cx: number; cy: number; payload: VolumeDay }
                   return (
                     <circle
                       key={`dot-${payload.date}`}

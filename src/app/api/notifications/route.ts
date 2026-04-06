@@ -76,18 +76,19 @@ export async function GET() {
     })
 
     for (const goal of overdueGoals) {
+      const deadline = goal.deadline!
       const daysOverdue = Math.floor(
-        (now.getTime() - goal.deadline.getTime()) / (1000 * 60 * 60 * 24)
+        (now.getTime() - deadline.getTime()) / (1000 * 60 * 60 * 24)
       )
       notifications.push({
         id: crypto.randomUUID(),
         type: 'warning',
         title: `Просроченная цель`,
-        description: `«${goal.title}» — дедлайн прошёл ${daysOverdue} дн. назад (${russianDate(goal.deadline)}). Не забудьте завершить или обновить прогресс.`,
+        description: `«${goal.title}» — дедлайн прошёл ${daysOverdue} дн. назад (${russianDate(deadline)}). Не забудьте завершить или обновить прогресс.`,
         icon: 'AlertTriangle',
         module: 'goals',
         actionUrl: '/?module=goals',
-        createdAt: goal.deadline.toISOString(),
+        createdAt: deadline.toISOString(),
         read: false,
       })
     }

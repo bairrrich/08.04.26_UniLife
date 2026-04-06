@@ -104,14 +104,14 @@ export function useGoals() {
           method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         })
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
-        const json = await safeJson(res)
+        const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
         if (!json || !json.success) { toast.error('Ошибка при обновлении цели'); return }
         toast.success('Цель обновлена')
       } else {
         const res = await fetch('/api/goals', {
           method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
         })
-        const json = await safeJson(res)
+        const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
         if (!json || !json.success) { toast.error('Ошибка при создании цели'); return }
         toast.success('Цель создана')
       }
@@ -135,7 +135,7 @@ export function useGoals() {
         body: JSON.stringify({ progress: newProgress }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (!json || !json.success) { toast.error('Ошибка обновления прогресса'); return }
       toast.success(`Прогресс: ${newProgress}%`); fetchGoals()
     } catch (err) {
@@ -151,7 +151,7 @@ export function useGoals() {
         body: JSON.stringify({ status: 'completed', progress: 100 }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (!json || !json.success) { toast.error('Ошибка завершения цели'); return }
       toast.success('Цель завершена! 🎉'); fetchGoals()
     } catch (err) {
@@ -164,7 +164,7 @@ export function useGoals() {
     try {
       const res = await fetch(`/api/goals/${goalId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (!json || !json.success) { toast.error('Ошибка при удалении цели'); return }
       toast.success('Цель удалена'); fetchGoals()
     } catch (err) {
@@ -192,7 +192,7 @@ export function useGoals() {
         body: JSON.stringify({ milestones: JSON.stringify(milestones) }),
       })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (!json || !json.success) return
       fetchGoals()
     } catch {

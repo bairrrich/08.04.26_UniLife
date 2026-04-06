@@ -39,8 +39,8 @@ export function useWorkouts() {
     setLoading(true)
     try {
       const res = await fetch(`/api/workout?month=${month}`)
-      const json = await safeJson(res)
-      if (json && json.success) setWorkouts(json.data)
+      const json = await safeJson<{ success?: boolean; data?: Workout[] }>(res)
+      if (json && json.success && json.data) setWorkouts(json.data)
     } catch (err) {
       console.error('Failed to fetch workouts:', err)
     } finally {
@@ -51,8 +51,8 @@ export function useWorkouts() {
   const fetchAllWorkouts = useCallback(async () => {
     try {
       const res = await fetch('/api/workout')
-      const json = await safeJson(res)
-      if (json && json.success) setAllWorkouts(json.data)
+      const json = await safeJson<{ success?: boolean; data?: Workout[] }>(res)
+      if (json && json.success && json.data) setAllWorkouts(json.data)
     } catch {
       // ignore
     }
@@ -229,7 +229,7 @@ export function useWorkouts() {
           exercises,
         }),
       })
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (json && json.success) {
         toast.success('Тренировка добавлена')
         setDialogOpen(false)
@@ -288,7 +288,7 @@ export function useWorkouts() {
           exercises,
         }),
       })
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (json && json.success) {
         toast.success('Тренировка обновлена')
         setEditDialogOpen(false)

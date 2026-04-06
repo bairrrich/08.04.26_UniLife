@@ -211,7 +211,7 @@ const MemoizedSidebarContent = memo(function SidebarContent({ onNavigate, onNoti
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <NotificationBellTrigger onClick={onNotificationsOpen} />
+            <NotificationBellTrigger onClick={onNotificationsOpen ?? (() => {})} />
             <ThemeToggle />
           </div>
         </div>

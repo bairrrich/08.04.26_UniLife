@@ -38,7 +38,7 @@ function useAnimatedValue(target: number, duration = 800) {
 function MiniTrendBars({ goals }: { goals: GoalData[] }) {
   const months = useMemo(() => {
     const now = new Date()
-    const result = []
+    const result: Array<{ label: string; rate: number; count: number }> = []
     for (let i = 2; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
       const monthEnd = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59)
@@ -53,7 +53,7 @@ function MiniTrendBars({ goals }: { goals: GoalData[] }) {
         label: monthNames[d.getMonth()],
         rate,
         count: monthGoals.length,
-      })
+      } as { label: string; rate: number; count: number })
     }
     return result
   }, [goals])

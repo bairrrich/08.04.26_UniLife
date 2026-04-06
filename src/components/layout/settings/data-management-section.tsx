@@ -41,7 +41,7 @@ export function DataManagementSection() {
     try {
       toast.loading('Подготовка экспорта...')
       const res = await fetch(`/api/settings/export?module=${module}`)
-      const result = await safeJson(res)
+      const result = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (!result || !result.data) throw new Error('Export failed')
       const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -86,14 +86,14 @@ export function DataManagementSection() {
       })
 
       if (res.ok) {
-        const result = await safeJson(res)
+        const result = await safeJson<{ success?: boolean; imported?: Record<string, number> }>(res)
         const counts = Object.entries(result?.imported || {})
           .filter(([, v]: [string, unknown]) => (v as number) > 0)
           .map(([k, v]) => `${k}: ${v}`)
           .join(', ')
         toast.success(`Импорт выполнен! ${counts || 'нет данных'}`)
       } else {
-        const err = await safeJson(res)
+        const err = await safeJson<{ success?: boolean; error?: string }>(res)
         toast.error(err?.error || 'Ошибка при импорте')
       }
     } catch (err) {

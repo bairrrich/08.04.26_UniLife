@@ -1,3 +1,3 @@
-export { DailyChecklist } from './daily-checklist'
-export { BudgetOverview } from './budget-overview'
-export { NotificationCenter } from './notification-center'
+export { default as DailyChecklist } from './daily-checklist'
+export { default as BudgetOverview } from './budget-overview'
+export { default as NotificationCenter } from './notification-center'

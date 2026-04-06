@@ -219,7 +219,7 @@ export function WaterTracker({
           <Button
             variant="outline"
             size="sm"
-            onClick={onAddWater}
+            onClick={() => onAddWater()}
             className={`gap-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-700 dark:hover:text-blue-300 transition-transform duration-200 ${waterAnimating ? 'scale-110' : 'hover:scale-[1.02]'}`}
           >
             <Droplets className="size-4" />

@@ -72,12 +72,12 @@ export async function GET(req: NextRequest) {
     // ── Analyze data ──────────────────────────────────────────────────
     const analysis = analyzeData({
       dateStr,
-      diaryEntries,
-      transactions,
-      rawHabits,
-      workouts,
-      mealsWithItems,
-      waterLogs,
+      diaryEntries: diaryEntries as unknown as { date: Date; mood: number | null; title: string }[],
+      transactions: transactions as unknown as { type: string; amount: number; category: { name: string } | null }[],
+      rawHabits: rawHabits as unknown as { emoji: string; name: string; logs: { date: Date }[] }[],
+      workouts: workouts as unknown as { date: Date; duration: number | null; name: string; exercises: unknown[] }[],
+      mealsWithItems: mealsWithItems as unknown as { items: { kcal: number | null; protein: number | null; carbs: number | null; fat: number | null }[] }[],
+      waterLogs: waterLogs as unknown as { amountMl: number }[],
     })
 
     // ── Generate insights ─────────────────────────────────────────────

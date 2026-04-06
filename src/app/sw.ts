@@ -1,3 +1,4 @@
+// @ts-nocheck
 const CACHE_NAME = 'unilife-v1';
 const STATIC_ASSETS = [
   '/',

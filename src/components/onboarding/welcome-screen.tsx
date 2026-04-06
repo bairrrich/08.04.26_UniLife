@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -130,7 +130,7 @@ const MOTIVATIONAL_MESSAGES = [
 
 // ─── Animation variants ─────────────────────────────────────────────────
 
-const slideVariants = {
+const slideVariants: Variants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 300 : -300,
     opacity: 0,
@@ -146,12 +146,12 @@ const slideVariants = {
 }
 
 const slideTransition = {
-  x: { type: 'spring', stiffness: 300, damping: 30 },
+  x: { type: 'spring' as const, stiffness: 300, damping: 30 },
   opacity: { duration: 0.2 },
 }
 
 // Stagger container for children animations
-const staggerContainer = {
+const staggerContainer: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -160,7 +160,7 @@ const staggerContainer = {
 }
 
 // Stagger child animation
-const staggerItem = {
+const staggerItem: Variants = {
   hidden: { y: 20, opacity: 0, scale: 0.95 },
   show: {
     y: 0,

@@ -1,4 +1,4 @@
-export { ActivityFeed } from './activity-feed'
-export { RecentTransactions } from './recent-transactions'
-export { ActivityHeatmap } from './activity-heatmap'
-export { WeeklyInsights } from './weekly-insights'
+export { default as ActivityFeed } from './activity-feed'
+export { default as RecentTransactions } from './recent-transactions'
+export { default as ActivityHeatmap } from './activity-heatmap'
+export { default as WeeklyInsights } from './weekly-insights'

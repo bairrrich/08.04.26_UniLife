@@ -177,7 +177,7 @@ export function GoalDialog({
     setFormCurrentValue(template.currentValue)
     setFormUnit(template.unit)
     setFormProgress('0')
-    setFormPriority('medium')
+    setFormPriority?.('medium')
   }
 
   return (

@@ -83,7 +83,7 @@ export function DataStatsSection() {
   const fetchStats = useCallback(async () => {
     try {
       const res = await fetch('/api/settings/stats')
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: StatsData }>(res)
       if (json && json.data) {
         setStats(json.data)
         setLastUpdated(new Date())
@@ -103,7 +103,7 @@ export function DataStatsSection() {
     try {
       toast.loading('Подготовка экспорта...')
       const res = await fetch('/api/settings/export?module=all')
-      const result = await safeJson(res)
+      const result = await safeJson<{ success?: boolean; data?: unknown }>(res)
       if (!result || !result.data) throw new Error('Export failed')
       const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: 'application/json' })
       const url = URL.createObjectURL(blob)

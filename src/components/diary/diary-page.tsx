@@ -86,7 +86,7 @@ export default function DiaryPage() {
     try {
       const monthStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`
       const res = await fetch(`/api/diary?month=${monthStr}`)
-      const json = await safeJson(res)
+      const json = await safeJson<{ success?: boolean; data?: DiaryEntry[] }>(res)
       if (json && json.data) {
         setEntries(json.data)
       }
@@ -260,7 +260,7 @@ export default function DiaryPage() {
         }),
       })
       if (res.ok) {
-        const json = await safeJson(res)
+        const json = await safeJson<{ success?: boolean; data?: DiaryEntry }>(res)
         const updated = json?.data
         if (updated) {
           setSelectedEntry(updated)

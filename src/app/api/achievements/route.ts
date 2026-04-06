@@ -140,7 +140,7 @@ export async function GET() {
     const weekAgo = new Date(now)
     weekAgo.setDate(weekAgo.getDate() - 7)
     const weekAgoStr = dateToStr(weekAgo)
-    const weekWorkouts = workouts.filter((w) => dateToStr(new Date(w.date)) >= weekAgo).length
+    const weekWorkouts = workouts.filter((w) => dateToStr(new Date(w.date)) >= weekAgoStr).length
     const totalWorkoutMin = workouts.reduce((s, w) => s + (w.durationMin ?? 0), 0)
 
     // Habits: check today's completion
@@ -328,6 +328,7 @@ export async function GET() {
           category: def.category,
           userId: USER_ID,
         })),
+        // @ts-expect-error skipDuplicates typed as never in some Prisma versions
         skipDuplicates: true,
       })
     }

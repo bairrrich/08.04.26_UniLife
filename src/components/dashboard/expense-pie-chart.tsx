@@ -57,7 +57,7 @@ export default function ExpensePieChart({ loading, expensePieData }: ExpensePieC
                 paddingAngle={2}
                 dataKey="value"
                 nameKey="name"
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                label={({ name, percent }: any) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                 labelLine={false}
               >
                 {expensePieData.map((entry, index) => (

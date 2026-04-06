@@ -83,14 +83,14 @@ function Shell() {
 export default function Home() {
   const activeModule = useAppStore((s) => s.activeModule)
 
-  const [moduleComp, setModuleComp] = useState<React.ComponentType | null>(null)
-  const [sidebar, setSidebar] = useState<React.ComponentType | null>(null)
-  const [mobileNav, setMobileNav] = useState<React.ComponentType | null>(null)
-  const [footer, setFooter] = useState<React.ComponentType | null>(null)
-  const [quickAdd, setQuickAdd] = useState<React.ComponentType | null>(null)
-  const [scrollTop, setScrollTop] = useState<React.ComponentType | null>(null)
-  const [notif, setNotif] = useState<React.ComponentType | null>(null)
-  const [welcome, setWelcome] = useState<React.ComponentType | null>(null)
+  const [ModuleComp, setModuleComp] = useState<React.ComponentType | null>(null)
+  const [Sidebar, setSidebar] = useState<React.ComponentType | null>(null)
+  const [MobileNav, setMobileNav] = useState<React.ComponentType | null>(null)
+  const [Footer, setFooter] = useState<React.ComponentType | null>(null)
+  const [QuickAdd, setQuickAdd] = useState<React.ComponentType | null>(null)
+  const [ScrollTop, setScrollTop] = useState<React.ComponentType | null>(null)
+  const [Notif, setNotif] = useState<React.ComponentType | null>(null)
+  const [Welcome, setWelcome] = useState<React.ComponentType | null>(null)
   const [moduleLabel, setModuleLabel] = useState('Дашборд')
 
   // Rehydrate Zustand persist (after mount — no hydration mismatch)
@@ -141,27 +141,27 @@ export default function Home() {
   }, [])
 
   // Show shell while anything is loading
-  const isLoading = !moduleComp || !sidebar || !mobileNav || !footer
+  const isLoading = !ModuleComp || !Sidebar || !MobileNav || !Footer
 
   return (
     <div className="min-h-screen bg-background">
-      {welcome && <welcome />}
-      {sidebar && <sidebar />}
+      {Welcome && <Welcome />}
+      {Sidebar && <Sidebar />}
       <main className="main-content md:ml-60 min-h-screen flex flex-col">
         <div className="p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
           {isLoading ? (
             <Shell />
           ) : (
             <ErrorBoundary name={moduleLabel}>
-              <moduleComp />
+              <ModuleComp />
             </ErrorBoundary>
           )}
         </div>
-        {footer && <footer />}
-        {scrollTop && <scrollTop />}
-        {mobileNav && <mobileNav />}
-        {quickAdd && <quickAdd />}
-        {notif && <notif />}
+        {Footer && <Footer />}
+        {ScrollTop && <ScrollTop />}
+        {MobileNav && <MobileNav />}
+        {QuickAdd && <QuickAdd />}
+        {Notif && <Notif />}
       </main>
     </div>
   )

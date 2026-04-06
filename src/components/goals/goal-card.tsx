@@ -270,7 +270,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
                     priorityConfig.pulseClass,
                     goal.priority === 'high' && !isCompleted && 'animate-pulse-soft',
                   )}>
-                    <priorityConfig.icon className="h-3 w-3" />
+                    {priorityConfig.icon}
                     {priorityConfig.label}
                   </span>
                 </TooltipTrigger>
@@ -669,7 +669,7 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
               <TooltipTrigger asChild>
                 <span className={cn(
                   'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold border shrink-0',
-                  progressTrend.bgClass, progressTrend.borderClass, progressTrend.color,
+                  progressTrend.bgClass, progressTrend.borderClass, progressTrend.colorClass,
                 )}>
                   <span className="text-[10px]">{progressTrend.emoji}</span>
                   {progressTrend.label}

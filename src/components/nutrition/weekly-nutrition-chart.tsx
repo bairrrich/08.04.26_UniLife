@@ -109,8 +109,8 @@ export function WeeklyNutritionChart({ goals }: WeeklyNutritionChartProps) {
       avgKcal,
       daysOnTarget,
       daysWithData: daysWithData.length,
-      bestDay: bestDayIdx >= 0 ? data[data.indexOf(daysWithData[bestDayIdx])] : null,
-      worstDay: worstDayIdx >= 0 ? data[data.indexOf(daysWithData[worstDayIdx])] : null,
+      bestDay: bestDayIdx >= 0 ? data.find((d) => d.kcal === daysWithData[bestDayIdx]) ?? null : null,
+      worstDay: worstDayIdx >= 0 ? data.find((d) => d.kcal === daysWithData[worstDayIdx]) ?? null : null,
       trend,
     }
   }, [data, goals])

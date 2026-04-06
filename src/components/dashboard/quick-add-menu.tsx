@@ -6,6 +6,7 @@ import type { AppModule } from '@/store/use-app-store'
 import {
   motion,
   AnimatePresence,
+  type Variants,
 } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import {
@@ -184,7 +185,7 @@ const menuOverlayVariants = {
   visible: { opacity: 1 },
 }
 
-const menuContentVariants = {
+const menuContentVariants: Variants = {
   hidden: { opacity: 0, scale: 0.92, y: 8 },
   visible: {
     opacity: 1,
@@ -206,7 +207,7 @@ const menuContentVariants = {
   },
 }
 
-const menuItemVariants = {
+const menuItemVariants: Variants = {
   hidden: { opacity: 0, x: 8 },
   visible: (i: number) => ({
     opacity: 1,

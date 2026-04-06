@@ -368,8 +368,8 @@ export function SearchDialog() {
     setLoading(true)
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      const data = await safeJson(res)
-      setResults(data)
+      const data = await safeJson<SearchResponse>(res)
+      setResults(data ?? null)
       saveRecentSearch(searchQuery.trim())
       setRecentSearches(getRecentSearches())
     } catch {
@@ -504,11 +504,11 @@ export function SearchDialog() {
       }
       // All nav items
       for (const _ni of filteredNavItems) {
-        items.push({ index: items.length, _navItem: true })
+        items.push({ index: items.length, navItem: true } as any)
       }
     } else if (mode === 'actions') {
       for (const _fa of filteredActions) {
-        items.push({ index: items.length, _action: true })
+        items.push({ index: items.length, action: true } as any)
       }
     }
 

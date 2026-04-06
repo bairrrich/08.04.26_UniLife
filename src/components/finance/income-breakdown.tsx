@@ -188,7 +188,7 @@ export function IncomeBreakdown({ transactions, isLoading }: IncomeBreakdownProp
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => formatCurrency(value)}
+                    formatter={(value: any, name: any) => [formatCurrency(Number(value)), name]}
                     contentStyle={{
                       borderRadius: '8px',
                       border: '1px solid hsl(var(--border))',

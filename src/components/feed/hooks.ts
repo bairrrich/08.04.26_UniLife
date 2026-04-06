@@ -57,9 +57,9 @@ export function useFeed() {
     setLoading(true)
     try {
       const res = await fetch('/api/feed?limit=50&offset=0')
-      const data: FeedPost[] | null = await safeJson<{ success: boolean; data: FeedPost[] }>(res)
-      if (data) {
-        setPosts(data.data)
+      const result = await safeJson<{ success: boolean; data: FeedPost[] }>(res)
+      if (result) {
+        setPosts(result.data)
         setLikedPosts(new Set<string>())
       }
     } catch (err) {

@@ -392,7 +392,8 @@ export default function DashboardPage() {
       }
     }
 
-    const result: typeof weeklyActivity = []
+    type WeeklyActivityItem = { dayName: string; dateKey: string; diary: number; workouts: number; habits: number; isToday: boolean }
+    const result: WeeklyActivityItem[] = []
     for (let i = 6; i >= 0; i--) {
       const d = new Date(now)
       d.setDate(now.getDate() - i)
@@ -769,7 +770,7 @@ export default function DashboardPage() {
         hasDiaryToday={!!todayMood}
         hasMealsToday={hasMealsToday}
         uncompletedHabitsCount={totalActive - completedToday}
-        onNavigate={handleNotificationCenterNavigate}
+        onNavigate={handleNotificationCenterNavigate as (module: string) => void}
       />
 
       {/* ── Widget Customizer Dialog ──────────────────────────────── */}
