@@ -313,6 +313,21 @@ export function useWorkouts() {
     setMonth(`${newDate.getFullYear()}-${(newDate.getMonth() + 1).toString().padStart(2, '0')}`)
   }
 
+  const handleDelete = useCallback(async (workoutId: string) => {
+    try {
+      const res = await fetch(`/api/workout/${workoutId}`, { method: 'DELETE' })
+      if (res.ok) {
+        toast.success('Тренировка удалена')
+        fetchWorkouts()
+        fetchAllWorkouts()
+      } else {
+        toast.error('Не удалось удалить тренировку')
+      }
+    } catch {
+      toast.error('Ошибка при удалении')
+    }
+  }, [fetchWorkouts, fetchAllWorkouts])
+
   return {
     // State
     workouts,
@@ -355,6 +370,7 @@ export function useWorkouts() {
     openEditDialog,
     toggleExpand,
     changeMonth,
+    handleDelete,
     closeEditDialog: () => { setEditDialogOpen(false); setEditingWorkout(null); resetForm() },
   }
 }

@@ -38,7 +38,7 @@ const Footer = memo(function Footer() {
   const isLoading = Object.keys(counts).length === 0
 
   return (
-    <footer className="mt-auto border-t bg-muted/30">
+    <footer className="mt-auto border-t bg-muted/30 pb-20 md:pb-0">
       {/* Gradient accent bar */}
       <div className="h-0.5 w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500" />
       <div className="hidden md:grid md:grid-cols-4 divide-x divide-border">

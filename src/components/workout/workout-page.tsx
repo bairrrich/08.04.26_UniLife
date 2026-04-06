@@ -34,7 +34,7 @@ export function WorkoutPage() {
     personalRecords,
     weeklyFrequency,
     handleSubmit, handleEditSubmit, handleApplyPreset,
-    openEditDialog, toggleExpand, changeMonth, closeEditDialog,
+    openEditDialog, toggleExpand, changeMonth, closeEditDialog, handleDelete,
     totalHours,
     sparklineData,
     periodComparison,
@@ -213,6 +213,7 @@ export function WorkoutPage() {
                 isExpanded={expandedId === workout.id}
                 onToggle={() => toggleExpand(workout.id)}
                 onEdit={openEditDialog}
+                onDelete={handleDelete}
                 exerciseMaxWeights={personalRecords.maxWeightsByName}
               />
             ))}

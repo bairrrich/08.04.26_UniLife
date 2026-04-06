@@ -110,6 +110,7 @@ export async function seed() {
   }
 
   // Seed investment transactions
+  const now = new Date()
   const investmentTxData: { investmentId: string; type: string; amount: number; units: number | null; pricePerUnit: number | null; daysAgo: number; note: string | null }[] = [
     { investmentId: createdInvestments[0].id, type: 'BUY', amount: 15000, units: 3.5, pricePerUnit: 4285.71, daysAgo: 30, note: 'Покупка индексного фонда' },
     { investmentId: createdInvestments[0].id, type: 'BUY', amount: 10000, units: 2.3, pricePerUnit: 4347.83, daysAgo: 15, note: 'Докупка' },
@@ -161,7 +162,6 @@ export async function seed() {
   }
 
   // Seed transactions (last 10 days, fewer per day)
-  const now = new Date()
   for (let i = 0; i < 10; i++) {
     const date = new Date(now)
     date.setDate(date.getDate() - i)

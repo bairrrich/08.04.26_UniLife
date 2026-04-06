@@ -9102,3 +9102,295 @@ Dashboard widget deduplication + sorting/grouping system
 - New widget customization system with 10 configurable sections
 - Users can toggle section visibility and reorder sections
 - Configuration persists via localStorage
+
+---
+
+## Task ID: 1-b
+### Agent: api-endpoints-agent
+### Task: Add missing API endpoints (Workout DELETE, Feed Like, Water DELETE, Comments GET, wire up likes)
+
+### Work Log:
+
+**1. Workout DELETE endpoint (`/src/app/api/workout/[id]/route.ts`):**
+- Added `DELETE` handler before the existing `PUT` handler
+- Extracts workout ID from route params (using `params: Promise<{ id: string }>` pattern)
+- Verifies the workout belongs to `user_demo_001` — returns 404 if not found or wrong user
+- Deletes the workout via `db.workout.delete()` — cascade automatically removes associated exercises
+- Returns `{ success: true, message: 'Тренировка удалена' }` on success
+- Proper error handling with 500 status code on server errors
+
+**2. Feed Like API endpoint (`/src/app/api/feed/like/route.ts`) — NEW FILE:**
+- `POST` handler accepting `{ postId: string }` in the request body
+- Validates postId is present (400 if missing)
+- Verifies the post exists (404 if not found)
+- Checks if a Like already exists for the user (`user_demo_001`) and post using `findUnique` on the `postId_userId` compound unique constraint
+- If like exists: deletes it (unlike). Returns `{ success: true, liked: false, likeCount: updatedCount }`
+- If like does not exist: creates it (like). Returns `{ success: true, liked: true, likeCount: updatedCount }`
+- Uses `db.like.count({ where: { postId } })` to get the updated total like count for the post
+- Proper error handling with 500 status code
+
+**3. Water Log DELETE endpoint (`/src/app/api/nutrition/water/[id]/route.ts`) — NEW FILE:**
+- `DELETE` handler extracting water log ID from route params
+- Verifies the water log belongs to `user_demo_001` — returns 404 if not found or wrong user
+- Deletes the water log via `db.waterLog.delete()`
+- Returns `{ success: true, message: 'Запись воды удалена' }` on success
+- Proper error handling with 500 status code
+
+**4. Comment list GET endpoint (`/src/app/api/feed/comments/route.ts`) — NEW FILE:**
+- `GET` handler with required query parameter `?postId=xxx`
+- Returns 400 if postId is missing
+- Fetches all comments for the given postId using `db.comment.findMany()`
+- Includes user relation with select for `id`, `name`, `avatar` fields
+- Orders results by `createdAt desc` (newest first)
+- Returns `{ success: true, data: comments }`
+
+**5. Wired up feed likes to actual API (`/src/components/feed/hooks.ts`):**
+- Changed `handleToggleLike` from synchronous to `async` function
+- Kept optimistic local state updates (immediate UI response)
+- Added `fetch('/api/feed/like', { method: 'POST', body: JSON.stringify({ postId }) })` call
+- On successful API response, syncs local state with server response:
+  - Updates `likedPosts` set based on `json.liked` boolean
+  - Updates `posts` like counts based on `json.likeCount` number
+- Uses existing `safeJson` utility for safe response parsing
+- Errors are caught and logged (non-blocking — optimistic state remains)
+
+### Verification Results:
+- ✅ All 5 modified/created files pass ESLint with 0 errors
+- ✅ 1 pre-existing lint error in `mobile-nav.tsx` (unrelated to this task)
+- ✅ All new endpoints follow existing project patterns (import from `@/lib/db`, `USER_ID` constant, `NextResponse.json`, error handling)
+
+### Stage Summary:
+- 3 new API endpoints created: POST `/api/feed/like`, GET `/api/feed/comments`, DELETE `/api/nutrition/water/[id]`
+- 1 existing endpoint enhanced: DELETE `/api/workout/[id]` now supported
+- Feed likes now persist to database via API instead of being local-only
+- All endpoints follow project conventions (USER_ID guard, error handling, Russian messages)
+
+---
+## Task ID: 1-c
+### Agent: general-purpose
+### Task: Fix layout and mobile issues (7 fixes)
+
+### Work Log:
+
+**1. Fix FAB overlap with mobile bottom nav** (`/src/components/dashboard/quick-add-menu.tsx`):
+- Changed `fixed bottom-6 right-6` to `fixed bottom-20 right-6 md:bottom-8 md:right-8` to account for the 64px mobile nav bar
+- FAB now sits above the mobile bottom navigation on small screens
+
+**2. Fix footer overlap with mobile bottom nav** (`/src/components/layout/app-footer.tsx`):
+- Added `pb-20 md:pb-0` to the footer element
+- Footer no longer gets obscured by the fixed mobile bottom nav on small screens
+
+**3. Remove duplicate habits from MODULE_NAV_ITEMS** (`/src/components/layout/mobile-nav.tsx`):
+- Removed `{ id: 'habits', label: 'Привычки', icon: Target }` from `MODULE_NAV_ITEMS` array
+- Habits was already present in `MAIN_NAV_ITEMS` (bottom tabs), so the "More" sheet no longer shows a duplicate entry
+- Kept `Target` import since `MAIN_NAV_ITEMS` still uses it
+
+**4. Fix "more" tab never showing as active** (`/src/components/layout/mobile-nav.tsx`):
+- Created helper function `isMoreSheetActive(activeModule: AppModule)` that returns `true` if the active module is NOT in `MAIN_NAV_ITEMS`
+- Replaced `activeModule === 'more'` with `isMoreSheetActive(activeModule)` for the MoreSheet button's active class
+- Also hid the green feed notification dot when a "more" module is already active (since user has already navigated to that section)
+
+**5. Wire up feed last seen clearing** (`/src/components/layout/mobile-nav.tsx`):
+- Imported `setFeedLastSeen` from `@/lib/module-counts`
+- Added `useEffect` watching `activeModule`: when user navigates to feed, calls `setFeedLastSeen()` to update timestamp
+- Added `activeModule` dependency to the feed check `useEffect` so it re-evaluates `hasNewFeedPosts` after `setFeedLastSeen()` writes to localStorage
+- Removed direct `setHasNewFeedPosts(false)` from the effect (caused ESLint `react-hooks/set-state-in-effect` error) — the feed check re-evaluation handles clearing naturally
+
+**6. Add Zustand state persistence for activeModule** (`/src/store/use-app-store.ts`):
+- Imported `persist` from `zustand/middleware`
+- Wrapped store with `persist` middleware using `create<AppState>()()` pattern
+- Configured with `name: 'unilife-app-store'` localStorage key
+- Used `partialize` to only persist `activeModule` (not notificationCount, notificationsOpen, pendingDialog, sidebarOpen, searchOpen)
+- Active module now survives page refreshes
+
+**7. Fix ThemeProvider enableSystem** (`/src/app/layout.tsx`):
+- Changed `enableSystem={false}` to `enableSystem={true}`
+- System theme tracking now works (follows OS dark/light mode preference)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All 7 fixes applied cleanly across 5 files
+- ✅ No breaking changes to existing functionality
+
+### Stage Summary:
+- 7 layout and mobile issues fixed
+- FAB and footer no longer overlap mobile bottom nav
+- Duplicate habits entry removed from "More" sheet
+- "More" tab correctly shows active state for any non-main module
+- Feed notification dot clears when user visits feed module
+- Active module persists across page refreshes via Zustand persist
+- System theme tracking enabled
+
+---
+## Task ID: 1-a
+### Agent: db-schema-seed-fix-agent
+### Task: Fix DB schema and seed bugs
+
+### Work Log:
+
+**1. Added `archived` and `category` fields to Habit model (`prisma/schema.prisma`):**
+- Added `archived Boolean @default(false)` and `category String @default("general")` to the Habit model
+- Ran `bun run db:push` to sync schema changes to SQLite — successful
+
+**2. Fixed seed.ts `now` variable reference bug (`src/lib/seed.ts`):**
+- `const now = new Date()` was declared on line 164 (before the regular transactions loop) but was used starting from line 124 in the investment transactions for-loop
+- Moved `const now = new Date()` to line 113, before the investment transactions section
+- Removed the duplicate declaration from line 164
+- Transfer transactions section (line ~146-148) continues to work correctly since `now` is now declared above it
+
+**3. Fixed finance import count calculation bug (`src/app/api/settings/import/route.ts`):**
+- Line 83 had: `imported.finance = imported.financeCategories || 0 + (imported.financeTransactions || 0)`
+- JavaScript operator precedence evaluates `0 + (imported.financeTransactions || 0)` first due to `+` binding tighter than `||`
+- Fixed to: `imported.finance = (imported.financeCategories || 0) + (imported.financeTransactions || 0)` with explicit parentheses
+
+**4. Updated habits API routes for new fields:**
+- `src/app/api/habits/route.ts` (POST): Added `archived` and `category` to request body destructuring and create data, with defaults `false` and `"general"`
+- `src/app/api/habits/[id]/route.ts` (PATCH): Added `archived` and `category` to request body destructuring and conditional update spread
+
+**5. Fixed pre-existing lint error (`src/components/layout/mobile-nav.tsx`):**
+- `setHasNewFeedPosts(false)` was called synchronously in a useEffect body (react-hooks/set-state-in-effect rule)
+- Reordered hooks so `useState` for `hasNewFeedPosts` is declared before the useEffect that references it
+- Removed redundant `setHasNewFeedPosts(false)` call — the `checkFeedUpdates` effect (which runs on same `activeModule` change) already recomputes `hasNewFeedPosts` based on the updated `setFeedLastSeen()` timestamp
+
+### Verification Results:
+- ✅ `bun run db:push`: Database synced, Prisma Client regenerated
+- ✅ `bun run lint`: 0 errors, 0 warnings
+
+### Stage Summary:
+- 2 new fields added to Habit schema (archived, category)
+- 1 variable reference bug fixed in seed.ts
+- 1 operator precedence bug fixed in import route
+- 2 API routes updated for new Habit fields
+- 1 pre-existing lint error fixed in mobile-nav.tsx
+- All changes verified with db:push and lint
+
+---
+## Task ID: 1-d
+### Agent: search-nav-fix-agent
+### Task: Fix search and nav items — add habits/goals to search, fix bugs, enhance quick add
+
+### Work Log:
+
+**Task 1 — Add Habits and Goals to global search:**
+- Added habits and goals entries to `SEARCH_MODULE_CONFIG` in `search-dialog.tsx` (key='habits', label='Привычки', icon=Target, module='habits' and key='goals', label='Цели', icon=Crosshair, module='goals')
+- Updated `SearchResponse` interface to include `habits` and `goals` arrays in data
+- Updated `/api/search/route.ts` to query `db.habit` (by name) and `db.goal` (by title), returning up to 5 results each with proper type annotations
+- Added habits/goals cases to `getResultTitle()` (habit name, goal title) and `getResultSubtitle()` (habit emoji, goal category)
+- Added habits and goals entries to the empty response in the search API
+- Added goals filter pill to `CATEGORY_FILTERS` array
+
+**Task 2 — Fix habits category filter:**
+- Added `moduleKey: 'habits'` to the habits entry in `CATEGORY_FILTERS` (was missing, causing the filter to be non-functional)
+- Also added `moduleKey: 'goals'` for the new goals filter entry
+
+**Task 3 — Fix nutrition subtitle in search results:**
+- Fixed `getResultSubtitle()` nutrition case: changed `String(item.type)` to `String(item.mealType)` since `item.type` is 'nutrition' (the module key) but the actual meal type (BREAKFAST/LUNCH/DINNER/SNACK) is stored in `item.mealType` from the search API response
+- Fixed `getResultTitle()` nutrition case: same fix, changed `item.type` to `item.mealType` in the MEAL_TYPE_LABELS lookup
+
+**Task 4 — Fix nav-items description text:**
+- Changed habits description from `'Трекер привычек и привычек'` (duplicated "и привычек") to `'Трекер ежедневных привычек'`
+
+**Task 5 — Add "new feed post" to quick add menu:**
+- Added new item in the "Развитие" section: id='feed', label='Новая запись в ленту', icon=Rss, module='feed', with pink color scheme (bg-pink-100 text-pink-600) and shortcut 'L'
+- Imported Rss icon from lucide-react
+
+**Task 6 — Fix mobile search trigger:**
+- Added `searchOpen: boolean` and `setSearchOpen: (open: boolean) => void` to Zustand store (`use-app-store.ts`)
+- Updated `SearchDialog` component to use store state (`open = useAppStore(s => s.searchOpen)`) instead of local `useState`
+- Replaced synthetic `KeyboardEvent` dispatch in mobile header search button with `setSearchOpen(true)` from the store
+- Updated `AppSidebar` to import and use `setSearchOpen` for the mobile search trigger
+
+**Task 7 — Fix mobile nav quick access section:**
+- Changed `MAIN_NAV_ITEMS.slice(0, 3)` to `MAIN_NAV_ITEMS.slice(0, 5)` in the "Быстрый доступ" section of the MoreSheet, now showing all 5 items (Главная, Дневник, Финансы, Спорт, Привычки)
+
+### Files Modified:
+1. `/src/store/use-app-store.ts` — Added searchOpen state + setSearchOpen action
+2. `/src/components/layout/search-dialog.tsx` — Added habits/goals search config, fixed nutrition subtitle, fixed habits filter moduleKey, migrated to store-based open state
+3. `/src/app/api/search/route.ts` — Added habits and goals queries to cross-module search
+4. `/src/lib/nav-items.ts` — Fixed duplicate habits description text
+5. `/src/components/dashboard/quick-add-menu.tsx` — Added "Новая запись в ленту" item with Rss icon
+6. `/src/components/layout/app-sidebar.tsx` — Replaced synthetic keyboard event with setSearchOpen(true)
+7. `/src/components/layout/mobile-nav.tsx` — Expanded quick access from 3 to 5 items
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ All existing functionality preserved
+- ✅ No breaking changes to existing API contracts
+
+---
+## Task ID: fix-all-modules
+### Agent: fix-coordinator
+### Task: Fix and implement improvements across all modules (except testing and authentication)
+
+### Work Log:
+
+#### Phase 1 — P0 Bug Fixes & Database Schema
+1. **Habit Model Schema**: Added `archived Boolean @default(false)` and `category String @default("general")` to Prisma Habit model. Pushed schema to SQLite via `db:push`.
+2. **Seed Bug Fix**: Fixed `seed.ts` where `const now = new Date()` was referenced before declaration (line ~124 used `now` but it was declared on line ~164). Moved declaration before first usage.
+3. **Finance Import Count**: Fixed operator precedence bug in `/api/settings/import/route.ts`: `imported.financeCategories || 0 + ...` → `(imported.financeCategories || 0) + ...`
+4. **Habits API**: Updated POST `/api/habits` and PATCH `/api/habits/[id]` to handle `archived` and `category` fields.
+
+#### Phase 2 — Missing API Endpoints
+5. **Workout DELETE**: Added `DELETE /api/workout/[id]` endpoint with ownership verification and cascade delete.
+6. **Feed Like API**: Created `POST /api/feed/like` — toggle like/unlike with accurate count tracking using Prisma unique constraint.
+7. **Water Log DELETE**: Created `DELETE /api/nutrition/water/[id]` endpoint.
+8. **Comment List GET**: Created `GET /api/feed/comments?postId=xxx` with user info included.
+9. **Feed Likes Wire-up**: Changed `handleToggleLike` in feed hooks from sync local-only to async with API call + optimistic UI.
+
+#### Phase 3 — Layout & Mobile Fixes
+10. **FAB Overlap**: Fixed Quick Add FAB `bottom-6` → `bottom-20` on mobile to clear 64px bottom nav.
+11. **Footer Overlap**: Added `pb-20 md:pb-0` to app footer for mobile nav clearance.
+12. **Duplicate Habits**: Removed `habits` from `MODULE_NAV_ITEMS` in mobile nav (already in `MAIN_NAV_ITEMS`).
+13. **"More" Tab Active State**: Added `isMoreSheetActive()` helper — returns true when active module is any module shown in "more" sheet.
+14. **Feed Last Seen**: Wired up `setFeedLastSeen()` to clear green dot when user visits feed module.
+15. **Quick Access**: Changed `MAIN_NAV_ITEMS.slice(0, 3)` → `slice(0, 5)` to show all 5 items.
+16. **Zustand Persistence**: Wrapped store with `persist` middleware (localStorage, key `unilife-app-store`, only persists `activeModule`).
+17. **ThemeProvider**: Changed `enableSystem={false}` → `enableSystem={true}` for proper OS theme tracking.
+
+#### Phase 4 — Search & Navigation Fixes
+18. **Habits/Goals Search**: Added habits (search by name) and goals (search by title) to search API and search dialog config.
+19. **Habits/Goals API Search**: Updated `/api/habits` and `/api/goals` GET to filter by `q` query param.
+20. **Category Filters**: Added `moduleKey: 'habits'` and `moduleKey: 'goals'` to search category filters.
+21. **Nutrition Subtitle**: Fixed search result subtitle for nutrition items (was showing "nutrition" string instead of meal type).
+22. **Nav Items Text**: Fixed duplicate text `'Трекер привычек и привычек'` → `'Трекер ежедневных привычек'`.
+23. **Feed Quick Add**: Added "Новая запись в ленту" item to quick add menu (feed module, Rss icon).
+24. **Search Store**: Added `searchOpen` state to Zustand store, migrated search dialog from local state to store.
+25. **Mobile Search Trigger**: Replaced synthetic `KeyboardEvent` dispatch with `setSearchOpen(true)` from Zustand store.
+
+#### Phase 5 — Workout Delete UI
+26. **Workout Card Delete Button**: Added `Trash2` icon button to workout cards with hover destructive color.
+27. **Workout Hooks**: Added `handleDelete` async function with toast notifications.
+28. **Workout Page**: Wired up `onDelete={handleDelete}` prop to WorkoutCard.
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 0 warnings
+- ✅ Dev server: HTTP 200
+- ✅ Feed like API: returns proper JSON (tested with invalid postId → correct error)
+- ✅ All new API endpoints created and verified
+- ✅ No merge conflicts between 4 parallel agents
+
+### Files Modified (22 files):
+- `prisma/schema.prisma` — Habit model fields
+- `src/lib/seed.ts` — now variable fix
+- `src/app/api/settings/import/route.ts` — operator precedence fix
+- `src/app/api/habits/route.ts` — archived/category in create
+- `src/app/api/habits/[id]/route.ts` — archived/category in update
+- `src/app/api/habits/route.ts` — q search param support
+- `src/app/api/goals/route.ts` — q search param support
+- `src/app/api/workout/[id]/route.ts` — DELETE handler
+- `src/app/api/feed/like/route.ts` — NEW: toggle like endpoint
+- `src/app/api/feed/comments/route.ts` — NEW: comment list endpoint
+- `src/app/api/nutrition/water/[id]/route.ts` — NEW: water log delete
+- `src/app/api/search/route.ts` — habits/goals search
+- `src/store/use-app-store.ts` — persist + searchOpen
+- `src/app/layout.tsx` — enableSystem=true
+- `src/components/layout/mobile-nav.tsx` — 5 fixes (dup habits, more active, feed seen, quick access, lint)
+- `src/components/layout/app-footer.tsx` — mobile padding
+- `src/components/layout/app-sidebar.tsx` — searchOpen instead of synthetic event
+- `src/components/layout/search-dialog.tsx` — habits/goals, category filters, nutrition fix, store
+- `src/components/dashboard/quick-add-menu.tsx` — FAB position, feed item
+- `src/components/feed/hooks.ts` — likes API integration
+- `src/components/workout/workout-card.tsx` — delete button
+- `src/components/workout/workout-page.tsx` — onDelete prop
+- `src/components/workout/hooks.ts` — handleDelete function
+- `src/lib/nav-items.ts` — text fix

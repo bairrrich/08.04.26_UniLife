@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { useAppStore, type AppModule } from '@/store/use-app-store'
-import { getFeedLastSeen } from '@/lib/module-counts'
+import { getFeedLastSeen, setFeedLastSeen } from '@/lib/module-counts'
 import {
   BookOpen,
   Wallet,
@@ -45,7 +45,6 @@ const MAIN_NAV_ITEMS: NavItemConfig[] = [
 
 const MODULE_NAV_ITEMS: NavItemConfig[] = [
   { id: 'nutrition', label: 'Питание', icon: Apple },
-  { id: 'habits', label: 'Привычки', icon: Target },
   { id: 'collections', label: 'Коллекции', icon: Library },
   { id: 'feed', label: 'Лента', icon: Rss },
   { id: 'goals', label: 'Цели', icon: Crosshair },
@@ -100,6 +99,10 @@ function NavItem({
   )
 }
 
+function isMoreSheetActive(activeModule: AppModule): boolean {
+  return !MAIN_NAV_ITEMS.some((item) => item.id === activeModule)
+}
+
 function MoreSheet({
   activeModule,
   onNavigate,
@@ -121,11 +124,11 @@ function MoreSheet({
       <SheetTrigger asChild>
         <button className={cn(
           'active-press relative flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1 transition-colors duration-200',
-          activeModule === 'more' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          isMoreSheetActive(activeModule) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
         )}>
           <div className="relative">
             <MoreHorizontal className="h-5 w-5 shrink-0" />
-            {hasNewFeedPosts && (
+            {hasNewFeedPosts && !isMoreSheetActive(activeModule) && (
               <span className="pulse-ring absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500" />
             )}
           </div>
@@ -188,7 +191,7 @@ function MoreSheet({
             Быстрый доступ
           </p>
           <div className="flex items-center gap-2 flex-wrap">
-            {MAIN_NAV_ITEMS.slice(0, 3).map((item) => {
+            {MAIN_NAV_ITEMS.slice(0, 5).map((item) => {
               const Icon = item.icon
               const isActive = activeModule === item.id
               return (
@@ -220,6 +223,9 @@ export function MobileNav() {
   const activeModule = useAppStore((s) => s.activeModule)
   const setActiveModule = useAppStore((s) => s.setActiveModule)
 
+  // ── Check for new feed posts since last seen ──
+  const [hasNewFeedPosts, setHasNewFeedPosts] = useState(false)
+
   // ── Fetch uncompleted habits count for notification badge ──
   const [uncompletedHabitsCount, setUncompletedHabitsCount] = useState<number>(0)
 
@@ -242,8 +248,12 @@ export function MobileNav() {
 
   const habitsBadge = useMemo(() => uncompletedHabitsCount, [uncompletedHabitsCount])
 
-  // ── Check for new feed posts since last seen ──
-  const [hasNewFeedPosts, setHasNewFeedPosts] = useState(false)
+  // ── Clear feed last-seen when user visits feed ──
+  useEffect(() => {
+    if (activeModule === 'feed') {
+      setFeedLastSeen()
+    }
+  }, [activeModule])
 
   useEffect(() => {
     async function checkFeedUpdates() {
@@ -267,7 +277,7 @@ export function MobileNav() {
       }
     }
     checkFeedUpdates()
-  }, [])
+  }, [activeModule])
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t border-t-transparent bg-background/80 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">

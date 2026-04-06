@@ -3,6 +3,40 @@ import { db } from '@/lib/db'
 
 const USER_ID = 'user_demo_001'
 
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params
+
+    // Verify ownership
+    const existing = await db.workout.findUnique({
+      where: { id },
+    })
+
+    if (!existing || existing.userId !== USER_ID) {
+      return NextResponse.json(
+        { success: false, error: 'Тренировка не найдена' },
+        { status: 404 }
+      )
+    }
+
+    // Delete the workout (cascade will remove exercises)
+    await db.workout.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({ success: true, message: 'Тренировка удалена' })
+  } catch (error) {
+    console.error('Workout DELETE error:', error)
+    return NextResponse.json(
+      { success: false, error: 'Failed to delete workout' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

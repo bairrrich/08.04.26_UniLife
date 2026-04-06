@@ -70,6 +70,8 @@ interface SearchResponse {
     workout: SearchResultItem[]
     collections: SearchResultItem[]
     feed: SearchResultItem[]
+    habits: SearchResultItem[]
+    goals: SearchResultItem[]
   }
 }
 
@@ -94,6 +96,8 @@ const SEARCH_MODULE_CONFIG: Array<{
   { key: 'workout', label: 'Тренировки', icon: Dumbbell, module: 'workout' },
   { key: 'collections', label: 'Коллекции', icon: Library, module: 'collections' },
   { key: 'feed', label: 'Лента', icon: Rss, module: 'feed' },
+  { key: 'habits', label: 'Привычки', icon: Target, module: 'habits' },
+  { key: 'goals', label: 'Цели', icon: Crosshair, module: 'goals' },
 ]
 
 // ─── Navigation items (all 11 modules) ──────────────────────────────────────
@@ -196,7 +200,7 @@ function getResultSubtitle(item: SearchResultItem): string {
     case 'finance':
       return `${item.description} · ${formatCurrency(Number(item.amount))}`
     case 'nutrition':
-      return MEAL_TYPE_LABELS[String(item.type)] || String(item.type)
+      return MEAL_TYPE_LABELS[String(item.mealType)] || String(item.mealType)
     case 'workout':
       return `${item.durationMin ? item.durationMin + ' мин' : ''} · ${formatDate(String(item.date))}`
     case 'collections':
@@ -205,6 +209,10 @@ function getResultSubtitle(item: SearchResultItem): string {
         : ITEM_TYPE_LABELS[String(item.itemType)] || String(item.itemType)
     case 'feed':
       return ENTITY_TYPE_LABELS[String(item.entityType)] || String(item.entityType)
+    case 'habits':
+      return String(item.emoji || '')
+    case 'goals':
+      return String(item.category || '')
     default:
       return ''
   }
@@ -217,13 +225,17 @@ function getResultTitle(item: SearchResultItem): string {
     case 'finance':
       return String(item.description || 'Без описания')
     case 'nutrition':
-      return `${MEAL_TYPE_LABELS[String(item.type)] || item.type} — ${formatDate(String(item.date))}`
+      return `${MEAL_TYPE_LABELS[String(item.mealType)] || item.mealType} — ${formatDate(String(item.date))}`
     case 'workout':
       return String(item.name || 'Тренировка')
     case 'collections':
       return String(item.title)
     case 'feed':
       return String(item.caption || '').substring(0, 50) || 'Публикация'
+    case 'habits':
+      return String(item.name || 'Привычка')
+    case 'goals':
+      return String(item.title || 'Цель')
     default:
       return ''
   }
@@ -294,15 +306,17 @@ const CATEGORY_FILTERS: Array<{ key: string; label: string; moduleKey?: keyof Se
   { key: 'finance', label: 'Финансы', moduleKey: 'finance' },
   { key: 'nutrition', label: 'Питание', moduleKey: 'nutrition' },
   { key: 'workout', label: 'Тренировки', moduleKey: 'workout' },
-  { key: 'habits', label: 'Привычки' },
+  { key: 'habits', label: 'Привычки', moduleKey: 'habits' },
   { key: 'collections', label: 'Коллекции', moduleKey: 'collections' },
   { key: 'feed', label: 'Лента', moduleKey: 'feed' },
+  { key: 'goals', label: 'Цели', moduleKey: 'goals' },
 ]
 
 // ─── Search Dialog (Command Palette) ────────────────────────────────────────
 
 export function SearchDialog() {
-  const [open, setOpen] = useState(false)
+  const open = useAppStore((s) => s.searchOpen)
+  const setOpen = useAppStore((s) => s.setSearchOpen)
   const [mode, setMode] = useState<PaletteMode>('search')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResponse | null>(null)
@@ -320,12 +334,12 @@ export function SearchDialog() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
-        setOpen((prev) => !prev)
+        setOpen(!open)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [open, setOpen])
 
   // Focus input and reset state when dialog opens
   useEffect(() => {

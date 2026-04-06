@@ -224,6 +224,7 @@ const KEYBOARD_SHORTCUTS: Record<string, AppModule> = {
 
 export function AppSidebar() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
+  const setSearchOpen = useAppStore((s) => s.setSearchOpen)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -291,16 +292,7 @@ export function AppSidebar() {
           <MobileNotificationBell />
           {/* Mobile search icon trigger */}
           <button
-            onClick={() => {
-              document.dispatchEvent(
-                new KeyboardEvent('keydown', {
-                  key: 'k',
-                  metaKey: true,
-                  ctrlKey: true,
-                  bubbles: true,
-                })
-              )
-            }}
+            onClick={() => setSearchOpen(true)}
             className="flex items-center justify-center h-9 w-9 rounded-lg hover:bg-accent transition-colors"
           >
             <icons.Search className="h-4.5 w-4.5 text-muted-foreground" />

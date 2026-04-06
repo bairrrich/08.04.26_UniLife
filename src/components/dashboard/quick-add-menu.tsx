@@ -20,6 +20,7 @@ import {
   Library,
   Clock,
   SmilePlus,
+  Rss,
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
@@ -124,6 +125,15 @@ const MENU_SECTIONS: MenuSection[] = [
         hoverBg: 'hover:bg-emerald-50 dark:hover:bg-emerald-950/30',
         shortcut: 'C',
       },
+      {
+        id: 'feed',
+        label: 'Новая запись в ленту',
+        icon: <Rss className="h-4 w-4" />,
+        module: 'feed',
+        iconBg: 'bg-pink-100 text-pink-600 dark:bg-pink-900/50 dark:text-pink-400',
+        hoverBg: 'hover:bg-pink-50 dark:hover:bg-pink-950/30',
+        shortcut: 'L',
+      },
     ],
   },
 ]
@@ -206,7 +216,7 @@ export default function QuickAddMenu() {
   const allItems = MENU_SECTIONS.flatMap((s) => s.items)
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 md:bottom-8 md:right-8">
+    <div className="fixed bottom-20 right-6 z-50 md:bottom-8 md:right-8">
       <DropdownMenu open={open} onOpenChange={setOpen}>
         <DropdownMenuTrigger asChild>
           <button

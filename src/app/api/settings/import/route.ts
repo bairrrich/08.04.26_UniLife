@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
               const txResult = await db.transaction.createMany({ data: validTxData })
               imported.financeTransactions = txResult.count
             }
-            imported.finance = imported.financeCategories || 0 + (imported.financeTransactions || 0)
+            imported.finance = (imported.financeCategories || 0) + (imported.financeTransactions || 0)
           }
         } catch {
           imported.finance = 0

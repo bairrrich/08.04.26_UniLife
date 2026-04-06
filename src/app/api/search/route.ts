@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
         workout: [],
         collections: [],
         feed: [],
+        habits: [],
+        goals: [],
       },
     })
   }
@@ -120,6 +122,28 @@ export async function GET(request: NextRequest) {
       take: LIMIT,
     })
 
+    // Habits
+    const habits = await db.habit.findMany({
+      where: {
+        userId: USER_ID,
+        name: { contains: q },
+      },
+      select: { id: true, name: true, emoji: true },
+      orderBy: { createdAt: 'desc' },
+      take: LIMIT,
+    })
+
+    // Goals
+    const goals = await db.goal.findMany({
+      where: {
+        userId: USER_ID,
+        title: { contains: q },
+      },
+      select: { id: true, title: true, category: true },
+      orderBy: { createdAt: 'desc' },
+      take: LIMIT,
+    })
+
     return NextResponse.json({
       success: true,
       data: {
@@ -164,6 +188,18 @@ export async function GET(request: NextRequest) {
           entityType: f.entityType,
           createdAt: f.createdAt,
           type: 'feed' as const,
+        })),
+        habits: habits.map((h) => ({
+          id: h.id,
+          name: h.name,
+          emoji: h.emoji,
+          type: 'habits' as const,
+        })),
+        goals: goals.map((g) => ({
+          id: g.id,
+          title: g.title,
+          category: g.category,
+          type: 'goals' as const,
         })),
       },
     })

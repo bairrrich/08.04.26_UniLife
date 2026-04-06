@@ -86,8 +86,10 @@ export function useFeed() {
 
   // ─── Like / Bookmark / Share ─────────────────────────────────────────────
 
-  const handleToggleLike = (postId: string) => {
+  const handleToggleLike = async (postId: string) => {
     const willLike = !likedPosts.has(postId)
+
+    // Optimistic local update
     setLikedPosts((prev) => {
       const next = new Set(prev)
       if (next.has(postId)) next.delete(postId)
@@ -106,6 +108,7 @@ export function useFeed() {
           : p,
       ),
     )
+
     if (willLike) {
       setLikeAnimating((prev) => new Set(prev).add(postId))
       setTimeout(() => {
@@ -115,6 +118,36 @@ export function useFeed() {
           return next
         })
       }, 300)
+    }
+
+    // Persist to API
+    try {
+      const res = await fetch('/api/feed/like', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ postId }),
+      })
+      if (res.ok) {
+        const json = await safeJson<{ success: boolean; liked: boolean; likeCount: number }>(res)
+        if (json && json.success) {
+          // Sync with server response
+          setLikedPosts((prev) => {
+            const next = new Set(prev)
+            if (json.liked) next.add(postId)
+            else next.delete(postId)
+            return next
+          })
+          setPosts((prev) =>
+            prev.map((p) =>
+              p.id === postId
+                ? { ...p, _count: { likes: json.likeCount } }
+                : p,
+            ),
+          )
+        }
+      }
+    } catch (err) {
+      console.error('Failed to toggle like:', err)
     }
   }
 

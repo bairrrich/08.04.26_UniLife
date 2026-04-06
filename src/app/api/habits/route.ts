@@ -152,7 +152,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, emoji, color, frequency, targetCount } = body
+    const { name, emoji, color, frequency, targetCount, archived, category } = body
 
     if (!name || !name.trim()) {
       return NextResponse.json(
@@ -169,6 +169,8 @@ export async function POST(request: NextRequest) {
         color: color || '#10b981',
         frequency: frequency || 'daily',
         targetCount: targetCount || 1,
+        archived: archived || false,
+        category: category || 'general',
       },
     })
 

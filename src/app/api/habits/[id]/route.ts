@@ -89,7 +89,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { name, emoji, color, frequency, targetCount } = body
+    const { name, emoji, color, frequency, targetCount, archived, category } = body
 
     const updated = await db.habit.update({
       where: { id },
@@ -99,6 +99,8 @@ export async function PATCH(
         ...(color !== undefined && { color }),
         ...(frequency !== undefined && { frequency }),
         ...(targetCount !== undefined && { targetCount }),
+        ...(archived !== undefined && { archived }),
+        ...(category !== undefined && { category }),
       },
     })
 

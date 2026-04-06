@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { Clock, ChevronUp, ChevronDown, Pencil, Weight, Timer, Trophy, Dumbbell, Heart, Wind, Zap, Activity } from 'lucide-react'
+import { Clock, ChevronUp, ChevronDown, Pencil, Trash2, Weight, Timer, Trophy, Dumbbell, Heart, Wind, Zap, Activity } from 'lucide-react'
 import {
   detectWorkoutType,
   WORKOUT_TYPE_CONFIG,
@@ -23,6 +23,7 @@ interface WorkoutCardProps {
   isExpanded: boolean
   onToggle: () => void
   onEdit: (workout: Workout) => void
+  onDelete?: (workoutId: string) => void
   exerciseMaxWeights?: Record<string, number>
 }
 
@@ -41,7 +42,7 @@ function getExerciseIcon(name: string) {
   return <Zap className="size-3.5 text-amber-500" />
 }
 
-export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, exerciseMaxWeights }: WorkoutCardProps) {
+export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, onDelete, exerciseMaxWeights }: WorkoutCardProps) {
   const workoutType = detectWorkoutType(workout.name)
   const typeConfig = WORKOUT_TYPE_CONFIG[workoutType] || WORKOUT_TYPE_CONFIG.strength
   const borderColor = getWorkoutBorderColor(workout.name)
@@ -129,6 +130,16 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, exerciseMax
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                onClick={(e) => { e.stopPropagation(); onDelete(workout.id) }}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            )}
             {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </div>
         </div>
