@@ -10534,3 +10534,21 @@ Stage Summary:
 - Updated /home/z/my-project/src/components/dashboard/dashboard-page.tsx - added MAX_RETRIES=3, RETRY_DELAY=2000ms retry logic
 - Updated /home/z/my-project/package.json - reduced max-old-space-size from 768 to 384
 - Server confirmed stable: all APIs (dashboard, habits, goals, feed, module-counts, diary, finance) return 200
+---
+Task ID: 2
+Agent: Main
+Task: Fix mock data not loading — date format mismatch in PrismaBetterSqlite3
+
+Work Log:
+- Diagnosed root cause: database dates stored as integer timestamps (1775459119910) but PrismaBetterSqlite3 v7 sends ISO strings in WHERE clauses
+- SQLite type mismatch: string >= 1775001600000 always fails against integer column
+- Deleted old database, recreated with fresh schema via `prisma db push`
+- Verified new adapter stores dates as ISO strings (2026-04-05T12:00:00.000+00:00) — filters work correctly
+- Ran seed via POST /api/seed — all data inserted successfully
+- Verified all dashboard APIs return correct data
+
+Stage Summary:
+- Root cause: Old database seeded with different Prisma adapter version stored dates as integers
+- Fix: Database reset + reseed with current PrismaBetterSqlite3 v7 adapter
+- All APIs verified working: dashboard, habits, goals, module-counts, feed
+- Data counts: 6 diary entries, 12 transactions, 2 workouts, 5 habits, 5 feed posts, 7 goals, 41 collections, 4 meals
