@@ -236,6 +236,21 @@ export function WaterTracker({
           {waterMessage}
         </p>
 
+        {/* Hydration status message */}
+        <p className={`mt-1.5 text-center text-xs font-medium transition-all duration-500 ${
+          waterStats.totalMl >= 2000
+            ? 'text-emerald-600 dark:text-emerald-400'
+            : waterStats.totalMl >= 1000
+              ? 'text-amber-600 dark:text-amber-400'
+              : 'text-red-500 dark:text-red-400'
+        }`}>
+          {waterStats.totalMl >= 2000
+            ? 'Отличная гидратация! 💧'
+            : waterStats.totalMl >= 1000
+              ? 'Хорошо, продолжайте пить!'
+              : 'Не забывайте пить воду! 🔔'}
+        </p>
+
         {/* Daily progress summary */}
         <p className="mt-1 text-center text-xs text-muted-foreground">
           <span className="font-semibold tabular-nums text-foreground">{waterStats.glasses}</span>

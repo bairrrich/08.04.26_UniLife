@@ -81,12 +81,13 @@ export function ModuleEmptyState({
   const cardGradient = CARD_GRADIENTS[accent] || CARD_GRADIENTS.emerald
 
   return (
-    <Card className={cn('overflow-hidden relative animate-slide-up', className)}>
+    <Card className={cn('overflow-hidden relative fade-in-up', className)}>
       <div className={cn('absolute inset-0 bg-gradient-to-br pointer-events-none', cardGradient)} />
+      <div className="absolute inset-0 bg-gradient-to-tr from-emerald-500/[0.03] via-transparent to-teal-500/[0.03] pointer-events-none" />
       <CardContent className={cn('relative text-center px-4', compact ? 'py-10' : 'py-14')}>
         {/* Icon area */}
         <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br shadow-sm">
-          <div className={cn('h-20 w-20 rounded-2xl bg-gradient-to-br flex items-center justify-center', gradient)}>
+          <div className={cn('h-20 w-20 rounded-2xl bg-gradient-to-br flex items-center justify-center shimmer-border', gradient)}>
             {iconElement || (
               Icon && <Icon className="h-10 w-10 text-muted-foreground/60" />
             )}
@@ -98,7 +99,7 @@ export function ModuleEmptyState({
 
         {/* Description */}
         {description && (
-          <p className="max-w-xs mx-auto text-sm text-muted-foreground/70">
+          <p className="max-w-xs mx-auto text-sm text-muted-foreground/70 text-balance">
             {description}
           </p>
         )}

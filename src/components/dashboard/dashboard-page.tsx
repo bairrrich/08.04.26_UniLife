@@ -102,6 +102,11 @@ const NotificationCenter = dynamic(() => import('./notification-center'), { ssr:
 const MoodHeatmapCalendar = dynamic(() => import('./mood-heatmap-calendar'), { ssr: false, loading: widgetLoad })
 const AchievementBadges = dynamic(() => import('./achievement-badges'), { ssr: false, loading: widgetLoad })
 
+const GratitudeJournal = dynamic(() => import('./gratitude-journal'), { ssr: false, loading: widgetLoad })
+const QuickGratitudeWidget = dynamic(() => import('./quick-gratitude-widget'), { ssr: false, loading: smallLoad })
+
+const AllStreaksWidget = dynamic(() => import('./all-streaks-widget'), { ssr: false, loading: widgetLoad })
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -601,9 +606,10 @@ export default function DashboardPage() {
       case 'today':
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid gap-4 md:grid-cols-3">
               <QuickMoodWidget />
               <MiniCalendar />
+              <QuickGratitudeWidget />
             </div>
             <DailyChecklistWidget />
           </DashboardSection>
@@ -829,6 +835,25 @@ export default function DashboardPage() {
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
             <ProductivityScoreWidget />
+          </DashboardSection>
+        )
+
+      case 'gratitude':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <GratitudeJournal />
+          </DashboardSection>
+        )
+
+      case 'all-streaks':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <AllStreaksWidget
+              diaryStreak={diaryStreak}
+              workoutStreak={workoutStreak}
+              habitsStreak={habitsStreak}
+              loading={loading}
+            />
           </DashboardSection>
         )
 

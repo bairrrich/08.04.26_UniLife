@@ -8,7 +8,8 @@ export function ScrollProgress() {
   const handleScroll = useCallback(() => {
     const scrollTop = window.scrollY
     const docHeight = document.documentElement.scrollHeight - window.innerHeight
-    const isVisible = scrollTop > 100
+    const fivePercent = Math.max(docHeight * 0.05, 50)
+    const isVisible = scrollTop > fivePercent
     const scrollPercent = docHeight > 0 ? Math.min((scrollTop / docHeight) * 100, 100) : 0
 
     setScrollState((prev) => {
@@ -27,11 +28,11 @@ export function ScrollProgress() {
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-50 h-[3px] transition-opacity duration-300"
+      className="fixed top-0 left-0 right-0 z-50 h-0.5 transition-opacity duration-300"
       style={{ opacity: scrollState.visible ? 1 : 0 }}
     >
       <div
-        className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 transition-[width] duration-150 ease-out"
+        className="h-full bg-gradient-to-r from-emerald-400 via-emerald-500 to-teal-400 transition-[width] duration-200 ease-out shadow-[0_0_8px_rgba(16,185,129,0.4)]"
         style={{ width: `${scrollState.progress}%` }}
       />
     </div>

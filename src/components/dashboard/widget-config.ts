@@ -26,6 +26,8 @@ export const DEFAULT_SECTIONS: WidgetSectionConfig[] = [
   { id: 'mood-heatmap', title: 'Карта настроения', icon: '🗓️', defaultCollapsed: true, defaultVisible: true, defaultOrder: 15 },
   { id: 'achievement-badges', title: 'Достижения', icon: '🏆', defaultCollapsed: true, defaultVisible: true, defaultOrder: 16 },
   { id: 'productivity-score', title: 'Продуктивность дня', icon: '⚡', defaultCollapsed: false, defaultVisible: true, defaultOrder: 17 },
+  { id: 'gratitude', title: 'Дневник благодарности', icon: '🙏', defaultCollapsed: false, defaultVisible: true, defaultOrder: 18 },
+  { id: 'all-streaks', title: 'Все серии', icon: '🔥', defaultCollapsed: false, defaultVisible: true, defaultOrder: 19 },
 ]
 
 const STORAGE_KEY = 'unilife-widget-config'
@@ -35,27 +37,51 @@ export interface SavedWidgetConfig {
   order: string[]
 }
 
+function buildDefaultConfig(): SavedWidgetConfig {
+  return {
+    visible: Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.id, s.defaultVisible])),
+    order: DEFAULT_SECTIONS.filter(s => s.defaultVisible).map(s => s.id),
+  }
+}
+
 export function loadWidgetConfig(): SavedWidgetConfig {
   if (typeof window === 'undefined') {
-    return {
-      visible: Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.id, s.defaultVisible])),
-      order: DEFAULT_SECTIONS.filter(s => s.defaultVisible).map(s => s.id),
-    }
+    return buildDefaultConfig()
   }
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) {
-      return {
-        visible: Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.id, s.defaultVisible])),
-        order: DEFAULT_SECTIONS.filter(s => s.defaultVisible).map(s => s.id),
-      }
+      return buildDefaultConfig()
     }
-    return JSON.parse(raw)
+    const saved: SavedWidgetConfig = JSON.parse(raw)
+    // Merge with defaults to include any newly added sections
+    const defaults = buildDefaultConfig()
+    const merged: SavedWidgetConfig = {
+      visible: { ...defaults.visible },
+      order: [...defaults.order],
+    }
+    // Restore saved visibility (keep new defaults for missing keys)
+    for (const [id, vis] of Object.entries(saved.visible)) {
+      merged.visible[id] = vis
+    }
+    // Rebuild order: start with saved order for sections that still exist,
+    // then append any new sections that weren't in the saved order
+    const savedSet = new Set(saved.order)
+    const validSavedOrder = saved.order.filter(id => id in defaults.visible)
+    const newSections = defaults.order.filter(id => !savedSet.has(id))
+    merged.order = [...validSavedOrder, ...newSections]
+    // Move hidden sections (visible=false) to end of order
+    merged.order.sort((a, b) => {
+      const aVis = merged.visible[a] ?? true
+      const bVis = merged.visible[b] ?? true
+      if (aVis !== bVis) return aVis ? -1 : 1
+      const aIdx = validSavedOrder.indexOf(a)
+      const bIdx = validSavedOrder.indexOf(b)
+      return (aIdx === -1 ? 999 : aIdx) - (bIdx === -1 ? 999 : bIdx)
+    })
+    return merged
   } catch {
-    return {
-      visible: Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.id, s.defaultVisible])),
-      order: DEFAULT_SECTIONS.filter(s => s.defaultVisible).map(s => s.id),
-    }
+    return buildDefaultConfig()
   }
 }
 
@@ -68,10 +94,7 @@ export function saveWidgetConfig(config: SavedWidgetConfig) {
 }
 
 export function resetWidgetConfig(): SavedWidgetConfig {
-  const config: SavedWidgetConfig = {
-    visible: Object.fromEntries(DEFAULT_SECTIONS.map(s => [s.id, s.defaultVisible])),
-    order: DEFAULT_SECTIONS.filter(s => s.defaultVisible).map(s => s.id),
-  }
+  const config = buildDefaultConfig()
   saveWidgetConfig(config)
   return config
 }

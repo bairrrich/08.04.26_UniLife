@@ -9,7 +9,7 @@ import { PostCard } from './post-card'
 import { PostDialog } from './post-dialog'
 import { FeedEmptyState } from './empty-state'
 import { useFeed } from './hooks'
-import { getTimeGroup } from './constants'
+import { getTimeGroup, ENTITY_LABELS } from './constants'
 import { useState, useMemo } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
 import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
@@ -136,6 +136,52 @@ export default function FeedPage() {
           </>
         }
       />
+
+      {/* Trending Topics Sidebar — desktop only */}
+      <div className="hidden lg:block">
+        <div className="glass-card rounded-xl p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <span className="text-sm font-semibold">Тренды по типам</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(() => {
+              const entityCounts = new Map<string, number>()
+              for (const post of posts) {
+                entityCounts.set(post.entityType, (entityCounts.get(post.entityType) || 0) + 1)
+              }
+              if (entityCounts.size === 0) {
+                return [
+                  { type: 'diary', count: 0 },
+                  { type: 'transaction', count: 0 },
+                  { type: 'meal', count: 0 },
+                  { type: 'workout', count: 0 },
+                  { type: 'collection', count: 0 },
+                ].map((item) => (
+                  <span
+                    key={item.type}
+                    className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-muted/50 text-muted-foreground"
+                  >
+                    #{ENTITY_LABELS[item.type as keyof typeof ENTITY_LABELS]}
+                    <span className="text-[10px] text-muted-foreground/50">0</span>
+                  </span>
+                ))
+              }
+              const sorted = Array.from(entityCounts.entries())
+                .sort((a, b) => b[1] - a[1])
+              return sorted.map(([entityType, count]) => (
+                <span
+                  key={entityType}
+                  className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/15 transition-colors cursor-default"
+                >
+                  #{ENTITY_LABELS[entityType as keyof typeof ENTITY_LABELS]}
+                  <span className="text-[10px] font-semibold tabular-nums">{count}</span>
+                </span>
+              ))
+            })()}
+          </div>
+        </div>
+      </div>
 
       {/* Filter tabs */}
       {!loading && posts.length > 0 && (

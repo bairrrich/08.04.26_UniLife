@@ -404,6 +404,61 @@ export default function DiaryPage() {
         }
       />
 
+      {/* 14-Day Mood Calendar Heatmap */}
+      <div className="flex items-center gap-3">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
+          Настроение · 14 дней
+        </span>
+        <div className="flex gap-1.5 overflow-x-auto tabular-nums no-scrollbar py-1">
+          {(() => {
+            const days: { date: Date; key: string; mood: number | null }[] = []
+            for (let i = 13; i >= 0; i--) {
+              const d = new Date(today)
+              d.setDate(today.getDate() - i)
+              const key = formatDateKey(d)
+              const dayEntries = entriesByDate.get(key)
+              const mood = dayEntries && dayEntries.length > 0 && dayEntries[0].mood !== null && dayEntries[0].mood !== undefined
+                ? dayEntries[0].mood
+                : null
+              days.push({ date: d, key, mood })
+            }
+            const moodColorMap: Record<number, string> = {
+              1: 'bg-red-400 dark:bg-red-500',
+              2: 'bg-orange-400 dark:bg-orange-500',
+              3: 'bg-gray-400 dark:bg-gray-500',
+              4: 'bg-amber-400 dark:bg-amber-500',
+              5: 'bg-emerald-400 dark:bg-emerald-500',
+            }
+            return days.map(({ date, mood }) => {
+              const isToday =
+                date.getFullYear() === today.getFullYear() &&
+                date.getMonth() === today.getMonth() &&
+                date.getDate() === today.getDate()
+              return (
+                <div
+                  key={formatDateKey(date)}
+                  className={cn(
+                    'h-6 w-6 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 transition-all',
+                    mood
+                      ? moodColorMap[mood]
+                      : 'border-2 border-dashed border-muted-foreground/25 bg-transparent',
+                    isToday && mood && 'ring-2 ring-foreground/30',
+                    isToday && !mood && 'ring-2 ring-dashed ring-primary/40 border-primary/40',
+                  )}
+                  title={`${date.getDate()}.${String(date.getMonth() + 1).padStart(2, '0')}${mood ? ` — ${MOOD_EMOJI[mood]} ${MOOD_LABELS[mood]}` : ' — нет данных'}`}
+                >
+                  {mood ? '' : ''}
+                </div>
+              )
+            })
+          })()}
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <div className="h-2.5 w-2.5 rounded-full bg-muted-foreground/25 border border-dashed border-muted-foreground/25" title="Нет данных" />
+          <span className="text-[9px] text-muted-foreground/50">= пусто</span>
+        </div>
+      </div>
+
       {/* Configurable Sections */}
       {loaded && visibleOrder.map(sectionId => {
         switch (sectionId) {

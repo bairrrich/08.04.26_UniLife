@@ -104,6 +104,7 @@ export default function Home() {
   const [MobileNav, setMobileNav] = useState<React.ComponentType | null>(null)
   const [Footer, setFooter] = useState<React.ComponentType | null>(null)
   const [QuickAdd, setQuickAdd] = useState<React.ComponentType | null>(null)
+  const [ScrollProgress, setScrollProgress] = useState<React.ComponentType | null>(null)
   const [ScrollTop, setScrollTop] = useState<React.ComponentType | null>(null)
   const [Notif, setNotif] = useState<React.ComponentType | null>(null)
   const [Welcome, setWelcome] = useState<React.ComponentType | null>(null)
@@ -124,14 +125,16 @@ export default function Home() {
       import('@/components/layout/mobile-nav'),
       import('@/components/layout/app-footer'),
       import('@/components/dashboard/quick-add-menu'),
+      import('@/components/layout/scroll-progress'),
       import('@/components/layout/scroll-to-top'),
       import('@/components/layout/notification-toast'),
       import('@/components/onboarding/welcome-screen'),
-    ]).then(([sb, mn, ft, qa, st, nt, wc]) => {
+    ]).then(([sb, mn, ft, qa, sp, st, nt, wc]) => {
       setSidebar(() => sb.AppSidebar)
       setMobileNav(() => mn.MobileNav)
       setFooter(() => ft.default)
       setQuickAdd(() => qa.default)
+      setScrollProgress(() => sp.default)
       setScrollTop(() => st.ScrollToTop)
       setNotif(() => nt.NotificationToaster)
       setWelcome(() => wc.WelcomeScreen)
@@ -154,6 +157,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {ScrollProgress && <ScrollProgress />}
       {Welcome && <Welcome />}
       {Sidebar && <Sidebar />}
       <main className="main-content md:ml-60 flex-1">
@@ -167,7 +171,7 @@ export default function Home() {
           )}
         </div>
       </main>
-      {Footer && <div className="md:ml-60"><Footer /></div>}
+      {Footer && <div className="md:ml-60 mt-auto"><Footer /></div>}
       {ScrollTop && <ScrollTop />}
       {MobileNav && <MobileNav />}
       {QuickAdd && <QuickAdd />}

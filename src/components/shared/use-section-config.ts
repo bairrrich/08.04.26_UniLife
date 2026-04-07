@@ -32,9 +32,20 @@ function loadConfig(moduleId: string, sections: SectionDef[]): SectionConfig {
     const raw = localStorage.getItem(storageKey(moduleId))
     if (!raw) return defaultConfig(sections)
     const parsed = JSON.parse(raw) as SectionConfig
-    const merged = defaultConfig(sections)
+    const defaults = defaultConfig(sections)
+    // Merge visibility: start from defaults, override with saved values
+    const merged: SectionConfig = {
+      visible: { ...defaults.visible },
+      order: [...defaults.order],
+    }
     for (const [id, vis] of Object.entries(parsed.visible)) {
       if (id in merged.visible) merged.visible[id] = vis
+    }
+    // Restore saved order: keep sections that still exist, append new ones
+    if (Array.isArray(parsed.order)) {
+      const validSaved = parsed.order.filter(id => id in merged.visible)
+      const newSections = merged.order.filter(id => !parsed.order.includes(id))
+      merged.order = [...validSaved, ...newSections]
     }
     return merged
   } catch {

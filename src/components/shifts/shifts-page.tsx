@@ -284,6 +284,110 @@ function ShiftCard({
   )
 }
 
+// ─── Shift Tips Card ────────────────────────────────────────────────────
+
+const SHIFT_TIPS = [
+  '💤 Не забывайте об отдыхе между сменами — это повышает продуктивность',
+  '💧 Пейте достаточно воды во время смены, особенно если работаете физически',
+  '🧘 Сделайте короткую разминку каждые 2 часа для здоровья спины',
+  '📝 Ведите учёт рабочих часов — это поможет при расчёте зарплаты',
+  '🌟 Ставьте цели на неделю — запланированные смены приносят больше дохода',
+]
+
+function ShiftTipsCard() {
+  const tipIndex = new Date().getDate() % SHIFT_TIPS.length
+  return (
+    <Card className="glass-card card-hover overflow-hidden animate-slide-up">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-500/15 text-base">
+            💡
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-muted-foreground mb-1">Совет дня</p>
+            <p className="text-sm leading-relaxed">{SHIFT_TIPS[tipIndex]}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ─── Upcoming Shifts ─────────────────────────────────────────────────────
+
+function UpcomingShifts({ shifts }: { shifts: Shift[] }) {
+  const todayStr = useMemo(() => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }, [])
+
+  const upcoming = useMemo(() => {
+    return shifts
+      .filter(s => s.status === 'scheduled' && s.date >= todayStr)
+      .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+      .slice(0, 3)
+  }, [shifts, todayStr])
+
+  if (upcoming.length === 0) return null
+
+  return (
+    <Card className="card-hover overflow-hidden animate-slide-up">
+      <div className="h-1 bg-gradient-to-r from-violet-400 to-purple-400" />
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/50">
+            <CalendarClock className="h-4 w-4 text-violet-500" />
+          </div>
+          <h3 className="text-sm font-semibold">Ближайшие смены</h3>
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto">
+            {upcoming.length}
+          </Badge>
+        </div>
+        <div className="space-y-2">
+          {upcoming.map(shift => {
+            const shiftDate = shift.date.length > 10 ? shift.date.slice(0, 10) : shift.date
+            const [, m, d] = shiftDate.split('-').map(Number)
+            const dateLabel = `${d} ${RU_MONTHS[m - 1]}`
+            return (
+              <div
+                key={shift.id}
+                className="flex items-center gap-3 rounded-lg bg-muted/40 px-3 py-2"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <span className="text-sm font-medium tabular-nums">
+                      {shift.startTime} — {shift.endTime}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-muted-foreground tabular-nums">{dateLabel}</span>
+                    {shift.location && (
+                      <>
+                        <span className="text-muted-foreground/40">·</span>
+                        <span className="flex items-center gap-0.5 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[140px]">{shift.location}</span>
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <Badge
+                  variant="outline"
+                  className="text-[10px] px-1.5 py-0 border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/50 text-sky-600 dark:text-sky-400 shrink-0"
+                >
+                  Запланирована
+                </Badge>
+              </div>
+            )
+          })}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Weekly Summary Bar ───────────────────────────────────────────────
 
 function WeeklySummaryBar({ shifts }: { shifts: Shift[] }) {
@@ -637,6 +741,11 @@ export function ShiftsPage() {
         <WeeklySummaryBar shifts={shifts} />
       )}
 
+      {/* Shift Tips Card */}
+      {!loading && shifts.length > 0 && (
+        <ShiftTipsCard />
+      )}
+
       {/* Current Streak Badge */}
       {!loading && shifts.length > 0 && (
         <CurrentStreakBadge shifts={shifts} />
@@ -735,6 +844,11 @@ export function ShiftsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Upcoming Shifts */}
+      {!loading && shifts.length > 0 && (
+        <UpcomingShifts shifts={shifts} />
+      )}
 
       {/* Shifts List */}
       {selectedDate && selectedShifts.length > 0 ? (

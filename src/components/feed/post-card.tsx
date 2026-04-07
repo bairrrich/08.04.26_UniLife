@@ -327,8 +327,24 @@ export function PostCard({
                 {ENTITY_LABELS[post.entityType]}
               </span>
               <span className="text-xs text-muted-foreground flex items-center gap-1 tabular-nums">
-                <Clock className="h-3 w-3" />
-                {formatRelativeTime(post.createdAt)}
+                {(() => {
+                  const now = new Date()
+                  const created = new Date(post.createdAt)
+                  const diffMs = now.getTime() - created.getTime()
+                  const isRecent = diffMs >= 0 && diffMs < 3600000
+                  return (
+                    <>
+                      {isRecent && (
+                        <span
+                          className="pulse-ring relative inline-block h-2 w-2 rounded-full bg-emerald-500 shrink-0"
+                          title="Новый пост"
+                        />
+                      )}
+                      <Clock className="h-3 w-3" />
+                      {formatRelativeTime(post.createdAt)}
+                    </>
+                  )
+                })()}
               </span>
             </div>
           </div>

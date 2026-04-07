@@ -186,6 +186,31 @@ const TIME_CONFIG: Record<TimeOfDay, {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+function useAnimatedCounter(target: number, duration = 800): number {
+  const [current, setCurrent] = useState(0)
+  useEffect(() => {
+    if (target === 0) {
+      setCurrent(0)
+      return
+    }
+    const steps = 20
+    const stepValue = target / steps
+    const interval = duration / steps
+    let count = 0
+    const timer = setInterval(() => {
+      count++
+      if (count >= steps) {
+        setCurrent(target)
+        clearInterval(timer)
+      } else {
+        setCurrent(Math.round(stepValue * count))
+      }
+    }, interval)
+    return () => clearInterval(timer)
+  }, [target, duration])
+  return current
+}
+
 export default function WelcomeWidget({
   loading = false,
   diaryStreak,
@@ -200,6 +225,11 @@ export default function WelcomeWidget({
   const [quoteRefreshing, setQuoteRefreshing] = useState(false)
   const [quoteOffset, setQuoteOffset] = useState(0)
   const [currentTime, setCurrentTime] = useState('')
+
+  // Animated counters
+  const animatedDiaryStreak = useAnimatedCounter(diaryStreak)
+  const animatedHabitsCompleted = useAnimatedCounter(habitsCompletedToday)
+  const animatedHabitsTotal = useAnimatedCounter(habitsTotal)
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- standard client-only hydration guard
@@ -273,7 +303,7 @@ export default function WelcomeWidget({
     {
       icon: <Flame className="h-3.5 w-3.5" />,
       label: 'Серия',
-      value: `${diaryStreak} дн.`,
+      value: `${animatedDiaryStreak} дн.`,
       done: diaryStreak > 0,
       color: diaryStreak >= 7 ? 'text-amber-500' : diaryStreak >= 3 ? 'text-orange-500' : 'text-muted-foreground',
     },
@@ -301,11 +331,11 @@ export default function WelcomeWidget({
     {
       icon: <Target className="h-3.5 w-3.5" />,
       label: 'Привычки',
-      value: habitsTotal > 0 ? `${habitsCompletedToday}/${habitsTotal}` : '—',
+      value: habitsTotal > 0 ? `${animatedHabitsCompleted}/${animatedHabitsTotal}` : '—',
       done: habitsTotal > 0 && habitsCompletedToday === habitsTotal,
       color: habitsTotal > 0 && habitsCompletedToday === habitsTotal ? 'text-emerald-500' : 'text-muted-foreground',
     },
-  ], [diaryStreak, todayMood, hasMealsToday, todayWorkoutDone, habitsCompletedToday, habitsTotal])
+  ], [diaryStreak, todayMood, hasMealsToday, todayWorkoutDone, habitsCompletedToday, habitsTotal, animatedDiaryStreak, animatedHabitsCompleted, animatedHabitsTotal])
 
   const completedCount = quickStats.filter((s) => s.done).length
   const allDone = completedCount === quickStats.length
@@ -377,7 +407,7 @@ export default function WelcomeWidget({
               className={`shrink-0 gap-1 border-0 px-2.5 py-1 text-xs font-semibold ${config.badgeBg} ${config.badgeText}`}
             >
               <Flame className="h-3.5 w-3.5" />
-              {diaryStreak} дн.
+              {animatedDiaryStreak} дн.
             </Badge>
           )}
         </div>

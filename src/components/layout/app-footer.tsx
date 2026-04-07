@@ -1,6 +1,6 @@
 'use client'
 
-import { memo, useState, useEffect, useCallback } from 'react'
+import React, { memo, useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/store/use-app-store'
 import { useModuleCounts } from '@/lib/module-counts'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -20,6 +20,7 @@ import {
   Flag,
   BarChart3,
   ArrowUp,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -56,6 +57,12 @@ const KEYBOARD_SHORTCUTS = [
   { keys: ['⌘', 'K'], description: 'Поиск' },
   { keys: ['⌘', '1–5'], description: 'Навигация' },
   { keys: ['⌘', 'D'], description: 'Новая запись' },
+]
+
+const QUICK_NAV_LINKS = [
+  { label: 'Дневник', module: 'diary' as const, icon: BookOpen },
+  { label: 'Финансы', module: 'finance' as const, icon: Wallet },
+  { label: 'Привычки', module: 'habits' as const, icon: Target },
 ]
 
 const STATS_ITEMS = [
@@ -234,6 +241,30 @@ const Footer = memo(function Footer() {
 
       {/* Mobile footer - compact */}
       <div className="md:hidden border-t px-4 py-3">
+        {/* Quick navigation links row */}
+        <div className="flex items-center justify-center gap-4 mb-3">
+          {QUICK_NAV_LINKS.map((link, idx) => {
+            const Icon = link.icon
+            return (
+              <React.Fragment key={link.module}>
+                <button
+                  onClick={() => setActiveModule(link.module)}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-all duration-200 group"
+                >
+                  <Icon className="h-3.5 w-3.5 text-emerald-500 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="font-medium group-hover:translate-x-0.5 transition-transform duration-200">{link.label}</span>
+                </button>
+                {idx < QUICK_NAV_LINKS.length - 1 && (
+                  <div className="h-3 w-px bg-border" />
+                )}
+              </React.Fragment>
+            )
+          })}
+        </div>
+
+        {/* Separator */}
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-border to-transparent mb-2.5" />
+
         {/* Quick module shortcuts */}
         <div className="flex items-center justify-center gap-2 mb-2.5">
           {MODULE_SHORTCUTS.slice(0, 6).map((shortcut) => {
@@ -267,30 +298,62 @@ const Footer = memo(function Footer() {
               <span className="text-[9px] text-muted-foreground/60 leading-none mt-0.5">v1.0</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {STATS_ITEMS.slice(0, 3).map((stat) => {
-              const Icon = stat.icon
-              return (
-                <span key={stat.key} className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                  <Icon className={cn('h-3 w-3', stat.iconColor)} />
-                  <span className="tabular-nums font-medium">{counts[stat.key] ?? 0}</span>
-                </span>
-              )
-            })}
-          </div>
-          <p className="text-[10px] text-muted-foreground/50">© {currentYear}</p>
+          <p className="text-[10px] text-muted-foreground/50">Сделано с 💚</p>
+          {/* Scroll to top — mobile */}
+          <AnimatePresence>
+            {showBackToTop && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2 }}
+                onClick={scrollToTop}
+                className="flex h-6 w-6 items-center justify-center rounded-full border border-border bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Вернуться наверх"
+              >
+                <ArrowUp className="h-3 w-3" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
       {/* Desktop footer - full */}
       <div className="hidden md:flex border-t px-6 py-2.5 items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
-            <span className="text-[9px] font-bold leading-none">U</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
+              <span className="text-[9px] font-bold leading-none">U</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground/70">
+              UniLife v1.0 · © {currentYear}
+            </p>
           </div>
-          <p className="text-[11px] text-muted-foreground/70">
-            UniLife v1.0 · © {currentYear} · Все права защищены
-          </p>
+
+          {/* Subtle separator */}
+          <div className="h-3 w-px bg-border" />
+
+          {/* Quick nav links */}
+          <div className="flex items-center gap-2.5">
+            {QUICK_NAV_LINKS.map((link) => {
+              const Icon = link.icon
+              return (
+                <button
+                  key={link.module}
+                  onClick={() => setActiveModule(link.module)}
+                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-all duration-200 group"
+                >
+                  <Icon className="h-3 w-3 text-emerald-500 group-hover:scale-110 transition-transform duration-200" />
+                  <span className="group-hover:translate-x-0.5 transition-transform duration-200">{link.label}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Subtle separator */}
+          <div className="h-3 w-px bg-border" />
+
+          <p className="text-[11px] text-muted-foreground/50">Сделано с 💚</p>
         </div>
 
         {/* Back to top button */}
@@ -309,7 +372,7 @@ const Footer = memo(function Footer() {
                 className="h-7 gap-1.5 text-[11px] text-muted-foreground hover:text-foreground"
               >
                 <ArrowUp className="h-3.5 w-3.5" />
-                Наверх
+                Вернуться наверх
               </Button>
             </motion.div>
           )}

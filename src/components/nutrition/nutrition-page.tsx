@@ -16,6 +16,7 @@ import { WaterTracker } from './water-tracker'
 import { MealTimeline } from './meal-timeline'
 import { AddMealDialog, EditMealDialog } from './meal-dialog'
 import type { MealFormItem } from './meal-dialog'
+import type { MealWithItems } from './types'
 import { TimeIndicator } from './time-indicator'
 import { NutritionGoalsDialog } from './nutrition-goals-dialog'
 import { WeeklyNutritionChart } from './weekly-nutrition-chart'
@@ -23,6 +24,128 @@ import { WeeklyOverview } from './weekly-overview'
 import { DailyNutritionScore } from './daily-nutrition-score'
 import { QuickFoodBar } from './quick-food-bar'
 import { NutritionScoreRing } from './nutrition-score-ring'
+
+// ─── Weekly Nutrition Summary Card ──────────────────────────────────────
+
+function WeeklyNutritionSummary({ meals }: { meals: MealWithItems[] }) {
+  const weeklyData = useMemo(() => {
+    const today = new Date()
+    const last7: { date: string; kcal: number; protein: number; fat: number; carbs: number }[] = []
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today)
+      d.setDate(d.getDate() - i)
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      const dayMeals = meals.filter(m => m.date && m.date.slice(0, 10) === dateStr)
+      const totals = dayMeals.reduce(
+        (acc, m) => {
+          for (const item of m.items) {
+            acc.kcal += item.kcal
+            acc.protein += item.protein
+            acc.fat += item.fat
+            acc.carbs += item.carbs
+          }
+          return acc
+        },
+        { kcal: 0, protein: 0, fat: 0, carbs: 0 },
+      )
+      last7.push({ date: dateStr, ...totals })
+    }
+
+    const daysWithData = last7.filter(d => d.kcal > 0)
+    const avgKcal = daysWithData.length > 0
+      ? Math.round(daysWithData.reduce((s, d) => s + d.kcal, 0) / daysWithData.length)
+      : 0
+    const avgProtein = daysWithData.length > 0
+      ? Math.round(daysWithData.reduce((s, d) => s + d.protein, 0) / daysWithData.length)
+      : 0
+    const avgFat = daysWithData.length > 0
+      ? Math.round(daysWithData.reduce((s, d) => s + d.fat, 0) / daysWithData.length)
+      : 0
+    const avgCarbs = daysWithData.length > 0
+      ? Math.round(daysWithData.reduce((s, d) => s + d.carbs, 0) / daysWithData.length)
+      : 0
+
+    const totalMacros = avgProtein + avgFat + avgCarbs
+    const proteinPct = totalMacros > 0 ? Math.round((avgProtein / totalMacros) * 100) : 0
+    const fatPct = totalMacros > 0 ? Math.round((avgFat / totalMacros) * 100) : 0
+    const carbsPct = totalMacros > 0 ? 100 - proteinPct - fatPct : 0
+
+    return { avgKcal, avgProtein, avgFat, avgCarbs, proteinPct, fatPct, carbsPct, daysWithData: daysWithData.length }
+  }, [meals])
+
+  if (weeklyData.daysWithData === 0) return null
+
+  return (
+    <Card className="card-hover overflow-hidden animate-slide-up">
+      <div className="h-1 bg-gradient-to-r from-orange-400 via-amber-400 to-yellow-400" />
+      <CardContent className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 dark:bg-orange-900/50">
+            <span className="text-sm">📊</span>
+          </div>
+          <h3 className="text-sm font-semibold">Сводка за неделю</h3>
+          <span className="text-[10px] text-muted-foreground ml-auto">
+            {weeklyData.daysWithData} из 7 дней
+          </span>
+        </div>
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          <div className="rounded-lg bg-muted/50 px-3 py-2">
+            <p className="text-[10px] text-muted-foreground">Среднее ккал/день</p>
+            <p className="text-lg font-bold tabular-nums text-orange-600 dark:text-orange-400">
+              {weeklyData.avgKcal}
+            </p>
+          </div>
+          <div className="space-y-1.5 px-1">
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground">Белки</span>
+              <span className="font-medium tabular-nums text-sky-600 dark:text-sky-400">{weeklyData.avgProtein}г</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground">Жиры</span>
+              <span className="font-medium tabular-nums text-rose-500 dark:text-rose-400">{weeklyData.avgFat}г</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px]">
+              <span className="text-muted-foreground">Углеводы</span>
+              <span className="font-medium tabular-nums text-amber-600 dark:text-amber-400">{weeklyData.avgCarbs}г</span>
+            </div>
+          </div>
+        </div>
+        {/* Macro bar chart */}
+        <div className="h-3 w-full overflow-hidden rounded-full bg-muted/60">
+          <div className="flex h-full w-full">
+            <div
+              className="bg-sky-500 transition-all duration-500 rounded-l-full"
+              style={{ width: `${weeklyData.proteinPct}%` }}
+              title={`Белки ${weeklyData.proteinPct}%`}
+            />
+            <div
+              className="bg-rose-400 dark:bg-rose-500 transition-all duration-500"
+              style={{ width: `${weeklyData.fatPct}%` }}
+              title={`Жиры ${weeklyData.fatPct}%`}
+            />
+            <div
+              className="bg-amber-400 dark:bg-amber-500 transition-all duration-500 rounded-r-full"
+              style={{ width: `${weeklyData.carbsPct}%` }}
+              title={`Углеводы ${weeklyData.carbsPct}%`}
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-center gap-4 mt-1.5 text-[10px] text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-sky-500" /> Б
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-rose-400 dark:bg-rose-500" /> Ж
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="h-2 w-2 rounded-full bg-amber-400 dark:bg-amber-500" /> У
+          </span>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function NutritionPage() {
   // ── Hydration guard for timezone-dependent date display ──
@@ -143,6 +266,11 @@ export default function NutritionPage() {
       />
         </div>
       </div>
+
+      {/* Weekly Nutrition Summary */}
+      {loaded && meals.length > 0 && (
+        <WeeklyNutritionSummary meals={meals} />
+      )}
 
       {loaded && visibleOrder.map(sectionId => {
         switch (sectionId) {

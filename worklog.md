@@ -12045,3 +12045,161 @@ Work Log:
 Stage Summary:
 - New earnings chart shows daily earnings for current month
 - Integrated into shifts module layout
+---
+Task ID: widget-customizer-enhance
+Agent: styling-agent
+Task: Enhance WidgetCustomizer with search filter, count indicator, keyboard shortcuts
+
+Work Log:
+- Added search/filter input at the top of the widget list using shadcn `Input` component with a `Search` icon from lucide-react
+- Added "X из Y включено" badge using shadcn `Badge` component (secondary variant) showing enabled widget count next to the search input
+- Implemented keyboard shortcuts: Escape key when search input is focused clears the search text (and keeps focus), or closes the dialog when search is already empty
+- Added empty state for when search yields no results — shows 🔍 icon, descriptive message with the search query, and an "Очистить поиск" button
+- Added auto-focus on search input when dialog opens (with 50ms delay for DOM readiness)
+- Search filters by both widget title (case-insensitive) and emoji icon
+- Search state resets when dialog reopens
+- Added new imports: Input, Badge, Search icon, useRef, useCallback, useEffect
+
+Stage Summary:
+- Widget customizer now has search/filter functionality with instant filtering
+- Enabled count badge provides at-a-glance visibility status
+- Keyboard shortcuts improve UX (Escape to clear/close)
+- Empty state provides clear feedback and recovery action
+- ESLint: 0 errors, 168 warnings (all pre-existing)
+
+---
+Task ID: footer-fix
+Agent: layout-agent
+Task: Fix footer positioning in finance and shifts modules
+
+Work Log:
+- Read `/src/app/page.tsx` to understand the root layout structure: `min-h-screen flex flex-col` root with `flex-1` on `<main>` and footer rendered after main
+- Read `/src/components/layout/app-footer.tsx`: footer has `mt-auto shrink-0` on the `<footer>` element, but its parent wrapper `<div className="md:ml-60">` in page.tsx was NOT a flex container, making `mt-auto` ineffective
+- Verified that Sidebar (`fixed`), MobileNav (`fixed`), ScrollTop (`fixed`), QuickAdd (`fixed`), WelcomeScreen (`fixed` when shown, returns null when dismissed) are all removed from the normal document flow — no interference with flex layout
+- Confirmed finance-page.tsx and shifts-page.tsx both use `<div className="space-y-6 animate-slide-up">` wrappers that do NOT break the flex chain
+- **Fix applied**: Added `mt-auto` to the footer wrapper div in page.tsx (line 170): changed `<div className="md:ml-60">` to `<div className="md:ml-60 mt-auto">` — this ensures the footer is pushed to the bottom of the flex column container, working alongside the existing `flex-1` on `<main>` for robust behavior
+- Checked shifts calendar day-click filtering: `toDateKey` callback correctly normalizes both `YYYY-MM-DD` and ISO `YYYY-MM-DDTHH:mm:ss.sssZ` formats to `YYYY-MM-DD`; `shiftsByDate` groups by normalized keys; `selectedShifts` lookup uses `toDateKey(selectedDate)`; calendar generates `YYYY-MM-DD` dates via `getCalendarDays`; no date key normalization bug found
+- Ran ESLint: 0 errors, 168 warnings (all pre-existing)
+
+Stage Summary:
+- Fixed footer positioning by adding `mt-auto` to footer wrapper div in `page.tsx`
+- Verified shifts calendar date filtering logic is correct (no changes needed)
+- ESLint: 0 errors, 168 warnings
+
+---
+Task ID: widget-config-fix+customizer-enhance
+Agent: main-coordinator
+Task: Fix dashboard widget display issues — config merge, scrollable customizer, search filter
+
+Work Log:
+- **Bug Fix 1 — Widget config merge** (`widget-config.ts`): Fixed `loadWidgetConfig()` to merge saved localStorage config with current `DEFAULT_SECTIONS`. Previously, if new widgets were added to `DEFAULT_SECTIONS` after the user first saved their config, the new widgets were missing from both `visible` and `order`. Now: builds defaults, overlays saved visibility, rebuilds order from saved order + appends new sections. Hidden sections sorted to end.
+- **Bug Fix 2 — Shared section config** (`use-section-config.ts`): Fixed `loadConfig()` in the shared hook to also restore saved `order` from localStorage (previously only visibility was merged, order was always reset to defaults). Now: restores valid saved order entries, appends new sections at the end.
+- **Bug Fix 3 — Widget customizer scrollable area** (`widget-customizer.tsx`): Added `max-h-[60vh] overflow-y-auto pr-1` to the widget list container so all 18 sections fit on screen with scrolling. Made reset button sticky at bottom with `sticky bottom-0 border-t bg-background/90`.
+- **Enhancement — Search filter in customizer**: Added search Input with Search icon prefix for filtering widgets by title or emoji. Added "X из Y включено" Badge showing enabled count. Keyboard shortcuts: Escape clears search (with re-focus), Escape on empty closes dialog. Auto-focus on dialog open (50ms delay). Empty state with 🔍 icon and "Очистить поиск" button.
+- **Bug Fix 4 — Footer positioning** (`page.tsx`): Added `mt-auto` to the footer wrapper div to ensure footer sticks to viewport bottom when content is short.
+
+Stage Summary:
+- 4 bugs fixed (widget config merge, section config order restore, customizer overflow, footer positioning)
+- 1 enhancement added (search filter in widget customizer)
+- ESLint: 0 errors, 168 warnings (all pre-existing)
+
+---
+Task ID: gratitude-dashboard-widget
+Agent: feature-agent
+Task: Add Gratitude Journal widget and Quick Gratitude mini widget to dashboard
+
+Work Log:
+- Added 'gratitude' section to DEFAULT_SECTIONS in widget-config.ts
+- Added dynamic import for GratitudeJournal in dashboard-page.tsx
+- Added 'gratitude' case in renderSection switch
+- Created quick-gratitude-widget.tsx with emoji picker, textarea, localStorage persistence
+- Added QuickGratitudeWidget to the 'today' section
+
+Stage Summary:
+- 2 new dashboard widgets (Gratitude Journal section + Quick Gratitude in today)
+- ESLint: 0 errors
+
+---
+Task ID: all-streaks+welcome-animate
+Agent: widget-agent
+Task: Create All Streaks Overview widget and add animated counters to Welcome Widget
+
+Work Log:
+- Created all-streaks-widget.tsx with diary/workout/habits streaks in card grid
+- Registered in widget-config.ts DEFAULT_SECTIONS and renderSection
+- Enhanced welcome widget with animated number counters (800ms count-up)
+- Proper Russian pluralization for streak days
+
+Stage Summary:
+- New "Все серии" dashboard widget showing all module streaks
+- Animated counters in welcome widget for visual polish
+- ESLint: 0 errors introduced (3 pre-existing errors in other files)
+---
+Task ID: footer+scroll-progress
+Agent: layout-agent
+Task: Enhance app footer with navigation links and scroll-to-top, add scroll progress bar
+
+Work Log:
+- Enhanced footer with 3 quick nav links (Дневник, Финансы, Привычки) with BookOpen, Wallet, Target icons
+- Added scroll-to-top button ("Вернуться наверх") to both desktop and mobile footers
+- Added "Сделано с 💚" text to both desktop and mobile footer bottom bars
+- Added subtle vertical separators between footer sections on desktop
+- Enhanced mobile footer with gradient separator, quick nav links row, and scroll-to-top button
+- Enhanced scroll progress indicator: changed height from 3px to h-0.5 (2px), emerald gradient with glow shadow
+- Changed scroll progress visibility threshold from 100px to 5% of page height (min 50px)
+- Added scroll progress component to page layout as first child (fixed top bar)
+- Fixed Promise.all destructuring in page.tsx to include scroll-progress module
+- Responsive design: quick nav links shown in a row with separators on both mobile and desktop
+- Hover effects on nav links: icon scale-up, text translate-x micro-animation
+
+Stage Summary:
+- Enhanced footer with 3 quick navigation links, scroll-to-top, and "Сделано с 💚" text
+- Scroll progress bar (thin emerald bar at top) shows page scroll position with glow effect
+- ESLint: 0 errors, 168 warnings (all pre-existing)
+---
+Task ID: shifts-nutrition-enhance
+Agent: module-agent
+Task: Enhance Shifts and Nutrition modules with new features and styling
+
+Work Log:
+- Added rotating Shift Tips card to shifts page (5 daily tips)
+- Added Upcoming Shifts section showing next 3 scheduled shifts
+- Added Weekly Nutrition Summary card with average macros
+- Added motivational water tracker message
+- All new features use card-hover and animate-slide-up classes
+
+Stage Summary:
+- 4 new features across shifts and nutrition modules
+- ESLint: 0 errors
+
+---
+Task ID: css-utilities-enhance
+Agent: css-agent
+Task: Add new CSS utility classes and enhance Module Empty State
+
+Work Log:
+- Added shimmer-border animated gradient border utility (pseudo-element with gradient mask technique)
+- Added text-balance, fade-in-up, scale-in, gradient-text utilities
+- Added custom-scrollbar WebKit scrollbar styling class
+- Enhanced Module Empty State with shimmer border on icon, fade-in-up animation, text-balance on description, subtle gradient background
+
+Stage Summary:
+- 6 new CSS utility classes added to globals.css
+- Module Empty State visually enhanced with new utilities
+- ESLint: 0 errors
+
+---
+Task ID: diary-feed-enhance
+Agent: module-agent
+Task: Enhance Diary with mood overview strip and Feed with trending topics
+
+Work Log:
+- Added 14-day mood overview strip to diary page header
+- Added trending topics card to feed page
+- Added green pulsing dot for recent posts in feed
+- Responsive: mood strip scrolls horizontally on mobile
+
+Stage Summary:
+- Diary page has visual mood overview for last 2 weeks
+- Feed page has trending topics section
+- ESLint: 0 errors
