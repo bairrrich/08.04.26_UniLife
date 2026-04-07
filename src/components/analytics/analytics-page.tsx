@@ -21,6 +21,7 @@ import {
   Library,
   TrendingUp,
   Activity,
+  Lightbulb,
 } from 'lucide-react'
 import {
   LineChart,
@@ -182,11 +183,12 @@ export default function AnalyticsPage() {
   // Section config for hideable/collapsible widgets
   const sectionDefs: SectionDef[] = useMemo(() => [
     { id: 'stats-cards', title: 'Обзор', icon: '📊', defaultVisible: true, defaultOrder: 0 },
-    { id: 'activity-chart', title: 'Активность по месяцам', icon: '📈', defaultVisible: true, defaultOrder: 1 },
-    { id: 'mood-categories', title: 'Настроения и категории', icon: '😊', defaultVisible: true, defaultOrder: 2 },
-    { id: 'habit-trend', title: 'Тренд привычек', icon: '✅', defaultVisible: true, defaultOrder: 3 },
-    { id: 'collections-chart', title: 'Коллекции', icon: '📚', defaultVisible: true, defaultOrder: 4 },
-    { id: 'heatmap', title: 'Тепловая карта', icon: '🗓️', defaultVisible: true, defaultOrder: 5 },
+    { id: 'tip-of-day', title: 'Совет дня', icon: '💡', defaultVisible: true, defaultOrder: 1 },
+    { id: 'activity-chart', title: 'Активность по месяцам', icon: '📈', defaultVisible: true, defaultOrder: 2 },
+    { id: 'mood-categories', title: 'Настроения и категории', icon: '😊', defaultVisible: true, defaultOrder: 3 },
+    { id: 'habit-trend', title: 'Тренд привычек', icon: '✅', defaultVisible: true, defaultOrder: 4 },
+    { id: 'collections-chart', title: 'Коллекции', icon: '📚', defaultVisible: true, defaultOrder: 5 },
+    { id: 'heatmap', title: 'Тепловая карта', icon: '🗓️', defaultVisible: true, defaultOrder: 6 },
   ], [])
   const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('analytics', sectionDefs)
   const [customizerOpen, setCustomizerOpen] = useState(false)
@@ -196,34 +198,38 @@ export default function AnalyticsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <PageHeader
-          icon={BarChart3}
-          title="Аналитика"
-          description="Полная статистика по всем модулям"
-          accent="teal"
-          badge={
-            <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
-              <CalendarDays className="h-2.5 w-2.5" />
-              {periodLabel}
-            </Badge>
-          }
-          actions={
-            <>
-              <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-              <Tabs
-                value={period}
-                onValueChange={(v) => setPeriod(v as Period)}
-              >
-                <TabsList className="bg-muted/60">
-                  <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
-                  <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
-                  <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
-                  <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </>
-          }
-        />
+      <div className="relative">
+        <div className="absolute -top-20 -left-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
+        <PageHeader
+            icon={BarChart3}
+            title="Аналитика"
+            description="Полная статистика по всем модулям"
+            accent="teal"
+            badge={
+              <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+                <CalendarDays className="h-2.5 w-2.5" />
+                {periodLabel}
+              </Badge>
+            }
+            actions={
+              <>
+                <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+                <Tabs
+                  value={period}
+                  onValueChange={(v) => setPeriod(v as Period)}
+                >
+                  <TabsList className="bg-muted/60">
+                    <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
+                    <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
+                    <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
+                    <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </>
+            }
+          />
+      </div>
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (
@@ -243,6 +249,12 @@ export default function AnalyticsPage() {
               return (
                 <DashboardSection key={sectionId} id={sectionId} title="Обзор" icon={<span>📊</span>}>
                   <OverviewStatsCards loading={loading} data={data} />
+                </DashboardSection>
+              )
+            case 'tip-of-day':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Совет дня" icon={<span>💡</span>}>
+                  <TipOfTheDay />
                 </DashboardSection>
               )
             case 'activity-chart':
@@ -285,6 +297,61 @@ export default function AnalyticsPage() {
 
       <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={sectionDefs} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Аналитика" />
     </div>
+  )
+}
+
+// ─── Tip of the Day ──────────────────────────────────────────────────────────
+
+const TIPS: Array<{ text: string; category: string }> = [
+  { text: 'Делайте перерывы каждые 25 минут — метод Помодоро улучшает концентрацию', category: 'Продуктивность' },
+  { text: 'Пишите 3 вещи, за которые благодарны, каждое утро — это улучшает настроение', category: 'Психология' },
+  { text: '15 минут чтения перед сном лучше для сна, чем экран телефона', category: 'Здоровье' },
+  { text: 'Планируйте день вечером предыдущего дня — утром вы начнёте с действия', category: 'Планирование' },
+  { text: 'Медитация 5 минут в день снижает уровень стресса на 30%', category: 'Здоровье' },
+  { text: 'Пейте стакан воды сразу после пробуждения — организм обезвожен за ночь', category: 'Здоровье' },
+  { text: 'Физическая активность 20 минут в день повышает работоспособность', category: 'Спорт' },
+  { text: 'Однозадачность эффективнее многозадачности на 40%', category: 'Продуктивность' },
+  { text: 'Сон 7–8 часов — основа крепкого иммунитета и хорошей памяти', category: 'Здоровье' },
+  { text: 'Записывайте цели на бумаге — вероятность их достижения вырастает на 42%', category: 'Цели' },
+  { text: 'Прогулка на свежем воздухе 30 минут снижает уровень тревожности', category: 'Здоровье' },
+  { text: 'Учитесь говорить «нет» — это освобождает время для важного', category: 'Продуктивность' },
+  { text: 'Делайте сложные задачи утром — в это время воля на пике', category: 'Продуктивность' },
+  { text: 'Слушайте музыку без слов во время учёбы — она помогает концентрироваться', category: 'Учёба' },
+  { text: 'Поддерживайте социальные связи — общение повышает уровень счастья', category: 'Психология' },
+  { text: 'Ведите список дел — мозг лучше справляется с задачами, когда не хранит их в памяти', category: 'Планирование' },
+  { text: 'Ограничьте использование соцсетей до 30 минут в день', category: 'Цифровая гигиена' },
+  { text: 'Учитесь новому навыку хотя бы 15 минут в день — нейропластичность работает всю жизнь', category: 'Развитие' },
+  { text: 'Дыхательные упражнения перед экзаменом снижают пульс и улучшают мышление', category: 'Учёба' },
+  { text: 'Отдых — это не лень, а инвестиция в продуктивность', category: 'Психология' },
+]
+
+function getDayOfYear(date: Date): number {
+  const start = new Date(date.getFullYear(), 0, 0)
+  const diff = date.getTime() - start.getTime()
+  const oneDay = 1000 * 60 * 60 * 24
+  return Math.floor(diff / oneDay)
+}
+
+function TipOfTheDay() {
+  const tipIndex = getDayOfYear(new Date()) % TIPS.length
+  const tip = TIPS[tipIndex]
+
+  return (
+    <Card className="card-hover relative overflow-hidden rounded-xl border">
+      <div className="absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b from-emerald-400 to-teal-400" />
+      <CardContent className="p-4 pl-6">
+        <div className="flex items-start gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/50">
+            <Lightbulb className="h-5 w-5 text-amber-500" />
+          </div>
+          <div className="min-w-0">
+            <p className="mb-1 text-xs font-semibold text-muted-foreground">Совет дня</p>
+            <p className="text-sm font-medium italic leading-relaxed">{tip.text}</p>
+            <Badge variant="secondary" className="mt-2 text-[10px] font-normal">{tip.category}</Badge>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
@@ -369,7 +436,7 @@ function OverviewStatsCards({ loading, data }: { loading: boolean; data: Analyti
             key={card.label}
             className={`card-hover relative overflow-hidden rounded-xl border border-transparent bg-gradient-to-br ${card.gradient} dark:border-white/5`}
           >
-            <div className={`absolute left-0 top-0 h-full w-1 rounded-l-xl bg-gradient-to-b ${card.borderGrad}`} />
+            <div className={`absolute inset-x-0 top-0 h-1 rounded-t-xl bg-gradient-to-r ${card.borderGrad}`} />
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-medium text-muted-foreground">{card.label}</p>

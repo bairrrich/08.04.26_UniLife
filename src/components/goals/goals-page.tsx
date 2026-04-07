@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 // Skeleton component removed — using skeleton-shimmer CSS class instead
 import { cn } from '@/lib/utils'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useGoals } from './hooks'
 import { PageHeader } from '@/components/layout/page-header'
 import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
@@ -182,6 +183,31 @@ export default function GoalsPage() {
     return filteredGoals.filter((g) => g.title.toLowerCase().includes(q))
   }, [filteredGoals, searchQuery])
 
+  // ─── Sort state & sorted goals ─────────────────────────────────────────────
+  const [sortBy, setSortBy] = useState<'default' | 'priority' | 'deadline' | 'progress'>('default')
+
+  const sortedGoals = useMemo(() => {
+    const arr = [...searchedGoals]
+    switch (sortBy) {
+      case 'priority':
+        return arr.sort((a, b) => {
+          const order: Record<string, number> = { high: 3, medium: 2, low: 1 }
+          return (order[b.priority ?? 'medium'] ?? 2) - (order[a.priority ?? 'medium'] ?? 2)
+        })
+      case 'deadline':
+        return arr.sort((a, b) => {
+          if (!a.deadline && !b.deadline) return 0
+          if (!a.deadline) return 1
+          if (!b.deadline) return -1
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+        })
+      case 'progress':
+        return arr.sort((a, b) => b.progress - a.progress)
+      default:
+        return arr
+    }
+  }, [searchedGoals, sortBy])
+
   // Motivational quote
   const quote = useMemo(() => getMotivationalQuote(), [])
 
@@ -205,6 +231,9 @@ export default function GoalsPage() {
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="relative overflow-hidden">
+        {/* Gradient blobs */}
+        <div className="absolute -top-20 -left-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
         <PageHeader
           icon={Crosshair}
           title="Цели"
@@ -399,7 +428,7 @@ export default function GoalsPage() {
                 return (
                   <DashboardSection key={sectionId} id={sectionId} title="Мотивация" icon={<span>💬</span>}>
                     <Card className="overflow-hidden relative card-hover">
-                      <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
                       <CardContent className="relative p-4">
                         <div className="flex items-start gap-3">
                           <div className="flex h-9 w-9 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
@@ -423,20 +452,60 @@ export default function GoalsPage() {
             }
           })}
 
+          {/* Motivational Progress Summary */}
+          {goals.length > 0 && (
+            <Card className="animate-slide-up overflow-hidden relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+              <CardContent className="relative p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Общий прогресс</span>
+                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                    {stats.completedGoals} из {stats.totalGoals} целей
+                  </span>
+                </div>
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
+                    style={{ width: `${stats.totalGoals > 0 ? Math.round((stats.completedGoals / stats.totalGoals) * 100) : 0}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  {stats.totalGoals > 0
+                    ? `Выполнено ${Math.round((stats.completedGoals / stats.totalGoals) * 100)}% всех целей`
+                    : 'Пока нет целей'
+                  }
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Overdue Goals Attention Banner */}
           {overdueGoals.length > 0 && (
             <OverdueBanner overdueGoals={overdueGoals} />
           )}
 
-          <FilterTabs
-            filterTab={filterTab}
-            setFilterTab={setFilterTab}
-            categoryFilter={categoryFilter}
-            setCategoryFilter={setCategoryFilter}
-            goals={goals}
-          />
+          <div className="flex items-center gap-3 flex-wrap">
+            <FilterTabs
+              filterTab={filterTab}
+              setFilterTab={setFilterTab}
+              categoryFilter={categoryFilter}
+              setCategoryFilter={setCategoryFilter}
+              goals={goals}
+            />
+            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+              <SelectTrigger className="w-[160px] h-9 text-sm">
+                <SelectValue placeholder="Сортировка" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">По умолчанию</SelectItem>
+                <SelectItem value="priority">По приоритету</SelectItem>
+                <SelectItem value="deadline">По дедлайну</SelectItem>
+                <SelectItem value="progress">По прогрессу</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-          {searchedGoals.length === 0 ? (
+          {sortedGoals.length === 0 ? (
             <Card className="animate-slide-up overflow-hidden relative">
               <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-sky-500/5 pointer-events-none" />
               <CardContent className="relative flex flex-col items-center py-4">
@@ -459,8 +528,8 @@ export default function GoalsPage() {
               </CardContent>
             </Card>
           ) : (
-            <div className="stagger-children space-y-3">
-              {searchedGoals.map((goal) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-children">
+              {sortedGoals.map((goal) => (
                 <GoalCard
                   key={goal.id} goal={goal}
                   onEdit={openEditDialog}

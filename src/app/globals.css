@@ -1017,6 +1017,37 @@
   animation: water-confetti 1.5s ease-out forwards;
 }
 
+/* ── Water glass pulse glow (active / highest filled) ─ */
+@keyframes water-glass-pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 oklch(0.62 0.19 240 / 0.35),
+                0 0 4px 1px oklch(0.62 0.19 240 / 0.15);
+  }
+  50% {
+    box-shadow: 0 0 0 4px oklch(0.62 0.19 240 / 0),
+                0 0 12px 2px oklch(0.62 0.19 240 / 0.25);
+  }
+}
+.water-glass-pulse {
+  animation: water-glass-pulse-glow 2s ease-in-out infinite;
+}
+
+/* ── Water glass glow when goal is achieved ─ */
+@keyframes water-glass-achieved-glow {
+  0%, 100% {
+    box-shadow: 0 0 8px 2px oklch(0.60 0.20 160 / 0.3),
+                0 0 16px 4px oklch(0.60 0.20 160 / 0.12);
+  }
+  50% {
+    box-shadow: 0 0 14px 4px oklch(0.60 0.20 160 / 0.45),
+                0 0 24px 6px oklch(0.60 0.20 160 / 0.2);
+  }
+}
+.water-glass-glow-achieved {
+  animation: water-glass-achieved-glow 2.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
 /* ── Particle dot animation for dashboard header ────── */
 @keyframes particle-float {
   0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }

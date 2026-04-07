@@ -21,6 +21,7 @@ import { WeeklyNutritionChart } from './weekly-nutrition-chart'
 import { WeeklyOverview } from './weekly-overview'
 import { DailyNutritionScore } from './daily-nutrition-score'
 import { QuickFoodBar } from './quick-food-bar'
+import { NutritionScoreRing } from './nutrition-score-ring'
 
 export default function NutritionPage() {
   // ── Hydration guard for timezone-dependent date display ──
@@ -72,13 +73,35 @@ export default function NutritionPage() {
     handleGoalsSaved,
   } = useNutrition()
 
+  // Compute last meal relative time (in ms) for the indicator
+  const lastMealRelative = useMemo(() => {
+    if (!meals.length) return null
+    const sorted = [...meals].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+    const lastDate = new Date(sorted[0].date).getTime()
+    return Date.now() - lastDate
+  }, [meals])
+
+  const lastMealText = useMemo(() => {
+    if (lastMealRelative === null) return null
+    const totalMinutes = Math.floor(lastMealRelative / 60000)
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    if (hours > 0 && minutes > 0) return `${hours}ч ${minutes}м назад`
+    if (hours > 0) return `${hours}ч назад`
+    if (minutes > 0) return `${minutes}м назад`
+    return 'Только что'
+  }, [lastMealRelative])
+
   const nutritionSections: SectionDef[] = useMemo(() => [
-    { id: 'macros', title: 'Макронутриенты', icon: '🎯', defaultVisible: true, defaultOrder: 0 },
-    { id: 'quick-food', title: 'Быстрое добавление', icon: '🍔', defaultVisible: true, defaultOrder: 1 },
-    { id: 'weekly-overview', title: 'Обзор за неделю', icon: '📊', defaultVisible: true, defaultOrder: 2 },
-    { id: 'streak', title: 'Серия отслеживания', icon: '🔥', defaultVisible: true, defaultOrder: 3 },
-    { id: 'water', title: 'Вода', icon: '💧', defaultVisible: true, defaultOrder: 4 },
-    { id: 'weekly-chart', title: 'График за неделю', icon: '📈', defaultVisible: true, defaultOrder: 5 },
+    { id: 'daily-ring', title: 'Оценка дня', icon: '🏆', defaultVisible: true, defaultOrder: 0 },
+    { id: 'macros', title: 'Макронутриенты', icon: '🎯', defaultVisible: true, defaultOrder: 1 },
+    { id: 'quick-food', title: 'Быстрое добавление', icon: '🍔', defaultVisible: true, defaultOrder: 2 },
+    { id: 'weekly-overview', title: 'Обзор за неделю', icon: '📊', defaultVisible: true, defaultOrder: 3 },
+    { id: 'streak', title: 'Серия отслеживания', icon: '🔥', defaultVisible: true, defaultOrder: 4 },
+    { id: 'water', title: 'Вода', icon: '💧', defaultVisible: true, defaultOrder: 5 },
+    { id: 'weekly-chart', title: 'График за неделю', icon: '📈', defaultVisible: true, defaultOrder: 6 },
   ], [])
 
   const { config, loaded, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('nutrition', nutritionSections)
@@ -114,6 +137,16 @@ export default function NutritionPage() {
 
       {loaded && visibleOrder.map(sectionId => {
         switch (sectionId) {
+          case 'daily-ring':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Оценка дня" icon={<span>🏆</span>}>
+                <div className="flex justify-center">
+                  <div className="w-full max-w-xs">
+                    <NutritionScoreRing stats={stats} goals={goals} />
+                  </div>
+                </div>
+              </DashboardSection>
+            )
           case 'macros':
             return (
               <DashboardSection key={sectionId} id={sectionId} title="Макронутриенты" icon={<span>🎯</span>}>
@@ -188,6 +221,13 @@ export default function NutritionPage() {
         <h2 className="text-lg font-semibold">Приёмы пищи</h2>
         <Badge variant="secondary">{meals.length} записей</Badge>
       </div>
+
+      {lastMealText && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground -mt-3">
+          <UtensilsCrossed className="size-3.5" />
+          <span>Последний приём: {lastMealText}</span>
+        </div>
+      )}
 
       <TimeIndicator stats={stats} />
       <MealTimeline

@@ -89,6 +89,8 @@ const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false,
 
 const WeeklyChallengeWidget = dynamic(() => import('./weekly-challenge-widget'), { ssr: false, loading: widgetLoad })
 
+const DailyChallengeWidget = dynamic(() => import('./daily-challenge-widget'), { ssr: false, loading: widgetLoad })
+
 const MoodRecommendations = dynamic(() => import('./mood-recommendations'), { ssr: false, loading: widgetLoad })
 const DataStatsWidget = dynamic(() => import('./data-stats-widget'), { ssr: false, loading: widgetLoad })
 const TipsCarousel = dynamic(() => import('./tips-carousel'), { ssr: false, loading: widgetLoad })
@@ -557,6 +559,13 @@ export default function DashboardPage() {
     const defaultCollapsed = sectionDef?.defaultCollapsed ?? false
 
     switch (sectionId) {
+      case 'daily-challenge':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <DailyChallengeWidget />
+          </DashboardSection>
+        )
+
       case 'weekly-challenge':
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>

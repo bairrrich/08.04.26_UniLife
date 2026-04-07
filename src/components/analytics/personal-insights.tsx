@@ -141,7 +141,7 @@ export function PersonalInsights({
   if (insights.length === 0) return null
 
   return (
-    <div className="space-y-3">
+    <div className="bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 rounded-xl border p-4 space-y-3">
       <div className="flex items-center gap-2">
         <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500">
           <Sparkles className="h-3.5 w-3.5 text-white" />

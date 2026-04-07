@@ -11740,3 +11740,103 @@ Stage Summary:
 - Layout chain: min-h-screen flex-col → flex-1 flex-col → flex-1 → mt-auto shrink-0
 - All modules benefit from this fix (global layout change)
 - No breaking changes
+
+---
+Task ID: qa-round-11-styling-features
+Agent: cron-review-main
+Task: QA testing, styling improvements, and new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 12 modules render correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data available
+- **Lint**: 0 errors, 166 warnings (1 new from added code)
+- **Build**: All routes compile successfully via Turbopack
+- **Dark Mode**: Fully supported across all components
+- **APIs**: 15+ REST endpoints, all returning correct data
+- **Previous fixes verified**: Footer positioning, shifts calendar filtering both working
+
+### QA Testing Results:
+- ✅ ESLint: 0 errors, 166 warnings
+- ✅ Dev server: compiles cleanly
+- ✅ Dashboard: renders correctly with new Daily Challenge widget
+- ✅ Goals page: all new features working (sort dropdown, grid layout, total progress, gradient blobs)
+- ✅ Nutrition page: daily score ring, last meal indicator, water tracker glow all rendering
+- ✅ Analytics page: tip of the day, gradient blobs, enhanced insights
+- ✅ Finance page: footer correctly positioned at bottom
+- ✅ Diary page: renders correctly
+- ✅ No JS console errors detected
+
+### Styling Improvements (Mandatory):
+
+1. **Goals Page** (`goals-page.tsx`):
+   - Added gradient blobs behind PageHeader (emerald + amber, blurred)
+   - Changed goals list from vertical stack to responsive 2-column grid on md+ screens
+   - Added sort dropdown (Select) with 4 options: По умолчанию, По приоритету, По дедлайну, По прогрессу
+   - Added total progress summary card showing "X из Y целей" with emerald gradient progress bar
+   - Enhanced motivational quote card with emerald→amber gradient background
+
+2. **Analytics Page** (`analytics-page.tsx`):
+   - Added gradient blobs behind PageHeader
+   - Added "Совет дня" (Tip of the Day) card with 20 rotating tips, seeded by date
+   - Tip card has gradient left border, lightbulb icon, italic text, category badge
+   - Enhanced personal insights section with gradient background
+
+3. **Personal Insights** (`personal-insights.tsx`):
+   - Added gradient background with border (emerald-500/5 → amber-500/5)
+   - Added `card-hover` to insight cards
+
+4. **Overview Stats** — Changed gradient accent from vertical left bar to horizontal top bar
+
+### New Features (Mandatory):
+
+1. **Dashboard Daily Challenge Widget** (`daily-challenge-widget.tsx`):
+   - 30 challenges across 6 categories (Физическая активность, Дневник, Здоровье, Обучение, Продуктивность, Социальное)
+   - Date-seeded rotation — challenge changes automatically at midnight
+   - Difficulty indicator (3 dots: easy/medium/hard)
+   - XP reward system (+10/+25/+50 XP)
+   - Accept/Skip buttons with toast notifications
+   - Accepted state with animated checkmark + countdown timer
+   - localStorage persistence for accepted challenges
+   - Integrated into dashboard widget config
+
+2. **Nutrition Daily Score Ring** (`nutrition-score-ring.tsx`):
+   - SVG circular progress indicator (120x120px, emerald gradient)
+   - Score calculated from 4 macro goals (25% each): protein, carbs, fat, calories
+   - Animated fill on mount with 1s ease-out transition
+   - Contextual messages: "Отличный день!", "Хороший результат!", etc.
+   - Centered percentage display with tabular-nums
+
+3. **"Последний приём" Last Meal Indicator** (nutrition-page.tsx):
+   - Shows relative time since last meal (Только что, Xч Yм назад, etc.)
+   - UtensilsCrossed icon with muted styling
+   - Only shown when meals exist for the day
+
+4. **Enhanced Water Tracker** (water-tracker.tsx):
+   - Pulsing glow animation on active/highest filled glass
+   - Achievement glow when goal is reached
+   - "💧 Отличная гидратация!" badge with bounce-in animation when all glasses filled
+   - New CSS animations: water-glass-pulse, water-glass-glow-achieved
+
+5. **Analytics Tip of the Day**:
+   - 20 Russian productivity/self-improvement tips
+   - Seeded daily rotation via day-of-year calculation
+   - Category labels (Продуктивность, Психология, Здоровье, Спорт, Учёба)
+   - Emerald gradient left border card design
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 166 warnings
+- ✅ Dev server: compiles cleanly, all routes return 200
+- ✅ Agent-browser QA: Dashboard (daily challenge ✅), Goals (sort ✅, grid ✅, progress ✅), Nutrition (score ring ✅, last meal ✅, water glow ✅), Analytics (tip ✅, blobs ✅)
+- ✅ All 12 modules rendering correctly
+- ✅ No breaking changes
+
+### Unresolved Issues / Next Phase Priorities:
+1. **Feed module comment section** — Could be enhanced with nested replies and better interaction
+2. **Collections module** — Could add cover image upload support
+3. **Diary module** — Could add word count targets and writing streaks
+4. **Goals module** — Could add drag-to-reorder goals
+5. **Workout module** — Could add exercise library/templates
+6. **Shifts module** — Calendar week/month view toggle
+7. **Analytics module** — More advanced trend charts with comparison
+8. **PWA Support** — Service worker + manifest for mobile install
+

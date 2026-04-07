@@ -157,6 +157,7 @@ export function WaterTracker({
           {Array.from({ length: totalGlasses }).map((_, i) => {
             const isFilled = i < waterStats.glasses
             const isFilling = fillingGlassIndex === i
+            const isLastFilled = isFilled && i === waterStats.glasses - 1 && waterStats.glasses > 0
             return (
               <button
                 key={i}
@@ -168,7 +169,7 @@ export function WaterTracker({
                     isFilled
                       ? 'border-blue-400 bg-blue-50 text-blue-500 dark:bg-blue-900/50 dark:border-blue-500'
                       : 'border-muted-foreground/20 bg-muted text-muted-foreground/40 group-hover:border-blue-300 group-hover:text-blue-400'
-                  }`}
+                  } ${isLastFilled && !goalReached ? 'water-glass-pulse' : ''}`}
                 >
                   {/* Water fill animation layer */}
                   <div
@@ -200,6 +201,10 @@ export function WaterTracker({
                   {isFilled && goalReached && i === totalGlasses - 1 && (
                     <div className="goal-sparkle absolute -top-1 -right-1 size-3 rounded-full bg-yellow-400 animate-pulse" />
                   )}
+                  {/* Pulsing glow on last filled glass when goal is reached */}
+                  {isFilled && goalReached && i === totalGlasses - 1 && (
+                    <div className="water-glass-glow-achieved absolute inset-0 rounded-xl" />
+                  )}
                 </div>
                 <span className="text-[10px] text-muted-foreground">
                   {(i + 1) * DEFAULT_GLASS_ML}
@@ -216,6 +221,15 @@ export function WaterTracker({
             style={{ width: `${Math.min(waterStats.percentage, 100)}%` }}
           />
         </div>
+
+        {/* Well-hydrated badge when all glasses filled */}
+        {goalReached && (
+          <div className="mt-2 flex items-center justify-center animate-bounce-in">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-400">
+              💧 Отличная гидратация!
+            </span>
+          </div>
+        )}
 
         {/* Motivational message */}
         <p className="mt-2 text-center text-sm font-medium text-blue-600 dark:text-blue-400 transition-all duration-500">
