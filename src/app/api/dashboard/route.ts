@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
 
+const USER_ID = 'user_demo_001'
+
 // GET /api/dashboard — combined endpoint that returns all dashboard data in one request
 // This prevents Turbopack from needing to compile 10+ separate API routes
 // which causes development server instability
@@ -44,33 +46,34 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       // Monthly diary entries
       db.diaryEntry.findMany({
-        where: { date: { gte: monthStart, lte: monthEnd } },
+        where: { userId: USER_ID, date: { gte: monthStart, lte: monthEnd } },
         orderBy: { date: 'desc' },
       }),
       // Weekly diary entries
       weekFrom && weekTo
         ? db.diaryEntry.findMany({
-            where: { date: { gte: new Date(weekFrom), lte: new Date(weekTo) } },
+            where: { userId: USER_ID, date: { gte: new Date(weekFrom), lte: new Date(weekTo) } },
             orderBy: { date: 'desc' },
           })
         : Promise.resolve([]),
       // All transactions for the month
       db.transaction.findMany({
-        where: { date: { gte: monthStart, lte: monthEnd } },
+        where: { userId: USER_ID, date: { gte: monthStart, lte: monthEnd } },
         include: { category: true },
       }),
       // Meals with items for today (nutrition stats) — use range for date matching
       db.meal.findMany({
-        where: { date: { gte: todayDate, lte: todayEnd } },
+        where: { userId: USER_ID, date: { gte: todayDate, lte: todayEnd } },
         include: { items: { select: { kcal: true, protein: true, fat: true, carbs: true } } },
       }),
       // Workouts for the month
       db.workout.findMany({
-        where: { date: { gte: monthStart, lte: monthEnd } },
+        where: { userId: USER_ID, date: { gte: monthStart, lte: monthEnd } },
         orderBy: { date: 'desc' },
       }),
       // Recent feed posts
       db.post.findMany({
+        where: { userId: USER_ID },
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
@@ -80,6 +83,7 @@ export async function GET(req: NextRequest) {
       }),
       // Habits with recent logs
       db.habit.findMany({
+        where: { userId: USER_ID },
         orderBy: { createdAt: 'asc' },
         include: {
           logs: {
@@ -91,6 +95,7 @@ export async function GET(req: NextRequest) {
       // Budgets active during this month (startDate <= monthEnd AND (endDate >= monthStart OR endDate is null))
       db.budget.findMany({
         where: {
+          userId: USER_ID,
           startDate: { lte: monthEnd },
           OR: [
             { endDate: { gte: monthStart } },
@@ -101,12 +106,12 @@ export async function GET(req: NextRequest) {
       }),
       // Water logs for today
       db.waterLog.findMany({
-        where: { date: { gte: todayDate, lte: todayEnd } },
+        where: { userId: USER_ID, date: { gte: todayDate, lte: todayEnd } },
       }),
       // Water logs for the week (for weekly activity chart)
       weekFrom
         ? db.waterLog.findMany({
-            where: { date: { gte: new Date(weekFrom), lte: new Date(weekTo) } },
+            where: { userId: USER_ID, date: { gte: new Date(weekFrom), lte: new Date(weekTo) } },
           })
         : Promise.resolve([]),
     ])

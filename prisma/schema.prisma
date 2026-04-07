@@ -57,6 +57,7 @@ model DiaryEntry {
 
   @@index([userId])
   @@index([date])
+  @@index([userId, date])
 }
 
 // ============ FINANCE ============
@@ -116,6 +117,7 @@ model Transaction {
 
   @@index([userId])
   @@index([date])
+  @@index([userId, date])
   @@index([categoryId])
   @@index([recurringId])
 }
@@ -261,6 +263,7 @@ model Meal {
 
   @@index([userId])
   @@index([date])
+  @@index([userId, date])
 }
 
 model MealItem {
@@ -290,6 +293,7 @@ model WaterLog {
 
   @@index([userId])
   @@index([date])
+  @@index([userId, date])
 }
 
 // ============ WORKOUT ============
@@ -309,6 +313,7 @@ model Workout {
 
   @@index([userId])
   @@index([date])
+  @@index([userId, date])
 }
 
 model WorkoutExercise {

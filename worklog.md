@@ -10694,3 +10694,76 @@ Stage Summary:
 - 1 lint fix (use-section-config.ts ESLint disable for legitimate hydration pattern)
 - All 10 modules now have unified collapsible/hideable widget system
 - Shared infrastructure (`useSectionConfig`, `SectionCustomizer`, `CustomizeButton`, `DashboardSection`) consistently used across all modules
+
+
+---
+## Task ID: comprehensive-audit
+### Agent: main-coordinator
+### Task: Full application audit for errors and optimization opportunities
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable after fixes
+- **51 API route files** audited: 6 Critical, 10 High, 12 Medium, 8 Low issues found
+- **11 page components + 7 hooks** audited: 38 issues found (2 High, 18 Medium, 18 Low)
+- **Library/Shared code** audited: 27 issues (2 Critical, 9 High, 10 Medium, 5 Low)
+- **Prisma schema**: Missing composite indexes identified and fixed
+
+### Completed Fixes:
+
+#### CRITICAL Fixes (6):
+1. **`next.config.ts`**: Removed `ignoreBuildErrors: true` — TypeScript errors now caught at build time
+2. **`next.config.ts`**: Added security headers (X-Frame-Options: DENY, X-Content-Type-Options: nosniff, Referrer-Policy, Permissions-Policy, X-DNS-Prefetch-Control)
+3. **`eslint.config.mjs`**: Re-enabled safety rules — `react-hooks/exhaustive-deps: warn`, `no-debugger: error`, `no-unreachable: error`, `no-redeclare: error`, `no-console: warn` (error in production)
+4. **`tsconfig.json`**: Set `noImplicitAny: true` — implicit any types now caught
+5. **`package.json`**: Increased memory limit from 384MB to 512MB to prevent OOM
+
+#### HIGH Fixes (9):
+6. **`/api/dashboard/route.ts`**: Added `userId` filter to ALL 11 database queries (diary, transactions, meals, workouts, posts, habits, budgets, water logs)
+7. **`/api/analytics/route.ts`**: Added `userId` filter to ALL 8 database queries (diary, transactions, workouts, meals, habits, habit logs, water logs, collections)
+8. **`prisma/schema.prisma`**: Added 5 composite indexes `@@index([userId, date])` to DiaryEntry, Transaction, Meal, WaterLog, Workout models
+9. **`/src/lib/db.ts`**: Added DATABASE_URL validation with clear error message; enabled warn-level logging in development
+10. **`/src/lib/auth.ts`**: Created shared auth helper with centralized `DEMO_USER_ID` constant for future auth migration
+11. **`/src/components/feed/hooks.ts`**: Fixed stale closure in `handleToggleLike` — wrapped in `useCallback`, replaced closure-dependent `likedPosts.has()` with functional state update pattern
+12. **`format.ts`**: Fixed `getRelativeTime()` — added NaN date validation, fixed incorrect relative time labels, added negative diff protection
+13. **`format.ts`**: Fixed `calculateStreak()` — added `MAX_STREAK_ITERATIONS = 10000` safety bound to prevent infinite loop
+
+#### Verification Results:
+- ✅ ESLint: 0 errors, 156 warnings (all from newly enabled `no-console` and `react-hooks/exhaustive-deps` — expected)
+- ✅ Prisma: schema pushed successfully, 5 composite indexes added
+- ✅ Dashboard API: returns `{ success: true, data: { financeStats: {...}, ... } }` with userId filtering
+- ✅ Analytics API: returns `{ success: true, data: { overview: {...}, ... } }` with userId filtering
+- ✅ Dev server: compiles and serves correctly
+
+### Remaining Issues (deferred to future sprints):
+
+#### Still TODO — Security:
+- C-1: No authentication on any route (shared auth helper created, NextAuth.js integration needed)
+- C-2: Unprotected destructive endpoints (seed, settings/clear) need auth protection
+- C-3: GET endpoints with write side effects (nutrition/goals creates default, achievements persists new)
+- C-5: Import endpoint lacks Zod validation for incoming JSON
+- C-6: Recurring execute endpoint missing ownership check
+- H-9, M-6, M-9: Missing ownership checks on feed/comments/likes/recurring endpoints
+
+#### Still TODO — Code Quality:
+- H-1/H-2: Inconsistent error/success response format across routes (need shared helpers)
+- H-3: N+1 query in budgets route
+- H-4: Non-transactional multi-step operations (recurring/execute, workout/[id])
+- H-5: Duplicated helper code across routes (safeParseJSON, streak logic, toDateStr)
+- H-6: Hardcoded user ID in 30+ files (auth helper created, migration needed)
+
+#### Still TODO — Performance:
+- Diary page: IIFE in JSX render path should be extracted to useMemo
+- Feed hook: Multiple handlers not wrapped in useCallback
+- Nutrition hook: setTimeout cleanup missing
+- Goals hook: Multiple async handlers not wrapped in useCallback
+- Collections hook: 8 handlers not wrapped in useCallback
+- Analytics page: Heatmap grid not memoized, O(n²) lookups
+
+### Next Phase Priorities:
+1. **Authentication** (P0) — Integrate NextAuth.js, replace all hardcoded user IDs with `getCurrentUserId()`
+2. **API Response Standardization** (P1) — Create shared `successResponse()`/`errorResponse()` helpers
+3. **Zod Validation** (P1) — Add input validation schemas for all POST/PUT endpoints
+4. **React Performance** (P2) — Add useCallback/useMemo to hooks, extract IIFE to memoized values
+5. **Transaction Safety** (P2) — Wrap multi-step DB operations in `db.$transaction()`
+6. **Code Deduplication** (P2) — Extract shared helpers into `/src/lib/api-helpers.ts`
+

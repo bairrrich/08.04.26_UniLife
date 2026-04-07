@@ -83,32 +83,32 @@ export async function GET(req: NextRequest) {
       collectionItems,
     ] = await Promise.all([
       db.diaryEntry.findMany({
-        where: startDate ? { date: { gte: startDate } } : {},
+        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         orderBy: { date: 'desc' },
       }),
       db.transaction.findMany({
-        where: startDate ? { date: { gte: startDate } } : {},
+        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         include: { category: true },
       }),
       db.workout.findMany({
-        where: startDate ? { date: { gte: startDate } } : {},
+        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         orderBy: { date: 'desc' },
       }),
       db.meal.findMany({
-        where: startDate ? { date: { gte: startDate } } : {},
+        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         include: { items: { select: { kcal: true, protein: true, fat: true, carbs: true } } },
       }),
-      db.habit.findMany({}),
+      db.habit.findMany({ where: { userId: USER_ID } }),
       startDate
         ? db.habitLog.findMany({
-            where: { date: { gte: startDate } },
+            where: { habit: { userId: USER_ID }, date: { gte: startDate } },
           })
-        : db.habitLog.findMany(),
+        : db.habitLog.findMany({ where: { habit: { userId: USER_ID } } }),
       db.waterLog.findMany({
-        where: startDate ? { date: { gte: startDate } } : {},
+        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
       }),
       db.collectionItem.findMany({
-        where: startDate ? { createdAt: { gte: startDate } } : {},
+        where: { userId: USER_ID, ...(startDate ? { createdAt: { gte: startDate } } : {}) },
       }),
     ])
 

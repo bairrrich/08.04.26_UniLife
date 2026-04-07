@@ -69,18 +69,21 @@ export function getGreeting(): string {
 
 export function getRelativeTime(dateStr: string): string {
   const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return 'некогда'
+
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
+  if (diffMs < 0) return 'только что'
+
   const diffSecs = Math.floor(diffMs / 1000)
   const diffMins = Math.floor(diffMs / 60000)
   const diffHours = Math.floor(diffMs / 3600000)
   const diffDays = Math.floor(diffMs / 86400000)
 
-  if (diffSecs < 5) return 'только что'
-  if (diffSecs < 60) return `${diffSecs} сек назад`
-  if (diffMins < 5) return '5 минут назад'
-  if (diffMins < 10) return '10 минут назад'
-  if (diffMins < 30) return '30 минут назад'
+  if (diffSecs < 60) return 'только что'
+  if (diffMins < 5) return 'менее 5 минут назад'
+  if (diffMins < 10) return 'менее 10 минут назад'
+  if (diffMins < 30) return 'менее 30 минут назад'
   if (diffMins < 60) return `${diffMins} мин назад`
   if (diffHours === 1) return '1 час назад'
   if (diffHours < 5) return `${diffHours} часа назад`
@@ -114,7 +117,9 @@ export function calculateStreak(dates: string[]): number {
   let streak = 0
   const checkDate = uniqueDates.has(todayStr) ? new Date(today) : new Date(yesterday)
 
-  while (true) {
+  const MAX_STREAK_ITERATIONS = 10000
+
+  while (streak < MAX_STREAK_ITERATIONS) {
     const checkStr = toDateStr(checkDate)
     if (uniqueDates.has(checkStr)) {
       streak++

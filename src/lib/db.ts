@@ -6,12 +6,12 @@ const globalForPrisma = globalThis as unknown as {
 }
 
 function createPrismaClient() {
-  const adapter = new PrismaBetterSqlite3({
-    url: process.env.DATABASE_URL!,
-  })
+  const dbUrl = process.env.DATABASE_URL
+  if (!dbUrl) throw new Error('DATABASE_URL environment variable is not set')
+  const adapter = new PrismaBetterSqlite3({ url: dbUrl })
   return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'production' ? ['error'] : ['error'],
+    log: process.env.NODE_ENV === 'production' ? ['error'] : ['error', 'warn'],
   })
 }
 

@@ -97,11 +97,11 @@ export function useFeed() {
 
   // ─── Like / Bookmark / Share ─────────────────────────────────────────────
 
-  const handleToggleLike = async (postId: string) => {
-    const willLike = !likedPosts.has(postId)
-
-    // Optimistic local update
+  const handleToggleLike = useCallback(async (postId: string) => {
+    // Use functional update to read latest state, avoid stale closure
+    let willLike = false
     setLikedPosts((prev) => {
+      willLike = !prev.has(postId)
       const next = new Set(prev)
       if (next.has(postId)) next.delete(postId)
       else next.add(postId)
@@ -113,7 +113,7 @@ export function useFeed() {
           ? {
               ...p,
               _count: {
-                likes: likedPosts.has(postId) ? p._count.likes - 1 : p._count.likes + 1,
+                likes: willLike ? p._count.likes + 1 : p._count.likes - 1,
               },
             }
           : p,
@@ -160,7 +160,7 @@ export function useFeed() {
     } catch (err) {
       console.error('Failed to toggle like:', err)
     }
-  }
+  }, [])
 
   const handleToggleBookmark = (postId: string) => {
     setBookmarkedPosts((prev) => {
