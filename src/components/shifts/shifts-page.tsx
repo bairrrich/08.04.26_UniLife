@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import {
   CalendarClock,
   Plus,
@@ -32,6 +32,7 @@ import {
   type Shift,
 } from './hooks'
 import { ShiftDialog } from './shift-dialog'
+import { EarningsChart } from './earnings-chart'
 
 // ─── Constants ──────────────────────────────────────────────────────────
 
@@ -351,6 +352,89 @@ function WeeklySummaryBar({ shifts }: { shifts: Shift[] }) {
   )
 }
 
+// ─── Current Streak Badge ─────────────────────────────────────────────
+
+function CurrentStreakBadge({ shifts }: { shifts: Shift[] }) {
+  const [streak, setStreak] = useState(0)
+  const [displayCount, setDisplayCount] = useState(0)
+
+  useEffect(() => {
+    const completedDates = new Set<string>()
+    for (const s of shifts) {
+      if (s.status === 'completed') {
+        const key = s.date.length > 10 ? s.date.slice(0, 10) : s.date
+        completedDates.add(key)
+      }
+    }
+
+    if (completedDates.size === 0) {
+      setStreak(0)
+      return
+    }
+
+    // Calculate streak backwards from today
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    let count = 0
+    let checkDate = new Date(today)
+
+    while (true) {
+      const y = checkDate.getFullYear()
+      const m = String(checkDate.getMonth() + 1).padStart(2, '0')
+      const d = String(checkDate.getDate()).padStart(2, '0')
+      const dateStr = `${y}-${m}-${d}`
+      if (completedDates.has(dateStr)) {
+        count++
+        checkDate.setDate(checkDate.getDate() - 1)
+      } else {
+        break
+      }
+    }
+
+    setStreak(count)
+  }, [shifts])
+
+  // Animated counter
+  useEffect(() => {
+    if (streak <= 0) {
+      setDisplayCount(0)
+      return
+    }
+    setDisplayCount(0)
+    let current = 0
+    const timer = setInterval(() => {
+      current++
+      setDisplayCount(current)
+      if (current >= streak) clearInterval(timer)
+    }, 120)
+    return () => clearInterval(timer)
+  }, [streak])
+
+  if (streak === 0) return null
+
+  return (
+    <Card className="glass-card card-hover overflow-hidden animate-slide-up">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-rose-500 text-lg shadow-sm">
+            🔥
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground">Текущая серия</p>
+            <p className="text-lg font-bold tabular-nums">
+              <span className="animate-count-fade-in inline-block">{displayCount}</span>
+              {' '}
+              <span className="text-sm font-medium text-muted-foreground">
+                {displayCount === 1 ? 'день подряд' : displayCount < 5 ? 'дня подряд' : 'дней подряд'}
+              </span>
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────
 
 export function ShiftsPage() {
@@ -391,6 +475,19 @@ export function ShiftsPage() {
     return map
   }, [shifts, toDateKey])
 
+  // Daily earnings for chart (completed shifts only)
+  const dailyEarnings = useMemo(() => {
+    const grouped = new Map<string, number>()
+    for (const s of shifts) {
+      if (s.status !== 'completed') continue
+      const key = toDateKey(s.date)
+      const dur = calcDuration(s.startTime, s.endTime, s.breakMin)
+      const earned = calcEarnings(dur, s.payRate, s.tips)
+      grouped.set(key, (grouped.get(key) ?? 0) + earned)
+    }
+    return Array.from(grouped.entries()).map(([date, amount]) => ({ date, amount }))
+  }, [shifts, toDateKey])
+
   // Filter shifts for selected date
   const selectedShifts = useMemo(() => {
     if (!selectedDate) return []
@@ -418,7 +515,7 @@ export function ShiftsPage() {
 
   // Dialog handlers
   const handleAdd = async (data: Parameters<typeof addShift>[0]) => {
-    return addShift({ ...data, status: 'scheduled' })
+    return addShift(data)
   }
 
   const handleEdit = async (data: Parameters<typeof updateShift>[1]) => {
@@ -538,6 +635,16 @@ export function ShiftsPage() {
       {/* Weekly Summary Bar */}
       {!loading && shifts.length > 0 && (
         <WeeklySummaryBar shifts={shifts} />
+      )}
+
+      {/* Current Streak Badge */}
+      {!loading && shifts.length > 0 && (
+        <CurrentStreakBadge shifts={shifts} />
+      )}
+
+      {/* Daily Earnings Chart */}
+      {!loading && shifts.length > 0 && dailyEarnings.length > 0 && (
+        <EarningsChart earnings={dailyEarnings} isLoading={loading} />
       )}
 
       {/* Calendar View */}

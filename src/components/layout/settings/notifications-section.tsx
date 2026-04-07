@@ -6,7 +6,7 @@ import { Bell, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Switch } from '@/components/ui/switch'
 import { cn } from '@/lib/utils'
-import { NOTIFICATIONS_CATEGORIES, type NotificationsState } from './types'
+import { NOTIFICATIONS_CATEGORIES, type NotificationsState, type NotificationItem } from './types'
 
 export function NotificationsSection() {
   const [notifications, setNotifications] = useState<NotificationsState>({
@@ -44,8 +44,8 @@ export function NotificationsSection() {
   }
 
   // Count total enabled/disabled
-  const allKeys = NOTIFICATIONS_CATEGORIES.flatMap(c => c.items.map(i => i.key))
-  const enabledCount = allKeys.filter(k => (notifications as Record<string, boolean>)[k]).length
+  const allKeys = NOTIFICATIONS_CATEGORIES.flatMap(c => c.items.map((item: NotificationItem) => item.key))
+  const enabledCount = allKeys.filter((key: string) => (notifications as Record<string, boolean>)[key]).length
   const totalCount = allKeys.length
 
   return (
@@ -80,8 +80,8 @@ export function NotificationsSection() {
       <CardContent className="space-y-1">
         {NOTIFICATIONS_CATEGORIES.map((category) => {
           const isExpanded = expandedCategories.has(category.title)
-          const categoryKeys = category.items.map(i => i.key)
-          const categoryEnabled = categoryKeys.filter(k => (notifications as Record<string, boolean>)[k]).length
+          const categoryKeys = category.items.map((item: NotificationItem) => item.key)
+          const categoryEnabled = categoryKeys.filter((key: string) => (notifications as Record<string, boolean>)[key]).length
           const categoryTotal = categoryKeys.length
 
           return (

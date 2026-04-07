@@ -12012,3 +12012,36 @@ Stage Summary:
 6. **Offline Support** — Service worker caching
 7. **Notifications** — Push notifications for reminders
 8. **Budget Alerts** — In-app budget threshold notifications
+---
+Task ID: shift-streak-widget
+Agent: shift-streak-agent
+Task: Add current streak display to shifts page
+
+Work Log:
+- Added CurrentStreakBadge inline component to shifts-page.tsx
+- Calculates consecutive day streak from completed shifts
+- Streak logic: collects unique dates from completed shifts, iterates backwards from today counting consecutive days
+- Animated counter with 120ms interval using useState/useEffect
+- Russian pluralization for day labels (день/дня/дней)
+- Glass-card with gradient orange-to-rose fire icon, card-hover, animate-slide-up, tabular-nums
+- Only renders when streak > 0 and shifts exist
+- Placed between Weekly Summary Bar and Calendar View
+
+Stage Summary:
+- Compact streak badge shows between weekly summary and calendar
+- Fire icon + animated counter display
+- ESLint: 0 errors, 168 pre-existing warnings
+
+---
+Task ID: shift-earnings-chart
+Agent: shift-chart-agent
+Task: Create shift earnings chart and integrate into shifts page
+
+Work Log:
+- Created earnings-chart.tsx with Recharts BarChart
+- Integrated into shifts-page.tsx between WeeklySummaryBar and Calendar
+- Calculated daily earnings from completed shifts
+
+Stage Summary:
+- New earnings chart shows daily earnings for current month
+- Integrated into shifts module layout
