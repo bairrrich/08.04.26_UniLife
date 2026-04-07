@@ -287,18 +287,23 @@ export async function GET() {
     // ── Persist newly earned achievements (atomic with final read) ──
     const allPersisted = await db.$transaction(async (tx) => {
       if (newlyEarned.length > 0) {
-        await tx.achievement.createMany({
-          data: newlyEarned.map((def) => ({
-            key: def.key,
-            title: def.title,
-            description: def.description,
-            icon: def.icon,
-            category: def.category,
-            userId: DEMO_USER_ID,
-          })),
-          // @ts-expect-error skipDuplicates typed as never in some Prisma versions
-          skipDuplicates: true,
-        })
+        // Use upsert per item to avoid skipDuplicates issues in Prisma 7
+        await Promise.all(
+          newlyEarned.map((def) =>
+            tx.achievement.upsert({
+              where: { key: def.key },
+              create: {
+                key: def.key,
+                title: def.title,
+                description: def.description,
+                icon: def.icon,
+                category: def.category,
+                userId: DEMO_USER_ID,
+              },
+              update: {}, // no-op if already exists
+            }),
+          ),
+        )
       }
 
       return tx.achievement.findMany({

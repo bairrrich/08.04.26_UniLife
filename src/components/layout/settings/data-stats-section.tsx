@@ -178,6 +178,7 @@ export function DataStatsSection() {
 
   return (
     <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-500" />
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

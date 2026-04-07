@@ -1,5 +1,4 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Star, CalendarDays } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { CollectionItem, CollectionType } from './types'
@@ -41,6 +40,8 @@ export function ItemCard({ item, onClick, isFavorite }: ItemCardProps) {
           <div className="text-white/80 transition-transform duration-300 group-hover:scale-110">
             {TYPE_ICONS_LARGE[type]}
           </div>
+          {/* Holographic shine effect on hover */}
+          <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none bg-gradient-to-br from-white/0 via-white/25 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
           {/* Type-specific gradient overlay */}
           <div className={`absolute inset-0 bg-gradient-to-t ${TYPE_OVERLAY_GRADIENT[type]} pointer-events-none`} />
           {/* Type badge */}
@@ -87,25 +88,31 @@ export function ItemCard({ item, onClick, isFavorite }: ItemCardProps) {
               <Star
                 key={i}
                 className={cn(
-                  'h-3.5 w-3.5 transition-colors',
+                  'h-3 w-3 transition-colors',
                   i < item.rating!
                     ? 'fill-amber-400 text-amber-400'
                     : 'text-muted-foreground/30'
                 )}
               />
             ))}
-            <span className="text-[10px] text-muted-foreground ml-1">{item.rating}/5</span>
+            <span className="text-[11px] font-semibold tabular-nums text-amber-500 dark:text-amber-400 ml-1">
+              {item.rating}.0
+            </span>
           </div>
         )}
-        <div className="flex gap-1 flex-wrap">
-          {parseTags(item.tags).slice(0, 2).map((tag) => (
-            <Badge
+        <div className="flex gap-1.5 flex-wrap">
+          {parseTags(item.tags).slice(0, 2).map((tag, idx) => (
+            <span
               key={tag}
-              variant="secondary"
-              className="text-[10px] px-1.5 py-0"
+              className={cn(
+                'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium border-l-2',
+                idx % 2 === 0
+                  ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/80 text-emerald-700 border-l-emerald-400 dark:from-emerald-950/40 dark:to-emerald-900/30 dark:text-emerald-400 dark:border-l-emerald-500'
+                  : 'bg-gradient-to-r from-violet-50 to-violet-100/80 text-violet-700 border-l-violet-400 dark:from-violet-950/40 dark:to-violet-900/30 dark:text-violet-400 dark:border-l-violet-500',
+              )}
             >
               {tag}
-            </Badge>
+            </span>
           ))}
         </div>
         {/* Date added badge */}

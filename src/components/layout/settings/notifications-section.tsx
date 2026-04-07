@@ -49,7 +49,8 @@ export function NotificationsSection() {
   const totalCount = allKeys.length
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-500" />
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>

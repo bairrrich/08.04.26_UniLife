@@ -1,8 +1,9 @@
 'use client'
 
-import { Shield, Heart } from 'lucide-react'
+import { Shield, Heart, Calendar, Tag } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Badge } from '@/components/ui/badge'
 import {
   LayoutDashboard,
   BookOpen,
@@ -33,9 +34,11 @@ const APP_MODULES = [
 
 export function AboutSection() {
   const buildDate = '2025'
+  const appVersion = 'v1.0'
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-slate-400 to-slate-500" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Shield className="h-5 w-5" />
@@ -43,13 +46,20 @@ export function AboutSection() {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-5">
-        {/* App identity */}
+        {/* App identity with animated logo */}
         <div className="flex items-center gap-4">
-          <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-2xl">
-            🎓
+          <div className="relative">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-emerald-400 via-primary to-teal-500 flex items-center justify-center text-3xl shadow-lg shadow-primary/20 animate-float">
+              🎓
+            </div>
           </div>
           <div>
-            <h3 className="text-lg font-bold">UniLife</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="text-xl font-bold">UniLife</h3>
+              <Badge variant="secondary" className="text-[10px] font-semibold tabular-nums bg-primary/10 text-primary border-primary/20">
+                {appVersion}
+              </Badge>
+            </div>
             <p className="text-sm text-muted-foreground">Персональный трекер жизни</p>
           </div>
         </div>
@@ -58,12 +68,18 @@ export function AboutSection() {
 
         {/* Info grid */}
         <div className="grid gap-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Версия</span>
-            <span className="font-medium">v1.0</span>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground flex items-center gap-2">
+              <Tag className="h-3.5 w-3.5" />
+              Версия
+            </span>
+            <span className="font-medium tabular-nums">{appVersion}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Дата сборки</span>
+          <div className="flex items-center justify-between">
+            <span className="text-muted-foreground flex items-center gap-2">
+              <Calendar className="h-3.5 w-3.5" />
+              Дата сборки
+            </span>
             <span className="font-medium">{buildDate}</span>
           </div>
           <div className="flex justify-between">

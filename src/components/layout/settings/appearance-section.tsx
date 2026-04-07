@@ -39,7 +39,8 @@ export function AppearanceSection() {
   }
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-violet-400 to-purple-500" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Palette className="h-5 w-5" />

@@ -39,7 +39,8 @@ export function ThemeSection() {
   const { theme, setTheme } = useTheme()
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-violet-400 to-violet-500" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Sun className="h-5 w-5" />

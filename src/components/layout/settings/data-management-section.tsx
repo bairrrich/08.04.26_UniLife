@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import { toast } from 'sonner'
-import { Database, Trash2, Download, Upload, Settings } from 'lucide-react'
+import { Database, Trash2, Download, Upload, Settings, Clock, HardDrive } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
@@ -23,6 +23,15 @@ import { EXPORT_MODULES } from './types'
 export function DataManagementSection() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
+  const [lastExportDate, setLastExportDate] = useState<string | null>(null)
+
+  // Load last export date from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('unilife-last-export')
+      if (saved) setLastExportDate(saved)
+    } catch { /* ignore */ }
+  }, [])
 
   const handleSeed = async () => {
     try {
@@ -53,6 +62,12 @@ export function DataManagementSection() {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
       toast.success('Данные экспортированы!')
+      // Save last export date
+      try {
+        const now = new Date().toLocaleString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        localStorage.setItem('unilife-last-export', now)
+        setLastExportDate(now)
+      } catch { /* ignore */ }
     } catch {
       toast.error('Ошибка экспорта')
     } finally {
@@ -109,7 +124,8 @@ export function DataManagementSection() {
   }
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-500" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Database className="h-5 w-5" />
@@ -118,6 +134,30 @@ export function DataManagementSection() {
         <CardDescription>Экспорт, импорт и управление вашими данными</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Last export & storage info */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl bg-muted/30 p-3 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400">
+              <Clock className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Последний экспорт</p>
+              <p className="text-xs font-semibold truncate">
+                {lastExportDate || 'Ещё не было'}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-xl bg-muted/30 p-3 flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400">
+              <HardDrive className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Хранилище</p>
+              <p className="text-xs font-semibold truncate">SQLite (локальное)</p>
+            </div>
+          </div>
+        </div>
+
         {/* Export All */}
         <Button
           className="w-full gap-2"

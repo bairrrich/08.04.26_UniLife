@@ -11195,3 +11195,56 @@ Stage Summary:
 8. **Advanced Analytics** — Weekly/monthly trend reports
 9. **Data Import Enhancement** — CSV import support
 10. **Budget Alerts** — In-app budget threshold notifications
+
+---
+
+## Task ID: qa-round-7-bugfix-collections-settings-widgets
+### Agent: main-coordinator
+### Task: Bug fix, collections/settings styling, productivity/weather widgets
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11+ modules render correctly
+- **Database**: SQLite via Prisma with 15+ models
+- **Lint**: 0 errors, 157 warnings (down from 158 — all pre-existing `no-console`)
+- **Build**: All routes compile successfully via Turbopack
+- **APIs**: All tested endpoints returning HTTP 200
+
+### Completed This Round:
+
+#### Bug Fixes (Priority)
+1. **Achievements API 500 Error**: `/api/achievements` was crashing due to `createMany({ skipDuplicates: true })` incompatibility with Prisma 7. Replaced with per-item `upsert()` using the `key` unique field as the where clause. The `update: {}` no-op ensures atomicity within the transaction. Cleared `.next/cache` to resolve Turbopack stale cache issue.
+
+#### Styling Improvements (Mandatory)
+1. **Collections Grid Cards**: Added holographic shine effect on cover gradient (white gradient overlay that slides on hover via `group-hover:translate-x-full`); improved rating display to bold amber `X.0` with `tabular-nums`; replaced flat tag badges with gradient rounded-full pills with left border accent; added 8 floating animated collection-type emojis in empty state (📚🎬🎮🎵🥘💊🛒📍) with staggered `float` animation
+2. **Settings Page**: Added gradient top borders per section (emerald=Profile, amber=Notifications, violet=Theme, purple=Appearance, blue=Data, slate=About); enlarged profile avatar with gradient ring glow and online dot; added data management info grid (last export date, storage type); enhanced about section with animated logo, version badge, icon rows
+
+#### New Features (Mandatory)
+1. **Productivity Score Widget**: Enhanced with weighted scoring formula: habits 40% + diary 20% + workout 20% + water 20%; 4-tier color system (red <30, amber 30-59, emerald 60-80, emerald+glow >80); 4 breakdown items with Check/X icons; accepts props: habitsPercentage, hasDiaryEntry, hasWorkout, waterProgress
+2. **Mood Weather Widget**: Rewritten as mood-based (no real API); 4 weather conditions based on avgMood (Солнечно/Облачно/Дождливо/Ясно); "temperature" mapped from productivity score (0-40°); 3-item forecast grid (diary, workout, habits indicators); multi-layered gradient backgrounds per condition; glass card design with dark mode support
+
+### Files Changed:
+- **Modified**: `/src/app/api/achievements/route.ts` (createMany → upsert fix)
+- **Modified**: `/src/components/collections/collections-page.tsx` (holographic effect, rating, tags, empty state)
+- **Modified**: `/src/components/layout/settings-page.tsx` (gradient borders, avatar, data management, about)
+- **Modified**: `/src/components/dashboard/productivity-score.tsx` (weighted scoring, breakdown, colors)
+- **Modified**: `/src/components/dashboard/weather-widget.tsx` (mood-based weather, temperature, forecast)
+- **Modified**: `/src/components/dashboard/dashboard-page.tsx` (props for new widgets)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 157 warnings (all pre-existing, 1 fewer than before)
+- ✅ Dev server: compiles cleanly
+- ✅ Achievements API: returns 200 with proper data (was 500)
+- ✅ Dashboard API: returns 200
+- ✅ All existing functionality preserved — no breaking changes
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Real-time Updates** — WebSocket/SSE for live feed
+5. **Offline Support** — Service worker caching
+6. **Push Notifications** — In-app notification system
+7. **Localization** — i18n support for multiple languages
+8. **Advanced Analytics** — Weekly/monthly trend reports
+9. **Data Import Enhancement** — CSV import support
+10. **Budget Alerts** — In-app budget threshold notifications

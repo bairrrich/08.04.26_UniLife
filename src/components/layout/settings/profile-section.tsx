@@ -95,7 +95,8 @@ export function ProfileSection() {
     .toUpperCase() || 'U'
 
   return (
-    <Card className="rounded-xl">
+    <Card className="rounded-xl overflow-hidden">
+      <div className="h-1 bg-gradient-to-r from-emerald-400 to-emerald-500" />
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <User className="h-5 w-5" />
@@ -118,16 +119,21 @@ export function ProfileSection() {
         {/* Avatar Section — centered with picker */}
         <div className="flex flex-col items-center gap-3">
           <div className="relative">
+            {/* Gradient ring background */}
             <div className={cn(
-              'h-20 w-20 rounded-full flex items-center justify-center ring-2 ring-primary/30 ring-offset-2 ring-offset-background bg-gradient-to-br transition-all duration-300',
+              'absolute -inset-1 rounded-full bg-gradient-to-br opacity-80 blur-[2px] transition-all duration-300',
+              AVATAR_GRADIENTS[selectedGradient],
+            )} />
+            <div className={cn(
+              'relative h-24 w-24 rounded-full flex items-center justify-center ring-[3px] ring-background bg-gradient-to-br transition-all duration-300 shadow-lg',
               AVATAR_GRADIENTS[selectedGradient],
             )}>
-              <span className="text-3xl font-bold text-white drop-shadow-sm">
+              <span className="text-4xl font-bold text-white drop-shadow-sm">
                 {initials}
               </span>
             </div>
             {/* Online indicator */}
-            <span className="absolute bottom-1 right-1 h-5 w-5 rounded-full border-[3px] border-background bg-emerald-500" />
+            <span className="absolute bottom-0.5 right-0.5 h-5 w-5 rounded-full border-[3px] border-background bg-emerald-500" />
           </div>
           <button
             type="button"

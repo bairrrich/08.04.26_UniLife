@@ -77,7 +77,8 @@ export default function SettingsPage() {
       <AppearanceSection />
 
       {/* Keyboard Shortcuts Section */}
-      <Card className="rounded-xl">
+      <Card className="rounded-xl overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-violet-500 to-purple-500" />
         <CardHeader>
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400">

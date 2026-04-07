@@ -430,7 +430,7 @@ export default function DashboardPage() {
     return result
   }, [loading, diaryEntries, workouts, habitsData, now])
 
-  // ── Productivity Score ─────────────────────────────────────────────
+  // ── Today's Workout ──────────────────────────────────────────────
   const todayWorkout = useMemo(() => {
     return workouts.some((w) => {
       const d = new Date(w.date)
@@ -442,15 +442,29 @@ export default function DashboardPage() {
     })
   }, [workouts, now])
 
+  // ── Water Progress (0-100 based on 2000ml goal) ────────────────────
+  const waterProgress = useMemo(() => {
+    return Math.min(100, Math.round((waterTodayMl / 2000) * 100))
+  }, [waterTodayMl])
+
+  // ── Average Mood (last 7 days, or today if no history) ─────────────
+  const avgMood = useMemo((): number | null => {
+    const moodsWithData = recentMoods.filter(m => m.mood !== null)
+    if (moodsWithData.length === 0) return null
+    const sum = moodsWithData.reduce((acc, m) => acc + (m.mood ?? 0), 0)
+    return Math.round((sum / moodsWithData.length) * 10) / 10
+  }, [recentMoods])
+
+  // ── Productivity Score (habits 40%, diary 20%, workout 20%, water 20%) ──
   const productivityScore = useMemo(() => {
     if (loading) return 0
-    let score = 0
-    if (todayEntry) score += 25
-    if (totalActive > 0) score += Math.round((completedToday / totalActive) * 25)
-    if (todayWorkout) score += 25
-    if (hasMealsToday) score += 25
-    return score
-  }, [loading, todayEntry, todayWorkout, totalActive, completedToday, hasMealsToday])
+    return Math.round(
+      habitsPercentage * 0.4 +
+      (!!todayEntry ? 20 : 0) +
+      (todayWorkout ? 20 : 0) +
+      waterProgress * 0.2
+    )
+  }, [loading, habitsPercentage, todayEntry, todayWorkout, waterProgress])
 
   // ── 7-Day Productivity Score History ───────────────────────────────
   const productivityScoreHistory = useMemo((): number[] => {
@@ -539,13 +553,10 @@ export default function DashboardPage() {
           <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
             <ProductivityScore
               loading={loading}
-              diaryWritten={!!todayEntry}
-              waterMl={waterTodayMl}
-              workoutDone={todayWorkout}
-              habitsCompleted={completedToday}
-              habitsTotal={totalActive}
-              nutritionLogged={hasMealsToday}
-              score={productivityScore}
+              habitsPercentage={habitsPercentage}
+              hasDiaryEntry={!!todayEntry}
+              hasWorkout={todayWorkout}
+              waterProgress={waterProgress}
               scoreHistory={productivityScoreHistory}
             />
             <StatCards
@@ -703,7 +714,13 @@ export default function DashboardPage() {
           <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
             <QuickNotesWidget />
             <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-              <WeatherWidget />
+              <WeatherWidget
+                avgMood={avgMood}
+                productivityScore={productivityScore}
+                hasDiaryEntry={!!todayEntry}
+                hasWorkout={todayWorkout}
+                habitsCompleted={allHabitsCompleted}
+              />
               <FocusTimerWidget />
               <BreathingWidget />
             </div>
