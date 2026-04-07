@@ -11596,3 +11596,88 @@ New Components:
 ### Stage Summary:
 - Server restarted cleanly with 2048MB memory limit
 - Auto-dev cron job active every 15 minutes
+
+---
+## Task ID: round-10-bugfix-features
+### Agent: cron-review-agent (Round 10)
+### Task: QA testing, bug fixes, styling improvements, new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable after bug fix — all 12 modules render correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data available
+- **Lint**: 0 errors, 165 warnings (all pre-existing)
+- **Dev Server**: Running on port 3000 with 2048MB memory limit
+- **Modules**: Dashboard, Diary, Finance, Nutrition, Workout, Shifts, Collections, Feed, Habits, Goals, Analytics, Settings — all verified working
+
+### QA Testing Results:
+- ✅ Browser QA across all 12 modules via agent-browser — all pass
+- ✅ ESLint: 0 errors, 165 warnings (unchanged)
+- ✅ Dev server compiles and serves HTTP 200
+- ✅ All API endpoints return correct data
+
+### Bug Fixes:
+1. **CRITICAL: Shifts page crash** — `useShifts()` hook in `src/components/shifts/hooks.ts` was not unwrapping API response properly:
+   - `/api/shifts?month=...` returns `{success: true, data: [...], stats: {...}}` but hook set `setShifts(responseObject)` instead of `setShifts(responseObject.data)` → shifts always empty
+   - `/api/shifts/stats?month=...` returns `{success: true, data: {totalHours, totalEarnings, completedCount, avgHoursPerShift, ...}}` but hook set `setStats(responseObject)` → `stats.totalHours` was `undefined` → crash on `.toFixed()`
+   - Fixed: Added proper `.data` unwrapping with fallback (`res?.data ?? res`), mapped API field names (`completedCount` → `totalShifts`, `avgHoursPerShift` → `avgHours`)
+   - This also fixed the Settings page error boundary trigger (error propagated via error boundary)
+
+### Styling Improvements:
+1. **Shifts Stat Cards** — Added gradient accent bars at top of each stat card (sky/emerald/blue/amber gradients), colored icon backgrounds (matching accent), consistent with other modules' card styling
+2. **Shifts Calendar Card** — Added sky-to-blue gradient bar at top
+3. **Shift Cards** — Added tips display with amber badge (`💰 +350 ₽ чаевых`) when a shift has tips > 0
+
+### New Features:
+1. **Mood Heatmap Calendar Widget** (`/src/components/dashboard/mood-heatmap-calendar.tsx`):
+   - Full month calendar grid (Mon-Sun, Russian day names)
+   - Color-coded mood dots: 😢=red, 😕=orange, 😐=yellow, 🙂=lime, 😄=emerald
+   - Month navigation with prev/next buttons
+   - Today highlighted with ring
+   - Other-month days dimmed
+   - Legend at bottom
+   - Month stats (entry count, average mood)
+   - Loading skeleton, animate-fade-in
+   - Tooltips on days with mood data
+   - Registered as dashboard widget: `mood-heatmap` (default collapsed)
+
+2. **Achievement Badges Widget** (`/src/components/dashboard/achievement-badges.tsx`):
+   - 12 achievements across 5 categories (diary, fitness, habits, streak, general)
+   - Unlocked badges: colored gradient backgrounds, full opacity, hover glow + scale
+   - Locked badges: grayscale, 40% opacity, Lock icon overlay
+   - Progress counter: "X/12 достижений"
+   - Animated progress bar
+   - Category filter chips (Все, Дневник, Тренировки, Привычки, Серии, Общие)
+   - Responsive grid: 3 cols mobile, 4 cols desktop
+   - Tooltips showing description and status
+   - Registered as dashboard widget: `achievement-badges` (default collapsed)
+
+3. **Dashboard Widget Config** — Added 2 new sections to `DEFAULT_SECTIONS`:
+   - `mood-heatmap` (order 14, default collapsed)
+   - `achievement-badges` (order 15, default collapsed)
+
+### Files Created:
+- `/src/components/dashboard/mood-heatmap-calendar.tsx` — Mood heatmap calendar widget
+- `/src/components/dashboard/achievement-badges.tsx` — Achievement badges widget
+
+### Files Modified:
+- `/src/components/shifts/hooks.ts` — Fixed API response unwrapping (lines 85-99)
+- `/src/components/shifts/shifts-page.tsx` — Enhanced stat cards with gradient bars, added tips display, calendar accent bar
+- `/src/components/dashboard/widget-config.ts` — Added 2 new widget section definitions
+- `/src/components/dashboard/dashboard-page.tsx` — Added dynamic imports and renderSection cases for new widgets
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 165 warnings (pre-existing)
+- ✅ Dev server: compiles cleanly, no runtime errors
+- ✅ Shifts page: stats display correctly (148.5ч, 130,600₽, 20 смен, 7.4ч avg)
+- ✅ Settings page: renders without error (was crashing before fix)
+- ✅ Dashboard: both new widgets registered and render correctly
+- ✅ All 12 modules verified working
+
+### Unresolved Issues / Next Phase Priorities:
+1. **Memory optimization** — Dev server needs 2048MB; could optimize bundle splitting for 512MB
+2. **Onboarding persistence** — localStorage keys not properly cleared on first visit; needs Zustand persist integration
+3. **API response standardization** — Some APIs wrap in `{success, data}`, others return raw arrays; should unify
+4. **Collections page enhancement** — Could benefit from better grid layout and filtering
+5. **Mobile responsive audit** — Full mobile QA pass recommended
+6. **Type safety audit** — Some `any` types in chart components; Zod validation for API responses
+7. **Schedule page** — Planned but not yet implemented (mentioned in nav)

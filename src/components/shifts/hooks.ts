@@ -83,13 +83,20 @@ export function useShifts() {
       ])
 
       if (shiftsRes.ok) {
-        const data = await shiftsRes.json()
-        setShifts(Array.isArray(data) ? data : [])
+        const res = await shiftsRes.json()
+        const arr = res?.data ?? res
+        setShifts(Array.isArray(arr) ? arr : [])
       }
 
       if (statsRes.ok) {
-        const data = await statsRes.json()
-        setStats(data)
+        const res = await statsRes.json()
+        const raw = res?.data ?? res
+        setStats({
+          totalHours: raw.totalHours ?? 0,
+          totalEarnings: raw.totalEarnings ?? 0,
+          totalShifts: raw.completedCount ?? raw.totalShifts ?? 0,
+          avgHours: raw.avgHoursPerShift ?? raw.avgHours ?? 0,
+        })
       }
     } catch {
       toast.error('Не удалось загрузить смены')

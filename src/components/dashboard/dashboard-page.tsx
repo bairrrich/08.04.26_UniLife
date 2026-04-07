@@ -96,6 +96,8 @@ const DailyTipsWidget = dynamic(() => import('./daily-tips-widget'), { ssr: fals
 const DailyChecklistWidget = dynamic(() => import('./daily-checklist-widget'), { ssr: false, loading: widgetLoad })
 
 const NotificationCenter = dynamic(() => import('./notification-center'), { ssr: false, loading: widgetLoad })
+const MoodHeatmapCalendar = dynamic(() => import('./mood-heatmap-calendar'), { ssr: false, loading: widgetLoad })
+const AchievementBadges = dynamic(() => import('./achievement-badges'), { ssr: false, loading: widgetLoad })
 
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -789,6 +791,27 @@ export default function DashboardPage() {
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
             <TipsCarousel />
+          </DashboardSection>
+        )
+
+      case 'mood-heatmap':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <MoodHeatmapCalendar />
+          </DashboardSection>
+        )
+
+      case 'achievement-badges':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <AchievementBadges
+              diaryCount={diaryEntries.length}
+              workoutCount={workouts.length}
+              habitsCompleted={completedToday}
+              habitsTotal={totalActive}
+              streak={diaryStreak}
+              totalEntries={diaryEntries.length + workouts.length + feedPosts.length}
+            />
           </DashboardSection>
         )
 

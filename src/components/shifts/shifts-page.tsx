@@ -128,14 +128,27 @@ function StatCard({
   accent: string
   loading: boolean
 }) {
+  const accentGradients: Record<string, string> = {
+    sky: 'from-sky-400 to-cyan-400',
+    emerald: 'from-emerald-400 to-green-400',
+    blue: 'from-blue-400 to-indigo-400',
+    amber: 'from-amber-400 to-orange-400',
+  }
+  const accentBg: Record<string, string> = {
+    sky: 'bg-sky-100 dark:bg-sky-500/15',
+    emerald: 'bg-emerald-100 dark:bg-emerald-500/15',
+    blue: 'bg-blue-100 dark:bg-blue-500/15',
+    amber: 'bg-amber-100 dark:bg-amber-500/15',
+  }
   return (
     <Card className="card-hover overflow-hidden">
+      <div className={`h-1 bg-gradient-to-r ${accentGradients[accent] ?? 'from-gray-400 to-gray-500'}`} />
       <CardContent className="p-4">
         {loading ? (
           <div className="skeleton-shimmer h-20 rounded-lg" />
         ) : (
           <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted/50 text-lg">
+            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg ${accentBg[accent] ?? 'bg-muted/50'}`}>
               {icon}
             </div>
             <div className="min-w-0">
@@ -212,9 +225,16 @@ function ShiftCard({
             )}
 
             {earnings !== null && (
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5">
-                <Wallet className="h-3 w-3" />
-                {formatMoney(earnings)}
+              <div className="flex items-center gap-3 text-xs font-semibold mt-1.5">
+                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                  <Wallet className="h-3 w-3" />
+                  {formatMoney(earnings)}
+                </div>
+                {shift.tips > 0 && (
+                  <div className="flex items-center gap-1 text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-md">
+                    💰 +{shift.tips.toLocaleString('ru-RU')} ₽ чаевых
+                  </div>
+                )}
               </div>
             )}
 
@@ -444,6 +464,7 @@ export function ShiftsPage() {
 
       {/* Calendar View */}
       <Card className="overflow-hidden">
+        <div className="h-1 bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400" />
         <CardContent className="p-3 sm:p-4">
           {loading ? (
             <div className="skeleton-shimmer h-72 rounded-lg" />
