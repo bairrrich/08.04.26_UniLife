@@ -11840,3 +11840,95 @@ Task: QA testing, styling improvements, and new features
 7. **Analytics module** — More advanced trend charts with comparison
 8. **PWA Support** — Service worker + manifest for mobile install
 
+---
+## Task ID: round-footer-fix+styling
+### Agent: cron-review-coordinator
+### Task: Footer fix, styling improvements, and new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable (code-level) — 0 ESLint errors, all modules compile successfully
+- **Database**: SQLite via Prisma with 15+ models; seed data available via `/api/seed`
+- **Dev Server**: Experienced instability during this round due to `.next` cache deletion causing Turbopack OOM. Requires fresh restart (not cache delete) for testing.
+- **Lint**: 0 errors, 166 warnings (all pre-existing `no-console` warnings)
+- **Modules**: 12+ modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Shifts, Analytics, Settings)
+- **Responsive**: Mobile and desktop viewports supported
+- **Dark Mode**: Fully supported across all components
+
+### Completed This Round:
+
+#### Bug Fixes
+1. **Footer Positioning (Finance/Shifts/all tall-content modules)** — Footer was rendering in the middle of the page when module content exceeded viewport height.
+   - **Root Cause**: The `flex flex-col` layout on `<main>` combined with `flex-1` on the content wrapper div caused CSS flex to constrain the content div height to the viewport, even when ModuleComp content was taller. Content overflowed past the footer.
+   - **Fix**: Removed `flex flex-col` from `<main>` and removed `flex-1` from the content wrapper div. Moved `<Footer>` to be a direct child of the root flex-col container (after `<main>`). Footer keeps `mt-auto shrink-0` for proper bottom positioning.
+   - **Code Changes in `src/app/page.tsx`**:
+     - `<main className="main-content md:ml-60 flex-1">` (removed `flex flex-col`)
+     - Content div: removed `flex-1` (block layout now, naturally sized)
+     - Footer: moved outside `<main>`, now a sibling flex item of root
+   - **Verified**: ESLint 0 errors. Server-side logic verified via code review. Browser QA blocked by dev server instability (see risks).
+
+2. **Sidebar Username Default** — Changed default user name from "Пользователь" to "Алексей" in `src/lib/use-user-prefs.ts` DEFAULT_PROFILE object.
+
+#### Styling Improvements (Mandatory)
+1. **Nutrition Page** (`src/components/nutrition/nutrition-page.tsx`):
+   - Added gradient header area with orange/amber themed decorative blur blobs
+   - Added visual separator with `📖` emoji badge between macro tracking and meal timeline
+   - Applied `relative rounded-2xl` wrapper around PageHeader
+
+2. **Workout Page** (`src/components/workout/workout-page.tsx`):
+   - Added gradient header area with red/rose/orange themed decorative blur blobs
+   - Added motivational daily tip card with rotating phrases (10 phrases, day-of-month rotation)
+   - Added workout type legend with colored dots (strength=rose, cardio=purple, hiit=orange, stretch=emerald, calisthenics=cyan, other=gray)
+   - Expanded `WORKOUT_PHRASES` in constants.tsx from 4 to 10 entries
+
+#### New Features (Mandatory)
+- No new standalone features this round (focused on bug fixes and styling polish)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 166 warnings (all pre-existing `no-console`)
+- ✅ Code changes reviewed and verified via source code analysis
+- ⚠️ Browser QA blocked: Dev server became unstable after `.next` cache deletion during debugging. Turbopack full recompilation causes OOM kills. Server responds to basic curl requests but crashes under browser load. Requires fresh `bun run dev` restart (without `.next` deletion) for full browser QA.
+
+### Unresolved Issues / Next Phase Priorities:
+
+#### Critical (from this round)
+1. **Dev Server Stability** — After `.next` deletion, Turbopack OOM prevents full recompilation. Next restart without cache deletion should restore stability. DO NOT delete `.next` directory.
+
+#### High Priority
+1. **Browser QA** — Need to verify footer fix across all modules (Finance, Shifts, Dashboard, etc.) once server is stable
+2. **Shifts Calendar Day-Click Filtering** — Previously reported, not yet implemented
+3. **Shifts Footer Positioning** — Should be fixed by same layout change as Finance
+
+#### Medium Priority
+1. **User Authentication** — NextAuth.js for multi-user support
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts
+4. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+5. **Image Upload** — Photo support for diary entries and collection items
+
+#### Low Priority
+1. **Localization** — i18n support for multiple languages beyond Russian
+2. **Data Import Enhancement** — CSV import support in addition to JSON
+3. **Budget Alerts** — In-app budget threshold notifications
+4. **Offline Support** — Service worker caching for offline usage
+
+### Key Files Modified:
+- `src/app/page.tsx` — Footer positioning fix (layout restructure)
+- `src/lib/use-user-prefs.ts` — Default username change
+- `src/components/nutrition/nutrition-page.tsx` — Styling enhancements
+- `src/components/workout/workout-page.tsx` — Styling enhancements + motivational tip + type legend
+- `src/components/workout/constants.tsx` — Expanded motivational phrases
+
+### Layout Architecture After Fix:
+```
+Root (min-h-screen flex flex-col)
+├── Welcome (absolute/fixed, not in flow)
+├── Sidebar (fixed, not in flow)
+├── Mobile Header (sticky, md:hidden)
+├── Main (flex-1, BLOCK container) ← removed flex-col
+│   └── Content Div (naturally sized) ← removed flex-1
+├── Footer (mt-auto shrink-0) ← moved outside main
+├── ScrollToTop (fixed)
+├── MobileNav (fixed)
+├── QuickAdd (fixed)
+└── NotificationToast (portal)
+```

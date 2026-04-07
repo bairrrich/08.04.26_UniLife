@@ -156,8 +156,8 @@ export default function Home() {
     <div className="min-h-screen flex flex-col bg-background">
       {Welcome && <Welcome />}
       {Sidebar && <Sidebar />}
-      <main className="main-content md:ml-60 flex-1 flex flex-col">
-        <div className="flex-1 p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
+      <main className="main-content md:ml-60 flex-1">
+        <div className="p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
           {isLoading ? (
             <Shell />
           ) : (
@@ -166,12 +166,12 @@ export default function Home() {
             </ErrorBoundary>
           )}
         </div>
-        {Footer && <Footer />}
-        {ScrollTop && <ScrollTop />}
-        {MobileNav && <MobileNav />}
-        {QuickAdd && <QuickAdd />}
-        {Notif && <Notif />}
       </main>
+      {Footer && <Footer />}
+      {ScrollTop && <ScrollTop />}
+      {MobileNav && <MobileNav />}
+      {QuickAdd && <QuickAdd />}
+      {Notif && <Notif />}
     </div>
   )
 }

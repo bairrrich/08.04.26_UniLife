@@ -10,7 +10,7 @@ export interface UserProfile {
 }
 
 const DEFAULT_PROFILE: UserProfile = {
-  name: 'Пользователь',
+  name: 'Алексей',
   avatar: '😀',
   goals: [],
   theme: 'system',

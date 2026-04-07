@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { Plus, Settings2, Flame, UtensilsCrossed, CalendarDays } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
+import { Separator } from '@/components/ui/separator'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
@@ -109,6 +110,12 @@ export default function NutritionPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
+      {/* Gradient header area */}
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/8 via-amber-500/5 to-orange-400/8 dark:from-orange-500/5 dark:via-amber-500/3 dark:to-orange-400/5 pointer-events-none" />
+        <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-orange-400/10 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-amber-400/10 blur-2xl pointer-events-none" />
+        <div className="relative px-1 py-1">
       <PageHeader
         icon={UtensilsCrossed}
         title="Питание"
@@ -134,6 +141,8 @@ export default function NutritionPage() {
           </div>
         }
       />
+        </div>
+      </div>
 
       {loaded && visibleOrder.map(sectionId => {
         switch (sectionId) {
@@ -215,6 +224,14 @@ export default function NutritionPage() {
             return null
         }
       })}
+
+      {/* Visual separator between summary sections and meal timeline */}
+      <div className="relative py-1">
+        <Separator className="opacity-50" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-background px-3">
+          <span className="text-xs text-muted-foreground/60">📖</span>
+        </div>
+      </div>
 
       {/* Meal Timeline */}
       <div className="flex items-center justify-between">

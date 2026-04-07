@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo, useSyncExternalStore } from 'react'
-import { Dumbbell, Plus, Clock } from 'lucide-react'
+import { Dumbbell, Plus, Clock, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -9,6 +9,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 
 import { useSectionConfig, SectionCustomizer, CustomizeButton, ModuleEmptyState, type SectionDef } from '@/components/shared'
+import { Card, CardContent } from '@/components/ui/card'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
 import { useWorkouts } from './hooks'
@@ -71,6 +72,12 @@ export function WorkoutPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
+      {/* Gradient header area */}
+      <div className="relative overflow-hidden rounded-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-red-500/8 via-rose-500/5 to-orange-400/8 dark:from-red-500/5 dark:via-rose-500/3 dark:to-orange-400/5 pointer-events-none" />
+        <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-red-400/10 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-rose-400/10 blur-2xl pointer-events-none" />
+        <div className="relative px-1 py-1">
       <PageHeader
         icon={Dumbbell}
         title="Тренировки"
@@ -94,6 +101,19 @@ export function WorkoutPage() {
           </>
         }
       />
+        </div>
+      </div>
+
+      {/* Motivational daily tip */}
+      <Card className="overflow-hidden card-hover">
+        <div className="absolute inset-0 bg-gradient-to-r from-red-500/5 via-amber-500/3 to-rose-500/5 pointer-events-none" />
+        <CardContent className="relative flex items-center gap-3 py-3 px-4">
+          <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+          <p className="text-xs text-muted-foreground italic leading-relaxed">
+            {WORKOUT_PHRASES[phraseIdx]}
+          </p>
+        </CardContent>
+      </Card>
 
       {!loading && visibleOrder.map(sectionId => {
         switch (sectionId) {
@@ -169,6 +189,32 @@ export function WorkoutPage() {
             return null
         }
       })}
+
+      {/* Workout type legend with colored dots */}
+      {!loading && workouts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-xs font-medium text-muted-foreground">Тип:</span>
+          {exerciseTypes.map((type) => {
+            const config = WORKOUT_TYPE_CONFIG[type as keyof typeof WORKOUT_TYPE_CONFIG]
+            if (!config) return null
+            const typeCount = workouts.filter((w) => detectWorkoutType(w.name) === type).length
+            return (
+              <div key={type} className="flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full shrink-0" style={{
+                  backgroundColor: type === 'strength' ? '#f43f5e'
+                    : type === 'cardio' ? '#a855f7'
+                    : type === 'hiit' ? '#f97316'
+                    : type === 'stretch' || type === 'flexibility' ? '#10b981'
+                    : type === 'calisthenics' ? '#06b6d4'
+                    : '#94a3b8',
+                }} />
+                <span className="text-xs text-muted-foreground">{config.label}</span>
+                <span className="text-[10px] tabular-nums font-semibold text-foreground">{typeCount}</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* Workout List */}
       {loading ? (
