@@ -11574,3 +11574,25 @@ New Components:
 - `src/lib/seed.ts` — Added seedShifts() with 25 records
 - `src/components/layout/page-header.tsx` — Added sky accent color maps
 - `src/components/shared/module-empty-state.tsx` — Added sky accent color maps
+
+---
+## Task ID: server-restart
+### Agent: main
+### Task: Clear cache, restart server, setup cron job
+
+### Work Log:
+- Cleared `.next` cache directory
+- Updated `package.json` memory limit from 512MB to 2048MB to prevent OOM during compilation
+- Killed all stale `next dev` processes
+- Started dev server via `setsid` with proper session detachment for stability
+- Verified server responds HTTP 200 on `GET /`
+- Set up cron job (ID: 69357) — "UniLife Auto-Dev Round" triggering every 15 minutes via webDevReview
+
+### Verification Results:
+- ✅ Server running on port 3000, responding HTTP 200
+- ✅ Turbopack compilation successful
+- ✅ Cron job created successfully (fixed_rate: 900s)
+
+### Stage Summary:
+- Server restarted cleanly with 2048MB memory limit
+- Auto-dev cron job active every 15 minutes
