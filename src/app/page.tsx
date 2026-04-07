@@ -153,10 +153,10 @@ export default function Home() {
   const isLoading = !ModuleComp || !Sidebar || !MobileNav || !Footer
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-background">
       {Welcome && <Welcome />}
       {Sidebar && <Sidebar />}
-      <main className="main-content md:ml-60 min-h-screen flex flex-col">
+      <main className="main-content md:ml-60 flex-1 flex flex-col">
         <div className="flex-1 p-4 pt-16 pb-24 md:p-6 md:pt-6 md:pb-10 max-w-7xl mx-auto w-full">
           {isLoading ? (
             <Shell />

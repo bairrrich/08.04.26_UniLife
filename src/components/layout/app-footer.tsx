@@ -89,7 +89,7 @@ const Footer = memo(function Footer() {
   }, [])
 
   return (
-    <footer className="mt-auto border-t bg-muted/30 pb-20 md:pb-0">
+    <footer className="mt-auto shrink-0 border-t bg-muted/30 pb-20 md:pb-0">
       {/* Gradient accent bar — multi-color */}
       <div className="h-px w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400" />
 

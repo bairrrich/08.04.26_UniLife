@@ -11718,3 +11718,25 @@ New Components:
 - ✅ Footer renders at viewport bottom when content is short (flex layout working)
 - ✅ Footer appears after all content when there are many shifts (natural document flow)
 - ✅ All 25 shifts display in the full list (no more max-h-96 truncation)
+
+---
+Task ID: footer-fix-finance
+Agent: main
+Task: Fix footer positioning in Finance module — footer should be at the bottom when there are many transactions
+
+Work Log:
+- Analyzed the global layout structure in `src/app/page.tsx` and `src/components/layout/app-footer.tsx`
+- Identified layout issue: outer `<div>` had `min-h-screen` but was not a flex container, while `<main>` also had `min-h-screen flex flex-col` independently. This meant the flex relationship between content and footer wasn't properly established through the full layout hierarchy
+- **Fix 1**: Changed outer `<div>` from `min-h-screen bg-background` to `min-h-screen flex flex-col bg-background` — makes it a proper flex column container
+- **Fix 2**: Changed `<main>` from `min-h-screen flex flex-col` to `flex-1 flex flex-col` — makes main fill the outer flex container instead of independently sizing
+- **Fix 3**: Added `shrink-0` class to `<footer>` in app-footer.tsx — prevents footer from being compressed by flex shrink algorithm
+- Result: Proper sticky footer layout chain: outer div (min-h-screen flex-col) → main (flex-1 flex-col) → content (flex-1) → footer (mt-auto shrink-0)
+- When content is short: content fills remaining space, footer stays at viewport bottom
+- When content is tall (many transactions/sections): content grows, main grows, outer div grows, footer follows naturally after all content
+- Verified: ESLint 0 errors (165 warnings unchanged), dev server compiled successfully (255ms)
+
+Stage Summary:
+- Footer positioning fixed with robust flex layout pattern
+- Layout chain: min-h-screen flex-col → flex-1 flex-col → flex-1 → mt-auto shrink-0
+- All modules benefit from this fix (global layout change)
+- No breaking changes
