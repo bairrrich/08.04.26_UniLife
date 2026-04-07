@@ -15,6 +15,7 @@ export async function GET() {
       financeCount,
       nutritionCount,
       workoutCount,
+      shiftsCount,
       habitsResult,
       goalsCount,
       collectionsCount,
@@ -43,6 +44,13 @@ export async function GET() {
       }),
       // Workout: workouts today
       db.workout.count({
+        where: {
+          userId: DEMO_USER_ID,
+          date: { gte: today, lt: tomorrow },
+        },
+      }),
+      // Shifts: today's shifts
+      db.shift.count({
         where: {
           userId: DEMO_USER_ID,
           date: { gte: today, lt: tomorrow },
@@ -86,6 +94,7 @@ export async function GET() {
       finance: financeCount,
       nutrition: nutritionCount,
       workout: workoutCount,
+      shifts: shiftsCount,
       habits: habitsResult,
       goals: goalsCount,
       collections: collectionsCount,

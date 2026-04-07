@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   let q = searchParams.get('q')?.trim() || ''
 
   if (!q || q.length < 2) {
-    return apiSuccess({ diary: [], finance: [], nutrition: [], workout: [], collections: [], feed: [], habits: [], goals: [] })
+    return apiSuccess({ diary: [], finance: [], nutrition: [], workout: [], shifts: [], collections: [], feed: [], habits: [], goals: [] })
   }
 
   if (q.length > 100) {
@@ -69,6 +69,19 @@ export async function GET(request: NextRequest) {
       take: LIMIT,
     })
 
+    // Shifts — search location and note
+    const shifts = await db.shift.findMany({
+      where: {
+        userId: USER_ID,
+        OR: [
+          { location: { contains: q } },
+          { note: { contains: q } },
+        ],
+      },
+      orderBy: { date: 'desc' },
+      take: LIMIT,
+    })
+
     // Collections — search title and author
     const collections = await db.collectionItem.findMany({
       where: {
@@ -117,6 +130,7 @@ export async function GET(request: NextRequest) {
       finance: finance.map((f) => ({ id: f.id, description: f.description || 'Без описания', amount: f.amount, date: f.date, type: 'finance' as const })),
       nutrition: meals.map((n) => ({ id: n.id, mealType: n.type, note: n.note || '', date: n.date, type: 'nutrition' as const })),
       workout: workouts.map((w) => ({ id: w.id, name: w.name, durationMin: w.durationMin, date: w.date, type: 'workout' as const })),
+      shifts: shifts.map((s) => ({ id: s.id, location: s.location || 'Без локации', startTime: s.startTime, endTime: s.endTime, date: s.date, type: 'shifts' as const })),
       collections: collections.map((c) => ({ id: c.id, title: c.title, author: c.author || '', itemType: c.type, type: 'collections' as const })),
       feed: feed.map((f) => ({ id: f.id, caption: f.caption || '', entityType: f.entityType, createdAt: f.createdAt, type: 'feed' as const })),
       habits: habits.map((h) => ({ id: h.id, name: h.name, emoji: h.emoji, type: 'habits' as const })),

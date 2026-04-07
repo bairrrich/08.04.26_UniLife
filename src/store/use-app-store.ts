@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export type AppModule = 'dashboard' | 'diary' | 'finance' | 'nutrition' | 'workout' | 'collections' | 'feed' | 'habits' | 'goals' | 'analytics' | 'settings'
+export type AppModule = 'dashboard' | 'diary' | 'finance' | 'nutrition' | 'workout' | 'shifts' | 'collections' | 'feed' | 'habits' | 'goals' | 'analytics' | 'settings'
 
 interface AppState {
   activeModule: AppModule

@@ -53,7 +53,7 @@ export const AchievementBadge = memo(function AchievementBadge({
         'group relative flex flex-col items-center gap-1.5 rounded-xl p-2.5 transition-all duration-200',
         earned
           ? 'cursor-default bg-background shadow-sm hover:shadow-md hover-lift'
-          : 'cursor-default bg-muted/40 opacity-60 grayscale-[30%] hover:grayscale-0 hover:opacity-80 transition-all duration-300'
+          : 'cursor-default bg-muted/40 opacity-60 hover:opacity-80 transition-all duration-300'
       )}
     >
       {/* Icon Circle */}
@@ -67,7 +67,7 @@ export const AchievementBadge = memo(function AchievementBadge({
                 'ring-2 ring-background',
                 'group-hover:scale-110',
               )
-            : 'bg-muted text-muted-foreground'
+            : 'achievement-shimmer bg-muted text-muted-foreground'
         )}
       >
         {earned ? (
@@ -107,7 +107,7 @@ export const AchievementBadge = memo(function AchievementBadge({
       {/* Progress indicator for unearned achievements with thresholds */}
       {!earned && progressPct !== null && progressPct > 0 && (
         <div className="mt-0.5 w-full px-0.5">
-          <div className="h-1 w-full rounded-full bg-muted/60 overflow-hidden">
+          <div className="h-1.5 w-full rounded-full bg-muted/60 overflow-hidden">
             <div
               className={cn(
                 'h-full rounded-full bg-gradient-to-r transition-all duration-500',
@@ -118,6 +118,16 @@ export const AchievementBadge = memo(function AchievementBadge({
           </div>
           <p className="mt-0.5 text-[8px] text-muted-foreground tabular-nums">
             {current ?? 0}/{threshold}
+          </p>
+        </div>
+      )}
+
+      {/* Progress bar for unearned with no progress (show 0/threshold) */}
+      {!earned && progressPct !== null && progressPct === 0 && threshold !== undefined && (
+        <div className="mt-0.5 w-full px-0.5">
+          <div className="h-1 w-full rounded-full bg-muted/40 overflow-hidden" />
+          <p className="mt-0.5 text-[8px] text-muted-foreground tabular-nums">
+            0/{threshold}
           </p>
         </div>
       )}

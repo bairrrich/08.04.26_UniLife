@@ -22,7 +22,7 @@ export interface ModuleEmptyStateProps {
   /** CTA button click handler */
   onAction?: () => void
   /** Module accent color for icon background */
-  accent?: 'emerald' | 'amber' | 'orange' | 'blue' | 'rose' | 'violet' | 'teal' | 'cyan' | 'red' | 'indigo' | 'pink' | 'zinc'
+  accent?: 'emerald' | 'amber' | 'orange' | 'blue' | 'rose' | 'violet' | 'teal' | 'cyan' | 'sky' | 'red' | 'indigo' | 'pink' | 'zinc'
   /** Compact variant with less padding */
   compact?: boolean
   /** Additional className */
@@ -38,6 +38,7 @@ const ACCENT_GRADIENTS: Record<string, string> = {
   violet: 'from-violet-400/30 to-purple-500/20',
   teal: 'from-teal-400/30 to-cyan-500/20',
   cyan: 'from-cyan-400/30 to-blue-500/20',
+  sky: 'from-sky-400/30 to-blue-500/20',
   red: 'from-red-400/30 to-rose-500/20',
   indigo: 'from-indigo-400/30 to-violet-500/20',
   pink: 'from-pink-400/30 to-rose-500/20',
@@ -53,6 +54,7 @@ const CARD_GRADIENTS: Record<string, string> = {
   violet: 'from-violet-500/5 via-transparent to-purple-500/5',
   teal: 'from-teal-500/5 via-transparent to-cyan-500/5',
   cyan: 'from-cyan-500/5 via-transparent to-blue-500/5',
+  sky: 'from-sky-500/5 via-transparent to-blue-500/5',
   red: 'from-red-500/5 via-transparent to-rose-500/5',
   indigo: 'from-indigo-500/5 via-transparent to-violet-500/5',
   pink: 'from-pink-500/5 via-transparent to-rose-500/5',

@@ -45,6 +45,7 @@ const MODULE_ACCENT_COLORS: Record<string, string> = {
   finance: 'bg-blue-500',
   nutrition: 'bg-orange-500',
   workout: 'bg-red-500',
+  shifts: 'bg-sky-500',
   collections: 'bg-violet-500',
   feed: 'bg-pink-500',
   habits: 'bg-cyan-500',

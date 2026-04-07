@@ -12,7 +12,9 @@ import {
   ChevronUp,
   Sparkles,
   Star,
+  Zap,
 } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { cn } from '@/lib/utils'
 import { AchievementBadge } from './achievement-badge'
 import { ACHIEVEMENT_DEFINITIONS, CATEGORY_COLORS } from './constants'
@@ -395,11 +397,25 @@ export const AchievementsWidget = memo(function AchievementsWidget({
   const totalCount = achievements.length
   const progressPct = totalCount > 0 ? Math.round((earnedCount / totalCount) * 100) : 0
 
-  // ── Recently earned (newly earned) ──
-  const recentlyEarned = useMemo(
+  // ── Recently earned (newly earned or last 3 earned) ──
+  const newlyEarnedItems = useMemo(
     () => achievements.filter((a) => a.earned && a.newlyEarned),
     [achievements]
   )
+
+  const recentlyUnlocked = useMemo(() => {
+    if (newlyEarnedItems.length > 0) return newlyEarnedItems
+    // If no newly earned, show last 3 earned by earnedAt
+    const withDates = achievements.filter((a) => a.earned && a.earnedAt != null)
+    return withDates
+      .slice()
+      .sort((a, b) => {
+        const aTime = new Date(a.earnedAt!).getTime()
+        const bTime = new Date(b.earnedAt!).getTime()
+        return bTime - aTime
+      })
+      .slice(0, 3)
+  }, [achievements, newlyEarnedItems])
 
   // ── Filtered achievements (sorted: unlocked first, then locked) ──
   const filteredAchievements = useMemo(() => {
@@ -488,36 +504,66 @@ export const AchievementsWidget = memo(function AchievementsWidget({
       </CardHeader>
 
       <CardContent>
-        {/* ── Recently Earned Section ── */}
-        {recentlyEarned.length > 0 && (
+        {/* ── Recently Unlocked Section ── */}
+        {recentlyUnlocked.length > 0 && (
           <div className="mb-4">
-            <div className="mb-2 flex items-center gap-1.5">
-              <Star className="h-3.5 w-3.5 text-amber-500" />
+            <div className="mb-2.5 flex items-center gap-1.5">
+              <motion.div
+                animate={{ rotate: [0, 15, -15, 0] }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, ease: 'easeInOut' }}
+              >
+                <Zap className="h-3.5 w-3.5 text-amber-500" />
+              </motion.div>
               <span className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-                Новые достижения!
+                Недавно разблокировано
               </span>
+              {newlyEarnedItems.length > 0 && (
+                <motion.span
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+                  className="ml-1 rounded-md bg-gradient-to-r from-amber-400 to-orange-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow-sm"
+                >
+                  NEW
+                </motion.span>
+              )}
             </div>
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {recentlyEarned.map((achievement) => (
-                <div
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-3">
+              {recentlyUnlocked.map((achievement, idx) => (
+                <motion.div
                   key={achievement.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1, type: 'spring', stiffness: 300, damping: 20 }}
                   className={cn(
-                    'card-hover animate-bounce-in flex flex-col items-center gap-1.5 rounded-xl border-2 border-amber-300 bg-amber-50/50 p-3 dark:border-amber-600 dark:bg-amber-950/30'
+                    'relative flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all duration-200 hover:shadow-md',
+                    achievement.newlyEarned
+                      ? 'border-amber-300 bg-gradient-to-br from-amber-50/80 to-orange-50/50 dark:border-amber-600 dark:from-amber-950/40 dark:to-orange-950/30'
+                      : 'border-muted bg-muted/30 dark:border-muted/50'
                   )}
                 >
+                  {achievement.newlyEarned && (
+                    <motion.div
+                      className="pointer-events-none absolute -top-1 -right-1"
+                      animate={{ scale: [1, 1.3, 1], opacity: [0.7, 1, 0.7] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                      <Sparkles className="h-4 w-4 text-amber-500" />
+                    </motion.div>
+                  )}
                   <div className={cn(
                     'flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br shadow-lg text-lg',
                     achievement.gradient,
                   )}>
                     {achievement.icon}
                   </div>
-                  <span className="text-xs font-semibold text-center leading-tight">
+                  <span className="text-[11px] font-semibold text-center leading-tight">
                     {achievement.name}
                   </span>
-                  <span className="text-[10px] text-muted-foreground text-center line-clamp-1">
+                  <span className="text-[9px] text-muted-foreground text-center line-clamp-1">
                     {achievement.description}
                   </span>
-                </div>
+                </motion.div>
               ))}
             </div>
             <Separator className="mt-4" />

@@ -664,6 +664,9 @@ export async function seed() {
     })
   }
 
+  // Seed shifts
+  await seedShifts()
+
   console.log('✅ Database seeded successfully!')
 }
 
@@ -719,4 +722,61 @@ export async function seedHabits() {
   }
 
   console.log('✅ Habits seeded successfully!')
+}
+
+// ─── Seed Shifts ──────────────────────────────────────────────────────────────
+
+export async function seedShifts() {
+  console.log('🌱 Seeding shifts...')
+
+  const shiftTemplates = [
+    // date (April 2026), startTime, endTime, breakMin, location, note, status, payRate, tips
+    { day: 1,  startTime: '09:00', endTime: '17:00', breakMin: 30, location: 'Офис Центральный', note: null, status: 'completed', payRate: 800, tips: null },
+    { day: 2,  startTime: '08:00', endTime: '16:00', breakMin: 30, location: 'Офис Центральный', note: 'Ранний приход', status: 'completed', payRate: 800, tips: null },
+    { day: 3,  startTime: '10:00', endTime: '18:00', breakMin: 60, location: 'Филиал Север', note: null, status: 'completed', payRate: 750, tips: 200 },
+    { day: 4,  startTime: '22:00', endTime: '06:00', breakMin: 30, location: 'Склад', note: 'Ночная смена', status: 'completed', payRate: 1200, tips: null },
+    { day: 5,  startTime: '14:00', endTime: '22:00', breakMin: 30, location: 'Удалённо', note: 'Работа из дома', status: 'completed', payRate: 800, tips: null },
+    { day: 6,  startTime: '09:00', endTime: '17:00', breakMin: 15, location: 'Офис Центральный', note: null, status: 'completed', payRate: 800, tips: 150 },
+    { day: 7,  startTime: '10:00', endTime: '18:00', breakMin: 30, location: 'Филиал Север', note: null, status: 'completed', payRate: 750, tips: null },
+    { day: 8,  startTime: '22:00', endTime: '06:00', breakMin: 60, location: 'Склад', note: 'Ночная смена — инвентаризация', status: 'completed', payRate: 1200, tips: null },
+    { day: 9,  startTime: '08:00', endTime: '16:00', breakMin: 30, location: 'Офис Центральный', note: null, status: 'completed', payRate: 800, tips: 300 },
+    { day: 10, startTime: '14:00', endTime: '22:00', breakMin: 30, location: 'Удалённо', note: 'Пятничная смена', status: 'completed', payRate: 800, tips: null },
+    { day: 11, startTime: '09:00', endTime: '17:00', breakMin: 30, location: 'Офис Центральный', note: null, status: 'completed', payRate: 800, tips: 100 },
+    { day: 12, startTime: '10:00', endTime: '18:00', breakMin: 60, location: 'Филиал Север', note: 'Обучение нового сотрудника', status: 'completed', payRate: 750, tips: null },
+    { day: 13, startTime: '22:00', endTime: '06:00', breakMin: 30, location: 'Склад', note: null, status: 'completed', payRate: 1200, tips: null },
+    { day: 14, startTime: '08:00', endTime: '16:00', breakMin: 30, location: 'Офис Центральный', note: null, status: 'completed', payRate: 800, tips: 250 },
+    { day: 15, startTime: '14:00', endTime: '22:00', breakMin: 30, location: 'Удалённо', note: null, status: 'completed', payRate: 800, tips: null },
+    { day: 16, startTime: '09:00', endTime: '17:00', breakMin: 15, location: 'Офис Центральный', note: 'Короткий обед', status: 'completed', payRate: 800, tips: 100 },
+    { day: 17, startTime: '10:00', endTime: '18:00', breakMin: 30, location: 'Филиал Север', note: null, status: 'completed', payRate: 750, tips: 200 },
+    { day: 18, startTime: '22:00', endTime: '06:00', breakMin: 60, location: 'Склад', note: 'Ночная смена', status: 'completed', payRate: 1200, tips: null },
+    { day: 19, startTime: '08:00', endTime: '16:00', breakMin: 30, location: 'Офис Центральный', note: null, status: 'completed', payRate: 800, tips: null },
+    { day: 20, startTime: '14:00', endTime: '22:00', breakMin: 30, location: 'Удалённо', note: 'Подготовка к запуску', status: 'completed', payRate: 800, tips: 350 },
+    { day: 21, startTime: '09:00', endTime: '17:00', breakMin: 30, location: 'Офис Центральный', note: null, status: 'scheduled', payRate: 800, tips: null },
+    { day: 22, startTime: '10:00', endTime: '18:00', breakMin: 60, location: 'Филиал Север', note: null, status: 'scheduled', payRate: 750, tips: null },
+    { day: 23, startTime: '22:00', endTime: '06:00', breakMin: 30, location: 'Склад', note: 'Ночная смена', status: 'scheduled', payRate: 1200, tips: null },
+    { day: 24, startTime: '14:00', endTime: '22:00', breakMin: 30, location: 'Удалённо', note: null, status: 'cancelled', payRate: 800, tips: null },
+    { day: 25, startTime: '09:00', endTime: '17:00', breakMin: 30, location: 'Офис Центральный', note: 'Отзыв — заболел', status: 'cancelled', payRate: 800, tips: null },
+  ]
+
+  for (const t of shiftTemplates) {
+    const dateStr = `2026-04-${String(t.day).padStart(2, '0')}T10:00:00.000Z`
+    const shiftDate = new Date(dateStr)
+
+    await db.shift.create({
+      data: {
+        userId: USER_ID,
+        date: shiftDate,
+        startTime: t.startTime,
+        endTime: t.endTime,
+        breakMin: t.breakMin,
+        location: t.location,
+        note: t.note,
+        status: t.status,
+        payRate: t.payRate,
+        tips: t.tips,
+      },
+    })
+  }
+
+  console.log('✅ Shifts seeded successfully!')
 }

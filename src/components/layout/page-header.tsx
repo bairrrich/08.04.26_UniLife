@@ -20,7 +20,7 @@ export interface PageHeaderProps {
   /** Additional content below the main header row */
   extra?: ReactNode
   /** Module-specific accent color key */
-  accent?: 'emerald' | 'amber' | 'orange' | 'blue' | 'rose' | 'violet' | 'teal' | 'cyan' | 'red' | 'indigo' | 'pink' | 'zinc'
+  accent?: 'emerald' | 'amber' | 'orange' | 'blue' | 'rose' | 'violet' | 'teal' | 'cyan' | 'sky' | 'red' | 'indigo' | 'pink' | 'zinc'
   /** Override className for the outer container */
   className?: string
   /** Hide gradient decorative blobs */
@@ -40,6 +40,7 @@ const ICON_BG: Record<string, string> = {
   violet: 'bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-400',
   teal: 'bg-teal-100 text-teal-600 dark:bg-teal-950 dark:text-teal-400',
   cyan: 'bg-cyan-100 text-cyan-600 dark:bg-cyan-950 dark:text-cyan-400',
+  sky: 'bg-sky-100 text-sky-600 dark:bg-sky-950 dark:text-sky-400',
   red: 'bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400',
   indigo: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400',
   pink: 'bg-pink-100 text-pink-600 dark:bg-pink-950 dark:text-pink-400',
@@ -55,6 +56,7 @@ const BLOB_FROM: Record<string, string> = {
   violet: 'from-violet-400/20',
   teal: 'from-teal-400/20',
   cyan: 'from-cyan-400/20',
+  sky: 'from-sky-400/20',
   red: 'from-red-400/20',
   indigo: 'from-indigo-400/20',
   pink: 'from-pink-400/20',
@@ -70,6 +72,7 @@ const BLOB_TO: Record<string, string> = {
   violet: 'to-purple-500/15',
   teal: 'to-cyan-500/15',
   cyan: 'to-blue-500/15',
+  sky: 'to-blue-500/15',
   red: 'to-rose-500/15',
   indigo: 'to-violet-500/15',
   pink: 'to-rose-500/15',
@@ -85,6 +88,7 @@ const SECOND_BLOB_FROM: Record<string, string> = {
   violet: 'from-emerald-400/15',
   teal: 'from-amber-400/15',
   cyan: 'from-emerald-400/15',
+  sky: 'from-amber-400/15',
   red: 'from-amber-400/15',
   indigo: 'from-emerald-400/15',
   pink: 'from-amber-400/15',
@@ -100,6 +104,7 @@ const SECOND_BLOB_TO: Record<string, string> = {
   violet: 'to-amber-500/10',
   teal: 'to-orange-500/10',
   cyan: 'to-amber-500/10',
+  sky: 'to-amber-500/10',
   red: 'to-amber-500/10',
   indigo: 'to-amber-500/10',
   pink: 'to-amber-500/10',

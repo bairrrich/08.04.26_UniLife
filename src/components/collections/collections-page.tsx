@@ -25,7 +25,7 @@ import { AddItemDialog } from './add-item-dialog'
 import { ItemDialog } from './item-dialog'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/page-header'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, ModuleEmptyState, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
 // Floating icons for empty state
@@ -411,46 +411,31 @@ export default function CollectionsPage() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <Card className="overflow-hidden rounded-xl border">
-              <CardContent className="relative p-0">
-                {/* Subtle gradient card background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 via-transparent to-violet-500/5" />
-                {/* Floating animated icons */}
-                <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                  {FLOATING_ICONS.map((icon, idx) => (
-                    <span
-                      key={icon}
-                      className="absolute text-2xl opacity-[0.15] select-none"
-                      style={{
-                        top: `${12 + (idx % 3) * 25}%`,
-                        left: `${8 + (idx * 12) % 80}%`,
-                        animation: `float ${2.5 + idx * 0.4}s ease-in-out ${idx * 0.3}s infinite`,
-                      }}
-                    >
-                      {icon}
-                    </span>
-                  ))}
-                </div>
-                <div className="relative flex flex-col items-center justify-center py-14 text-center px-4">
-                  {/* Gradient icon circle with type emoji */}
-                  <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-400 to-violet-500 shadow-lg shadow-purple-500/25 text-3xl">
-                    {emptyEmoji}
-                  </div>
-                  <h3 className="mt-5 text-lg font-semibold">{emptyState.title}</h3>
-                  <p className="mt-1.5 text-sm text-muted-foreground max-w-xs mx-auto">
-                    {emptyState.description}
-                  </p>
-                  <Button
-                    size="lg"
-                    onClick={() => setDialogOpen(true)}
-                    className="mt-5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-md shadow-emerald-500/25 hover:shadow-lg hover:shadow-emerald-500/30 hover:from-emerald-600 hover:to-teal-600 transition-all"
+            <ModuleEmptyState
+              iconElement={<span className="text-3xl">{emptyEmoji}</span>}
+              title={emptyState.title}
+              description={emptyState.description}
+              accent="violet"
+              actionLabel="Добавить элемент"
+              onAction={() => setDialogOpen(true)}
+            >
+              {/* Floating animated icons */}
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                {FLOATING_ICONS.map((icon, idx) => (
+                  <span
+                    key={icon}
+                    className="absolute text-2xl opacity-[0.15] select-none"
+                    style={{
+                      top: `${12 + (idx % 3) * 25}%`,
+                      left: `${8 + (idx * 12) % 80}%`,
+                      animation: `float ${2.5 + idx * 0.4}s ease-in-out ${idx * 0.3}s infinite`,
+                    }}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Добавить элемент
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    {icon}
+                  </span>
+                ))}
+              </div>
+            </ModuleEmptyState>
           ) : (
             <>
               {/* Recently Added — horizontal scrollable row */}

@@ -13,6 +13,7 @@ export const navItems: NavItem[] = [
   { id: 'finance', label: 'Финансы', icon: 'Wallet', description: 'Доходы и расходы' },
   { id: 'nutrition', label: 'Питание', icon: 'Apple', description: 'КБЖУ и вода' },
   { id: 'workout', label: 'Тренировки', icon: 'Dumbbell', description: 'Журнал упражнений' },
+  { id: 'shifts' as AppModule, label: 'Смены', icon: 'CalendarClock', description: 'График работы' },
   { id: 'collections', label: 'Коллекции', icon: 'Library', description: 'Книги, фильмы, рецепты' },
   { id: 'feed', label: 'Лента', icon: 'Rss', description: 'Социальная лента' },
   { id: 'habits' as AppModule, label: 'Привычки', icon: 'Target', description: 'Трекер ежедневных привычек' },

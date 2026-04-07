@@ -315,7 +315,7 @@ export function TransactionList({
                           <div key={tx.id}>
                             <div
                               className={cn(
-                                'flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer group',
+                                'flex items-center gap-3 py-3 px-2 -mx-2 border-l-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group',
                                 isExpanded && 'bg-muted/40',
                                 isTransfer && 'border-l-violet-500',
                                 isAlt && !isExpanded && 'bg-muted/10'

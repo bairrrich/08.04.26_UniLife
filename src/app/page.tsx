@@ -86,6 +86,7 @@ const MODULE_MAP: Record<string, { l: () => Promise<{ default: React.ComponentTy
   finance: { l: () => import('@/components/finance/finance-page'), n: 'Финансы' },
   nutrition: { l: () => import('@/components/nutrition/nutrition-page'), n: 'Питание' },
   workout: { l: () => import('@/components/workout/workout-page'), n: 'Тренировки' },
+  shifts: { l: () => import('@/components/shifts/shifts-page'), n: 'Смены' },
   collections: { l: () => import('@/components/collections/collections-page'), n: 'Коллекции' },
   feed: { l: () => import('@/components/feed/feed-page'), n: 'Лента' },
   habits: { l: () => import('@/components/habits/habit-page'), n: 'Привычки' },

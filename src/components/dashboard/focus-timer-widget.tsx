@@ -920,6 +920,30 @@ export default memo(function FocusTimerWidget() {
     return sessions % TOTAL_SESSIONS_IN_CYCLE === 0 && sessions > 0
   }, [sessions])
 
+  // ── Timer State for Background Gradient ──
+  const timerState = useMemo(() => {
+    if (timeLeft === 0 && progress >= 1) return 'completed' as const
+    if (isRunning) return 'running' as const
+    if (timeLeft < totalDuration) return 'paused' as const
+    return 'idle' as const
+  }, [isRunning, timeLeft, totalDuration, progress])
+
+  const stateGradient = useMemo(() => {
+    switch (timerState) {
+      case 'running': return 'from-emerald-500/8 via-teal-500/5 to-emerald-600/8'
+      case 'paused': return 'from-amber-500/8 via-orange-500/5 to-amber-600/8'
+      case 'completed': return 'from-sky-500/8 via-blue-500/5 to-sky-600/8'
+      default: return 'from-gray-500/5 via-gray-400/3 to-gray-500/5'
+    }
+  }, [timerState])
+
+  // Session dots target: show today's completed sessions
+  const DAILY_SESSION_TARGET = 8
+  const todayCompletedCount = todaySessions.length
+  const todaySessionDots = useMemo(() => {
+    return Array.from({ length: DAILY_SESSION_TARGET }).map((_, i) => i < todayCompletedCount)
+  }, [todayCompletedCount])
+
   // ── Pre-mount skeleton ──────────────────────────────────────────────
   if (!mounted) {
     return (
@@ -945,9 +969,9 @@ export default memo(function FocusTimerWidget() {
 
   return (
     <Card className="animate-slide-up card-hover rounded-xl border overflow-hidden">
-      {/* Subtle gradient background based on mode */}
+      {/* Subtle gradient background based on timer STATE */}
       <div
-        className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${config.ringGradient} opacity-[0.03]`}
+        className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${stateGradient} transition-all duration-700`}
       />
 
       <CardHeader className="relative pb-2">
@@ -1066,7 +1090,7 @@ export default memo(function FocusTimerWidget() {
                     className="text-center"
                   >
                     <p className="text-sm font-bold text-foreground">Сессия завершена!</p>
-                    <p className="text-xs text-muted-foreground">Отличная работа 🎉</p>
+                    <p className="text-xs text-muted-foreground">Отличная работа! Время перерыва 🎉</p>
                   </motion.div>
                 </div>
               </motion.div>
@@ -1091,6 +1115,23 @@ export default memo(function FocusTimerWidget() {
               </div>
             </div>
           )}
+
+          {/* ── Session Dots (today's completed focus sessions) ── */}
+          <div className="flex items-center gap-1.5">
+            {todaySessionDots.map((filled, i) => (
+              <div
+                key={i}
+                className={`h-1.5 w-1.5 rounded-full transition-all duration-300 ${
+                  filled
+                    ? 'bg-emerald-500 shadow-sm shadow-emerald-500/40'
+                    : 'bg-muted-foreground/20'
+                }`}
+              />
+            ))}
+            <span className="ml-1 text-[10px] tabular-nums text-muted-foreground">
+              {todayCompletedCount}/{DAILY_SESSION_TARGET}
+            </span>
+          </div>
 
           {/* ── Circular Progress Ring ── */}
           <div className="relative">

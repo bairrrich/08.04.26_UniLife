@@ -5,11 +5,10 @@ import { Dumbbell, Plus, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, ModuleEmptyState, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
 import { useWorkouts } from './hooks'
@@ -184,51 +183,40 @@ export function WorkoutPage() {
           </div>
         </div>
       ) : workouts.length === 0 ? (
-        <Card className="animate-slide-up overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 via-teal-500/5 to-cyan-500/8 pointer-events-none" />
-          <CardContent className="relative flex flex-col items-center justify-center py-14 text-center px-4">
-            <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-emerald-500/25">
-              <Dumbbell className="h-10 w-10 text-white" />
-            </div>
-            <h3 className="text-lg font-semibold mb-1">Нет тренировок</h3>
-            <p className="text-sm text-muted-foreground max-w-xs mx-auto mb-4">
-              {WORKOUT_PHRASES[phraseIdx]}
-            </p>
-            <p className="text-xs text-muted-foreground/70 mb-6">
-              Запиши свою первую тренировку и начни отслеживать прогресс
-            </p>
-            <p className="text-xs text-muted-foreground/50 mb-6 italic">
-              Каждый великий путь начинается с одного шага 💪
-            </p>
-            <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
-              {WORKOUT_PRESETS.map((preset) => {
-                const pType = detectWorkoutType(preset.name)
-                const pConfig = WORKOUT_TYPE_CONFIG[pType]
-                return (
-                  <button
-                    key={preset.label}
-                    onClick={() => {
-                      handleApplyPreset(preset)
-                      setDialogOpen(true)
-                    }}
-                    className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 hover:border-muted-foreground/30 active-press"
-                  >
-                    <span className={pConfig?.iconColor}>{pConfig?.icon}</span>
-                    <span>{preset.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-            <Button
-              size="lg"
-              onClick={() => setDialogOpen(true)}
-              className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Добавить тренировку
-            </Button>
-          </CardContent>
-        </Card>
+        <ModuleEmptyState
+          icon={Dumbbell}
+          title="Нет тренировок"
+          description={WORKOUT_PHRASES[phraseIdx]}
+          accent="red"
+          actionLabel="Добавить тренировку"
+          onAction={() => setDialogOpen(true)}
+        >
+          <p className="text-xs text-muted-foreground/70 mb-4">
+            Запиши свою первую тренировку и начни отслеживать прогресс
+          </p>
+          <p className="text-xs text-muted-foreground/50 mb-4 italic">
+            Каждый великий путь начинается с одного шага 💪
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 mb-4">
+            {WORKOUT_PRESETS.map((preset) => {
+              const pType = detectWorkoutType(preset.name)
+              const pConfig = WORKOUT_TYPE_CONFIG[pType]
+              return (
+                <button
+                  key={preset.label}
+                  onClick={() => {
+                    handleApplyPreset(preset)
+                    setDialogOpen(true)
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted/60 hover:border-muted-foreground/30 active-press"
+                >
+                  <span className={pConfig?.iconColor}>{pConfig?.icon}</span>
+                  <span>{preset.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </ModuleEmptyState>
       ) : (
         <ScrollArea className="max-h-[600px]">
           <div className="space-y-3 stagger-children">

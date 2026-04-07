@@ -11491,3 +11491,86 @@ New Components:
 6. **PWA Support** — Service worker + manifest for mobile install
 7. **Image Upload** — Photo support for diary entries and collection items
 8. **Offline Support** — Service worker caching
+
+---
+
+## Task ID: shifts-module
+### Agent: main-coordinator
+### Task: Create a new "Shifts" (Work Schedule) module with calendar, stats, and finance integration
+
+### Work Log:
+
+**Phase 1 — Database Schema:**
+- Added `Shift` model to Prisma schema with fields: date, startTime, endTime, breakMin, location, note, status (scheduled/completed/cancelled), payRate, tips
+- Added `shifts` relation to `User` model
+- Pushed schema to SQLite database via `bun run db:push`
+
+**Phase 2 — Module Registration:**
+- Added `'shifts'` to `AppModule` type in `use-app-store.ts`
+- Added nav item in `nav-items.ts` (label: "Смены", icon: CalendarClock, description: "График работы")
+- Added `shifts: 'bg-sky-500'` accent color in `app-sidebar.tsx`
+- Added shifts module to `MODULE_MAP` in `page.tsx`
+- Added `CalendarClock` icon support (dynamic via lucide-react icons map)
+
+**Phase 3 — API Routes:**
+- Created `/api/shifts/route.ts` — GET (filter by month/date/week/status + stats), POST (create shift)
+- Created `/api/shifts/[id]/route.ts` — PUT (update/complete/cancel), DELETE
+- Created `/api/shifts/stats/route.ts` — GET monthly stats (hours, earnings, avg, overtime, tips)
+- Added shifts to search API (`/api/search/route.ts`) — search by location and note
+- Added shifts to module-counts API (`/api/module-counts/route.ts`)
+- Added shifts to settings stats API (`/api/settings/stats/route.ts`)
+
+**Phase 4 — UI Components:**
+- Created `/src/components/shifts/shifts-page.tsx` — Main page with:
+  - PageHeader (CalendarClock, sky accent)
+  - Month navigation with chevron arrows
+  - 4 stat cards (hours, earnings, shifts count, avg shift length)
+  - Full monthly calendar grid (7 cols, Monday-start) with shift status dots
+  - Today highlight, selected date filter
+  - Shift cards grouped by date with status badges, duration, location, earnings
+  - Night shift indicator (🌙), overtime indicator
+  - ModuleEmptyState when no shifts
+  - Skeleton loading states
+- Created `/src/components/shifts/shift-dialog.tsx` — Add/Edit dialog with all fields
+- Created `/src/components/shifts/hooks.ts` — useShifts() hook with CRUD + stats
+
+**Phase 5 — Shared Component Updates:**
+- Added `sky` accent color to PageHeader (all color maps: ICON_BG, BLOB_FROM, BLOB_TO, etc.)
+- Added `sky` accent color to ModuleEmptyState (gradient and card maps)
+
+**Phase 6 — Seed Data:**
+- Added 25 shifts for April 2026 with variety:
+  - 5 shift patterns (08-16, 09-17, 10-18, 14-22, 22-06 night)
+  - 20 completed, 3 scheduled, 2 cancelled
+  - Pay rates 750-1200 RUB/hr (higher for night shifts)
+  - Tips on some shifts (100-350 RUB)
+  - 5 locations, various break durations, notes
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 165 warnings (all pre-existing)
+- ✅ Prisma: schema synced successfully
+- ✅ GET /api/shifts?month=2026-04: 25 shifts returned with stats
+- ✅ GET /api/shifts/stats?month=2026-04: 148.5h, 130,600₽ earnings, 20 completed
+- ✅ Seed data: 25 records created successfully
+- ✅ All 5 integration points updated (search, module-counts, settings/stats)
+
+### Files Created:
+- `/src/components/shifts/shifts-page.tsx` — Main shifts page
+- `/src/components/shifts/shift-dialog.tsx` — Add/Edit dialog
+- `/src/components/shifts/hooks.ts` — Data fetching hook
+- `/src/app/api/shifts/route.ts` — Main API
+- `/src/app/api/shifts/[id]/route.ts` — Single shift operations
+- `/src/app/api/shifts/stats/route.ts` — Monthly statistics
+
+### Files Modified:
+- `prisma/schema.prisma` — Added Shift model + User relation
+- `src/store/use-app-store.ts` — Added 'shifts' to AppModule type
+- `src/lib/nav-items.ts` — Added shifts nav item
+- `src/components/layout/app-sidebar.tsx` — Added shifts accent color
+- `src/app/page.tsx` — Added shifts to MODULE_MAP
+- `src/app/api/search/route.ts` — Added shifts search
+- `src/app/api/module-counts/route.ts` — Added shifts count
+- `src/app/api/settings/stats/route.ts` — Added shifts stats
+- `src/lib/seed.ts` — Added seedShifts() with 25 records
+- `src/components/layout/page-header.tsx` — Added sky accent color maps
+- `src/components/shared/module-empty-state.tsx` — Added sky accent color maps
