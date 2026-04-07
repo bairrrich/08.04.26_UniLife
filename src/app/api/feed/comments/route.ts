@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 export async function GET(request: NextRequest) {
   try {
@@ -7,10 +8,7 @@ export async function GET(request: NextRequest) {
     const postId = searchParams.get('postId')
 
     if (!postId) {
-      return NextResponse.json(
-        { success: false, error: 'postId query parameter is required' },
-        { status: 400 }
-      )
+      return apiError('postId query parameter is required')
     }
 
     const comments = await db.comment.findMany({
@@ -27,12 +25,9 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' },
     })
 
-    return NextResponse.json({ success: true, data: comments })
+    return apiSuccess(comments)
   } catch (error) {
     console.error('Comments GET error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch comments' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to fetch comments')
   }
 }

@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const createPostSchema = z.object({
+  entityType: z.string().min(1, 'Тип сущности обязателен'),
+  entityId: z.string().min(1, 'ID сущности обязателен'),
+  caption: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +19,7 @@ export async function GET(request: NextRequest) {
     const offset = Math.max(Number(searchParams.get('offset')) || 0, 0)
 
     const posts = await db.post.findMany({
-      where: { userId: USER_ID },
+      where: { userId: DEMO_USER_ID },
       include: {
         user: {
           select: {
@@ -57,19 +66,14 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { entityType, entityId, caption, tags } = body
+    const data = await parseBody(request, createPostSchema)
+    if (!data) return
 
-    if (!entityType || !entityId) {
-      return NextResponse.json(
-        { success: false, error: 'entityType and entityId are required' },
-        { status: 400 }
-      )
-    }
+    const { entityType, entityId, caption, tags } = data
 
     const post = await db.post.create({
       data: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         entityType,
         entityId,
         caption: caption ?? null,
@@ -130,7 +134,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify post exists and belongs to the user
     const existingPost = await db.post.findFirst({
-      where: { id: postId, userId: USER_ID },
+      where: { id: postId, userId: DEMO_USER_ID },
     })
 
     if (!existingPost) {

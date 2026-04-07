@@ -1,18 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID, collectionTypeSchema } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
-const VALID_TYPES = ['BOOK', 'MOVIE', 'ANIME', 'SERIES', 'MUSIC', 'RECIPE', 'SUPPLEMENT', 'PRODUCT', 'PLACE']
+const createCollectionSchema = z.object({
+  type: collectionTypeSchema,
+  title: z.string().min(1, 'Название обязательно'),
+  author: z.string().optional(),
+  description: z.string().optional(),
+  coverUrl: z.string().optional(),
+  rating: z.number().int().min(1).max(5).optional().nullable(),
+  date: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+  details: z.record(z.unknown()).optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const type = searchParams.get('type')
 
-    const where: Record<string, unknown> = { userId: USER_ID }
+    const where: Record<string, unknown> = { userId: DEMO_USER_ID }
 
-    if (type && VALID_TYPES.includes(type)) {
+    if (type) {
       where.type = type
     }
 
@@ -33,7 +46,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const data = await parseBody(request, createCollectionSchema)
+    if (!data) return
+
     const {
       type,
       title,
@@ -45,38 +60,11 @@ export async function POST(request: NextRequest) {
       tags,
       notes,
       details,
-    } = body
-
-    if (!type || !title) {
-      return NextResponse.json(
-        { success: false, error: 'type and title are required' },
-        { status: 400 }
-      )
-    }
-
-    if (!VALID_TYPES.includes(type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Тип должен быть одним из: ${VALID_TYPES.join(', ')}`,
-        },
-        { status: 400 }
-      )
-    }
-
-    if (rating !== undefined && rating !== null) {
-      const r = Number(rating)
-      if (!Number.isInteger(r) || r < 1 || r > 5) {
-        return NextResponse.json(
-          { success: false, error: 'rating must be an integer between 1 and 5' },
-          { status: 400 }
-        )
-      }
-    }
+    } = data
 
     const item = await db.collectionItem.create({
       data: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         type,
         title,
         author: author ?? null,

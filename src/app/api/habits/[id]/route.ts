@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const updateHabitSchema = z.object({
+  name: z.string().min(1, 'Название обязательно').optional(),
+  emoji: z.string().optional(),
+  color: z.string().optional(),
+  frequency: z.string().optional(),
+  targetCount: z.number().optional(),
+  archived: z.boolean().optional(),
+  category: z.string().optional(),
+})
 
 // PUT /api/habits/[id] — Toggle habit log for today (create or delete)
 export async function PUT(
@@ -15,7 +27,7 @@ export async function PUT(
       where: { id },
     })
 
-    if (!habit || habit.userId !== USER_ID) {
+    if (!habit || habit.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Habit not found' },
         { status: 404 }
@@ -81,15 +93,17 @@ export async function PATCH(
       where: { id },
     })
 
-    if (!habit || habit.userId !== USER_ID) {
+    if (!habit || habit.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Habit not found' },
         { status: 404 }
       )
     }
 
-    const body = await request.json()
-    const { name, emoji, color, frequency, targetCount, archived, category } = body
+    const data = await parseBody(request, updateHabitSchema)
+    if (!data) return
+
+    const { name, emoji, color, frequency, targetCount, archived, category } = data
 
     const updated = await db.habit.update({
       where: { id },
@@ -126,7 +140,7 @@ export async function DELETE(
       where: { id },
     })
 
-    if (!habit || habit.userId !== USER_ID) {
+    if (!habit || habit.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Habit not found' },
         { status: 404 }

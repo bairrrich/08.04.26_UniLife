@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 export async function GET() {
   try {
@@ -30,18 +29,15 @@ export async function GET() {
     const totalInvested = enriched.reduce((s, i) => s + i.totalInvested, 0)
     const totalReturned = enriched.reduce((s, i) => s + i.totalReturned, 0)
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        investments: enriched,
-        totalInvested,
-        totalReturned,
-        totalProfit: totalReturned - totalInvested,
-      },
+    return apiSuccess({
+      investments: enriched,
+      totalInvested,
+      totalReturned,
+      totalProfit: totalReturned - totalInvested,
     })
   } catch (error) {
     console.error('GET investments error:', error)
-    return NextResponse.json({ error: 'Failed to fetch investments' }, { status: 500 })
+    return apiServerError('Failed to fetch investments')
   }
 }
 
@@ -49,7 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const { name, type, icon, color, targetAmount, description } = body
-    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    if (!name) return apiError('Name is required')
 
     const investment = await db.investment.create({
       data: {
@@ -63,9 +59,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, data: investment }, { status: 201 })
+    return apiSuccess(investment, 201)
   } catch (error) {
     console.error('POST investment error:', error)
-    return NextResponse.json({ error: 'Failed to create investment' }, { status: 500 })
+    return apiServerError('Failed to create investment')
   }
 }

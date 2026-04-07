@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 export async function DELETE(
   _request: NextRequest,
@@ -17,18 +16,18 @@ export async function DELETE(
     })
 
     if (!investment || investment.userId !== DEMO_USER_ID) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return apiError('Not found', 404)
     }
 
     if (investment.transactions.length === 0) {
-      return NextResponse.json({ error: 'Transaction not found' }, { status: 404 })
+      return apiError('Transaction not found', 404)
     }
 
     await db.investmentTx.delete({ where: { id: txId } })
 
-    return NextResponse.json({ success: true, message: 'Транзакция удалена' })
+    return apiSuccessMessage('Транзакция удалена')
   } catch (error) {
     console.error('DELETE investment tx error:', error)
-    return NextResponse.json({ error: 'Failed to delete transaction' }, { status: 500 })
+    return apiServerError('Failed to delete transaction')
   }
 }

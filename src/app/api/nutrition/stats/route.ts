@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 const MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const
 
@@ -12,26 +11,20 @@ export async function GET(request: NextRequest) {
     const dateStr = searchParams.get('date')
 
     if (!dateStr) {
-      return NextResponse.json(
-        { success: false, error: 'Date query parameter is required. Use ?date=YYYY-MM-DD' },
-        { status: 400 }
-      )
+      return apiError('Date query parameter is required. Use ?date=YYYY-MM-DD')
     }
 
     const startOfDay = new Date(dateStr + 'T00:00:00.000Z')
     const endOfDay = new Date(dateStr + 'T23:59:59.999Z')
 
     if (isNaN(startOfDay.getTime())) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid date format. Use YYYY-MM-DD' },
-        { status: 400 }
-      )
+      return apiError('Invalid date format. Use YYYY-MM-DD')
     }
 
     // Fetch all meals for the day with items
     const meals = await db.meal.findMany({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: {
           gte: startOfDay,
           lte: endOfDay,
@@ -80,22 +73,16 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        date: dateStr,
-        totalKcal: Math.round(totalKcal),
-        totalProtein: Math.round(totalProtein * 10) / 10,
-        totalFat: Math.round(totalFat * 10) / 10,
-        totalCarbs: Math.round(totalCarbs * 10) / 10,
-        byMealType,
-      },
+    return apiSuccess({
+      date: dateStr,
+      totalKcal: Math.round(totalKcal),
+      totalProtein: Math.round(totalProtein * 10) / 10,
+      totalFat: Math.round(totalFat * 10) / 10,
+      totalCarbs: Math.round(totalCarbs * 10) / 10,
+      byMealType,
     })
   } catch (error) {
     console.error('GET /api/nutrition/stats error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch nutrition stats' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to fetch nutrition stats')
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { getCurrentMonthStr } from '@/lib/format'
 import { toast } from 'sonner'
 
@@ -53,17 +53,37 @@ export function useFinance() {
   const [editToAccountId, setEditToAccountId] = useState('')
   const [isEditSubmitting, setIsEditSubmitting] = useState(false)
 
+  // Refs for stable callback access to frequently-changing form state
+  const newFormRef = useRef({ type: newType, amount: newAmount, categoryId: newCategoryId, description: newDescription, date: newDate, note: newNote, fromAccountId: newFromAccountId, toAccountId: newToAccountId, categories })
+  newFormRef.current = { type: newType, amount: newAmount, categoryId: newCategoryId, description: newDescription, date: newDate, note: newNote, fromAccountId: newFromAccountId, toAccountId: newToAccountId, categories }
+
+  const editFormRef = useRef({ tx: editingTx, type: editType, amount: editAmount, categoryId: editCategoryId, description: editDescription, date: editDate, note: editNote, fromAccountId: editFromAccountId, toAccountId: editToAccountId })
+  editFormRef.current = { tx: editingTx, type: editType, amount: editAmount, categoryId: editCategoryId, description: editDescription, date: editDate, note: editNote, fromAccountId: editFromAccountId, toAccountId: editToAccountId }
+
+  // ─── Stable data fetchers (minimal deps) ──────────────────────
+  const fetchSavingsGoals = useCallback(async () => {
+    try {
+      const res = await fetch('/api/finance/savings-goals')
+      if (res.ok) { const d = await res.json(); setSavingsGoals(d.data || []) }
+    } catch (err) { console.error('Failed to fetch savings goals:', err) }
+  }, [])
+
+  const fetchRecurringTransactions = useCallback(async () => {
+    try {
+      const res = await fetch('/api/finance/recurring')
+      if (res.ok) { const d = await res.json(); setRecurringTransactions(d.data || []) }
+    } catch (err) { console.error('Failed to fetch recurring transactions:', err) }
+  }, [])
+
   // ─── Data Fetching ─────────────────────────────────────────────
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Fetch previous month stats for % change comparison
       const [prevYear, prevMon] = month.split('-').map(Number)
       const prevDate = new Date(prevYear, prevMon - 2, 1)
       const prevMonthStr = `${prevDate.getFullYear()}-${(prevDate.getMonth() + 1).toString().padStart(2, '0')}`
 
-      // Parallel fetch all independent data sources
-      const results = await Promise.allSettled([
+      await Promise.allSettled([
         fetch(`/api/finance?month=${month}`).then(r => r.ok ? r.json() : null).then(d => { if (d) setTransactions(d.data || []) }),
         fetch('/api/finance/categories').then(r => r.ok ? r.json() : null).then(d => { if (d) setCategories(d.data || []) }),
         fetch(`/api/finance/stats?month=${month}`).then(r => r.ok ? r.json() : null).then(d => { if (d) setStats(d.data || null) }),
@@ -78,7 +98,7 @@ export function useFinance() {
     } finally {
       setIsLoading(false)
     }
-  }, [month])
+  }, [month, fetchSavingsGoals, fetchRecurringTransactions])
 
   useEffect(() => { fetchData() }, [fetchData])
 
@@ -97,7 +117,6 @@ export function useFinance() {
     const yesterday = new Date(now)
     yesterday.setDate(now.getDate() - 1)
     const yesterdayStr = yesterday.toISOString().split('T')[0]
-    // Start of this week (Monday)
     const dayOfWeek = now.getDay()
     const mondayOffset = dayOfWeek === 0 ? 6 : dayOfWeek - 1
     const monday = new Date(now)
@@ -105,7 +124,6 @@ export function useFinance() {
     monday.setHours(0, 0, 0, 0)
     const mondayStr = monday.toISOString().split('T')[0]
 
-    const groups: { date: string; label: string; items: Transaction[] }[] = []
     const map = new Map<string, Transaction[]>()
     filteredTransactions.forEach((tx) => {
       const dateKey = tx.date.split('T')[0]
@@ -113,17 +131,13 @@ export function useFinance() {
       map.get(dateKey)!.push(tx)
     })
 
-    // Sort date keys newest first
     const sortedKeys = Array.from(map.keys()).sort((a, b) => b.localeCompare(a))
 
-    // Group into relative buckets: Сегодня, Вчера, Эта неделя, Ранее
-    // But we need to preserve exact dates within each bucket for sub-grouping
-    // So we'll assign a bucket label and keep the date
     interface DateGroup {
       date: string
       label: string
       items: Transaction[]
-      bucketSort: number // 0 = today, 1 = yesterday, 2 = this week, 3 = earlier; within bucket, sort by date desc
+      bucketSort: number
     }
     const dateGroups: DateGroup[] = []
 
@@ -151,13 +165,11 @@ export function useFinance() {
       })
     })
 
-    // Merge consecutive dates within the same bucket
     const merged: { date: string; label: string; items: Transaction[] }[] = []
     let i = 0
     while (i < dateGroups.length) {
       const current = dateGroups[i]
       if (current.bucketSort < 3) {
-        // Merge all consecutive items with the same bucketSort (e.g., multiple days in "Эта неделя")
         const allItems = [...current.items]
         let j = i + 1
         while (j < dateGroups.length && dateGroups[j].bucketSort === current.bucketSort) {
@@ -167,7 +179,6 @@ export function useFinance() {
         merged.push({ date: current.date, label: current.label, items: allItems })
         i = j
       } else {
-        // Earlier dates keep their own groups
         merged.push({ date: current.date, label: current.label, items: current.items })
         i++
       }
@@ -210,7 +221,6 @@ export function useFinance() {
     const totalExpense = expenses.reduce((sum, t) => sum + t.amount, 0)
     const [selYear, selMon] = month.split('-').map(Number)
     const daysInSelectedMonth = new Date(selYear, selMon, 0).getDate()
-    // Calculate days elapsed: up to today if current month, or full month if past
     const now = new Date()
     const isCurrentMonth = selYear === now.getFullYear() && selMon === now.getMonth() + 1
     const daysElapsed = isCurrentMonth ? now.getDate() : daysInSelectedMonth
@@ -220,44 +230,45 @@ export function useFinance() {
     return { avgDaily, biggestExpense, top3, totalExpense, daysInMonth: daysElapsed }
   }, [transactions, stats, month])
 
-  const getCategoryForTx = (tx: Transaction): Category => {
+  // ─── Stable helper callbacks ───────────────────────────────────
+  const getCategoryForTx = useCallback((tx: Transaction): Category => {
     return tx.category || categories.find((c) => c.id === tx.categoryId) || { id: '', name: 'Другое', type: 'EXPENSE', icon: 'circle', color: '#6b7280' }
-  }
+  }, [categories])
 
-  const getAccountName = (id: string): string => {
+  const getAccountName = useCallback((id: string): string => {
     return accounts.find((a) => a.id === id)?.name || 'Неизвестный счёт'
-  }
+  }, [accounts])
 
-  // ─── Actions ───────────────────────────────────────────────────
-  const resetForm = () => {
+  // ─── Stable action callbacks (use refs for form state) ────────
+  const resetForm = useCallback(() => {
     setNewType('EXPENSE'); setNewAmount(''); setNewCategoryId(''); setNewDescription('')
     setNewDate(new Date().toISOString().split('T')[0]); setNewNote('')
     setNewFromAccountId(''); setNewToAccountId('')
-  }
+  }, [])
 
-  const handleSubmit = async () => {
-    const amount = parseFloat(newAmount)
+  const handleSubmit = useCallback(async () => {
+    const f = newFormRef.current
+    const amount = parseFloat(f.amount)
     if (!amount || amount <= 0) { toast.error('Сумма должна быть больше нуля'); return }
-    if (!newDate) return
-    if (newType === 'TRANSFER' && (!newFromAccountId || !newToAccountId)) return
-    if (newType !== 'TRANSFER' && !newCategoryId) return
+    if (!f.date) return
+    if (f.type === 'TRANSFER' && (!f.fromAccountId || !f.toAccountId)) return
+    if (f.type !== 'TRANSFER' && !f.categoryId) return
     setIsSubmitting(true); toast.dismiss()
     try {
       const payload: Record<string, unknown> = {
-        type: newType,
-        amount: parseFloat(newAmount),
-        date: newDate,
-        description: newDescription || undefined,
-        note: newNote || undefined,
+        type: f.type,
+        amount,
+        date: f.date,
+        description: f.description || undefined,
+        note: f.note || undefined,
       }
-      if (newType === 'TRANSFER') {
-        payload.fromAccountId = newFromAccountId
-        payload.toAccountId = newToAccountId
-        // Use TRANSFER category if available
-        const transferCat = categories.find((c) => c.type === 'TRANSFER')
+      if (f.type === 'TRANSFER') {
+        payload.fromAccountId = f.fromAccountId
+        payload.toAccountId = f.toAccountId
+        const transferCat = f.categories.find((c) => c.type === 'TRANSFER')
         payload.categoryId = transferCat?.id || ''
       } else {
-        payload.categoryId = newCategoryId
+        payload.categoryId = f.categoryId
       }
       const res = await fetch('/api/finance', {
         method: 'POST',
@@ -268,19 +279,54 @@ export function useFinance() {
       else { toast.error('Ошибка при добавлении транзакции') }
     } catch (err) { console.error('Failed to create transaction:', err); toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка')) }
     finally { setIsSubmitting(false) }
-  }
+  }, [fetchData, resetForm])
 
-  const handleQuickExpense = (label: string, amount: number) => {
+  const handleEditSubmit = useCallback(async () => {
+    const f = editFormRef.current
+    if (!f.tx || !f.amount || !f.date) return
+    setIsEditSubmitting(true); toast.dismiss()
+    try {
+      const payload: Record<string, unknown> = {
+        type: f.type,
+        amount: parseFloat(f.amount),
+        date: f.date,
+        description: f.description || undefined,
+        note: f.note || undefined,
+      }
+      if (f.type === 'TRANSFER') {
+        payload.fromAccountId = f.fromAccountId
+        payload.toAccountId = f.toAccountId
+      } else {
+        payload.categoryId = f.categoryId
+      }
+      const res = await fetch(`/api/finance/${f.tx.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) { toast.success('Транзакция обновлена'); setShowEditDialog(false); setEditingTx(null); fetchData() }
+      else { toast.error('Ошибка при обновлении транзакции') }
+    } catch (err) { console.error('Failed to update transaction:', err); toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка')) }
+    finally { setIsEditSubmitting(false) }
+  }, [fetchData])
+
+  const handleQuickExpense = useCallback((label: string, amount: number) => {
     setNewType('EXPENSE'); setNewAmount(amount.toString()); setNewDescription(label)
-  }
+  }, [])
 
-  const navigateMonth = (direction: number) => {
-    const [year, mon] = month.split('-').map(Number)
-    const d = new Date(year, mon - 1 + direction, 1)
-    setMonth(`${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`)
-  }
+  const navigateMonth = useCallback((direction: number) => {
+    setMonth(prev => {
+      const [year, mon] = prev.split('-').map(Number)
+      const d = new Date(year, mon - 1 + direction, 1)
+      return `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}`
+    })
+  }, [])
 
-  const openEditDialog = (tx: Transaction) => {
+  const goToToday = useCallback(() => {
+    setMonth(getCurrentMonthStr())
+  }, [])
+
+  const openEditDialog = useCallback((tx: Transaction) => {
     setEditingTx(tx)
     setEditType(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER')
     setEditAmount(tx.amount.toString())
@@ -291,37 +337,9 @@ export function useFinance() {
     setEditFromAccountId(tx.fromAccountId ?? '')
     setEditToAccountId(tx.toAccountId ?? '')
     setShowEditDialog(true)
-  }
+  }, [])
 
-  const handleEditSubmit = async () => {
-    if (!editingTx || !editAmount || !editDate) return
-    setIsEditSubmitting(true); toast.dismiss()
-    try {
-      const payload: Record<string, unknown> = {
-        type: editType,
-        amount: parseFloat(editAmount),
-        date: editDate,
-        description: editDescription || undefined,
-        note: editNote || undefined,
-      }
-      if (editType === 'TRANSFER') {
-        payload.fromAccountId = editFromAccountId
-        payload.toAccountId = editToAccountId
-      } else {
-        payload.categoryId = editCategoryId
-      }
-      const res = await fetch(`/api/finance/${editingTx.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      })
-      if (res.ok) { toast.success('Транзакция обновлена'); setShowEditDialog(false); setEditingTx(null); fetchData() }
-      else { toast.error('Ошибка при обновлении транзакции') }
-    } catch (err) { console.error('Failed to update transaction:', err); toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка')) }
-    finally { setIsEditSubmitting(false) }
-  }
-
-  const handleDuplicate = (tx: Transaction) => {
+  const handleDuplicate = useCallback((tx: Transaction) => {
     setNewType(tx.type as 'INCOME' | 'EXPENSE' | 'TRANSFER')
     setNewAmount(tx.amount.toString())
     setNewCategoryId(tx.categoryId)
@@ -331,187 +349,69 @@ export function useFinance() {
     setNewFromAccountId(tx.fromAccountId ?? '')
     setNewToAccountId(tx.toAccountId ?? '')
     setShowNewDialog(true)
-  }
+  }, [])
 
-  const goToToday = () => {
-    setMonth(getCurrentMonthStr())
-  }
-
-  const handleDelete = async (txId: string) => {
+  const handleDelete = useCallback(async (txId: string) => {
     toast.dismiss()
     try {
       const res = await fetch(`/api/finance/${txId}`, { method: 'DELETE' })
       if (res.ok) { toast.success('Транзакция удалена'); fetchData() }
       else { toast.error('Ошибка при удалении транзакции') }
     } catch (err) { console.error('Failed to delete transaction:', err); toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка')) }
-  }
+  }, [fetchData])
 
-  // ─── Account Actions ──────────────────────────────────────────
-  const createAccount = async (data: { name: string; type: string; icon?: string; color?: string; balance?: number }) => {
+  // ─── Stable account callbacks ─────────────────────────────────
+  const createAccount = useCallback(async (data: { name: string; type: string; icon?: string; color?: string; balance?: number }) => {
     try {
       const res = await fetch('/api/finance/accounts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
       })
       if (res.ok) { toast.success('Счёт создан'); fetchData(); return await res.json() }
       else { toast.error('Ошибка создания счёта'); return null }
     } catch { toast.error('Ошибка'); return null }
-  }
+  }, [fetchData])
 
-  const deleteAccount = async (id: string) => {
+  const deleteAccount = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/finance/accounts/${id}`, { method: 'DELETE' })
       if (res.ok) { toast.success('Счёт удалён'); fetchData() }
       else { toast.error('Ошибка удаления счёта') }
     } catch { toast.error('Ошибка') }
-  }
+  }, [fetchData])
 
-  // ─── Investment Actions ───────────────────────────────────────
-  const createInvestment = async (data: { name: string; type: string; icon?: string; color?: string; targetAmount?: number; description?: string }) => {
+  // ─── Stable investment callbacks ───────────────────────────────
+  const createInvestment = useCallback(async (data: { name: string; type: string; icon?: string; color?: string; targetAmount?: number; description?: string }) => {
     try {
       const res = await fetch('/api/finance/investments', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
       })
       if (res.ok) { toast.success('Инвестиция добавлена'); fetchData(); return await res.json() }
       else { toast.error('Ошибка'); return null }
     } catch { toast.error('Ошибка'); return null }
-  }
+  }, [fetchData])
 
-  const deleteInvestment = async (id: string) => {
+  const deleteInvestment = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/finance/investments/${id}`, { method: 'DELETE' })
       if (res.ok) { toast.success('Инвестиция удалена'); fetchData() }
       else { toast.error('Ошибка') }
     } catch { toast.error('Ошибка') }
-  }
+  }, [fetchData])
 
-  const addInvestmentTx = async (investmentId: string, data: { type: string; amount: number; units?: number; pricePerUnit?: number; date: string; note?: string }) => {
+  const addInvestmentTx = useCallback(async (investmentId: string, data: { type: string; amount: number; units?: number; pricePerUnit?: number; date: string; note?: string }) => {
     try {
       const res = await fetch(`/api/finance/investments/${investmentId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
       })
       if (res.ok) { toast.success('Операция добавлена'); fetchData(); return await res.json() }
       else { toast.error('Ошибка'); return null }
     } catch { toast.error('Ошибка'); return null }
-  }
+  }, [fetchData])
 
-  // ─── Savings Goal Actions ─────────────────────────────────────
-  const fetchSavingsGoals = async () => {
-    try {
-      const res = await fetch('/api/finance/savings-goals')
-      if (res.ok) { const d = await res.json(); setSavingsGoals(d.data || []) }
-    } catch (err) { console.error('Failed to fetch savings goals:', err) }
-  }
-
-  const createSavingsGoal = async (data: { name: string; targetAmount: number; icon?: string; color?: string; deadline?: string; description?: string }) => {
-    try {
-      const res = await fetch('/api/finance/savings-goals', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (res.ok) { toast.success('Цель накопления создана'); fetchSavingsGoals(); return await res.json() }
-      else { toast.error('Ошибка создания цели'); return null }
-    } catch { toast.error('Ошибка'); return null }
-  }
-
-  const updateSavingsGoal = async (id: string, data: Partial<SavingsGoal>) => {
-    try {
-      const res = await fetch(`/api/finance/savings-goals/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (res.ok) { toast.success('Цель обновлена'); fetchSavingsGoals(); return await res.json() }
-      else { toast.error('Ошибка обновления цели'); return null }
-    } catch { toast.error('Ошибка'); return null }
-  }
-
-  const deleteSavingsGoal = async (id: string) => {
-    try {
-      const res = await fetch(`/api/finance/savings-goals/${id}`, { method: 'DELETE' })
-      if (res.ok) { toast.success('Цель удалена'); fetchSavingsGoals() }
-      else { toast.error('Ошибка удаления цели') }
-    } catch { toast.error('Ошибка') }
-  }
-
-  const addFundsToSavingsGoal = async (id: string, amount: number) => {
-    try {
-      const goal = savingsGoals.find(g => g.id === id)
-      if (!goal) return
-      const res = await fetch(`/api/finance/savings-goals/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentAmount: goal.currentAmount + amount }),
-      })
-      if (res.ok) { toast.success(`+${amount.toLocaleString('ru-RU')} ₽ добавлено`); fetchSavingsGoals() }
-      else { toast.error('Ошибка пополнения') }
-    } catch { toast.error('Ошибка') }
-  }
-
-  // ─── Recurring Transaction Actions ─────────────────────────────
-  const fetchRecurringTransactions = async () => {
-    try {
-      const res = await fetch('/api/finance/recurring')
-      if (res.ok) { const d = await res.json(); setRecurringTransactions(d.data || []) }
-    } catch (err) { console.error('Failed to fetch recurring transactions:', err) }
-  }
-
-  const createRecurring = async (data: { type: string; amount: number; categoryId: string; description?: string; note?: string; frequency: string; startDate?: string }) => {
-    try {
-      const res = await fetch('/api/finance/recurring', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (res.ok) { toast.success('Повторяющаяся транзакция создана'); fetchRecurringTransactions(); return await res.json() }
-      else { toast.error('Ошибка создания'); return null }
-    } catch { toast.error('Ошибка'); return null }
-  }
-
-  const updateRecurring = async (id: string, data: Partial<RecurringTransaction>) => {
-    try {
-      const res = await fetch(`/api/finance/recurring/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-      if (res.ok) { toast.success('Обновлено'); fetchRecurringTransactions(); return await res.json() }
-      else { toast.error('Ошибка обновления'); return null }
-    } catch { toast.error('Ошибка'); return null }
-  }
-
-  const deleteRecurring = async (id: string) => {
-    try {
-      const res = await fetch(`/api/finance/recurring/${id}`, { method: 'DELETE' })
-      if (res.ok) { toast.success('Удалено'); fetchRecurringTransactions() }
-      else { toast.error('Ошибка удаления') }
-    } catch { toast.error('Ошибка') }
-  }
-
-  const executeRecurring = async (id: string) => {
-    try {
-      const res = await fetch('/api/finance/recurring/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recurringId: id }),
-      })
-      if (res.ok) { toast.success('Транзакция выполнена'); fetchData(); fetchRecurringTransactions(); return await res.json() }
-      else { const err = await res.json(); toast.error(err.error || 'Ошибка выполнения'); return null }
-    } catch { toast.error('Ошибка'); return null }
-  }
-
-  const deleteInvestmentTx = async (investmentId: string, txId: string) => {
+  const deleteInvestmentTx = useCallback(async (investmentId: string, txId: string) => {
     toast.dismiss()
     try {
-      const res = await fetch(`/api/finance/investments/${investmentId}/tx/${txId}`, {
-        method: 'DELETE',
-      })
+      const res = await fetch(`/api/finance/investments/${investmentId}/tx/${txId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error(`HTTP ${res.status}`)
       const json = await res.json()
       if (!json.success) { toast.error('Ошибка удаления'); return }
@@ -520,7 +420,92 @@ export function useFinance() {
     } catch {
       toast.error('Ошибка удаления транзакции')
     }
-  }
+  }, [fetchData])
+
+  // ─── Stable savings goal callbacks ─────────────────────────────
+  const createSavingsGoal = useCallback(async (data: { name: string; targetAmount: number; icon?: string; color?: string; deadline?: string; description?: string }) => {
+    try {
+      const res = await fetch('/api/finance/savings-goals', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Цель накопления создана'); fetchSavingsGoals(); return await res.json() }
+      else { toast.error('Ошибка создания цели'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }, [fetchSavingsGoals])
+
+  const updateSavingsGoal = useCallback(async (id: string, data: Partial<SavingsGoal>) => {
+    try {
+      const res = await fetch(`/api/finance/savings-goals/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Цель обновлена'); fetchSavingsGoals(); return await res.json() }
+      else { toast.error('Ошибка обновления цели'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }, [fetchSavingsGoals])
+
+  const deleteSavingsGoal = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/finance/savings-goals/${id}`, { method: 'DELETE' })
+      if (res.ok) { toast.success('Цель удалена'); fetchSavingsGoals() }
+      else { toast.error('Ошибка удаления цели') }
+    } catch { toast.error('Ошибка') }
+  }, [fetchSavingsGoals])
+
+  const addFundsToSavingsGoal = useCallback(async (id: string, amount: number) => {
+    try {
+      const res = await fetch(`/api/finance/savings-goals`)
+      if (!res.ok) { toast.error('Ошибка'); return }
+      const goals = await res.json() as { data: SavingsGoal[] }
+      const goal = goals.data?.find(g => g.id === id)
+      if (!goal) return
+      const updateRes = await fetch(`/api/finance/savings-goals/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentAmount: goal.currentAmount + amount }),
+      })
+      if (updateRes.ok) { toast.success(`+${amount.toLocaleString('ru-RU')} ₽ добавлено`); fetchSavingsGoals() }
+      else { toast.error('Ошибка пополнения') }
+    } catch { toast.error('Ошибка') }
+  }, [fetchSavingsGoals])
+
+  // ─── Stable recurring transaction callbacks ────────────────────
+  const createRecurring = useCallback(async (data: { type: string; amount: number; categoryId: string; description?: string; note?: string; frequency: string; startDate?: string }) => {
+    try {
+      const res = await fetch('/api/finance/recurring', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Повторяющаяся транзакция создана'); fetchRecurringTransactions(); return await res.json() }
+      else { toast.error('Ошибка создания'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }, [fetchRecurringTransactions])
+
+  const updateRecurring = useCallback(async (id: string, data: Partial<RecurringTransaction>) => {
+    try {
+      const res = await fetch(`/api/finance/recurring/${id}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
+      })
+      if (res.ok) { toast.success('Обновлено'); fetchRecurringTransactions(); return await res.json() }
+      else { toast.error('Ошибка обновления'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }, [fetchRecurringTransactions])
+
+  const deleteRecurring = useCallback(async (id: string) => {
+    try {
+      const res = await fetch(`/api/finance/recurring/${id}`, { method: 'DELETE' })
+      if (res.ok) { toast.success('Удалено'); fetchRecurringTransactions() }
+      else { toast.error('Ошибка удаления') }
+    } catch { toast.error('Ошибка') }
+  }, [fetchRecurringTransactions])
+
+  const executeRecurring = useCallback(async (id: string) => {
+    try {
+      const res = await fetch('/api/finance/recurring/execute', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recurringId: id }),
+      })
+      if (res.ok) { toast.success('Транзакция выполнена'); fetchData(); fetchRecurringTransactions(); return await res.json() }
+      else { const err = await res.json(); toast.error(err.error || 'Ошибка выполнения'); return null }
+    } catch { toast.error('Ошибка'); return null }
+  }, [fetchData, fetchRecurringTransactions])
 
   return {
     // State

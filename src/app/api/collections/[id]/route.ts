@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID, safeParseJSON, collectionTypeSchema } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
-const VALID_TYPES = ['BOOK', 'MOVIE', 'ANIME', 'SERIES', 'MUSIC', 'RECIPE', 'SUPPLEMENT', 'PRODUCT', 'PLACE']
+const updateCollectionSchema = z.object({
+  type: collectionTypeSchema.optional(),
+  title: z.string().optional(),
+  author: z.string().optional().nullable(),
+  description: z.string().optional().nullable(),
+  coverUrl: z.string().optional().nullable(),
+  rating: z.number().int().min(1).max(5).optional().nullable(),
+  date: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  notes: z.string().optional().nullable(),
+  details: z.record(z.unknown()).optional(),
+})
 
 export async function PUT(
   request: NextRequest,
@@ -17,14 +30,16 @@ export async function PUT(
       where: { id },
     })
 
-    if (!existing || existing.userId !== USER_ID) {
+    if (!existing || existing.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Collection item not found' },
         { status: 404 }
       )
     }
 
-    const body = await request.json()
+    const data = await parseBody(request, updateCollectionSchema)
+    if (!data) return
+
     const {
       type,
       title,
@@ -36,27 +51,7 @@ export async function PUT(
       tags,
       notes,
       details,
-    } = body
-
-    if (type && !VALID_TYPES.includes(type)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `type must be one of: ${VALID_TYPES.join(', ')}`,
-        },
-        { status: 400 }
-      )
-    }
-
-    if (rating !== undefined && rating !== null) {
-      const r = Number(rating)
-      if (!Number.isInteger(r) || r < 1 || r > 5) {
-        return NextResponse.json(
-          { success: false, error: 'rating must be an integer between 1 and 5' },
-          { status: 400 }
-        )
-      }
-    }
+    } = data
 
     const item = await db.collectionItem.update({
       where: { id },
@@ -96,7 +91,7 @@ export async function DELETE(
       where: { id },
     })
 
-    if (!existing || existing.userId !== USER_ID) {
+    if (!existing || existing.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Collection item not found' },
         { status: 404 }

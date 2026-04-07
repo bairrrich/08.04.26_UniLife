@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 export async function GET() {
   try {
@@ -14,10 +13,10 @@ export async function GET() {
       },
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json({ success: true, data: recurring })
+    return apiSuccess(recurring)
   } catch (error) {
     console.error('GET /api/finance/recurring error:', error)
-    return NextResponse.json({ error: 'Failed to fetch recurring transactions' }, { status: 500 })
+    return apiServerError('Failed to fetch recurring transactions')
   }
 }
 
@@ -27,16 +26,16 @@ export async function POST(request: NextRequest) {
     const { type, amount, categoryId, description, note, frequency, startDate } = body
 
     if (!type || !['INCOME', 'EXPENSE'].includes(type)) {
-      return NextResponse.json({ error: 'Valid type (INCOME/EXPENSE) is required' }, { status: 400 })
+      return apiError('Valid type (INCOME/EXPENSE) is required')
     }
     if (!amount || parseFloat(amount) <= 0) {
-      return NextResponse.json({ error: 'Amount must be positive' }, { status: 400 })
+      return apiError('Amount must be positive')
     }
     if (!categoryId) {
-      return NextResponse.json({ error: 'Category is required' }, { status: 400 })
+      return apiError('Category is required')
     }
     if (!frequency || !['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'].includes(frequency)) {
-      return NextResponse.json({ error: 'Valid frequency (DAILY/WEEKLY/MONTHLY/YEARLY) is required' }, { status: 400 })
+      return apiError('Valid frequency (DAILY/WEEKLY/MONTHLY/YEARLY) is required')
     }
 
     const nextDate = startDate ? new Date(startDate) : new Date()
@@ -59,9 +58,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, data: recurring }, { status: 201 })
+    return apiSuccess(recurring, 201)
   } catch (error) {
     console.error('POST /api/finance/recurring error:', error)
-    return NextResponse.json({ error: 'Failed to create recurring transaction' }, { status: 500 })
+    return apiServerError('Failed to create recurring transaction')
   }
 }

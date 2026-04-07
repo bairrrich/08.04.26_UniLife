@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiServerError } from '@/lib/api'
 
 const DEFAULT_GOALS = {
   dailyKcal: 2200,
@@ -15,34 +14,28 @@ const DEFAULT_GOALS = {
 export async function GET() {
   try {
     const goal = await db.nutritionGoal.findUnique({
-      where: { userId: USER_ID },
+      where: { userId: DEMO_USER_ID },
     })
 
     if (goal) {
-      return NextResponse.json({
-        success: true,
-        data: {
-          dailyKcal: goal.dailyKcal,
-          dailyProtein: goal.dailyProtein,
-          dailyFat: goal.dailyFat,
-          dailyCarbs: goal.dailyCarbs,
-          dailyWater: goal.dailyWater,
-        },
+      return apiSuccess({
+        dailyKcal: goal.dailyKcal,
+        dailyProtein: goal.dailyProtein,
+        dailyFat: goal.dailyFat,
+        dailyCarbs: goal.dailyCarbs,
+        dailyWater: goal.dailyWater,
       })
     }
 
     // Return defaults, but also seed them so future reads are consistent
     await db.nutritionGoal.create({
-      data: { userId: USER_ID, ...DEFAULT_GOALS },
+      data: { userId: DEMO_USER_ID, ...DEFAULT_GOALS },
     })
 
-    return NextResponse.json({ success: true, data: DEFAULT_GOALS })
+    return apiSuccess(DEFAULT_GOALS)
   } catch (error) {
     console.error('GET /api/nutrition/goals error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch nutrition goals' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to fetch nutrition goals')
   }
 }
 
@@ -62,26 +55,20 @@ export async function PUT(request: NextRequest) {
     }
 
     const goal = await db.nutritionGoal.upsert({
-      where: { userId: USER_ID },
+      where: { userId: DEMO_USER_ID },
       update: parsed,
-      create: { userId: USER_ID, ...parsed },
+      create: { userId: DEMO_USER_ID, ...parsed },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        dailyKcal: goal.dailyKcal,
-        dailyProtein: goal.dailyProtein,
-        dailyFat: goal.dailyFat,
-        dailyCarbs: goal.dailyCarbs,
-        dailyWater: goal.dailyWater,
-      },
+    return apiSuccess({
+      dailyKcal: goal.dailyKcal,
+      dailyProtein: goal.dailyProtein,
+      dailyFat: goal.dailyFat,
+      dailyCarbs: goal.dailyCarbs,
+      dailyWater: goal.dailyWater,
     })
   } catch (error) {
     console.error('PUT /api/nutrition/goals error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to update nutrition goals' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to update nutrition goals')
   }
 }

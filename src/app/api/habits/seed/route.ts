@@ -1,7 +1,5 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccessMessage, apiServerError } from '@/lib/api'
 
 export async function POST() {
   try {
@@ -15,12 +13,12 @@ export async function POST() {
 
     const now = new Date()
 
-    await db.habitLog.deleteMany({ where: { habit: { userId: USER_ID } } })
-    await db.habit.deleteMany({ where: { userId: USER_ID } })
+    await db.habitLog.deleteMany({ where: { habit: { userId: DEMO_USER_ID } } })
+    await db.habit.deleteMany({ where: { userId: DEMO_USER_ID } })
 
     for (const h of habitData) {
       const habit = await db.habit.create({
-        data: { userId: USER_ID, ...h },
+        data: { userId: DEMO_USER_ID, ...h },
       })
 
       for (let i = 1; i < 14; i++) {
@@ -41,9 +39,9 @@ export async function POST() {
       }
     }
 
-    return NextResponse.json({ success: true, message: 'Habits seeded' })
+    return apiSuccessMessage('Habits seeded')
   } catch (error) {
     console.error('Habits seed error:', error)
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    return apiServerError(String(error))
   }
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiError, apiServerError } from '@/lib/api'
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,10 +8,7 @@ export async function POST(request: NextRequest) {
     const { postId } = body
 
     if (!postId) {
-      return NextResponse.json(
-        { success: false, error: 'postId is required' },
-        { status: 400 }
-      )
+      return apiError('postId is required')
     }
 
     // Verify the post exists
@@ -21,10 +17,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!post) {
-      return NextResponse.json(
-        { success: false, error: 'Post not found' },
-        { status: 404 }
-      )
+      return apiError('Post not found', 404)
     }
 
     // Check if a like already exists
@@ -32,7 +25,7 @@ export async function POST(request: NextRequest) {
       where: {
         postId_userId: {
           postId,
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
         },
       },
     })
@@ -50,7 +43,7 @@ export async function POST(request: NextRequest) {
       await db.like.create({
         data: {
           postId,
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
         },
       })
       liked = true
@@ -64,9 +57,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, liked, likeCount })
   } catch (error) {
     console.error('Feed Like POST error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to toggle like' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to toggle like')
   }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
 import { getCurrentMonthStr, getRelativeTime } from '@/lib/format'
 import { toast } from 'sonner'
@@ -33,6 +33,10 @@ export function useWorkouts() {
   const [formDuration, setFormDuration] = useState('')
   const [formNote, setFormNote] = useState('')
   const [formExercises, setFormExercises] = useState<ExerciseData[]>([emptyExercise(0)])
+
+  // Ref for stable callback access to form state
+  const formRef = useRef({ name: formName, date: formDate, duration: formDuration, note: formNote, exercises: formExercises })
+  formRef.current = { name: formName, date: formDate, duration: formDuration, note: formNote, exercises: formExercises }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   const fetchWorkouts = useCallback(async () => {
@@ -196,25 +200,26 @@ export function useWorkouts() {
     return { thisWeek: thisWeekCount, lastWeek: lastWeekCount, diff: thisWeekCount - lastWeekCount }
   }, [allWorkouts])
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const resetForm = () => {
+  // ── Handlers (stable callbacks) ──────────────────────────────────────────
+  const resetForm = useCallback(() => {
     setFormName('')
     setFormDate(new Date().toISOString().split('T')[0])
     setFormDuration('')
     setFormNote('')
     setFormExercises([emptyExercise(0)])
-  }
+  }, [])
 
-  const handleApplyPreset = (preset: typeof WORKOUT_PRESETS[0]) => {
+  const handleApplyPreset = useCallback((preset: typeof WORKOUT_PRESETS[0]) => {
     setFormName(preset.name)
     setFormDuration(preset.duration.toString())
     setFormExercises(preset.exercises.map((ex, idx) => ({ ...ex, order: idx })))
-  }
+  }, [])
 
-  const handleSubmit = async () => {
-    if (!formName.trim() || !formDate) return
+  const handleSubmit = useCallback(async () => {
+    const f = formRef.current
+    if (!f.name.trim() || !f.date) return
     toast.dismiss()
-    const exercises = formExercises.filter((ex) => ex.name.trim()).map((ex, idx) => ({
+    const exercises = f.exercises.filter((ex) => ex.name.trim()).map((ex, idx) => ({
       name: ex.name.trim(), sets: ex.sets, order: idx,
     }))
     try {
@@ -222,10 +227,10 @@ export function useWorkouts() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formName.trim(),
-          date: formDate,
-          durationMin: formDuration ? parseInt(formDuration) : null,
-          note: formNote.trim() || null,
+          name: f.name.trim(),
+          date: f.date,
+          durationMin: f.duration ? parseInt(f.duration) : null,
+          note: f.note.trim() || null,
           exercises,
         }),
       })
@@ -243,9 +248,9 @@ export function useWorkouts() {
       console.error('Failed to create workout:', err)
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
-  }
+  }, [fetchWorkouts, fetchAllWorkouts, resetForm])
 
-  const openEditDialog = (workout: Workout) => {
+  const openEditDialog = useCallback((workout: Workout) => {
     setEditingWorkout(workout)
     setFormName(workout.name)
     setFormDate(workout.date.split('T')[0])
@@ -265,12 +270,14 @@ export function useWorkouts() {
         : [emptyExercise(0)]
     )
     setEditDialogOpen(true)
-  }
+  }, [])
 
-  const handleEditSubmit = async () => {
-    if (!editingWorkout || !formName.trim() || !formDate) return
+  const handleEditSubmit = useCallback(async () => {
+    const f = formRef.current
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- editingWorkout read from state at call time
+    if (!editingWorkout || !f.name.trim() || !f.date) return
     toast.dismiss()
-    const exercises = formExercises.filter((ex) => ex.name.trim()).map((ex, idx) => ({
+    const exercises = f.exercises.filter((ex) => ex.name.trim()).map((ex, idx) => ({
       ...(ex.id ? { id: ex.id } : {}),
       name: ex.name.trim(),
       sets: ex.sets,
@@ -281,10 +288,10 @@ export function useWorkouts() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formName.trim(),
-          date: formDate,
-          durationMin: formDuration ? parseInt(formDuration) : null,
-          note: formNote.trim() || null,
+          name: f.name.trim(),
+          date: f.date,
+          durationMin: f.duration ? parseInt(f.duration) : null,
+          note: f.note.trim() || null,
           exercises,
         }),
       })
@@ -303,15 +310,17 @@ export function useWorkouts() {
       console.error('Failed to update workout:', err)
       toast.error('Ошибка: ' + (err instanceof Error ? err.message : 'Неизвестная ошибка'))
     }
-  }
+  }, [fetchWorkouts, fetchAllWorkouts, resetForm])
 
-  const toggleExpand = (id: string) => setExpandedId(expandedId === id ? null : id)
+  const toggleExpand = useCallback((id: string) => setExpandedId(prev => prev === id ? null : id), [])
 
-  const changeMonth = (direction: number) => {
-    const [y, m] = month.split('-').map(Number)
-    const newDate = new Date(y, m - 1 + direction, 1)
-    setMonth(`${newDate.getFullYear()}-${(newDate.getMonth() + 1).toString().padStart(2, '0')}`)
-  }
+  const changeMonth = useCallback((direction: number) => {
+    setMonth(prev => {
+      const [y, m] = prev.split('-').map(Number)
+      const newDate = new Date(y, m - 1 + direction, 1)
+      return `${newDate.getFullYear()}-${(newDate.getMonth() + 1).toString().padStart(2, '0')}`
+    })
+  }, [])
 
   const handleDelete = useCallback(async (workoutId: string) => {
     try {

@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { db } from "@/lib/db";
+import { parseBody, DEMO_USER_ID, safeParseJSON } from "@/lib/api";
+
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const createDiarySchema = z.object({
+  content: z.string().min(1, "Содержание записи обязательно и должно быть непустой строкой"),
+  title: z.string().optional(),
+  mood: z.number().int().min(1, "Настроение должно быть не менее 1").max(5, "Настроение должно быть не более 5").optional(),
+  date: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  photos: z.array(z.string()).optional(),
+});
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,14 +44,6 @@ interface DiaryEntryJSON {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function safeParseJSON<T>(str: string, fallback: T): T {
-  try {
-    return JSON.parse(str) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 function serializeEntry(row: DiaryEntryRow): DiaryEntryJSON {
   return {
     id: row.id,
@@ -53,8 +58,6 @@ function serializeEntry(row: DiaryEntryRow): DiaryEntryJSON {
     updatedAt: row.updatedAt.toISOString(),
   };
 }
-
-const DEMO_USER_ID = "user_demo_001";
 
 // ─── GET /api/diary ──────────────────────────────────────────────────────────
 
@@ -139,68 +142,28 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const data = await parseBody(request, createDiarySchema);
+    if (!data) return;
 
-    const { title, content, mood, date, tags, photos } = body as {
-      title?: string;
-      content?: string;
-      mood?: number;
-      date?: string;
-      tags?: string[];
-      photos?: string[];
-    };
+    const { content, title, mood, date, tags, photos } = data;
 
-    // Validate required fields
-    if (!content || typeof content !== "string" || content.trim().length === 0) {
+    const entryDate = date ? new Date(date) : new Date();
+    if (date && isNaN(entryDate.getTime())) {
       return NextResponse.json(
-        { success: false, error: "Содержание записи обязательно и должно быть непустой строкой" },
+        { success: false, error: "Неверный формат даты. Используйте ISO 8601" },
         { status: 400 }
       );
     }
-
-    // Validate mood if provided (must be 1-5)
-    if (mood !== undefined) {
-      if (typeof mood !== "number" || !Number.isInteger(mood) || mood < 1 || mood > 5) {
-        return NextResponse.json(
-          { success: false, error: "Настроение должно быть целым числом от 1 до 5" },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Validate date if provided
-    let entryDate: Date;
-    if (date) {
-      entryDate = new Date(date);
-      if (isNaN(entryDate.getTime())) {
-        return NextResponse.json(
-          { success: false, error: "Неверный формат даты. Используйте ISO 8601" },
-          { status: 400 }
-        );
-      }
-    } else {
-      entryDate = new Date();
-    }
-
-    // Validate and sanitize tags
-    const safeTags = Array.isArray(tags)
-      ? tags.filter((t) => typeof t === "string")
-      : [];
-
-    // Validate and sanitize photos
-    const safePhotos = Array.isArray(photos)
-      ? photos.filter((p) => typeof p === "string")
-      : [];
 
     const entry = await db.diaryEntry.create({
       data: {
         userId: DEMO_USER_ID,
         date: entryDate,
-        title: typeof title === "string" ? title.trim() : null,
+        title: title?.trim() || null,
         content: content.trim(),
         mood: mood ?? null,
-        photos: JSON.stringify(safePhotos),
-        tags: JSON.stringify(safeTags),
+        photos: JSON.stringify(photos ?? []),
+        tags: JSON.stringify(tags ?? []),
       },
     });
 

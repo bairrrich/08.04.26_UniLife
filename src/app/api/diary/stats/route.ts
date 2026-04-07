@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-
-const DEMO_USER_ID = "user_demo_001";
+import { DEMO_USER_ID, apiServerError } from "@/lib/api";
 
 function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -92,9 +91,6 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[GET /api/diary/stats] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch diary stats." },
-      { status: 500 }
-    );
+    return apiServerError("Failed to fetch diary stats.");
   }
 }

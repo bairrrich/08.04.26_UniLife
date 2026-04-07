@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 export async function GET() {
   try {
@@ -9,10 +8,10 @@ export async function GET() {
       where: { userId: DEMO_USER_ID },
       orderBy: { createdAt: 'desc' },
     })
-    return NextResponse.json({ success: true, data: goals })
+    return apiSuccess(goals)
   } catch (error) {
     console.error('GET /api/finance/savings-goals error:', error)
-    return NextResponse.json({ error: 'Failed to fetch savings goals' }, { status: 500 })
+    return apiServerError('Failed to fetch savings goals')
   }
 }
 
@@ -21,9 +20,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const { name, targetAmount, icon, color, deadline, description } = body
 
-    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    if (!name) return apiError('Name is required')
     if (!targetAmount || parseFloat(targetAmount) <= 0) {
-      return NextResponse.json({ error: 'Target amount is required and must be positive' }, { status: 400 })
+      return apiError('Target amount is required and must be positive')
     }
 
     const goal = await db.savingsGoal.create({
@@ -38,9 +37,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, data: goal }, { status: 201 })
+    return apiSuccess(goal, 201)
   } catch (error) {
     console.error('POST /api/finance/savings-goals error:', error)
-    return NextResponse.json({ error: 'Failed to create savings goal' }, { status: 500 })
+    return apiServerError('Failed to create savings goal')
   }
 }

@@ -1,7 +1,5 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccessMessage, apiServerError } from '@/lib/api'
 
 export async function POST() {
   try {
@@ -24,9 +22,9 @@ export async function POST() {
     }
 
     await db.user.upsert({
-      where: { id: USER_ID },
+      where: { id: DEMO_USER_ID },
       update: {},
-      create: { id: USER_ID, email: 'demo@unilife.app', name: 'Алексей', avatar: '/unilife-logo.png', bio: 'Люблю отслеживать всё в жизни 🚀' },
+      create: { id: DEMO_USER_ID, email: 'demo@unilife.app', name: 'Алексей', avatar: '/unilife-logo.png', bio: 'Люблю отслеживать всё в жизни 🚀' },
     })
 
     const now = new Date()
@@ -47,7 +45,7 @@ export async function POST() {
         const descs = txDescs[catId]!
         await db.transaction.create({
           data: {
-            userId: USER_ID,
+            userId: DEMO_USER_ID,
             type: Math.random() > 0.15 ? 'EXPENSE' : 'INCOME',
             amount: Math.round((Math.random() * 3000 + 100) * 100) / 100,
             categoryId: catId,
@@ -68,7 +66,7 @@ export async function POST() {
     for (let i = 0; i < 5; i++) {
       const d = new Date(now); d.setDate(d.getDate() - i)
       await db.diaryEntry.create({
-        data: { userId: USER_ID, date: d, content: diaries[i], mood: Math.floor(Math.random() * 3) + 3, tags: JSON.stringify(['тег']) },
+        data: { userId: DEMO_USER_ID, date: d, content: diaries[i], mood: Math.floor(Math.random() * 3) + 3, tags: JSON.stringify(['тег']) },
       })
     }
 
@@ -81,7 +79,7 @@ export async function POST() {
       const d = new Date(now); d.setDate(d.getDate() - i)
       for (const m of mealOpts) {
         await db.meal.create({
-          data: { userId: USER_ID, type: m.type, date: d, items: { create: m.items } },
+          data: { userId: DEMO_USER_ID, type: m.type, date: d, items: { create: m.items } },
         })
       }
     }
@@ -95,7 +93,7 @@ export async function POST() {
       const w = wData[i]
       await db.workout.create({
         data: {
-          userId: USER_ID, date: d, name: w.name, durationMin: 50,
+          userId: DEMO_USER_ID, date: d, name: w.name, durationMin: 50,
           exercises: {
             create: w.exercises.map((name, idx) => ({
               name,
@@ -114,20 +112,20 @@ export async function POST() {
       { type: 'RECIPE', title: 'Паста Карбонара', author: 'Итальянская', rating: 5 },
     ]
     for (const c of cols) {
-      await db.collectionItem.create({ data: { userId: USER_ID, ...c, tags: JSON.stringify([]) } })
+      await db.collectionItem.create({ data: { userId: DEMO_USER_ID, ...c, tags: JSON.stringify([]) } })
     }
 
     const posts = ['Отличный день для тренировки! 💪', 'Вкусный обед 😋', 'Хорошая книга 📚']
     for (let i = 0; i < 3; i++) {
       const d = new Date(now); d.setDate(d.getDate() - i * 3)
       await db.post.create({
-        data: { userId: USER_ID, entityType: ['diary', 'workout', 'meal'][i], entityId: 'demo', caption: posts[i], createdAt: d },
+        data: { userId: DEMO_USER_ID, entityType: ['diary', 'workout', 'meal'][i], entityId: 'demo', caption: posts[i], createdAt: d },
       })
     }
 
-    return NextResponse.json({ success: true, message: 'Lite seed complete' })
+    return apiSuccessMessage('Lite seed complete')
   } catch (error) {
     console.error('Lite seed error:', error)
-    return NextResponse.json({ success: false, error: String(error) }, { status: 500 })
+    return apiServerError(String(error))
   }
 }

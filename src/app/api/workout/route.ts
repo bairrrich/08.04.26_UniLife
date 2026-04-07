@@ -1,14 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const exerciseSchema = z.object({
+  name: z.string(),
+  sets: z.unknown().optional(),
+  notes: z.string().optional(),
+  order: z.number().optional(),
+})
+
+const createWorkoutSchema = z.object({
+  name: z.string().min(1, 'Название тренировки обязательно'),
+  date: z.string().min(1, 'Дата обязательна'),
+  durationMin: z.number().optional(),
+  note: z.string().optional(),
+  exercises: z.array(exerciseSchema).optional(),
+})
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const month = searchParams.get('month') // format: YYYY-MM
 
-    const where: Record<string, unknown> = { userId: USER_ID }
+    const where: Record<string, unknown> = { userId: DEMO_USER_ID }
 
     if (month) {
       const [year, mon] = month.split('-').map(Number)
@@ -42,31 +59,21 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, date, durationMin, note, exercises } = body
+    const data = await parseBody(request, createWorkoutSchema)
+    if (!data) return
 
-    if (!name || !date) {
-      return NextResponse.json(
-        { success: false, error: 'name and date are required' },
-        { status: 400 }
-      )
-    }
+    const { name, date, durationMin, note, exercises } = data
 
     const workout = await db.workout.create({
       data: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         name,
         date: new Date(date),
         durationMin: durationMin ?? null,
         note: note ?? null,
         exercises: {
           create: (exercises ?? []).map(
-            (ex: {
-              name: string
-              sets?: unknown
-              notes?: string
-              order?: number
-            }, index: number) => ({
+            (ex, index) => ({
               name: ex.name,
               sets: ex.sets ? JSON.stringify(ex.sets) : '[]',
               notes: ex.notes ?? null,

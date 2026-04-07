@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { apiSuccess, apiServerError, DEMO_USER_ID } from '@/lib/api'
+import { getTodayStr, toDateStr, calculateStreak } from '@/lib/format'
 
 // ─── Achievement Definitions ──────────────────────────────────────────────────
 
@@ -53,49 +54,15 @@ const ALL_ACHIEVEMENTS: AchievementDef[] = [
   { key: 'general_early_bird', title: 'Ранний пташка', description: 'Напишите в дневник до 8 утра', icon: '🐦', category: 'general' },
 ]
 
-const USER_ID = 'user_demo_001'
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function dateToStr(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
-function calcStreak(dates: string[]): number {
-  if (dates.length === 0) return 0
-  const unique = [...new Set(dates)].sort().reverse()
-  let streak = 1
-  for (let i = 0; i < unique.length - 1; i++) {
-    const curr = new Date(unique[i])
-    const prev = new Date(unique[i + 1])
-    const diff = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24))
-    if (diff === 1) {
-      streak++
-    } else {
-      break
-    }
-  }
-  // Check if streak starts from today or yesterday
-  const today = todayStr()
-  const yesterday = (() => {
-    const d = new Date()
-    d.setDate(d.getDate() - 1)
-    return dateToStr(d)
-  })()
-  if (unique[0] !== today && unique[0] !== yesterday) return 0
-  return streak
-}
+// todayStr(), dateToStr(), calcStreak() replaced by shared imports from @/lib/format
+// (getTodayStr, toDateStr, calculateStreak) — equivalent logic.
 
 // ─── GET Handler ──────────────────────────────────────────────────────────────
 
 export async function GET() {
   try {
-    const today = todayStr()
+    const today = getTodayStr()
     const now = new Date()
 
     // ── Fetch data from all modules in parallel ──
@@ -112,25 +79,25 @@ export async function GET() {
       posts,
       existingAchievements,
     ] = await Promise.all([
-      db.diaryEntry.findMany({ where: { userId: USER_ID }, select: { id: true, date: true, mood: true } }),
-      db.transaction.findMany({ where: { userId: USER_ID }, select: { id: true, date: true, amount: true, type: true } }),
-      db.workout.findMany({ where: { userId: USER_ID }, select: { id: true, date: true, durationMin: true } }),
-      db.habit.findMany({ where: { userId: USER_ID }, select: { id: true, name: true } }),
+      db.diaryEntry.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, date: true, mood: true } }),
+      db.transaction.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, date: true, amount: true, type: true } }),
+      db.workout.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, date: true, durationMin: true } }),
+      db.habit.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, name: true } }),
       db.habitLog.findMany({ select: { habitId: true, date: true, count: true } }),
-      db.meal.findMany({ where: { userId: USER_ID }, select: { id: true, date: true } }),
-      db.waterLog.findMany({ where: { userId: USER_ID }, select: { id: true, date: true, amountMl: true } }),
-      db.collectionItem.findMany({ where: { userId: USER_ID }, select: { id: true } }),
-      db.goal.findMany({ where: { userId: USER_ID }, select: { id: true, status: true } }),
-      db.post.findMany({ where: { userId: USER_ID }, select: { id: true } }),
-      db.achievement.findMany({ where: { userId: USER_ID } }),
+      db.meal.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, date: true } }),
+      db.waterLog.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, date: true, amountMl: true } }),
+      db.collectionItem.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true } }),
+      db.goal.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true, status: true } }),
+      db.post.findMany({ where: { userId: DEMO_USER_ID }, select: { id: true } }),
+      db.achievement.findMany({ where: { userId: DEMO_USER_ID } }),
     ])
 
     // ── Build existing achievement key set ──
     const existingKeys = new Set(existingAchievements.map((a) => a.key))
 
     // ── Precompute common data ──
-    const diaryDates = diaryEntries.map((e) => dateToStr(new Date(e.date)))
-    const diaryStreak = calcStreak(diaryDates)
+    const diaryDates = diaryEntries.map((e) => toDateStr(new Date(e.date)))
+    const diaryStreak = calculateStreak(diaryDates)
 
     const totalIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
     const totalExpense = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
@@ -139,13 +106,13 @@ export async function GET() {
     // Week range for workout streak
     const weekAgo = new Date(now)
     weekAgo.setDate(weekAgo.getDate() - 7)
-    const weekAgoStr = dateToStr(weekAgo)
-    const weekWorkouts = workouts.filter((w) => dateToStr(new Date(w.date)) >= weekAgoStr).length
+    const weekAgoStr = toDateStr(weekAgo)
+    const weekWorkouts = workouts.filter((w) => toDateStr(new Date(w.date)) >= weekAgoStr).length
     const totalWorkoutMin = workouts.reduce((s, w) => s + (w.durationMin ?? 0), 0)
 
     // Habits: check today's completion
     const habitIds = habits.map((h) => h.id)
-    const todayLogs = habitLogs.filter((l) => dateToStr(new Date(l.date)) === today)
+    const todayLogs = habitLogs.filter((l) => toDateStr(new Date(l.date)) === today)
     const completedHabitIdsToday = new Set(todayLogs.map((l) => l.habitId))
     const hasAnyHabitCompleted = completedHabitIdsToday.size > 0
     const allHabitsCompleted = habitIds.length > 0 && habitIds.every((id) => completedHabitIdsToday.has(id))
@@ -153,11 +120,11 @@ export async function GET() {
     // Habits streak: check if all habits were completed for N consecutive days
     const habitsStreak = (() => {
       if (habitIds.length === 0) return 0
-      const logDates = [...new Set(habitLogs.map((l) => dateToStr(new Date(l.date))))].sort().reverse()
+      const logDates = [...new Set(habitLogs.map((l) => toDateStr(new Date(l.date))))].sort().reverse()
       if (logDates.length === 0) return 0
       let streak = 0
       for (const d of logDates) {
-        const dayLogs = habitLogs.filter((l) => dateToStr(new Date(l.date)) === d)
+        const dayLogs = habitLogs.filter((l) => toDateStr(new Date(l.date)) === d)
         const dayHabitIds = new Set(dayLogs.map((l) => l.habitId))
         if (dayHabitIds.size >= habitIds.length) {
           streak++
@@ -166,25 +133,25 @@ export async function GET() {
         }
       }
       // Check continuity from today/yesterday
-      if (logDates[0] !== today && logDates[0] !== (() => { const y = new Date(); y.setDate(y.getDate() - 1); return dateToStr(y) })()) return 0
+      if (logDates[0] !== today && logDates[0] !== (() => { const y = new Date(); y.setDate(y.getDate() - 1); return toDateStr(y) })()) return 0
       return streak
     })()
 
-    const todayMealCount = meals.filter((m) => dateToStr(new Date(m.date)) === today).length
+    const todayMealCount = meals.filter((m) => toDateStr(new Date(m.date)) === today).length
 
-    const todayWaterMl = waterLogs.filter((w) => dateToStr(new Date(w.date)) === today).reduce((s, w) => s + w.amountMl, 0)
+    const todayWaterMl = waterLogs.filter((w) => toDateStr(new Date(w.date)) === today).reduce((s, w) => s + w.amountMl, 0)
 
     const completedGoals = goals.filter((g) => g.status === 'completed')
 
     // Early bird check
     const hasEarlyBirdEntry = diaryEntries.some((e) => {
       const d = new Date(e.date)
-      return dateToStr(d) === today && d.getHours() < 8
+      return toDateStr(d) === today && d.getHours() < 8
     })
 
     // Active day: diary + workout + meals + all habits
-    const todayWorkoutDone = workouts.some((w) => dateToStr(new Date(w.date)) === today)
-    const todayDiaryDone = diaryEntries.some((e) => dateToStr(new Date(e.date)) === today)
+    const todayWorkoutDone = workouts.some((w) => toDateStr(new Date(w.date)) === today)
+    const todayDiaryDone = diaryEntries.some((e) => toDateStr(new Date(e.date)) === today)
     const activeDay = todayDiaryDone && todayWorkoutDone && todayMealCount > 0 && allHabitsCompleted
 
     // ── Evaluate each achievement ──
@@ -317,55 +284,50 @@ export async function GET() {
       }
     }
 
-    // ── Persist newly earned achievements ──
-    if (newlyEarned.length > 0) {
-      await db.achievement.createMany({
-        data: newlyEarned.map((def) => ({
-          key: def.key,
-          title: def.title,
-          description: def.description,
-          icon: def.icon,
-          category: def.category,
-          userId: USER_ID,
-        })),
-        // @ts-expect-error skipDuplicates typed as never in some Prisma versions
-        skipDuplicates: true,
-      })
-    }
+    // ── Persist newly earned achievements (atomic with final read) ──
+    const allPersisted = await db.$transaction(async (tx) => {
+      if (newlyEarned.length > 0) {
+        await tx.achievement.createMany({
+          data: newlyEarned.map((def) => ({
+            key: def.key,
+            title: def.title,
+            description: def.description,
+            icon: def.icon,
+            category: def.category,
+            userId: DEMO_USER_ID,
+          })),
+          // @ts-expect-error skipDuplicates typed as never in some Prisma versions
+          skipDuplicates: true,
+        })
+      }
 
-    // ── Fetch all persisted achievements for the response ──
-    const allPersisted = await db.achievement.findMany({
-      where: { userId: USER_ID },
-      orderBy: { earnedAt: 'desc' },
+      return tx.achievement.findMany({
+        where: { userId: DEMO_USER_ID },
+        orderBy: { earnedAt: 'desc' },
+      })
     })
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        earned: newlyEarned.map((def) => ({
-          key: def.key,
-          title: def.title,
-          description: def.description,
-          icon: def.icon,
-          category: def.category,
-        })),
-        all: allResults,
-        persisted: allPersisted.map((a) => ({
-          id: a.id,
-          key: a.key,
-          title: a.title,
-          description: a.description,
-          icon: a.icon,
-          category: a.category,
-          earnedAt: a.earnedAt.toISOString(),
-        })),
-      },
+    return apiSuccess({
+      earned: newlyEarned.map((def) => ({
+        key: def.key,
+        title: def.title,
+        description: def.description,
+        icon: def.icon,
+        category: def.category,
+      })),
+      all: allResults,
+      persisted: allPersisted.map((a) => ({
+        id: a.id,
+        key: a.key,
+        title: a.title,
+        description: a.description,
+        icon: a.icon,
+        category: a.category,
+        earnedAt: a.earnedAt.toISOString(),
+      })),
     })
   } catch (error) {
     console.error('Achievements API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Не удалось загрузить достижения' },
-      { status: 500 }
-    )
+    return apiServerError('Не удалось загрузить достижения')
   }
 }

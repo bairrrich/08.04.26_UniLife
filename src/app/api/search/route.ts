@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
+import { apiSuccess, apiServerError, DEMO_USER_ID as USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
 const LIMIT = 5
 
 export async function GET(request: NextRequest) {
@@ -9,10 +9,7 @@ export async function GET(request: NextRequest) {
   let q = searchParams.get('q')?.trim() || ''
 
   if (!q || q.length < 2) {
-    return NextResponse.json({
-      success: true,
-      data: { diary: [], finance: [], nutrition: [], workout: [], collections: [], feed: [], habits: [], goals: [] },
-    })
+    return apiSuccess({ diary: [], finance: [], nutrition: [], workout: [], collections: [], feed: [], habits: [], goals: [] })
   }
 
   if (q.length > 100) {
@@ -115,21 +112,18 @@ export async function GET(request: NextRequest) {
       take: LIMIT,
     })
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        diary: diary.map((d) => ({ id: d.id, title: d.title || 'Без названия', content: d.content?.substring(0, 120), date: d.date, type: 'diary' as const })),
-        finance: finance.map((f) => ({ id: f.id, description: f.description || 'Без описания', amount: f.amount, date: f.date, type: 'finance' as const })),
-        nutrition: meals.map((n) => ({ id: n.id, mealType: n.type, note: n.note || '', date: n.date, type: 'nutrition' as const })),
-        workout: workouts.map((w) => ({ id: w.id, name: w.name, durationMin: w.durationMin, date: w.date, type: 'workout' as const })),
-        collections: collections.map((c) => ({ id: c.id, title: c.title, author: c.author || '', itemType: c.type, type: 'collections' as const })),
-        feed: feed.map((f) => ({ id: f.id, caption: f.caption || '', entityType: f.entityType, createdAt: f.createdAt, type: 'feed' as const })),
-        habits: habits.map((h) => ({ id: h.id, name: h.name, emoji: h.emoji, type: 'habits' as const })),
-        goals: goals.map((g) => ({ id: g.id, title: g.title, category: g.category, type: 'goals' as const })),
-      },
+    return apiSuccess({
+      diary: diary.map((d) => ({ id: d.id, title: d.title || 'Без названия', content: d.content?.substring(0, 120), date: d.date, type: 'diary' as const })),
+      finance: finance.map((f) => ({ id: f.id, description: f.description || 'Без описания', amount: f.amount, date: f.date, type: 'finance' as const })),
+      nutrition: meals.map((n) => ({ id: n.id, mealType: n.type, note: n.note || '', date: n.date, type: 'nutrition' as const })),
+      workout: workouts.map((w) => ({ id: w.id, name: w.name, durationMin: w.durationMin, date: w.date, type: 'workout' as const })),
+      collections: collections.map((c) => ({ id: c.id, title: c.title, author: c.author || '', itemType: c.type, type: 'collections' as const })),
+      feed: feed.map((f) => ({ id: f.id, caption: f.caption || '', entityType: f.entityType, createdAt: f.createdAt, type: 'feed' as const })),
+      habits: habits.map((h) => ({ id: h.id, name: h.name, emoji: h.emoji, type: 'habits' as const })),
+      goals: goals.map((g) => ({ id: g.id, title: g.title, category: g.category, type: 'goals' as const })),
     })
   } catch (error) {
     console.error('Search error:', error)
-    return NextResponse.json({ success: false, error: 'Ошибка при поиске' }, { status: 500 })
+    return apiServerError('Ошибка при поиске')
   }
 }

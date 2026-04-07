@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { apiSuccess, apiServerError } from '@/lib/api'
 
 // ── In-memory cache: 30 minutes TTL ──────────────────────────────────
 const CACHE_TTL_MS = 30 * 60 * 1000
@@ -96,13 +97,10 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    return NextResponse.json({ success: true, data: insights })
+    return apiSuccess(insights)
   } catch (error) {
     console.error('AI Insights API error:', error)
-    return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Failed to generate insights' },
-      { status: 500 },
-    )
+    return apiServerError(error instanceof Error ? error.message : 'Failed to generate insights')
   }
 }
 
@@ -152,7 +150,6 @@ function analyzeData({
   waterLogs: { amountMl: number }[]
 }): AnalysisResult {
   // Mood
-  const moodEmojis = ['', '😢', '😕', '😐', '🙂', '😄']
   const recentEntries = diaryEntries.slice(0, 7)
   const moods = recentEntries.map(e => e.mood).filter((m): m is number => m !== null && m !== undefined && m > 0)
   const avgMood = moods.length > 0 ? moods.reduce((a, b) => a + b, 0) / moods.length : 0

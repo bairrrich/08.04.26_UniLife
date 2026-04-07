@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { apiServerError, DEMO_USER_ID as USER_ID } from '@/lib/api'
 
 // GET /api/dashboard — combined endpoint that returns all dashboard data in one request
 // This prevents Turbopack from needing to compile 10+ separate API routes
@@ -266,9 +265,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('Dashboard API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to load dashboard data' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to load dashboard data')
   }
 }

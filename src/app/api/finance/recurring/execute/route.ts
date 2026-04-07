@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 function getNextDate(date: Date, frequency: string): Date {
   const next = new Date(date)
@@ -28,7 +27,7 @@ export async function POST(request: NextRequest) {
     const { recurringId } = body
 
     if (!recurringId) {
-      return NextResponse.json({ error: 'recurringId is required' }, { status: 400 })
+      return apiError('recurringId is required')
     }
 
     const recurring = await db.recurringTransaction.findUnique({
@@ -37,11 +36,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (!recurring) {
-      return NextResponse.json({ error: 'Recurring transaction not found' }, { status: 404 })
+      return apiError('Recurring transaction not found', 404)
     }
 
     if (!recurring.isActive) {
-      return NextResponse.json({ error: 'Recurring transaction is inactive' }, { status: 400 })
+      return apiError('Recurring transaction is inactive')
     }
 
     // Create the actual transaction
@@ -75,12 +74,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({
-      success: true,
-      data: { transaction, recurring: updated },
-    })
+    return apiSuccess({ transaction, recurring: updated })
   } catch (error) {
     console.error('POST /api/finance/recurring/execute error:', error)
-    return NextResponse.json({ error: 'Failed to execute recurring transaction' }, { status: 500 })
+    return apiServerError('Failed to execute recurring transaction')
   }
 }

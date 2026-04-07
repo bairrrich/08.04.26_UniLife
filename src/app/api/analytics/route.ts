@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiServerError } from '@/lib/api'
 
 const RU_MONTHS_SHORT = [
   'Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн',
@@ -83,32 +82,32 @@ export async function GET(req: NextRequest) {
       collectionItems,
     ] = await Promise.all([
       db.diaryEntry.findMany({
-        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
+        where: { userId: DEMO_USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         orderBy: { date: 'desc' },
       }),
       db.transaction.findMany({
-        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
+        where: { userId: DEMO_USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         include: { category: true },
       }),
       db.workout.findMany({
-        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
+        where: { userId: DEMO_USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         orderBy: { date: 'desc' },
       }),
       db.meal.findMany({
-        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
+        where: { userId: DEMO_USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
         include: { items: { select: { kcal: true, protein: true, fat: true, carbs: true } } },
       }),
-      db.habit.findMany({ where: { userId: USER_ID } }),
+      db.habit.findMany({ where: { userId: DEMO_USER_ID } }),
       startDate
         ? db.habitLog.findMany({
-            where: { habit: { userId: USER_ID }, date: { gte: startDate } },
+            where: { habit: { userId: DEMO_USER_ID }, date: { gte: startDate } },
           })
-        : db.habitLog.findMany({ where: { habit: { userId: USER_ID } } }),
+        : db.habitLog.findMany({ where: { habit: { userId: DEMO_USER_ID } } }),
       db.waterLog.findMany({
-        where: { userId: USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
+        where: { userId: DEMO_USER_ID, ...(startDate ? { date: { gte: startDate } } : {}) },
       }),
       db.collectionItem.findMany({
-        where: { userId: USER_ID, ...(startDate ? { createdAt: { gte: startDate } } : {}) },
+        where: { userId: DEMO_USER_ID, ...(startDate ? { createdAt: { gte: startDate } } : {}) },
       }),
     ])
 
@@ -333,23 +332,17 @@ export async function GET(req: NextRequest) {
     // Find max count for normalization
     const maxHeatmapCount = Math.max(1, ...Object.values(activityDateCounts))
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        overview,
-        monthlyActivity,
-        moodDistribution,
-        topCategories,
-        habitCompletionTrend,
-        collectionsDistribution,
-        weeklyHeatmap: { cells: heatmap, maxCount: maxHeatmapCount },
-      },
+    return apiSuccess({
+      overview,
+      monthlyActivity,
+      moodDistribution,
+      topCategories,
+      habitCompletionTrend,
+      collectionsDistribution,
+      weeklyHeatmap: { cells: heatmap, maxCount: maxHeatmapCount },
     })
   } catch (error) {
     console.error('Analytics API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to load analytics data' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to load analytics data')
   }
 }

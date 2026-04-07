@@ -1,13 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const createGoalSchema = z.object({
+  title: z.string().min(1, 'Название обязательно'),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  targetValue: z.number().optional().nullable(),
+  currentValue: z.number().optional(),
+  unit: z.string().optional(),
+  deadline: z.string().optional(),
+  startDate: z.string().optional(),
+  status: z.string().optional(),
+  progress: z.number().min(0).max(100).optional(),
+  priority: z.string().optional(),
+  milestones: z.unknown().optional(),
+})
 
 // GET /api/goals — Fetch all goals for the demo user
 export async function GET() {
   try {
     const goals = await db.goal.findMany({
-      where: { userId: USER_ID },
+      where: { userId: DEMO_USER_ID },
       orderBy: { createdAt: 'desc' },
     })
 
@@ -39,7 +56,9 @@ export async function GET() {
 // POST /api/goals — Create a new goal
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const data = await parseBody(request, createGoalSchema)
+    if (!data) return
+
     const {
       title,
       description,
@@ -53,18 +72,11 @@ export async function POST(request: NextRequest) {
       progress,
       priority,
       milestones,
-    } = body
-
-    if (!title || !title.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'title is required' },
-        { status: 400 }
-      )
-    }
+    } = data
 
     const goal = await db.goal.create({
       data: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         title: title.trim(),
         description: description?.trim() || null,
         category: category || 'personal',

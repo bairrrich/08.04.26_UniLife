@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 export async function DELETE(
   request: NextRequest,
@@ -15,11 +14,8 @@ export async function DELETE(
       where: { id },
     })
 
-    if (!existing || existing.userId !== USER_ID) {
-      return NextResponse.json(
-        { success: false, error: 'Тренировка не найдена' },
-        { status: 404 }
-      )
+    if (!existing || existing.userId !== DEMO_USER_ID) {
+      return apiError('Тренировка не найдена', 404)
     }
 
     // Delete the workout (cascade will remove exercises)
@@ -27,13 +23,10 @@ export async function DELETE(
       where: { id },
     })
 
-    return NextResponse.json({ success: true, message: 'Тренировка удалена' })
+    return apiSuccessMessage('Тренировка удалена')
   } catch (error) {
     console.error('Workout DELETE error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to delete workout' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to delete workout')
   }
 }
 
@@ -50,21 +43,15 @@ export async function PUT(
       include: { exercises: true },
     })
 
-    if (!existing || existing.userId !== USER_ID) {
-      return NextResponse.json(
-        { success: false, error: 'Тренировка не найдена' },
-        { status: 404 }
-      )
+    if (!existing || existing.userId !== DEMO_USER_ID) {
+      return apiError('Тренировка не найдена', 404)
     }
 
     const body = await request.json()
     const { name, date, durationMin, note, exercises } = body
 
     if (!name || !date) {
-      return NextResponse.json(
-        { success: false, error: 'name and date are required' },
-        { status: 400 }
-      )
+      return apiError('name and date are required')
     }
 
     // Get existing exercise IDs
@@ -144,12 +131,9 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json({ success: true, data: result })
+    return apiSuccess(result)
   } catch (error) {
     console.error('Workout PUT error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to update workout' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to update workout')
   }
 }

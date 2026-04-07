@@ -1,9 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
-const VALID_MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const
+const mealItemSchema = z.object({
+  name: z.string().min(1, 'Название элемента обязательно'),
+  kcal: z.number().optional(),
+  protein: z.number().optional(),
+  fat: z.number().optional(),
+  carbs: z.number().optional(),
+  servingSize: z.number().optional(),
+  servingUnit: z.string().optional(),
+})
+
+const createMealSchema = z.object({
+  type: z.enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'], {
+    errorMap: () => ({ message: `Неверный тип приёма пищи. Допустимые значения: BREAKFAST, LUNCH, DINNER, SNACK` }),
+  }),
+  date: z.string().min(1, 'Date is required'),
+  note: z.string().optional(),
+  items: z.array(mealItemSchema).min(1, 'Необходим хотя бы один элемент приёма пищи'),
+})
 
 // GET /api/nutrition?date=YYYY-MM-DD or ?month=YYYY-MM
 export async function GET(request: NextRequest) {
@@ -12,7 +31,7 @@ export async function GET(request: NextRequest) {
     const dateStr = searchParams.get('date')
     const monthStr = searchParams.get('month')
 
-    let where: any = { userId: USER_ID }
+    let where: any = { userId: DEMO_USER_ID }
 
     if (dateStr) {
       // Specific day: start of day to end of day
@@ -56,24 +75,10 @@ export async function GET(request: NextRequest) {
 // POST /api/nutrition
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { type, date, note, items } = body
+    const data = await parseBody(request, createMealSchema)
+    if (!data) return
 
-    // Validate meal type
-    if (!type || !VALID_MEAL_TYPES.includes(type.toUpperCase())) {
-      return NextResponse.json(
-        { success: false, error: `Неверный тип приёма пищи. Допустимые значения: ${VALID_MEAL_TYPES.join(', ')}` },
-        { status: 400 }
-      )
-    }
-
-    // Validate date
-    if (!date) {
-      return NextResponse.json(
-        { success: false, error: 'Date is required' },
-        { status: 400 }
-      )
-    }
+    const { type, date, note, items } = data
 
     const parsedDate = new Date(date + 'T00:00:00.000Z')
     if (isNaN(parsedDate.getTime())) {
@@ -83,33 +88,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate items
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'At least one meal item is required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate each item
-    for (const item of items) {
-      if (!item.name) {
-        return NextResponse.json(
-          { success: false, error: 'Each meal item must have a name' },
-          { status: 400 }
-        )
-      }
-    }
-
     // Create meal with items in a transaction
     const meal = await db.meal.create({
       data: {
-        userId: USER_ID,
-        type: type.toUpperCase(),
+        userId: DEMO_USER_ID,
+        type,
         date: parsedDate,
         note: note || null,
         items: {
-          create: items.map((item: any) => ({
+          create: items.map((item) => ({
             name: item.name,
             kcal: item.kcal ?? 0,
             protein: item.protein ?? 0,
@@ -152,7 +139,7 @@ export async function DELETE(request: NextRequest) {
 
     // Verify the meal belongs to the user
     const meal = await db.meal.findFirst({
-      where: { id: mealId, userId: USER_ID },
+      where: { id: mealId, userId: DEMO_USER_ID },
     })
 
     if (!meal) {

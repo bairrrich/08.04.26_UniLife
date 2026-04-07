@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID, transactionTypeSchema } from '@/lib/api'
 
-const DEMO_USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const updateTransactionSchema = z.object({
+  type: transactionTypeSchema.optional(),
+  amount: z.number().positive('Сумма должна быть положительной'),
+  categoryId: z.string().optional(),
+  date: z.string().min(1, 'Дата обязательна'),
+  description: z.string().optional().nullable(),
+  note: z.string().optional().nullable(),
+})
 
 export async function PUT(
   request: NextRequest,
@@ -22,24 +33,12 @@ export async function PUT(
       )
     }
 
-    const body = await request.json()
-    const { type, amount, categoryId, date, description, note } = body
+    const data = await parseBody(request, updateTransactionSchema)
+    if (!data) return
 
-    if (!amount || !date) {
-      return NextResponse.json(
-        { success: false, error: 'amount and date are required' },
-        { status: 400 }
-      )
-    }
+    const { type, amount, categoryId, date, description, note } = data
 
-    if (type && !['INCOME', 'EXPENSE', 'TRANSFER'].includes(type)) {
-      return NextResponse.json(
-        { success: false, error: 'type must be INCOME, EXPENSE, or TRANSFER' },
-        { status: 400 }
-      )
-    }
-
-    // Validate category if provided
+    // Validate category if provided (business logic check)
     if (categoryId) {
       const category = await db.category.findUnique({ where: { id: categoryId } })
       if (!category) {
@@ -54,7 +53,7 @@ export async function PUT(
       where: { id },
       data: {
         ...(type && { type }),
-        amount: parseFloat(amount),
+        amount,
         ...(categoryId && { categoryId }),
         ...(date && { date: new Date(date) }),
         ...(description !== undefined && { description: description || null }),

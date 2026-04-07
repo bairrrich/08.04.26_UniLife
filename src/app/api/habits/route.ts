@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const createHabitSchema = z.object({
+  name: z.string().min(1, 'Название обязательно'),
+  emoji: z.string().optional(),
+  color: z.string().optional(),
+  frequency: z.string().optional(),
+  targetCount: z.number().optional(),
+  archived: z.boolean().optional(),
+  category: z.string().optional(),
+})
 
 // GET /api/habits — Fetch all habits with today's logs and streaks
 export async function GET() {
@@ -13,7 +25,7 @@ export async function GET() {
 
     // Fetch habits with today's logs (single query)
     const habits = await db.habit.findMany({
-      where: { userId: USER_ID },
+      where: { userId: DEMO_USER_ID },
       include: {
         logs: {
           where: {
@@ -151,19 +163,14 @@ export async function GET() {
 // POST /api/habits — Create new habit
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { name, emoji, color, frequency, targetCount, archived, category } = body
+    const data = await parseBody(request, createHabitSchema)
+    if (!data) return
 
-    if (!name || !name.trim()) {
-      return NextResponse.json(
-        { success: false, error: 'name is required' },
-        { status: 400 }
-      )
-    }
+    const { name, emoji, color, frequency, targetCount, archived, category } = data
 
     const habit = await db.habit.create({
       data: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         name: name.trim(),
         emoji: emoji || '✅',
         color: color || '#10b981',

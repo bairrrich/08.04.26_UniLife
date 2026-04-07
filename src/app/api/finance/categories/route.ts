@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 // GET /api/finance/categories — List all categories with subCategories
 // Query params: ?type=INCOME|EXPENSE|TRANSFER
@@ -33,13 +32,10 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ success: true, data: categories })
+    return apiSuccess(categories)
   } catch (error) {
     console.error('GET /api/finance/categories error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch categories' },
-      { status: 500 },
-    )
+    return apiServerError('Failed to fetch categories')
   }
 }
 
@@ -50,17 +46,11 @@ export async function POST(request: NextRequest) {
     const { name, type, icon, color } = body
 
     if (!name || !type) {
-      return NextResponse.json(
-        { error: 'Missing required fields: name, type' },
-        { status: 400 },
-      )
+      return apiError('Missing required fields: name, type')
     }
 
     if (!['INCOME', 'EXPENSE', 'TRANSFER'].includes(type)) {
-      return NextResponse.json(
-        { error: 'type must be INCOME, EXPENSE, or TRANSFER' },
-        { status: 400 },
-      )
+      return apiError('type must be INCOME, EXPENSE, or TRANSFER')
     }
 
     const category = await db.category.create({
@@ -74,12 +64,9 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json({ category }, { status: 201 })
+    return apiSuccess(category, 201)
   } catch (error) {
     console.error('POST /api/finance/categories error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create category' },
-      { status: 500 },
-    )
+    return apiServerError('Failed to create category')
   }
 }

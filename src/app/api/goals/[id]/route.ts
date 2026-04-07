@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const updateGoalSchema = z.object({
+  title: z.string().min(1, 'Название обязательно').optional(),
+  description: z.string().optional(),
+  category: z.string().optional(),
+  targetValue: z.number().optional().nullable(),
+  currentValue: z.number().optional(),
+  unit: z.string().optional(),
+  deadline: z.string().optional(),
+  startDate: z.string().optional(),
+  status: z.string().optional(),
+  progress: z.number().min(0).max(100).optional(),
+  priority: z.string().optional(),
+  milestones: z.unknown().optional(),
+})
 
 // PUT /api/goals/[id] — Update any fields of an existing goal
 export async function PUT(
@@ -15,14 +32,16 @@ export async function PUT(
       where: { id },
     })
 
-    if (!goal || goal.userId !== USER_ID) {
+    if (!goal || goal.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Goal not found' },
         { status: 404 }
       )
     }
 
-    const body = await request.json()
+    const data = await parseBody(request, updateGoalSchema)
+    if (!data) return
+
     const {
       title,
       description,
@@ -36,7 +55,7 @@ export async function PUT(
       progress,
       priority,
       milestones,
-    } = body
+    } = data
 
     const updated = await db.goal.update({
       where: { id },
@@ -78,7 +97,7 @@ export async function DELETE(
       where: { id },
     })
 
-    if (!goal || goal.userId !== USER_ID) {
+    if (!goal || goal.userId !== DEMO_USER_ID) {
       return NextResponse.json(
         { success: false, error: 'Goal not found' },
         { status: 404 }

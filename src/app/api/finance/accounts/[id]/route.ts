@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const existing = await db.account.findUnique({ where: { id } })
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return apiError('Not found', 404)
     }
 
     const body = await request.json()
@@ -33,10 +32,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
-    return NextResponse.json({ success: true, data: account })
+    return apiSuccess(account)
   } catch (error) {
     console.error('PUT account error:', error)
-    return NextResponse.json({ error: 'Failed to update account' }, { status: 500 })
+    return apiServerError('Failed to update account')
   }
 }
 
@@ -45,13 +44,13 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const { id } = await params
     const existing = await db.account.findUnique({ where: { id } })
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return apiError('Not found', 404)
     }
 
     await db.account.delete({ where: { id } })
-    return NextResponse.json({ success: true, message: 'Счёт удалён' })
+    return apiSuccessMessage('Счёт удалён')
   } catch (error) {
     console.error('DELETE account error:', error)
-    return NextResponse.json({ error: 'Failed to delete account' }, { status: 500 })
+    return apiServerError('Failed to delete account')
   }
 }

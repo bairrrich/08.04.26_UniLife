@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 export async function PUT(
   request: NextRequest,
@@ -16,7 +15,7 @@ export async function PUT(
       where: { id, userId: DEMO_USER_ID },
     })
     if (!existing) {
-      return NextResponse.json({ error: 'Savings goal not found' }, { status: 404 })
+      return apiError('Savings goal not found', 404)
     }
 
     const goal = await db.savingsGoal.update({
@@ -32,10 +31,10 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json({ success: true, data: goal })
+    return apiSuccess(goal)
   } catch (error) {
     console.error('PUT /api/finance/savings-goals/[id] error:', error)
-    return NextResponse.json({ error: 'Failed to update savings goal' }, { status: 500 })
+    return apiServerError('Failed to update savings goal')
   }
 }
 
@@ -50,14 +49,14 @@ export async function DELETE(
       where: { id, userId: DEMO_USER_ID },
     })
     if (!existing) {
-      return NextResponse.json({ error: 'Savings goal not found' }, { status: 404 })
+      return apiError('Savings goal not found', 404)
     }
 
     await db.savingsGoal.delete({ where: { id } })
 
-    return NextResponse.json({ success: true })
+    return apiSuccessMessage('Savings goal deleted')
   } catch (error) {
     console.error('DELETE /api/finance/savings-goals/[id] error:', error)
-    return NextResponse.json({ error: 'Failed to delete savings goal' }, { status: 500 })
+    return apiServerError('Failed to delete savings goal')
   }
 }

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiServerError } from '@/lib/api'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +10,7 @@ export async function POST(request: NextRequest) {
     // Diary
     if (body.diary && Array.isArray(body.diary)) {
       const diaryData = body.diary.map((entry: Record<string, unknown>) => ({
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: entry.date ? new Date(entry.date as string) : new Date(),
         title: (entry.title as string) || null,
         content: (entry.content as string) || '',
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
           type: (cat.type as string) || 'EXPENSE',
           icon: (cat.icon as string) || 'circle',
           color: (cat.color as string) || '#6b7280',
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           isDefault: (cat.isDefault as boolean) || false,
         }))
         if (catData.length > 0) {
@@ -53,7 +52,7 @@ export async function POST(request: NextRequest) {
         const txData = transactions.map((tx: Record<string, unknown>) => {
           // Try to find a matching category or use a fallback
           return {
-            userId: USER_ID,
+            userId: DEMO_USER_ID,
             type: (tx.type as string) || 'EXPENSE',
             amount: Number(tx.amount) || 0,
             currency: (tx.currency as string) || 'RUB',
@@ -71,7 +70,7 @@ export async function POST(request: NextRequest) {
           if (txData.length > 0) {
             // Get all valid category IDs
             const validCategories = await db.category.findMany({
-              where: { userId: USER_ID },
+              where: { userId: DEMO_USER_ID },
               select: { id: true },
             })
             const validCatIds = new Set(validCategories.map(c => c.id))
@@ -112,7 +111,7 @@ export async function POST(request: NextRequest) {
               : []
             await db.meal.create({
               data: {
-                userId: USER_ID,
+                userId: DEMO_USER_ID,
                 type: (meal.type as string) || 'LUNCH',
                 date: meal.date ? new Date(meal.date as string) : new Date(),
                 note: (meal.note as string) || null,
@@ -129,7 +128,7 @@ export async function POST(request: NextRequest) {
 
       if (waterLogs && Array.isArray(waterLogs)) {
         const waterData = waterLogs.map((log: Record<string, unknown>) => ({
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           date: log.date ? new Date(log.date as string) : new Date(),
           amountMl: Number(log.amountMl) || 250,
         }))
@@ -156,7 +155,7 @@ export async function POST(request: NextRequest) {
             : []
           await db.workout.create({
             data: {
-              userId: USER_ID,
+              userId: DEMO_USER_ID,
               date: w.date ? new Date(w.date as string) : new Date(),
               name: (w.name as string) || 'Imported workout',
               durationMin: w.durationMin != null ? Number(w.durationMin) : null,
@@ -175,7 +174,7 @@ export async function POST(request: NextRequest) {
     // Collections
     if (body.collections && Array.isArray(body.collections)) {
       const colData = body.collections.map((item: Record<string, unknown>) => ({
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         type: (item.type as string) || 'BOOK',
         title: (item.title as string) || 'Imported',
         author: (item.author as string) || null,
@@ -196,7 +195,7 @@ export async function POST(request: NextRequest) {
     // Feed (posts)
     if (body.feed && Array.isArray(body.feed)) {
       const postData = body.feed.map((post: Record<string, unknown>) => ({
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         entityType: (post.entityType as string) || 'diary',
         entityId: (post.entityId as string) || 'unknown',
         caption: (post.caption as string) || null,
@@ -210,9 +209,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, imported })
   } catch (error) {
     console.error('Import error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to import data' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to import data')
   }
 }

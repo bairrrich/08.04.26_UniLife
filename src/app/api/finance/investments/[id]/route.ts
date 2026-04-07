@@ -1,14 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     const existing = await db.investment.findUnique({ where: { id } })
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return apiError('Not found', 404)
     }
 
     const body = await request.json()
@@ -26,10 +25,10 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       },
     })
 
-    return NextResponse.json({ success: true, data: investment })
+    return apiSuccess(investment)
   } catch (error) {
     console.error('PUT investment error:', error)
-    return NextResponse.json({ error: 'Failed to update investment' }, { status: 500 })
+    return apiServerError('Failed to update investment')
   }
 }
 
@@ -38,14 +37,14 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const { id } = await params
     const existing = await db.investment.findUnique({ where: { id } })
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return apiError('Not found', 404)
     }
 
     await db.investment.delete({ where: { id } })
-    return NextResponse.json({ success: true, message: 'Инвестиция удалена' })
+    return apiSuccessMessage('Инвестиция удалена')
   } catch (error) {
     console.error('DELETE investment error:', error)
-    return NextResponse.json({ error: 'Failed to delete investment' }, { status: 500 })
+    return apiServerError('Failed to delete investment')
   }
 }
 
@@ -55,16 +54,16 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const { id } = await params
     const existing = await db.investment.findUnique({ where: { id } })
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json({ error: 'Not found' }, { status: 404 })
+      return apiError('Not found', 404)
     }
 
     const body = await request.json()
     const { type, amount, units, pricePerUnit, date, note } = body
     if (!type || !amount || !date) {
-      return NextResponse.json({ error: 'type, amount, date required' }, { status: 400 })
+      return apiError('type, amount, date required')
     }
     if (!['BUY', 'SELL', 'DEPOSIT', 'WITHDRAWAL', 'DIVIDEND'].includes(type)) {
-      return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
+      return apiError('Invalid type')
     }
 
     const tx = await db.investmentTx.create({
@@ -79,9 +78,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       },
     })
 
-    return NextResponse.json({ success: true, data: tx }, { status: 201 })
+    return apiSuccess(tx, 201)
   } catch (error) {
     console.error('POST investment tx error:', error)
-    return NextResponse.json({ error: 'Failed to add investment transaction' }, { status: 500 })
+    return apiServerError('Failed to add investment transaction')
   }
 }

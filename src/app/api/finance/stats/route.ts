@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiServerError } from '@/lib/api'
 
 // GET /api/finance/stats — Financial summary for a given month
 // Query params: ?month=YYYY-MM (defaults to current month)
@@ -74,22 +73,16 @@ export async function GET(request: NextRequest) {
     const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome) * 100 : 0
     const byCategory = Array.from(categoryMap.values()).sort((a, b) => b.total - a.total)
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        period: { year, month: month + 1 },
-        totalIncome,
-        totalExpense,
-        balance,
-        savingsRate,
-        byCategory,
-      },
+    return apiSuccess({
+      period: { year, month: month + 1 },
+      totalIncome,
+      totalExpense,
+      balance,
+      savingsRate,
+      byCategory,
     })
   } catch (error) {
     console.error('GET /api/finance/stats error:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch financial stats' },
-      { status: 500 },
-    )
+    return apiServerError('Failed to fetch financial stats')
   }
 }

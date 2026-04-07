@@ -1,8 +1,6 @@
-import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { DEMO_USER_ID, apiSuccess, apiServerError } from '@/lib/api'
 import crypto from 'crypto'
-
-const USER_ID = 'user_demo_001'
 
 type NotificationType = 'warning' | 'success' | 'info' | 'reminder'
 
@@ -69,7 +67,7 @@ export async function GET() {
     // ── 1. Overdue goals ──
     const overdueGoals = await db.goal.findMany({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         status: 'active',
         deadline: { lt: now },
       },
@@ -95,7 +93,7 @@ export async function GET() {
 
     // ── 2. Streak reminders (habits with streak >= 3) ──
     const habits = await db.habit.findMany({
-      where: { userId: USER_ID },
+      where: { userId: DEMO_USER_ID },
       include: {
         logs: {
           orderBy: { date: 'desc' },
@@ -160,7 +158,7 @@ export async function GET() {
     // ── 3. Budget alerts (monthly expenses > 80% of income) ──
     const monthlyTransactions = await db.transaction.findMany({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: { gte: monthStart, lte: monthEnd },
       },
     })
@@ -190,7 +188,7 @@ export async function GET() {
     // ── 4. Water reminder (if water intake today < 4 glasses = ~1000ml) ──
     const waterLogsToday = await db.waterLog.findMany({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: { gte: today, lte: todayEnd },
       },
     })
@@ -215,7 +213,7 @@ export async function GET() {
     // ── 5. Diary reminder (if no diary entry today) ──
     const diaryToday = await db.diaryEntry.findFirst({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: { gte: today, lte: todayEnd },
       },
     })
@@ -237,7 +235,7 @@ export async function GET() {
     // ── 6. Workout reminder (if no workout this week) ──
     const workoutsThisWeek = await db.workout.findMany({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: { gte: monday, lte: sunday },
       },
     })
@@ -285,18 +283,12 @@ export async function GET() {
     }
     notifications.sort((a, b) => typeOrder[a.type] - typeOrder[b.type])
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        notifications,
-        unreadCount: notifications.length,
-      },
+    return apiSuccess({
+      notifications,
+      unreadCount: notifications.length,
     })
   } catch (error) {
     console.error('Notifications API error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to load notifications' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to load notifications')
   }
 }

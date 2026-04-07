@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const DEMO_USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const createTransactionSchema = z.object({
+  type: z.enum(['INCOME', 'EXPENSE', 'TRANSFER']),
+  amount: z.number().positive('Сумма должна быть положительной'),
+  date: z.string().min(1, 'Дата обязательна'),
+  categoryId: z.string().optional(),
+  subCategoryId: z.string().optional(),
+  description: z.string().optional(),
+  note: z.string().optional(),
+  fromAccountId: z.string().optional(),
+  toAccountId: z.string().optional(),
+})
 
 // GET /api/finance — List transactions with category included
 // Query params: ?month=YYYY-MM, ?type=INCOME|EXPENSE|TRANSFER, ?categoryId=xxx
@@ -60,25 +74,12 @@ export async function GET(request: NextRequest) {
 // POST /api/finance — Create a new transaction
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { type, amount, categoryId, subCategoryId, date, description, note, fromAccountId, toAccountId } = body
+    const data = await parseBody(request, createTransactionSchema)
+    if (!data) return
 
-    // Validate required fields
-    if (!type || !amount || !date) {
-      return NextResponse.json(
-        { error: 'Missing required fields: type, amount, date' },
-        { status: 400 },
-      )
-    }
+    const { type, amount, categoryId, subCategoryId, date, description, note, fromAccountId, toAccountId } = data
 
-    if (!['INCOME', 'EXPENSE', 'TRANSFER'].includes(type)) {
-      return NextResponse.json(
-        { error: 'type must be INCOME, EXPENSE, or TRANSFER' },
-        { status: 400 },
-      )
-    }
-
-    // Validate category exists when provided
+    // Validate category exists when provided (business logic check)
     if (categoryId) {
       const category = await db.category.findUnique({ where: { id: categoryId } })
       if (!category) {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
       data: {
         userId: DEMO_USER_ID,
         type,
-        amount: parseFloat(amount),
+        amount,
         currency: 'RUB',
         categoryId: categoryId || '',
         subCategoryId: subCategoryId || null,

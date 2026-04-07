@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const DEMO_USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiSuccessMessage, apiError, apiServerError } from '@/lib/api'
 
 export async function PUT(
   request: NextRequest,
@@ -14,7 +13,7 @@ export async function PUT(
 
     const existing = await db.recurringTransaction.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'Recurring transaction not found' }, { status: 404 })
+      return apiError('Recurring transaction not found', 404)
     }
 
     const updateData: Record<string, unknown> = {}
@@ -37,10 +36,10 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json({ success: true, data: updated })
+    return apiSuccess(updated)
   } catch (error) {
     console.error('PUT /api/finance/recurring/[id] error:', error)
-    return NextResponse.json({ error: 'Failed to update recurring transaction' }, { status: 500 })
+    return apiServerError('Failed to update recurring transaction')
   }
 }
 
@@ -53,14 +52,14 @@ export async function DELETE(
 
     const existing = await db.recurringTransaction.findUnique({ where: { id } })
     if (!existing) {
-      return NextResponse.json({ error: 'Recurring transaction not found' }, { status: 404 })
+      return apiError('Recurring transaction not found', 404)
     }
 
     await db.recurringTransaction.delete({ where: { id } })
 
-    return NextResponse.json({ success: true, message: 'Recurring transaction deleted' })
+    return apiSuccessMessage('Recurring transaction deleted')
   } catch (error) {
     console.error('DELETE /api/finance/recurring/[id] error:', error)
-    return NextResponse.json({ error: 'Failed to delete recurring transaction' }, { status: 500 })
+    return apiServerError('Failed to delete recurring transaction')
   }
 }

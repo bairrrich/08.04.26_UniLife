@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { DEMO_USER_ID, safeParseJSON, apiSuccess, apiSuccessMessage, apiError, apiServerError } from "@/lib/api";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,14 +32,6 @@ interface DiaryEntryJSON {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function safeParseJSON<T>(str: string, fallback: T): T {
-  try {
-    return JSON.parse(str) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 function serializeEntry(row: DiaryEntryRow): DiaryEntryJSON {
   return {
     id: row.id,
@@ -53,8 +46,6 @@ function serializeEntry(row: DiaryEntryRow): DiaryEntryJSON {
     updatedAt: row.updatedAt.toISOString(),
   };
 }
-
-const DEMO_USER_ID = "user_demo_001";
 
 // ─── PUT /api/diary/[id] ────────────────────────────────────────────────────
 
@@ -71,10 +62,7 @@ export async function PUT(
     });
 
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json(
-        { error: "Diary entry not found." },
-        { status: 404 }
-      );
+      return apiError("Diary entry not found.", 404);
     }
 
     const body = await request.json();
@@ -98,20 +86,14 @@ export async function PUT(
     // Validate content if provided
     if (content !== undefined) {
       if (typeof content !== "string" || content.trim().length === 0) {
-        return NextResponse.json(
-          { error: "Content is required and must be a non-empty string." },
-          { status: 400 }
-        );
+        return apiError("Content is required and must be a non-empty string.");
       }
     }
 
     // Validate mood if provided (must be 1-5)
     if (mood !== undefined) {
       if (typeof mood !== "number" || !Number.isInteger(mood) || mood < 1 || mood > 5) {
-        return NextResponse.json(
-          { error: "Mood must be an integer between 1 and 5." },
-          { status: 400 }
-        );
+        return apiError("Mood must be an integer between 1 and 5.");
       }
     }
 
@@ -120,10 +102,7 @@ export async function PUT(
     if (date !== undefined) {
       entryDate = new Date(date);
       if (isNaN(entryDate.getTime())) {
-        return NextResponse.json(
-          { error: "Invalid date format. Use ISO 8601." },
-          { status: 400 }
-        );
+        return apiError("Invalid date format. Use ISO 8601.");
       }
     }
 
@@ -173,10 +152,7 @@ export async function PUT(
     return NextResponse.json({ data: serializeEntry(updated) });
   } catch (error) {
     console.error("[PUT /api/diary/:id] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to update diary entry." },
-      { status: 500 }
-    );
+    return apiServerError("Failed to update diary entry.");
   }
 }
 
@@ -195,22 +171,16 @@ export async function DELETE(
     });
 
     if (!existing || existing.userId !== DEMO_USER_ID) {
-      return NextResponse.json(
-        { error: "Diary entry not found." },
-        { status: 404 }
-      );
+      return apiError("Diary entry not found.", 404);
     }
 
     await db.diaryEntry.delete({
       where: { id },
     });
 
-    return NextResponse.json({ success: true, message: "Diary entry deleted." });
+    return apiSuccessMessage("Diary entry deleted.");
   } catch (error) {
     console.error("[DELETE /api/diary/:id] Error:", error);
-    return NextResponse.json(
-      { error: "Failed to delete diary entry." },
-      { status: 500 }
-    );
+    return apiServerError("Failed to delete diary entry.");
   }
 }

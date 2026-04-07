@@ -1,7 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiSuccess, apiError, apiServerError } from '@/lib/api'
 
 const VALID_MEAL_TYPES = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'] as const
 
@@ -18,59 +17,38 @@ export async function PUT(
 
     // Validate meal type
     if (!mealType || !VALID_MEAL_TYPES.includes(mealType.toUpperCase())) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `Invalid meal type. Must be one of: ${VALID_MEAL_TYPES.join(', ')}`,
-        },
-        { status: 400 }
-      )
+      return apiError(`Invalid meal type. Must be one of: ${VALID_MEAL_TYPES.join(', ')}`)
     }
 
     // Validate date
     if (!date) {
-      return NextResponse.json(
-        { success: false, error: 'Date is required' },
-        { status: 400 }
-      )
+      return apiError('Date is required')
     }
 
     const parsedDate = new Date(date + 'T00:00:00.000Z')
     if (isNaN(parsedDate.getTime())) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid date format. Use YYYY-MM-DD' },
-        { status: 400 }
-      )
+      return apiError('Invalid date format. Use YYYY-MM-DD')
     }
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'At least one meal item is required' },
-        { status: 400 }
-      )
+      return apiError('At least one meal item is required')
     }
 
     // Validate each item
     for (const item of items) {
       if (!item.name) {
-        return NextResponse.json(
-          { success: false, error: 'Each meal item must have a name' },
-          { status: 400 }
-        )
+        return apiError('Each meal item must have a name')
       }
     }
 
     // Verify the meal belongs to the user
     const existingMeal = await db.meal.findFirst({
-      where: { id, userId: USER_ID },
+      where: { id, userId: DEMO_USER_ID },
     })
 
     if (!existingMeal) {
-      return NextResponse.json(
-        { success: false, error: 'Meal not found' },
-        { status: 404 }
-      )
+      return apiError('Meal not found', 404)
     }
 
     // Update meal and replace items in a transaction
@@ -105,12 +83,9 @@ export async function PUT(
       })
     })
 
-    return NextResponse.json({ success: true, data: updatedMeal })
+    return apiSuccess(updatedMeal)
   } catch (error) {
     console.error('PUT /api/nutrition/[id] error:', error)
-    return NextResponse.json(
-      { success: false, error: 'Failed to update meal' },
-      { status: 500 }
-    )
+    return apiServerError('Failed to update meal')
   }
 }

@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
 import { db } from '@/lib/db'
+import { parseBody, DEMO_USER_ID } from '@/lib/api'
 
-const USER_ID = 'user_demo_001'
+// ─── Zod Schemas ──────────────────────────────────────────────────────────────
+
+const createWaterLogSchema = z.object({
+  date: z.string().min(1, 'Дата обязательна'),
+  amountMl: z.number().positive('Количество воды должно быть положительным').optional(),
+})
+
 const DAILY_GOAL_ML = 2000
 const DEFAULT_GLASS_ML = 250
 
@@ -12,7 +20,7 @@ export async function GET(request: NextRequest) {
     const dateStr = searchParams.get('date')
     const monthStr = searchParams.get('month')
 
-    let where: any = { userId: USER_ID }
+    let where: any = { userId: DEMO_USER_ID }
 
     if (dateStr) {
       // Specific day: return summary
@@ -112,15 +120,10 @@ export async function GET(request: NextRequest) {
 // POST /api/nutrition/water
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { date, amountMl } = body
+    const data = await parseBody(request, createWaterLogSchema)
+    if (!data) return
 
-    if (!date) {
-      return NextResponse.json(
-        { success: false, error: 'Date is required' },
-        { status: 400 }
-      )
-    }
+    const { date, amountMl } = data
 
     const parsedDate = new Date(date + 'T00:00:00.000Z')
     if (isNaN(parsedDate.getTime())) {
@@ -132,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     const waterLog = await db.waterLog.create({
       data: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: parsedDate,
         amountMl: amountMl ?? DEFAULT_GLASS_ML,
       },
@@ -179,7 +182,7 @@ export async function DELETE(request: NextRequest) {
 
     const result = await db.waterLog.deleteMany({
       where: {
-        userId: USER_ID,
+        userId: DEMO_USER_ID,
         date: {
           gte: startOfDay,
           lte: endOfDay,

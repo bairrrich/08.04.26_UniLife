@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { DEMO_USER_ID } from '@/lib/api';
 
-const DEMO_USER_ID = 'user_demo_001'
 
 // GET /api/budgets?month=YYYY-MM — Returns budgets with spent amounts
 export async function GET(request: NextRequest) {

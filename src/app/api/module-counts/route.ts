@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/lib/db'
-
-const USER_ID = 'user_demo_001'
+import { DEMO_USER_ID, apiServerError } from '@/lib/api'
 
 export async function GET() {
   try {
@@ -24,35 +23,35 @@ export async function GET() {
       // Diary: entries created today
       db.diaryEntry.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           createdAt: { gte: today, lt: tomorrow },
         },
       }),
       // Finance: transactions today
       db.transaction.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           date: { gte: today, lt: tomorrow },
         },
       }),
       // Nutrition: meals today
       db.meal.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           date: { gte: today, lt: tomorrow },
         },
       }),
       // Workout: workouts today
       db.workout.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           date: { gte: today, lt: tomorrow },
         },
       }),
       // Habits: uncompleted today
       db.habit.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           logs: {
             none: {
               date: { gte: today, lt: tomorrow },
@@ -63,7 +62,7 @@ export async function GET() {
       // Goals: active goals with progress >= 80%
       db.goal.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
           status: 'active',
           progress: { gte: 80 },
         },
@@ -71,7 +70,7 @@ export async function GET() {
       // Collections: total items
       db.collectionItem.count({
         where: {
-          userId: USER_ID,
+          userId: DEMO_USER_ID,
         },
       }),
       // Feed: posts from last 24 hours (as proxy for "new")
@@ -96,9 +95,6 @@ export async function GET() {
     return NextResponse.json({ success: true, counts })
   } catch (error) {
     console.error('Module counts error:', error)
-    return NextResponse.json(
-      { success: false, counts: {} },
-      { status: 500 }
-    )
+    return apiServerError('Failed to load module counts')
   }
 }
