@@ -96,6 +96,7 @@ const DataStatsWidget = dynamic(() => import('./data-stats-widget'), { ssr: fals
 const TipsCarousel = dynamic(() => import('./tips-carousel'), { ssr: false, loading: widgetLoad })
 const DailyTipsWidget = dynamic(() => import('./daily-tips-widget'), { ssr: false, loading: widgetLoad })
 const DailyChecklistWidget = dynamic(() => import('./daily-checklist-widget'), { ssr: false, loading: widgetLoad })
+const ProductivityScoreWidget = dynamic(() => import('./productivity-score-widget'), { ssr: false, loading: widgetLoad })
 
 const NotificationCenter = dynamic(() => import('./notification-center'), { ssr: false, loading: widgetLoad })
 const MoodHeatmapCalendar = dynamic(() => import('./mood-heatmap-calendar'), { ssr: false, loading: widgetLoad })
@@ -821,6 +822,13 @@ export default function DashboardPage() {
               streak={diaryStreak}
               totalEntries={diaryEntries.length + workouts.length + feedPosts.length}
             />
+          </DashboardSection>
+        )
+
+      case 'productivity-score':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <ProductivityScoreWidget />
           </DashboardSection>
         )
 

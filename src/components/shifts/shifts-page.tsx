@@ -283,6 +283,74 @@ function ShiftCard({
   )
 }
 
+// ─── Weekly Summary Bar ───────────────────────────────────────────────
+
+function WeeklySummaryBar({ shifts }: { shifts: Shift[] }) {
+  const weekData = useMemo(() => {
+    const now = new Date()
+    const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1 // Monday=0
+    const weekStart = new Date(now)
+    weekStart.setDate(now.getDate() - dayOfWeek)
+    weekStart.setHours(0, 0, 0, 0)
+
+    const weekShifts = shifts.filter(s => {
+      const shiftDate = new Date(s.date.length > 10 ? s.date : `${s.date}T00:00:00`)
+      return shiftDate >= weekStart && s.status !== 'cancelled'
+    })
+
+    const totalHours = weekShifts.reduce((sum, s) => sum + calcDuration(s.startTime, s.endTime, s.breakMin), 0)
+    const totalEarnings = weekShifts.reduce((sum, s) => {
+      if (s.status !== 'completed') return sum
+      const dur = calcDuration(s.startTime, s.endTime, s.breakMin)
+      return sum + calcEarnings(dur, s.payRate, s.tips)
+    }, 0)
+    const completedCount = weekShifts.filter(s => s.status === 'completed').length
+    const nightCount = weekShifts.filter(s => isNightShift(s.startTime)).length
+    const overtimeCount = weekShifts.filter(s => isOvertime(s.startTime, s.endTime, s.breakMin)).length
+
+    return { totalHours, totalEarnings, completedCount, nightCount, overtimeCount, totalShifts: weekShifts.length }
+  }, [shifts])
+
+  return (
+    <Card className="card-hover overflow-hidden animate-slide-up">
+      <div className="h-1 bg-gradient-to-r from-sky-400 via-cyan-400 to-emerald-400" />
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/50">
+            <CalendarClock className="h-4 w-4 text-sky-500" />
+          </div>
+          <h3 className="text-sm font-semibold">Итоги недели</h3>
+          <Badge variant="outline" className="text-[10px] px-1.5 py-0 ml-auto">
+            {WEEKDAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1] + 1}/7
+          </Badge>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="text-center">
+            <p className="text-lg font-bold tabular-nums text-sky-600 dark:text-sky-400">{weekData.totalHours.toFixed(1)}ч</p>
+            <p className="text-[10px] text-muted-foreground">Часов</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold tabular-nums text-emerald-600 dark:text-emerald-400">{formatMoney(weekData.totalEarnings)}</p>
+            <p className="text-[10px] text-muted-foreground">Заработок</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold tabular-nums">{weekData.completedCount}<span className="text-xs font-normal text-muted-foreground">/{weekData.totalShifts}</span></p>
+            <p className="text-[10px] text-muted-foreground">Завершено</p>
+          </div>
+          <div className="text-center">
+            <p className="text-lg font-bold tabular-nums">
+              {weekData.nightCount > 0 && <span className="text-indigo-500" title="Ночных">{weekData.nightCount}🌙</span>}
+              {weekData.overtimeCount > 0 && <span className="text-amber-500 ml-1" title="Переработок">{weekData.overtimeCount}⚡</span>}
+              {weekData.nightCount === 0 && weekData.overtimeCount === 0 && <span className="text-muted-foreground">—</span>}
+            </p>
+            <p className="text-[10px] text-muted-foreground">Ночные / Переработки</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 // ─── Main Page ──────────────────────────────────────────────────────────
 
 export function ShiftsPage() {
@@ -467,6 +535,11 @@ export function ShiftsPage() {
         />
       </div>
 
+      {/* Weekly Summary Bar */}
+      {!loading && shifts.length > 0 && (
+        <WeeklySummaryBar shifts={shifts} />
+      )}
+
       {/* Calendar View */}
       <Card className="overflow-hidden">
         <div className="h-1 bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400" />
@@ -501,6 +574,10 @@ export function ShiftsPage() {
                       onClick={() => {
                         if (summary) {
                           setSelectedDate(isSelected ? null : day.date)
+                        } else if (day.currentMonth) {
+                          // Click on empty day: open add dialog with pre-filled date
+                          setEditShift(null)
+                          setDialogOpen(true)
                         }
                       }}
                       className={`

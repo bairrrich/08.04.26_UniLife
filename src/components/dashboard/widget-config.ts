@@ -25,6 +25,7 @@ export const DEFAULT_SECTIONS: WidgetSectionConfig[] = [
   { id: 'tips-carousel', title: 'Советы дня', icon: '💡', defaultCollapsed: true, defaultVisible: true, defaultOrder: 14 },
   { id: 'mood-heatmap', title: 'Карта настроения', icon: '🗓️', defaultCollapsed: true, defaultVisible: true, defaultOrder: 15 },
   { id: 'achievement-badges', title: 'Достижения', icon: '🏆', defaultCollapsed: true, defaultVisible: true, defaultOrder: 16 },
+  { id: 'productivity-score', title: 'Продуктивность дня', icon: '⚡', defaultCollapsed: false, defaultVisible: true, defaultOrder: 17 },
 ]
 
 const STORAGE_KEY = 'unilife-widget-config'

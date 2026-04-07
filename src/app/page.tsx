@@ -167,7 +167,7 @@ export default function Home() {
           )}
         </div>
       </main>
-      {Footer && <Footer />}
+      {Footer && <div className="md:ml-60"><Footer /></div>}
       {ScrollTop && <ScrollTop />}
       {MobileNav && <MobileNav />}
       {QuickAdd && <QuickAdd />}

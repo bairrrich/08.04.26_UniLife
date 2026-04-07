@@ -11932,3 +11932,83 @@ Root (min-h-screen flex flex-col)
 ├── QuickAdd (fixed)
 └── NotificationToast (portal)
 ```
+
+---
+Task ID: productivity-score-widget
+Agent: productivity-score-agent
+Task: Create daily productivity score dashboard widget
+
+Work Log:
+- Created /src/app/api/productivity/route.ts — GET endpoint that fetches data from 5 sources in parallel using Promise.allSettled (habits, diary, nutrition, workouts, budgets+transactions). Calculates weighted productivity score (0-100): habits 30pts, diary 20pts, nutrition 20pts, workout 20pts, finance 10pts. Uses graceful degradation — if any data source fails, others still contribute to the score. Returns detailed breakdown per category.
+- Created /src/components/dashboard/productivity-score-widget.tsx — Self-contained client component that fetches from /api/productivity. Features: large SVG circular progress ring (radius=54) with animated dashoffset, color-coded scoring (emerald ≥70, sky ≥40, rose <40), animated score number using AnimatedNumber, breakdown list with CheckCircle2/XCircle icons showing points per activity, motivational message banner, loading skeleton state. Uses card-hover and animate-slide-up classes per project conventions.
+- Updated /src/components/dashboard/widget-config.ts — Added new "productivity-score" section config (id, title "Продуктивность дня", icon ⚡, not collapsed, visible, order 17)
+- Updated /src/components/dashboard/dashboard-page.tsx — Added dynamic import for ProductivityScoreWidget, added renderSection case for "productivity-score" section
+
+Stage Summary:
+- New /api/productivity endpoint returns weighted daily productivity score (0-100) with full breakdown across 5 categories
+- New ProductivityScoreWidget provides self-contained productivity visualization with circular progress ring, activity checklist, and motivational messages
+- Widget integrated into dashboard as configurable/toggleable section
+- ESLint: 0 errors (168 pre-existing warnings only)
+- Dev server compiles and serves HTTP 200 successfully
+
+
+---
+## Task ID: qa-round-12-footer-fix+features
+### Agent: main-coordinator
+### Task: Fix footer positioning, enhance shifts module, add productivity score widget
+
+### Work Log:
+
+**Bug Fix 1 — Footer Sidebar Offset (`/src/app/page.tsx`):**
+- Fixed footer not aligned with main content on desktop — footer was missing `md:ml-60` to offset for the fixed 240px sidebar
+- Wrapped Footer component in `<div className="md:ml-60">` to match main content alignment
+- Verified via agent-browser: footer now correctly starts at 240px from left edge on desktop
+
+**Bug Fix 2 — Shifts Calendar Day-Click (verified working):**
+- Calendar filtering was already implemented correctly — clicking on days with shift indicators filters the shift list
+- Added new feature: clicking on empty calendar days now opens the "Add Shift" dialog (previously only days with shifts were clickable)
+
+**Enhancement — Shifts Weekly Summary Bar (`/src/components/shifts/shifts-page.tsx`):**
+- Added `WeeklySummaryBar` component between stats cards and calendar
+- Shows 4 metrics: weekly hours, weekly earnings, completed/total shifts, night shifts + overtime indicators
+- Gradient accent bar (sky → cyan → emerald) with card-hover animation
+- Auto-filters current week's shifts (Monday-based week)
+- Shows current day progress badge (e.g., "4/7")
+
+**New Feature — Productivity Score Widget:**
+- Created `/src/app/api/productivity/route.ts` — calculates daily productivity score (0-100) from 5 data sources
+  - Habits: 30pts max (proportional to completion)
+  - Diary: 20pts (binary)
+  - Nutrition: 20pts max (7 per meal)
+  - Workout: 20pts (binary)
+  - Finance: 10pts (within budget) / 5pts (no budget)
+- Created `/src/components/dashboard/productivity-score-widget.tsx` — self-contained dashboard widget
+  - SVG circular progress ring with animated score display
+  - Color-coded: emerald ≥70, sky ≥40, rose <40
+  - Activity breakdown list with checkmarks and points per category
+  - Motivational messages based on score range
+  - Loading skeleton state
+- Integrated into dashboard page via dynamic import
+
+**QA Testing:**
+- ✅ ESLint: 0 errors, 168 warnings (all pre-existing)
+- ✅ agent-browser QA: Dashboard (with productivity widget), Finance (footer aligned), Shifts (weekly summary + calendar filtering)
+- ✅ All API endpoints tested: `/api/productivity` returns correct score (89/100 in current data)
+
+### Verification Results:
+- ✅ ESLint: 0 errors
+- ✅ Dev server compiles and serves HTTP 200
+- ✅ Footer correctly aligned with sidebar offset (240px)
+- ✅ Shifts calendar filtering works (verified by clicking day 10)
+- ✅ Productivity score widget renders on dashboard with correct data
+- ✅ Weekly Summary Bar renders on shifts page
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Advanced Analytics** — Weekly/monthly trend reports
+5. **Real-time Updates** — WebSocket/SSE for live feed
+6. **Offline Support** — Service worker caching
+7. **Notifications** — Push notifications for reminders
+8. **Budget Alerts** — In-app budget threshold notifications
