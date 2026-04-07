@@ -86,6 +86,7 @@ const AchievementsWidget = dynamic(() => import('./achievements/achievements-wid
 const RecentGoals = dynamic(() => import('./recent-goals-widget'), { ssr: false, loading: widgetLoad })
 const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false, loading: widgetLoad })
 
+const WeeklyChallengeWidget = dynamic(() => import('./weekly-challenge-widget'), { ssr: false, loading: widgetLoad })
 const DailyTipsWidget = dynamic(() => import('./daily-tips-widget'), { ssr: false, loading: widgetLoad })
 const DailyChecklistWidget = dynamic(() => import('./daily-checklist-widget'), { ssr: false, loading: widgetLoad })
 
@@ -549,6 +550,13 @@ export default function DashboardPage() {
     const defaultCollapsed = sectionDef?.defaultCollapsed ?? false
 
     switch (sectionId) {
+      case 'weekly-challenge':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
+            <WeeklyChallengeWidget />
+          </DashboardSection>
+        )
+
       case 'overview':
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>

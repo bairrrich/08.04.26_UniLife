@@ -11299,3 +11299,63 @@ Stage Summary:
 8. **Advanced Analytics** — Weekly/monthly trend reports
 9. **Data Import Enhancement** — CSV import support
 10. **Budget Alerts** — In-app budget threshold notifications
+
+---
+## Task ID: qa-round-9-widget-polish+weekly-challenge
+### Agent: main-coordinator
+### Task: QA testing, dashboard widget styling polish, weekly challenge feature
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11+ modules render correctly
+- **Database**: SQLite via Prisma with 15+ models
+- **Lint**: 0 errors, 157 warnings (all pre-existing `no-console`)
+- **Build**: All routes compile successfully via Turbopack
+- **APIs**: All tested endpoints returning HTTP 200
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ ESLint: 0 errors, 157 warnings (all pre-existing)
+- ✅ All API endpoints: HTTP 200 (/, /api/dashboard, /api/diary, /api/habits, /api/goals, /api/feed)
+- ✅ Dev server compiles and serves correctly
+
+#### Styling Improvements (Mandatory) — Widget Polish Pass
+1. **Achievements Widget**: Added `animate-slide-up` entrance; decorative gradient blobs (emerald/teal + amber) in header; `card-hover` on achievement cards
+2. **Streak Widget**: Added `animate-slide-up` + `card-hover`; `stagger-children` for streak items; gradient icon background (from-emerald-400 to-teal-500); `text-gradient-emerald` on streak numbers ≥ 7
+3. **Motivational Quote Widget**: Added `animate-slide-up` + `card-hover`; 3px gradient accent bar at top; italic quote text; decorative `"` quote icon with emerald gradient
+4. **Breathing Widget**: Header wrapped in `relative overflow-hidden`; 2 gradient blobs (emerald/teal + violet/purple); `stagger-children` on technique buttons + phase indicators; ambient glow div behind breathing circle
+5. **Quick Notes Widget**: 3px gradient accent (violet→purple); `stagger-children` on notes grid; `card-hover` on individual notes; gradient empty state icon
+6. **Focus Timer Widget**: Timer section in `relative overflow-hidden`; 2 gradient blobs (emerald + amber) behind timer; `stagger-children` on mode tabs; enhanced pulsing glow with increased blur
+7. **Daily Tips Widget**: Added `animate-slide-up` + `card-hover`; gradient accent line at top; enriched with 4 tip categories (health ❤️, productivity ⚡, finance 💰, motivation 🔥); 3 cycling tips per day with AnimatePresence transitions
+
+#### New Features (Mandatory)
+1. **Weekly Challenge Widget**: 24 challenges across 4 categories (здоровье, продуктивность, обучение, осознанность); ISO week-based auto-rotation; 7-day checkbox progress grid stored in localStorage; Progress bar with percentage; "Новый вызов" skip button; category-colored left border; completion celebration; skeleton loading; dark mode
+2. **Enhanced Daily Tips**: Cycling tips with category emojis, navigation dots, "Далее" button, AnimatePresence slide transitions between tips
+
+### Files Changed:
+- **New**: `/src/components/dashboard/weekly-challenge-widget.tsx` (weekly challenge widget)
+- **Modified**: `/src/components/dashboard/achievements/achievements-widget.tsx` (entrance animation, blobs, card-hover)
+- **Modified**: `/src/components/dashboard/streak-widget.tsx` (entrance, card-hover, stagger, gradient icon)
+- **Modified**: `/src/components/dashboard/motivational-quote.tsx` (entrance, accent bar, gradient quote icon)
+- **Modified**: `/src/components/dashboard/breathing-widget.tsx` (blobs, stagger, ambient glow)
+- **Modified**: `/src/components/dashboard/quick-notes-widget.tsx` (accent bar, stagger, card-hover, empty state)
+- **Modified**: `/src/components/dashboard/focus-timer-widget.tsx` (blobs, stagger, enhanced glow)
+- **Modified**: `/src/components/dashboard/daily-tips-widget.tsx` (categories, cycling tips, transitions)
+- **Modified**: `/src/components/dashboard/dashboard-page.tsx` (weekly challenge integration)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 157 warnings (all pre-existing `no-console`)
+- ✅ Dev server: compiles cleanly, all routes serve HTTP 200
+- ✅ All existing functionality preserved — no breaking changes
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Real-time Updates** — WebSocket/SSE for live feed
+5. **Offline Support** — Service worker caching
+6. **Push Notifications** — In-app notification system
+7. **Localization** — i18n support for multiple languages
+8. **Advanced Analytics** — Weekly/monthly trend reports
+9. **Data Import Enhancement** — CSV import support
+10. **Budget Alerts** — In-app budget threshold notifications

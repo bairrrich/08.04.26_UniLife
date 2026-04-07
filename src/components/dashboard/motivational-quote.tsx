@@ -16,7 +16,9 @@ interface MotivationalQuoteProps {
 
 export default function MotivationalQuote({ quoteIndex, quoteRefreshing, onRefresh }: MotivationalQuoteProps) {
   return (
-    <Card className="overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/20">
+    <Card className="animate-slide-up card-hover overflow-hidden rounded-xl border border-transparent bg-gradient-to-br from-emerald-50 via-teal-50/50 to-cyan-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-cyan-950/20">
+      {/* Decorative gradient accent bar at top */}
+      <div className="h-[3px] w-full bg-gradient-to-r from-emerald-400 via-teal-400 to-amber-400" />
       <CardContent className="relative p-5">
         <div className="absolute -right-6 -top-6 h-24 w-24 rounded-full bg-emerald-200/30 blur-2xl dark:bg-emerald-800/20" />
         <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-teal-200/30 blur-xl dark:bg-teal-800/20" />
@@ -39,8 +41,10 @@ export default function MotivationalQuote({ quoteIndex, quoteRefreshing, onRefre
             </button>
           </div>
           <blockquote className="relative pl-3">
+            {/* Decorative quote icon */}
+            <span className="text-gradient-emerald absolute -left-1 -top-3 text-3xl font-serif leading-none select-none">&ldquo;</span>
             <div className="absolute bottom-0 left-0 top-0 w-0.5 rounded-full bg-gradient-to-b from-emerald-400 to-teal-400" />
-            <p className="text-sm leading-relaxed font-medium text-foreground/90">
+            <p className="italic text-sm leading-relaxed text-muted-foreground">
               &laquo;{MOTIVATIONAL_QUOTES[quoteIndex].text}&raquo;
             </p>
             <footer className="mt-2 text-xs text-muted-foreground">

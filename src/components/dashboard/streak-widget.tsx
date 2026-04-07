@@ -4,6 +4,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Flame, Trophy, BookOpen, Dumbbell, Target } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import type { ReactNode } from 'react'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -24,10 +25,12 @@ interface StreakWidgetProps {
 
 export default function StreakWidget({ loading, streakItems, maxStreak }: StreakWidgetProps) {
   return (
-    <Card className="rounded-xl border">
+    <Card className="animate-slide-up card-hover rounded-xl border">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
-          <Flame className="h-4 w-4 text-orange-500" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm">
+            <Flame className="h-4 w-4 text-white" />
+          </div>
           Рекорды серий
         </CardTitle>
       </CardHeader>
@@ -39,7 +42,7 @@ export default function StreakWidget({ loading, streakItems, maxStreak }: Streak
             ))}
           </div>
         ) : (
-          <div className="space-y-2">
+          <div className="stagger-children space-y-2">
             {streakItems.map((item) => (
               <div
                 key={item.name}
@@ -57,7 +60,10 @@ export default function StreakWidget({ loading, streakItems, maxStreak }: Streak
                       Рекорд
                     </Badge>
                   )}
-                  <span className="text-base font-bold tabular-nums text-foreground">
+                  <span className={cn(
+                      'text-base font-bold tabular-nums',
+                      item.streak >= 7 ? 'text-gradient-emerald' : 'text-foreground'
+                    )}>
                     {item.streak}
                   </span>
                   <span className="text-xs text-muted-foreground">дней</span>

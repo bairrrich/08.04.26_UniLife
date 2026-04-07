@@ -9,15 +9,16 @@ export interface WidgetSectionConfig {
 
 export const DEFAULT_SECTIONS: WidgetSectionConfig[] = [
   { id: 'overview', title: 'Обзор', icon: '📊', defaultCollapsed: false, defaultVisible: true, defaultOrder: 0 },
-  { id: 'today', title: 'Сегодня', icon: '☀️', defaultCollapsed: false, defaultVisible: true, defaultOrder: 1 },
-  { id: 'quick-access', title: 'Быстрый доступ', icon: '⚡', defaultCollapsed: false, defaultVisible: true, defaultOrder: 2 },
-  { id: 'weekly', title: 'Аналитика недели', icon: '📈', defaultCollapsed: false, defaultVisible: true, defaultOrder: 3 },
-  { id: 'health', title: 'Привычки и здоровье', icon: '💪', defaultCollapsed: false, defaultVisible: true, defaultOrder: 4 },
-  { id: 'charts', title: 'Графики', icon: '📉', defaultCollapsed: true, defaultVisible: true, defaultOrder: 5 },
-  { id: 'finances', title: 'Финансы', icon: '💰', defaultCollapsed: true, defaultVisible: true, defaultOrder: 6 },
-  { id: 'inspiration', title: 'Вдохновение', icon: '✨', defaultCollapsed: true, defaultVisible: true, defaultOrder: 7 },
-  { id: 'tools', title: 'Инструменты', icon: '🛠️', defaultCollapsed: true, defaultVisible: true, defaultOrder: 8 },
-  { id: 'activity', title: 'Активность и цели', icon: '🎯', defaultCollapsed: true, defaultVisible: true, defaultOrder: 9 },
+  { id: 'weekly-challenge', title: 'Вызов недели', icon: '🔥', defaultCollapsed: false, defaultVisible: true, defaultOrder: 1 },
+  { id: 'today', title: 'Сегодня', icon: '☀️', defaultCollapsed: false, defaultVisible: true, defaultOrder: 2 },
+  { id: 'quick-access', title: 'Быстрый доступ', icon: '⚡', defaultCollapsed: false, defaultVisible: true, defaultOrder: 3 },
+  { id: 'weekly', title: 'Аналитика недели', icon: '📈', defaultCollapsed: false, defaultVisible: true, defaultOrder: 4 },
+  { id: 'health', title: 'Привычки и здоровье', icon: '💪', defaultCollapsed: false, defaultVisible: true, defaultOrder: 5 },
+  { id: 'charts', title: 'Графики', icon: '📉', defaultCollapsed: true, defaultVisible: true, defaultOrder: 6 },
+  { id: 'finances', title: 'Финансы', icon: '💰', defaultCollapsed: true, defaultVisible: true, defaultOrder: 7 },
+  { id: 'inspiration', title: 'Вдохновение', icon: '✨', defaultCollapsed: true, defaultVisible: true, defaultOrder: 8 },
+  { id: 'tools', title: 'Инструменты', icon: '🛠️', defaultCollapsed: true, defaultVisible: true, defaultOrder: 9 },
+  { id: 'activity', title: 'Активность и цели', icon: '🎯', defaultCollapsed: true, defaultVisible: true, defaultOrder: 10 },
 ]
 
 const STORAGE_KEY = 'unilife-widget-config'

@@ -444,10 +444,14 @@ export const AchievementsWidget = memo(function AchievementsWidget({
   }
 
   return (
-    <Card className="card-hover rounded-xl border overflow-hidden">
+    <Card className="animate-slide-up card-hover rounded-xl border overflow-hidden">
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
-      <CardHeader className="pb-3 relative">
+      <CardHeader className="relative overflow-hidden pb-3">
+        {/* Decorative gradient blobs */}
+        <div className="pointer-events-none absolute -right-4 -top-4 h-16 w-16 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/10 blur-2xl" />
+        <div className="pointer-events-none absolute -left-6 top-2 h-12 w-12 rounded-full bg-gradient-to-br from-amber-400/20 to-orange-400/10 blur-2xl" />
+        <div className="pointer-events-none absolute right-8 bottom-0 h-10 w-10 rounded-full bg-gradient-to-br from-teal-400/15 to-cyan-400/10 blur-xl" />
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
@@ -498,7 +502,7 @@ export const AchievementsWidget = memo(function AchievementsWidget({
                 <div
                   key={achievement.id}
                   className={cn(
-                    'animate-bounce-in flex flex-col items-center gap-1.5 rounded-xl border-2 border-amber-300 bg-amber-50/50 p-3 dark:border-amber-600 dark:bg-amber-950/30'
+                    'card-hover animate-bounce-in flex flex-col items-center gap-1.5 rounded-xl border-2 border-amber-300 bg-amber-50/50 p-3 dark:border-amber-600 dark:bg-amber-950/30'
                   )}
                 >
                   <div className={cn(

@@ -998,7 +998,7 @@ export default memo(function FocusTimerWidget() {
       </CardHeader>
 
       <CardContent className="relative">
-        <div className="flex flex-col items-center gap-4">
+        <div className="relative flex flex-col items-center gap-4 overflow-hidden">
           {/* ── Break Suggestion Card ── */}
           {showBreakSuggestion && (
             <div className="w-full rounded-xl border border-amber-200 dark:border-amber-800/50 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 p-3 animate-slide-up">
@@ -1094,10 +1094,13 @@ export default memo(function FocusTimerWidget() {
 
           {/* ── Circular Progress Ring ── */}
           <div className="relative">
-            {/* Glow effect behind the ring when running */}
+            {/* Decorative gradient blobs behind the timer circle */}
+            <div className="pointer-events-none absolute -right-8 top-1/4 h-24 w-24 rounded-full bg-gradient-to-br from-emerald-400/15 to-teal-400/10 blur-3xl" />
+            <div className="pointer-events-none absolute -left-6 bottom-1/4 h-20 w-20 rounded-full bg-gradient-to-br from-amber-400/15 to-orange-400/10 blur-3xl" />
+            {/* Subtle pulsing glow behind the ring when running */}
             {isRunning && (
               <div
-                className={`absolute inset-[-12px] rounded-full bg-gradient-to-br ${config.ringGradient} opacity-20 blur-xl transition-opacity duration-500 ${isBreakMode ? 'timer-glow-amber' : 'timer-glow-emerald'}`}
+                className={`absolute inset-[-16px] rounded-full bg-gradient-to-br ${config.ringGradient} opacity-25 blur-xl transition-opacity duration-500 ${isBreakMode ? 'timer-glow-amber' : 'timer-glow-emerald'}`}
               />
             )}
 
@@ -1201,7 +1204,7 @@ export default memo(function FocusTimerWidget() {
           </div>
 
           {/* ── Mode Tabs ── */}
-          <div className="flex flex-col gap-1.5 w-full max-w-[260px]">
+          <div className="stagger-children flex flex-col gap-1.5 w-full max-w-[260px]">
             {/* Focus modes */}
             <div className="flex items-center gap-0.5 rounded-lg bg-muted/50 p-0.5">
               {FOCUS_MODES.map((key) => {

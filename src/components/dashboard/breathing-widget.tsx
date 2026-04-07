@@ -272,7 +272,10 @@ export default memo(function BreathingWidget() {
       {/* Calming gradient background */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-emerald-500/[0.03] to-teal-500/[0.03]" />
 
-      <CardHeader className="relative pb-3">
+      <CardHeader className="relative overflow-hidden pb-3">
+        {/* Decorative gradient blobs */}
+        <div className="pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/20 blur-2xl" />
+        <div className="pointer-events-none absolute -left-4 -top-3 h-16 w-16 rounded-full bg-gradient-to-br from-violet-400/15 to-purple-400/15 blur-2xl" />
         <CardTitle className="flex items-center gap-2 text-base">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
             <Wind className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
@@ -295,7 +298,7 @@ export default memo(function BreathingWidget() {
 
       <CardContent className="relative space-y-4">
         {/* ── Pattern Selector ── */}
-        <div className="flex items-center gap-1 rounded-lg bg-muted/50 p-1">
+        <div className="stagger-children flex items-center gap-1 rounded-lg bg-muted/50 p-1">
           {PATTERNS.map((p) => {
             const isActivePattern = pattern === p.id
             const PatternIcon = p.icon
@@ -329,6 +332,8 @@ export default memo(function BreathingWidget() {
         {/* ── Breathing Circle ── */}
         <div className="flex items-center justify-center py-2">
           <div className="relative">
+            {/* Subtle ambient glow behind the circle */}
+            <div className="absolute inset-[-24px] rounded-full bg-gradient-to-br from-emerald-300/15 to-teal-300/15 blur-3xl" />
             {/* Glow effect when active */}
             {isActive && (
               <motion.div
@@ -436,7 +441,7 @@ export default memo(function BreathingWidget() {
         </div>
 
         {/* ── Phase Indicators ── */}
-        <div className="flex items-center justify-center gap-2">
+        <div className="stagger-children flex items-center justify-center gap-2">
           {currentPattern.phases.map((p, i) => (
             <div
               key={p}

@@ -459,6 +459,8 @@ export default memo(function QuickNotesWidget() {
   // ── View mode ─────────────────────────────────────────────────────────
   return (
     <Card className="animate-slide-up card-hover glass-card rounded-xl">
+      {/* Gradient accent bar at top */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-[3px] bg-gradient-to-r from-violet-400 to-purple-500 rounded-t-xl" />
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-base">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/40">
@@ -536,8 +538,8 @@ export default memo(function QuickNotesWidget() {
             <div className="flex flex-col items-center justify-center py-6 text-center">
               {notes.length === 0 ? (
                 <>
-                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-muted/50">
-                    <FileEdit className="h-5 w-5 text-muted-foreground/40" />
+                  <div className="mb-2 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-400/20 to-purple-400/20">
+                    <FileEdit className="h-5 w-5 text-violet-400/60" />
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Нет заметок
@@ -564,7 +566,7 @@ export default memo(function QuickNotesWidget() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="stagger-children grid grid-cols-2 gap-2">
               {filteredNotes.map((note) => {
                 const nc = NOTE_COLORS.find((c) => c.id === note.color) ?? NOTE_COLORS[0]
                 const isConfirming = confirmDeleteId === note.id
@@ -575,7 +577,7 @@ export default memo(function QuickNotesWidget() {
                     initial={{ opacity: 0, y: 5 }}
                     animate={{ opacity: 1, y: 0 }}
                     className={cn(
-                      'group relative rounded-lg border bg-card/60 p-3 cursor-pointer transition-all duration-200 hover:shadow-md',
+                      'card-hover group relative rounded-lg border bg-card/60 p-3 cursor-pointer transition-all duration-200 hover:shadow-md',
                       nc.border,
                       nc.bg
                     )}
