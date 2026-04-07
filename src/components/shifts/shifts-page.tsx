@@ -15,14 +15,12 @@ import {
   Moon,
   AlertCircle,
   Wallet,
-  Timer,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { ModuleEmptyState } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 import { useShifts } from './hooks'
 import {
@@ -307,22 +305,29 @@ export function ShiftsPage() {
   // Calendar days
   const calendarDays = useMemo(() => getCalendarDays(month), [month])
 
-  // Group shifts by date
+  // Normalize ISO date string to YYYY-MM-DD for consistent map keys
+  const toDateKey = useCallback((isoDate: string) => {
+    // Handle both "2026-04-01" and "2026-04-01T10:00:00.000Z" formats
+    return isoDate.length > 10 ? isoDate.slice(0, 10) : isoDate
+  }, [])
+
+  // Group shifts by date (using normalized YYYY-MM-DD keys)
   const shiftsByDate = useMemo(() => {
     const map = new Map<string, Shift[]>()
     for (const s of shifts) {
-      const existing = map.get(s.date) || []
+      const key = toDateKey(s.date)
+      const existing = map.get(key) || []
       existing.push(s)
-      map.set(s.date, existing)
+      map.set(key, existing)
     }
     return map
-  }, [shifts])
+  }, [shifts, toDateKey])
 
   // Filter shifts for selected date
   const selectedShifts = useMemo(() => {
     if (!selectedDate) return []
-    return shiftsByDate.get(selectedDate) || []
-  }, [selectedDate, shiftsByDate])
+    return shiftsByDate.get(toDateKey(selectedDate)) || []
+  }, [selectedDate, shiftsByDate, toDateKey])
 
   // Today
   const todayStr = useMemo(() => {
@@ -365,9 +370,9 @@ export function ShiftsPage() {
     }
   }
 
-  // Calendar day dot summary
+  // Calendar day dot summary (date is already YYYY-MM-DD from calendar)
   const getDaySummary = useCallback((date: string) => {
-    const dayShifts = shiftsByDate.get(date)
+    const dayShifts = shiftsByDate.get(toDateKey(date))
     if (!dayShifts) return null
     return {
       completed: dayShifts.filter(s => s.status === 'completed').length,
@@ -377,7 +382,7 @@ export function ShiftsPage() {
         s.status !== 'cancelled' && isOvertime(s.startTime, s.endTime, s.breakMin)
       ),
     }
-  }, [shiftsByDate])
+  }, [shiftsByDate, toDateKey])
 
   // ─── Render ─────────────────────────────────────────────────────────
 
@@ -586,9 +591,8 @@ export function ShiftsPage() {
               {shifts.length} {pluralize(shifts.length, 'смена', 'смены', 'смен')}
             </Badge>
           </div>
-          <ScrollArea className="max-h-96">
-            <div className="space-y-2 stagger-children">
-              {shifts
+          <div className="space-y-2 stagger-children">
+            {shifts
                 .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
                 .map((shift) => (
                   <ShiftCard
@@ -599,8 +603,7 @@ export function ShiftsPage() {
                     onComplete={completeShift}
                   />
                 ))}
-            </div>
-          </ScrollArea>
+          </div>
         </div>
       ) : loading ? (
         <div className="space-y-3">

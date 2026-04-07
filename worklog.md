@@ -11681,3 +11681,40 @@ New Components:
 5. **Mobile responsive audit** — Full mobile QA pass recommended
 6. **Type safety audit** — Some `any` types in chart components; Zod validation for API responses
 7. **Schedule page** — Planned but not yet implemented (mentioned in nav)
+
+---
+## Task ID: shifts-filter-footer-fix
+### Agent: main
+### Task: Fix calendar day filtering in Shifts module and footer positioning
+
+### Bug Analysis:
+
+**Bug 1: Calendar day click filtering didn't work**
+- Root cause: API returns shift dates as ISO strings (`"2026-04-01T10:00:00.000Z"`), but calendar generates date keys as `"2026-04-01"`. The `shiftsByDate` Map used the raw ISO string as key, so `getDaySummary("2026-04-01")` always returned `undefined` — no dots shown, no click handler triggered.
+- Also affected: `selectedShifts` lookup failed, so clicking a day never showed filtered shifts.
+
+**Bug 2: Footer didn't push down with many shifts**
+- Root cause: The content wrapper `<div>` in `page.tsx` didn't have `flex-1`, so it didn't expand to fill the flex column. The Footer's `mt-auto` had no effect because there was no extra space to distribute.
+- Compounding issue: `ScrollArea className="max-h-96"` on the shifts list capped the list at 384px, preventing natural page growth.
+
+### Fixes Applied:
+
+1. **`src/components/shifts/shifts-page.tsx`**:
+   - Added `toDateKey()` helper that normalizes ISO dates to `YYYY-MM-DD` format
+   - Updated `shiftsByDate` to use normalized keys
+   - Updated `selectedShifts` to use `toDateKey()` for lookup
+   - Updated `getDaySummary` to use `toDateKey()` for lookup
+   - Removed `ScrollArea` wrapper and `max-h-96` from shifts list (now renders all shifts naturally, footer pushes down)
+   - Removed unused `ScrollArea` and `Timer` imports
+   - Fixed `getDaySummary` dependency array to include `toDateKey`
+
+2. **`src/app/page.tsx`**:
+   - Added `flex-1` to the content wrapper `<div>` inside `<main>`, enabling the footer's `mt-auto` to work correctly
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 165 warnings (same as before)
+- ✅ Calendar day click now filters shifts correctly (tested: day 3 → "3 Апрель 2026" heading appears)
+- ✅ Calendar day dots (green/sky/red) now display correctly (dates match)
+- ✅ Footer renders at viewport bottom when content is short (flex layout working)
+- ✅ Footer appears after all content when there are many shifts (natural document flow)
+- ✅ All 25 shifts display in the full list (no more max-h-96 truncation)
