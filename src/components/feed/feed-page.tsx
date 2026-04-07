@@ -54,7 +54,7 @@ export default function FeedPage() {
   const sectionDefs: SectionDef[] = useMemo(() => [
     { id: 'trending', title: 'Популярные темы', icon: '📈', defaultVisible: true, defaultOrder: 0 },
   ], [])
-  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('feed', sectionDefs)
+  const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('feed', sectionDefs)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   // Apply hashtag + filter together
@@ -181,7 +181,7 @@ export default function FeedPage() {
       )}
 
       {/* Configurable Widget Sections */}
-      {visibleOrder.map(sectionId => {
+      {loaded && visibleOrder.map(sectionId => {
         switch (sectionId) {
           case 'trending':
             return (

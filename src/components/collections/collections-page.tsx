@@ -86,7 +86,7 @@ export default function CollectionsPage() {
     { id: 'recently-added', title: 'Недавно добавленные', icon: '🕐', defaultVisible: true, defaultOrder: 1 },
     { id: 'templates', title: 'Быстрое добавление', icon: '⚡', defaultVisible: true, defaultOrder: 2 },
   ], [])
-  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('collections', sectionDefs)
+  const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('collections', sectionDefs)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   // ── Keyboard shortcut: N to open add dialog ────────────────────────────────
@@ -133,9 +133,9 @@ export default function CollectionsPage() {
         description="Книги, фильмы, рецепты и полезные находки"
         accent="violet"
         badge={
-          <kbd className="hidden sm:inline-flex h-6 items-center gap-1 rounded border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
-            N
-          </kbd>
+          <Badge variant="secondary" className="hidden text-[10px] font-normal sm:inline-flex">
+            {activeType === 'all' ? 'Все' : (TYPE_LABELS[activeType as CollectionType] || activeType)}
+          </Badge>
         }
         actions={
           <>
@@ -172,7 +172,7 @@ export default function CollectionsPage() {
       </div>
 
       {/* Configurable Widget Sections */}
-      {visibleOrder.map(sectionId => {
+      {loaded && visibleOrder.map(sectionId => {
         switch (sectionId) {
           case 'stats-bar':
             return (

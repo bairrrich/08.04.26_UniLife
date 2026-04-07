@@ -29,6 +29,7 @@ import { RU_DAYS_SHORT, RU_MONTHS, MOOD_EMOJI, MOOD_LABELS } from '@/lib/format'
 import { DiaryEntry, EntryFormData, CalendarCell } from './types'
 import { QUICK_TEMPLATES } from './constants'
 import { formatDateKey, parseEntryDate } from './helpers'
+import { Badge } from '@/components/ui/badge'
 import { CalendarView } from './calendar-view'
 import { EntryList } from './entry-list'
 import { EntryDetail } from './entry-detail'
@@ -371,10 +372,10 @@ export default function DiaryPage() {
         description="Записывайте мысли, отслеживайте настроение"
         accent="amber"
         badge={
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
             <CalendarDays className="h-3 w-3" />
             {format(today, 'd MMMM, EEEE', { locale: ru })}
-          </span>
+          </Badge>
         }
         actions={
           <div className="flex items-center gap-2">

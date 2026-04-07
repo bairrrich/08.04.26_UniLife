@@ -67,7 +67,7 @@ export function WorkoutPage() {
     { id: 'volume-chart', title: 'График объёма', icon: '📈', defaultVisible: true, defaultOrder: 3 },
   ], [])
 
-  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('workout', workoutSections)
+  const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('workout', workoutSections)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   return (

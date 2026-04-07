@@ -5,6 +5,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { ModuleEmptyState } from '@/components/shared'
 import {
   BarChart3,
   CalendarDays,
@@ -187,7 +188,7 @@ export default function AnalyticsPage() {
     { id: 'collections-chart', title: 'Коллекции', icon: '📚', defaultVisible: true, defaultOrder: 4 },
     { id: 'heatmap', title: 'Тепловая карта', icon: '🗓️', defaultVisible: true, defaultOrder: 5 },
   ], [])
-  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('analytics', sectionDefs)
+  const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('analytics', sectionDefs)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   // ── Render ──────────────────────────────────────────────────────────────
@@ -195,11 +196,7 @@ export default function AnalyticsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden">
-        {/* Decorative gradient blobs */}
-        <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 animate-pulse rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 opacity-20 blur-3xl" style={{ animationDuration: '8s' }} />
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 animate-pulse rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 opacity-15 blur-3xl" style={{ animationDuration: '8s' }} />
-        <PageHeader
+      <PageHeader
           icon={BarChart3}
           title="Аналитика"
           description="Полная статистика по всем модулям"
@@ -227,29 +224,19 @@ export default function AnalyticsPage() {
             </>
           }
         />
-      </div>
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (
-        <Card className="overflow-hidden">
-          <CardContent className="py-14 text-center px-4">
-            <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400/30 to-emerald-500/20">
-              <Inbox className="h-10 w-10 text-muted-foreground/60" />
-            </div>
-            <h3 className="mb-1 text-lg font-semibold">Нет данных</h3>
-            <p className="max-w-xs text-center text-sm text-muted-foreground/70">
-              Начните вести дневник, добавлять расходы или тренировки, чтобы увидеть аналитику
-            </p>
-            <Button size="lg" variant="outline" className="mt-6 gap-2">
-              <ArrowRight className="h-4 w-4" />
-              Перейти к модулям
-            </Button>
-          </CardContent>
-        </Card>
+        <ModuleEmptyState
+          icon={Inbox}
+          title="Нет данных"
+          description="Начните вести дневник, добавлять расходы или тренировки, чтобы увидеть аналитику"
+          accent="teal"
+        />
       )}
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      {(loading || hasData) && (
+      {loaded && (loading || hasData) && (
         visibleOrder.map(sectionId => {
           switch (sectionId) {
             case 'stats-cards':

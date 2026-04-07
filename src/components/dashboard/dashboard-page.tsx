@@ -6,6 +6,7 @@ import { useAppStore } from '@/store/use-app-store'
 import { AppModule } from '@/store/use-app-store'
 import { LayoutDashboard, Settings2, CalendarDays, Flame, Target, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
+import { Badge } from '@/components/ui/badge'
 import {
   toDateStr,
   getTodayStr,
@@ -775,7 +776,7 @@ export default function DashboardPage() {
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
-    <div className="animate-slide-up space-y-8">
+    <div className="animate-slide-up space-y-6">
       {/* ── Page Header ────────────────────────────────────────────── */}
       <PageHeader
         icon={LayoutDashboard}
@@ -784,10 +785,10 @@ export default function DashboardPage() {
         accent="emerald"
         compact
         badge={
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/50 bg-emerald-50/80 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800/30 dark:bg-emerald-950/30 dark:text-emerald-400">
+          <Badge variant="secondary" className="hidden gap-1.5 text-[10px] font-normal sm:inline-flex">
             <CalendarDays className="h-3 w-3" />
             {now.toLocaleDateString('ru-RU', { weekday: 'long' })}
-          </span>
+          </Badge>
         }
         actions={
           <button

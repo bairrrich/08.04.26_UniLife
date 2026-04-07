@@ -198,17 +198,13 @@ export default function GoalsPage() {
     { id: 'stats', title: 'Статистика', icon: '📊', defaultVisible: true, defaultOrder: 0 },
     { id: 'quote', title: 'Мотивация', icon: '💬', defaultVisible: true, defaultOrder: 1 },
   ], [])
-  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('goals', sectionDefs)
+  const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('goals', sectionDefs)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
       <div className="relative overflow-hidden">
-        {/* Decorative gradient blobs — emerald/teal + amber/orange */}
-        <div className="pointer-events-none absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl bg-gradient-to-br from-emerald-400/20 to-teal-500/20" />
-        <div className="pointer-events-none absolute -top-4 -right-8 h-32 w-32 rounded-full blur-3xl bg-gradient-to-br from-amber-400/15 to-orange-500/10" />
-        <div className="pointer-events-none absolute top-16 left-1/3 h-24 w-24 rounded-full blur-3xl bg-gradient-to-br from-teal-400/10 to-emerald-500/5" />
         <PageHeader
           icon={Crosshair}
           title="Цели"
@@ -221,55 +217,15 @@ export default function GoalsPage() {
               </Badge>
             </span>
           }
-          accent="emerald"
-          noBlobs
-        actions={
-          <div className="flex items-center gap-2 shrink-0">
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <Button onClick={openAddDialog} size="sm" className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
-            </Button>
-            {goals.length > 0 && (
-              <div className="relative max-w-xs shrink-0">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                <Input
-                  type="text"
-                  placeholder="Поиск целей..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9 pr-8 h-9 text-sm"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                    aria-label="Очистить поиск"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
-              </div>
-            )}
-          <GoalDialog
-              open={dialogOpen} onOpenChange={handleDialogChange}
-              editingGoal={editingGoal}
-              formTitle={formTitle} setFormTitle={setFormTitle}
-              formDescription={formDescription} setFormDescription={setFormDescription}
-              formCategory={formCategory} setFormCategory={setFormCategory}
-              formTargetValue={formTargetValue} setFormTargetValue={setFormTargetValue}
-              formCurrentValue={formCurrentValue} setFormCurrentValue={setFormCurrentValue}
-              formUnit={formUnit} setFormUnit={setFormUnit}
-              formDeadline={formDeadline} setFormDeadline={setFormDeadline}
-              formStatus={formStatus} setFormStatus={setFormStatus}
-              formProgress={formProgress} setFormProgress={setFormProgress}
-              formStartDate={formStartDate} setFormStartDate={setFormStartDate}
-              formPriority={formPriority} setFormPriority={setFormPriority}
-              formMilestones={formMilestones} setFormMilestones={setFormMilestones}
-              submitting={submitting} onSubmit={handleSubmit}
-            />
-          </div>
-        }
+          accent="indigo"
+          actions={
+            <div className="flex items-center gap-2 shrink-0">
+              <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+              <Button onClick={openAddDialog} size="sm" className="gap-1.5 shrink-0">
+                <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
+              </Button>
+            </div>
+          }
         />
         {/* Motivational subtitle based on active goals */}
         {mounted && goals.length > 0 && (
@@ -278,6 +234,49 @@ export default function GoalsPage() {
           </p>
         )}
       </div>
+
+      {/* Search bar (below header, above content) */}
+      {mounted && goals.length > 0 && (
+        <div className="relative max-w-md animate-fade-in">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Поиск целей..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9 pr-8 h-9 text-sm"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              aria-label="Очистить поиск"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Goal dialog — rendered at page root, not inside header */}
+      <GoalDialog
+        open={dialogOpen} onOpenChange={handleDialogChange}
+        editingGoal={editingGoal}
+        formTitle={formTitle} setFormTitle={setFormTitle}
+        formDescription={formDescription} setFormDescription={setFormDescription}
+        formCategory={formCategory} setFormCategory={setFormCategory}
+        formTargetValue={formTargetValue} setFormTargetValue={setFormTargetValue}
+        formCurrentValue={formCurrentValue} setFormCurrentValue={setFormCurrentValue}
+        formUnit={formUnit} setFormUnit={setFormUnit}
+        formDeadline={formDeadline} setFormDeadline={setFormDeadline}
+        formStatus={formStatus} setFormStatus={setFormStatus}
+        formProgress={formProgress} setFormProgress={setFormProgress}
+        formStartDate={formStartDate} setFormStartDate={setFormStartDate}
+        formPriority={formPriority} setFormPriority={setFormPriority}
+        formMilestones={formMilestones} setFormMilestones={setFormMilestones}
+        submitting={submitting} onSubmit={handleSubmit}
+      />
 
       {loading ? (
         <div className="space-y-6">
@@ -388,7 +387,7 @@ export default function GoalsPage() {
         </div>
       ) : (
         <>
-          {visibleOrder.map(sectionId => {
+          {loaded && visibleOrder.map(sectionId => {
             switch (sectionId) {
               case 'stats':
                 return (

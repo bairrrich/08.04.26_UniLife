@@ -1,3 +1,5 @@
 export { useSectionConfig, type SectionDef, type SectionConfig } from './use-section-config'
 export { SectionCustomizer } from './section-customizer'
 export { CustomizeButton } from './customize-button'
+export { ModuleEmptyState } from './module-empty-state'
+export type { ModuleEmptyStateProps } from './module-empty-state'

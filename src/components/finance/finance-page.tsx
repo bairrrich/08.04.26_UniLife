@@ -3,6 +3,7 @@
 import { useState, useMemo } from 'react'
 import { Wallet, Plus, Filter, Receipt, PiggyBank, RefreshCw, TrendingUp, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCurrentMonthStr } from '@/lib/format'
 import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
@@ -85,9 +86,9 @@ export default function FinancePage() {
         description="Учёт доходов, расходов и инвестиций"
         accent="blue"
         badge={
-          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
             <Filter className="h-3 w-3" />{monthLabel}
-          </span>
+          </Badge>
         }
         actions={
           <div className="flex items-center gap-2 shrink-0">
