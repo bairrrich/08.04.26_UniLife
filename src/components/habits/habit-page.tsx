@@ -62,7 +62,7 @@ export default function HabitsPage() {
     { id: 'progress', title: 'Прогресс', icon: '📈', defaultVisible: true, defaultOrder: 3 },
   ], [])
 
-  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('habits', habitSections)
+  const { config, loaded, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('habits', habitSections)
   const [customizerOpen, setCustomizerOpen] = useState(false)
 
   // Toggle for hiding completed habits

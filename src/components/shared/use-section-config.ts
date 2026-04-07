@@ -66,10 +66,12 @@ export function useSectionConfig(moduleId: string, sections: SectionDef[]) {
   const [config, setConfig] = useState<SectionConfig>(() => defaultConfig(sections))
   const [loaded, setLoaded] = useState(false)
 
+  // Load persisted config from localStorage on mount (hydration-safe)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage read must happen in effect to avoid SSR hydration mismatch
     setConfig(loadConfig(moduleId, sections))
     setLoaded(true)
-  }, [moduleId])
+  }, [moduleId, sections])
 
   const updateConfig = useCallback(
     (newConfig: SectionConfig) => {

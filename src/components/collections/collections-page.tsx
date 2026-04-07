@@ -590,6 +590,8 @@ export default function CollectionsPage() {
         </TabsContent>
       </Tabs>
 
+      <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={sectionDefs} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Коллекции" />
+
       {/* Detail Dialog */}
       <ItemDialog
         item={detailItem} open={detailOpen}
