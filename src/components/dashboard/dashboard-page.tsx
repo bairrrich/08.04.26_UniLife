@@ -86,6 +86,7 @@ const RecentGoals = dynamic(() => import('./recent-goals-widget'), { ssr: false,
 const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false, loading: widgetLoad })
 
 const DailyTipsWidget = dynamic(() => import('./daily-tips-widget'), { ssr: false, loading: widgetLoad })
+const DailyChecklistWidget = dynamic(() => import('./daily-checklist-widget'), { ssr: false, loading: widgetLoad })
 
 const NotificationCenter = dynamic(() => import('./notification-center'), { ssr: false, loading: widgetLoad })
 
@@ -567,6 +568,7 @@ export default function DashboardPage() {
               <QuickMoodWidget />
               <MiniCalendar />
             </div>
+            <DailyChecklistWidget />
           </DashboardSection>
         )
 
@@ -679,9 +681,20 @@ export default function DashboardPage() {
       case 'inspiration':
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <AiInsightsWidget
+              loading={loading}
+              weekEntryCount={weekEntryCount}
+              weekWorkoutCount={weekWorkoutCount}
+              transactionsData={transactionsData}
+              habitsPercentage={habitsPercentage}
+              habitsTotal={totalActive}
+              habitsCompleted={completedToday}
+              waterTodayMl={waterTodayMl}
+              recentMoods={recentMoods}
+              weekExpenseSum={weekExpenseSum}
+            />
             <DailyTipsWidget />
             <DailyInspiration />
-            <AiInsightsWidget />
           </DashboardSection>
         )
 
@@ -776,16 +789,18 @@ export default function DashboardPage() {
       />
 
       {/* ── Configurable Sections ──────────────────────────────────── */}
-      {widgetConfig ? (
-        widgetConfig.order
-          .filter((id) => widgetConfig.visible[id])
-          .map(renderSection)
-      ) : (
-        <div className="space-y-4">
-          <div className="skeleton-shimmer h-[300px] rounded-xl" />
-          <div className="skeleton-shimmer h-[200px] rounded-xl" />
-        </div>
-      )}
+      <div className="stagger-children">
+        {widgetConfig ? (
+          widgetConfig.order
+            .filter((id) => widgetConfig.visible[id])
+            .map(renderSection)
+        ) : (
+          <div className="space-y-4">
+            <div className="skeleton-shimmer h-[300px] rounded-xl" />
+            <div className="skeleton-shimmer h-[200px] rounded-xl" />
+          </div>
+        )}
+      </div>
 
       {/* ── Notification Center (always visible) ──────────────────── */}
       <NotificationCenter

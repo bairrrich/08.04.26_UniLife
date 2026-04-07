@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Separator } from '@/components/ui/separator'
 import { Plus, Trash2, Timer, Sparkles } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import {
   WORKOUT_PRESETS,
   detectWorkoutType,
@@ -55,9 +56,11 @@ const DAY_WORKOUT_SUGGESTIONS: Record<number, string> = {
 function ExerciseEditor({
   exercises,
   onExercisesChange,
+  exerciseMaxWeights,
 }: {
   exercises: ExerciseData[]
   onExercisesChange: (exercises: ExerciseData[]) => void
+  exerciseMaxWeights?: Record<string, number>
 }) {
   const addExercise = () => onExercisesChange([...exercises, emptyExercise(exercises.length)])
   const removeExercise = (index: number) => {
@@ -132,25 +135,38 @@ function ExerciseEditor({
               <div className="text-xs text-muted-foreground font-medium">Подход</div>
               <div className="text-xs text-muted-foreground font-medium">Вес (кг)</div>
               <div className="text-xs text-muted-foreground font-medium">Повторения</div>
-              {exercise.sets.map((set, setIdx) => (
-                <div key={setIdx} className="contents">
-                  <span className="text-xs text-muted-foreground flex items-center">{setIdx + 1}</span>
-                  <Input
-                    type="number"
-                    value={set.weight || ''}
-                    onChange={(e) => updateSet(exIdx, setIdx, 'weight', Number(e.target.value))}
-                    placeholder="0"
-                    className="h-8 text-sm"
-                  />
-                  <Input
-                    type="number"
-                    value={set.reps || ''}
-                    onChange={(e) => updateSet(exIdx, setIdx, 'reps', Number(e.target.value))}
-                    placeholder="10"
-                    className="h-8 text-sm"
-                  />
-                </div>
-              ))}
+              {exercise.sets.map((set, setIdx) => {
+                const exNameLower = exercise.name.toLowerCase()
+                const currentMax = exerciseMaxWeights?.[exNameLower] || 0
+                const isPersonalRecord = currentMax > 0 && set.weight > currentMax
+                return (
+                  <div key={setIdx} className="contents">
+                    <span className="text-xs text-muted-foreground flex items-center">{setIdx + 1}</span>
+                    <div className="relative">
+                      <Input
+                        type="number"
+                        value={set.weight || ''}
+                        onChange={(e) => updateSet(exIdx, setIdx, 'weight', Number(e.target.value))}
+                        placeholder="0"
+                        className={cn('h-8 text-sm pr-14', isPersonalRecord && 'border-amber-400 focus-visible:ring-amber-400/30')}
+                      />
+                      {isPersonalRecord && (
+                        <span className="absolute right-1.5 top-1/2 -translate-y-1/2 inline-flex items-center gap-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 text-[9px] font-semibold text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          Рекорд
+                        </span>
+                      )}
+                    </div>
+                    <Input
+                      type="number"
+                      value={set.reps || ''}
+                      onChange={(e) => updateSet(exIdx, setIdx, 'reps', Number(e.target.value))}
+                      placeholder="10"
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -179,6 +195,7 @@ interface WorkoutDialogProps {
   title: string
   submitLabel: string
   showPresets?: boolean
+  exerciseMaxWeights?: Record<string, number>
 }
 
 export function WorkoutDialog({
@@ -199,6 +216,7 @@ export function WorkoutDialog({
   title,
   submitLabel,
   showPresets,
+  exerciseMaxWeights,
 }: WorkoutDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -291,7 +309,7 @@ export function WorkoutDialog({
           </div>
 
           <Separator />
-          <ExerciseEditor exercises={formExercises} onExercisesChange={onExercisesChange} />
+          <ExerciseEditor exercises={formExercises} onExercisesChange={onExercisesChange} exerciseMaxWeights={exerciseMaxWeights} />
 
           <Button className="w-full" onClick={onSubmit} disabled={!formName.trim() || !formDate}>
             {submitLabel}

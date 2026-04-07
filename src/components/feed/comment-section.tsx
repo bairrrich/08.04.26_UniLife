@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { MessageCircle, Send, Reply, ChevronDown, ChevronUp, Clock } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import type { FeedComment } from './types'
 import { formatRelativeTime, MAX_COMMENT_LENGTH } from './constants'
@@ -86,14 +87,13 @@ export function CommentSection({
           className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <MessageCircle className="h-3.5 w-3.5" />
-          <span className="tabular-nums">
-            {comments.length}{' '}
-            {comments.length === 1
-              ? 'комментарий'
-              : comments.length < 5
-                ? 'комментария'
-                : 'комментариев'}
-          </span>
+          <span>Комментарии</span>
+          <Badge
+            variant="secondary"
+            className="h-4 px-1.5 text-[10px] font-semibold tabular-nums"
+          >
+            {comments.length}
+          </Badge>
         </button>
         {comments.length > 3 && (
           <button

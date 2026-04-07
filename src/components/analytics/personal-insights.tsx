@@ -49,7 +49,21 @@ export function PersonalInsights({
   totalActions,
   avgMood,
 }: PersonalInsightsProps) {
-  if (loading) return null
+  if (loading) {
+    return (
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="skeleton-shimmer h-7 w-7 rounded-lg" />
+          <div className="skeleton-shimmer h-4 w-40 rounded-md" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="skeleton-shimmer h-20 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   const insights: InsightCardData[] = []
 

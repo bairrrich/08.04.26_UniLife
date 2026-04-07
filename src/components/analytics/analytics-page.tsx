@@ -195,34 +195,39 @@ export default function AnalyticsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <PageHeader
-        icon={BarChart3}
-        title="Аналитика"
-        description="Полная статистика по всем модулям"
-        accent="teal"
-        badge={
-          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
-            <CalendarDays className="h-2.5 w-2.5" />
-            {periodLabel}
-          </Badge>
-        }
-        actions={
-          <>
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <Tabs
-              value={period}
-              onValueChange={(v) => setPeriod(v as Period)}
-            >
-              <TabsList className="bg-muted/60">
-                <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
-                <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
-                <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
-                <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </>
-        }
-      />
+      <div className="relative overflow-hidden">
+        {/* Decorative gradient blobs */}
+        <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 animate-pulse rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-500/20 opacity-20 blur-3xl" style={{ animationDuration: '8s' }} />
+        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 animate-pulse rounded-full bg-gradient-to-br from-amber-400/15 to-orange-500/15 opacity-15 blur-3xl" style={{ animationDuration: '8s' }} />
+        <PageHeader
+          icon={BarChart3}
+          title="Аналитика"
+          description="Полная статистика по всем модулям"
+          accent="teal"
+          badge={
+            <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+              <CalendarDays className="h-2.5 w-2.5" />
+              {periodLabel}
+            </Badge>
+          }
+          actions={
+            <>
+              <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+              <Tabs
+                value={period}
+                onValueChange={(v) => setPeriod(v as Period)}
+              >
+                <TabsList className="bg-muted/60">
+                  <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
+                  <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
+                  <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
+                  <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </>
+          }
+        />
+      </div>
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (

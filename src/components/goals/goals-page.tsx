@@ -118,7 +118,7 @@ export default function GoalsPage() {
   // ── Hydration guard — timezone-dependent date formatting ──
   const [mounted, setMounted] = useState(false)
   const todayBadge = useMemo(() => mounted ? getTodayBadge() : '', [mounted])
-  const motivationalSubtitle = useMemo(() => mounted ? getMotivationalSubtitle() : '', [mounted])
+  const dailyMotivationalPhrase = useMemo(() => mounted ? getMotivationalSubtitle() : '', [mounted])
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
@@ -184,6 +184,14 @@ export default function GoalsPage() {
 
   // Motivational quote
   const quote = useMemo(() => getMotivationalQuote(), [])
+
+  // ─── Motivational subtitle based on active goals count ────────────────────
+  const activeGoalsCount = useMemo(() => goals.filter(g => g.status === 'active').length, [goals])
+  const motivationalSubtitle = useMemo(() => {
+    if (activeGoalsCount === 0) return 'Начните ставить цели — маленькие шаги ведут к большим результатам'
+    if (activeGoalsCount <= 3) return 'Отличный старт! Продолжайте двигаться к своим целям'
+    return 'Вы на пути к большим достижениям! 💪'
+  }, [activeGoalsCount])
 
   // Section config for hideable/collapsible widgets
   const sectionDefs: SectionDef[] = useMemo(() => [
@@ -263,6 +271,12 @@ export default function GoalsPage() {
           </div>
         }
         />
+        {/* Motivational subtitle based on active goals */}
+        {mounted && goals.length > 0 && (
+          <p className="text-sm text-muted-foreground mt-1.5 pl-[2px] animate-fade-in">
+            {motivationalSubtitle}
+          </p>
+        )}
       </div>
 
       {loading ? (
@@ -316,7 +330,7 @@ export default function GoalsPage() {
                 Поставьте первую цель и начните двигаться к ней.
               </p>
               <p className="text-sm text-muted-foreground/70 italic mb-6 max-w-sm mx-auto">
-                &ldquo;{getMotivationalSubtitle()}&rdquo;
+                &ldquo;{dailyMotivationalPhrase}&rdquo;
               </p>
               <Button
                 onClick={openAddDialog}

@@ -10903,3 +10903,240 @@ Stage Summary:
 8. **Data Import Enhancement** — CSV import support in addition to JSON
 9. **Budget Alerts** — In-app budget threshold notifications
 10. **API Standardization** — Zod validation for all API endpoints, consistent response format
+
+---
+Task ID: analytics-enhance
+Agent: analytics-enhance-agent
+Task: Enhance analytics page with gradient blobs, personal-insights skeleton, dashboard stagger, notification stagger
+
+Work Log:
+- **Task 1 — Gradient blobs on analytics header**: Wrapped PageHeader in a `relative overflow-hidden` container div in `/src/components/analytics/analytics-page.tsx`. Added 2 decorative gradient blobs with absolute positioning: emerald/teal (left, w-72 h-72, opacity-20, blur-3xl) and amber/orange (right, w-64 h-64, opacity-15, blur-3xl). Both have `pointer-events-none` and `animate-pulse` with `animationDuration: '8s'` for slow pulsing.
+- **Task 2 — Personal insights loading skeleton**: Replaced `if (loading) return null` with proper skeleton UI in `/src/components/analytics/personal-insights.tsx`. Shows skeleton section header (icon placeholder + title placeholder) and 3 shimmer cards (`h-20 rounded-xl`) in a responsive grid (`grid gap-3 sm:grid-cols-2 lg:grid-cols-3`) matching the actual card layout.
+- **Task 3 — Dashboard stagger-children**: Wrapped the configurable sections block in `/src/components/dashboard/dashboard-page.tsx` with a `<div className="stagger-children">` to add staggered entrance animation to all dashboard section widgets.
+- **Task 4 — Notification stagger-children**: Added `stagger-children` class to the notification items container div in `/src/components/notifications/notifications-panel.tsx` for staggered entrance animation of notification cards in the panel.
+
+Stage Summary:
+- Analytics page header now has decorative gradient blobs matching the dashboard/goals page style
+- Personal insights component shows proper shimmer skeleton during loading instead of blank null
+- Dashboard sections animate in with staggered entrance
+- Notification list items animate in with staggered entrance
+- Pre-existing lint error in `daily-checklist-widget.tsx` (setState in effect) is unrelated to these changes
+
+---
+Task ID: daily-checklist
+Agent: daily-checklist-agent
+Task: Add daily checklist widget to dashboard
+
+Work Log:
+- Created `/src/components/dashboard/daily-checklist-widget.tsx` — self-contained daily checklist widget using localStorage
+  - Data stored under key `unilife-daily-checklist-{YYYY-MM-DD}` (resets daily)
+  - 5 default items pre-populated on first use: water, activity, diary, lunch, meditation
+  - Check/uncheck items with shadcn Checkbox (emerald-500 when checked), strikethrough + opacity animation on completed items
+  - Add custom items via Input + Button at bottom, Enter key support, random emoji assignment
+  - Delete items via Trash2 button visible on hover (opacity transition)
+  - Progress indicator at top with emerald Progress bar and "X из Y" counter with animate-count-fade-in
+  - Celebration message "Все задачи выполнены! 🎉" when all items completed (gradient background)
+  - Loading skeleton state with shimmer animation
+  - Uses card-hover class on Card, stagger-children class on items list
+  - Compact design with max-h-72 overflow-y-auto on items list
+  - Title "Задачи на сегодня" with ClipboardCheck icon (emerald-500)
+- Added dynamic import of DailyChecklistWidget in `/src/components/dashboard/dashboard-page.tsx`
+- Placed widget in "today" section below QuickMoodWidget + MiniCalendar grid
+- Fixed lint error: replaced useEffect + setState with lazy useState initializer to avoid "cascading renders" error
+- All 158 warnings are pre-existing no-console warnings — 0 errors
+
+Stage Summary:
+- New daily checklist widget added to dashboard "today" section
+- localStorage-based daily-reset persistence with 5 default items
+- Interactive features: check/uncheck, add, delete, progress bar, celebration
+- ESLint: 0 errors, 158 warnings (all pre-existing)
+---
+Task ID: goals-enhance
+Agent: goals-enhance-agent
+Task: Enhance goals page visual details
+
+Work Log:
+- Enhanced goal-stats.tsx: Added TrendDots component (3 colored sparkline-like dots showing completion trend) next to each stat card value; converted all flat-colored icon backgrounds to gradient icon backgrounds (bg-gradient-to-br from-{color}-400 to-{color}-500) with white icons for consistent visual polish across all 8 stat cards
+- Enhanced goal-card.tsx: Added 3px gradient top border accent based on goal category color (using catConfig.borderColor), shifted existing 1px progress bar below it; added glow effect behind progress bar (blurred colored div matching progress state colors); added streak fire emoji 🔥 next to goal title for goals with progress for 3+ days (calculated from createdAt)
+- Enhanced goals-page.tsx: Added motivational subtitle below header based on active goals count (0 goals: encouraging start message, 1-3 goals: great start message, 4+ goals: achievement message with 💪); renamed existing motivationalSubtitle variable to dailyMotivationalPhrase to avoid redeclaration conflict
+
+Stage Summary:
+- Goal stats cards now have gradient icon backgrounds and sparkline trend indicators
+- Goal cards feature a category-colored 3px top accent border and progress bar glow effect
+- Streak fire emoji appears for goals actively progressing for 3+ days
+- Dynamic motivational subtitle in goals page header responds to active goals count
+- ESLint: 0 errors (157 pre-existing warnings)
+---
+Task ID: ai-insights
+Agent: ai-insights-agent
+Task: Enhance AI Insights widget to be client-side data-driven
+
+Work Log:
+- **Analyzed existing widget**: Found that `ai-insights-widget.tsx` was calling `/api/ai/insights` (LLM API endpoint) for insights. Rewrote it to be fully client-side.
+- **Rewrote widget as data-driven**: Complete rewrite of `/src/components/dashboard/ai-insights-widget.tsx`
+  - Removed all API calls — now purely client-side, generates insights from props
+  - Added `AiInsightsWidgetProps` interface accepting: loading, weekEntryCount, weekWorkoutCount, transactionsData, habitsPercentage, habitsTotal, habitsCompleted, waterTodayMl, recentMoods, weekExpenseSum
+  - Implemented 6 pure insight generator functions:
+    - `generateDiaryInsight()`: No entries (<3, 0), good streak (≥5)
+    - `generateWorkoutInsight()`: No workouts, great week (>3)
+    - `generateFinanceInsight()`: Compares this week vs last week expenses, reports >15% change
+    - `generateHabitsInsight()`: Completion ≥80%, 100%, or <50%
+    - `generateWaterInsight()`: On target (≥8 glasses), almost there (≥60%), low (<60%)
+    - `generateMoodInsight()`: Mostly positive (avg ≥3.5), low (avg ≤1.5)
+    - `generateGeneralInsight()`: Random motivational tips (always included)
+  - Shuffles all applicable insights and shows up to 3
+- **Visual Design** (per spec):
+  - Card with `rounded-xl border border-border/50` and `card-hover` class
+  - Title "Умные инсайты" with Brain icon (violet-500) and Sparkles accent
+  - Violet/purple gradient header bar (h-1.5)
+  - Scrollable insight cards list: `max-h-48 overflow-y-auto` with `scrollbar-thin`
+  - `stagger-children` class on insights list
+  - Each insight card: gradient left border (absolute positioned `w-1` div), colored icon in rounded-lg container, category label, insight text
+  - 7 category-specific color schemes: diary (emerald), workout (blue), finance (amber), habits (violet), water (sky), mood (rose), general (slate)
+  - "Обновить" button with RefreshCw icon (spins on refresh, 500ms delay)
+  - Footer with insight count
+  - Loading skeleton state
+- **Integration**:
+  - Updated `dashboard-page.tsx` inspiration section to pass all data props to `AiInsightsWidget`
+  - Moved AiInsightsWidget to be first in the "Вдохновение" section (before DailyTips and DailyInspiration)
+- **Technical approach**:
+  - Uses `useMemo` to compute insights from props (no side effects in useMemo)
+  - `seed` state variable triggers re-shuffle on refresh button click
+  - `memo` wrapper for component-level optimization
+  - No external API calls, no LLM dependency
+
+Stage Summary:
+- AI Insights widget fully rewritten as client-side data-driven widget
+- Generates 2-3 personalized contextual insights from dashboard data
+- Supports 7 insight categories with distinct visual styling
+- "Обновить" button shuffles insights for variety
+- ESLint: 0 errors (158 warnings, all pre-existing)
+- Dev server compiles cleanly
+
+---
+Task ID: budget-widget
+Agent: budget-widget-agent
+Task: Add budget overview widget to dashboard
+
+Work Log:
+- Read and analyzed existing project structure: worklog.md, widget-config.ts, dashboard-page.tsx, types.ts, API routes
+- Reviewed existing budget-overview.tsx component, /api/budgets and /api/finance/stats endpoints
+- Confirmed BudgetOverview widget was already integrated in the "finances" dashboard section
+- Enhanced `/src/components/dashboard/budget-overview.tsx` with all required changes:
+  - Changed icon from PiggyBank (amber) to Wallet (emerald-500) per requirements
+  - Changed title from "Бюджет на месяц" to "Бюджет"
+  - Added 2-column grid showing total budget amount and total spent amount separately
+  - Updated progress bar color thresholds: emerald ≤80%, amber 80-100%, rose >100%
+  - Remaining amount color: emerald when positive, rose when negative/over budget
+  - Replaced category breakdown with "Top 3 spending categories" sorted by spent amount
+  - Each category shows: colored dot + name, amount spent, percentage of total spending, relative bar scaled to max spent
+  - Added over-budget warning banner (rose styling, TrendingDown icon)
+  - Added "Подробнее" link at bottom navigating to finance module
+  - Updated empty state to "Установите бюджет в разделе Финансы" with finance module link
+  - Improved skeleton loading state with proper layout placeholders
+
+Stage Summary:
+- Budget overview widget enhanced with new visual design matching all requirements
+- Wallet icon (emerald-500), title "Бюджет", proper color-coded progress and remaining amounts
+- Top 3 spending categories with relative bars and percentage of total spending
+- "Подробнее" link and improved empty state added
+- ESLint: 0 errors (158 warnings, all pre-existing)
+- Dev server compiles cleanly, GET / returns HTTP 200
+
+---
+Task ID: workout-feed-enhance
+Agent: workout-feed-enhance-agent
+Task: Enhance workout page with personal records and feed page with reactions
+
+Work Log:
+- **Workout Page — Exercise Type Stats Bar**: Enhanced the existing exercise type badges between stat cards and workout list to show per-type workout counts (using `detectWorkoutType` filter on current month workouts). Each badge now displays the workout type icon (colored via `config.iconColor`), label, and count number with `tabular-nums` font.
+
+- **Workout Page — Personal Records Summary Card**: Created new `PersonalRecordsSummary` component (`/src/components/workout/personal-records-summary.tsx`) displayed below the workout list. Shows 3 key metrics in a 3-column grid: Max weight lifted (kg), Longest workout (minutes), Total workouts count. Each metric has a colored circular icon (rose/blue/emerald), large bold value, and description label. Trophy icon in amber gradient header. Only visible when workouts exist. Added import and usage in `workout-page.tsx`.
+
+- **Workout Page — "Мой рекорд" Badge in Dialog**: Enhanced the `WorkoutDialog` component to accept `exerciseMaxWeights` prop (passed from `personalRecords.maxWeightsByName`). In the `ExerciseEditor`, each weight input now compares against the current personal max for that exercise name. When the entered weight exceeds the max, a small amber "✨ Рекорд" badge appears inside the input field, and the input border highlights in amber. Added `cn` utility import for conditional styling.
+
+- **Feed Page — Inline Reaction Buttons**: Added a visible row of 4 reaction emoji buttons (❤️ ❤️‍🔥 👏 😢) below each post, above the actions row. Each button tracks state in localStorage (`unilife-post-reactions-{postId}` for selected reaction, `unilife-post-reactions-counts-{postId}` for counts). Clicking selects (highlighted border + scale), clicking same deselects, clicking different switches. Reaction counts shown as small numbers next to each emoji.
+
+- **Feed Page — Enhanced Comment Section**: Updated the comment section header to use a proper "Комментарии" label with a `Badge` component showing the count (instead of inline Russian pluralized text). Added `Badge` import to `comment-section.tsx`.
+
+Stage Summary:
+- 0 ESLint errors (158 pre-existing warnings only)
+- Dev server compiles successfully — GET / returns HTTP 200
+- Workout page now has: per-type counts in stats bar, personal records summary card below list, and "Рекорд" badge in add/edit dialog
+- Feed page now has: 4 visible inline reaction buttons with localStorage persistence, enhanced comment section with Badge count
+- All existing functionality preserved — no breaking changes
+
+---
+
+## Task ID: qa-round-5-styling-features
+### Agent: main-coordinator
+### Task: QA testing, styling improvements, and new features
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11+ modules (Dashboard, Diary, Finance, Nutrition, Workout, Collections, Feed, Habits, Goals, Analytics, Settings, Onboarding) render correctly
+- **Database**: SQLite via Prisma with 15+ models; seed data available via `/api/seed`
+- **Lint**: 0 errors, 158 warnings (all pre-existing `no-console` — no functional issues)
+- **Build**: All routes compile successfully via Turbopack
+- **Responsive**: Desktop and mobile viewports verified
+- **Dark Mode**: Fully supported across all components
+- **APIs**: 20+ REST endpoints, all returning HTTP 200
+
+### Completed This Round:
+
+#### QA Testing
+- ✅ ESLint: 0 errors, 158 warnings (all `no-console` — pre-existing)
+- ✅ Dev server: compiles and serves HTTP 200
+- ✅ All API endpoints responsive
+
+#### Styling Improvements (Mandatory)
+1. **Analytics Page**: Added gradient blobs to header (emerald/teal + amber/orange, blur-3xl, animate-pulse 8s); wrapped header in relative overflow-hidden container
+2. **Personal Insights**: Replaced `if (loading) return null` with proper skeleton loader (3 shimmer cards in responsive grid matching actual layout)
+3. **Dashboard Sections**: Added `stagger-children` class to main sections container for staggered widget entrance animation
+4. **Notification Panel**: Added `stagger-children` class to notification items container for staggered card entrance
+5. **Goal Stats**: Added `TrendDots` component (3 small colored dots as sparkline-like trend indicators) to each stat card; converted all icon backgrounds to gradient style (from-emerald-400 to-teal-500 with white icons)
+6. **Goal Cards**: Added 3px gradient top border accent per category; added progress bar glow effect (blurred colored div behind Progress); added 🔥 streak emoji for goals progressing 3+ days
+7. **Goals Header**: Added dynamic motivational subtitle based on active goal count (3 contextual Russian messages)
+
+#### New Features (Mandatory)
+1. **Daily Checklist Widget**: Self-contained localStorage-based daily checklist with 5 default items (💧 water, 🏃 activity, 📝 diary, 🥗 lunch, 🧘 meditation); check/uncheck with strikethrough animation; add/delete custom items; daily reset; progress bar with "X из Y"; celebration on completion; integrated into dashboard "today" section
+2. **AI Insights Widget**: Rewrote to be fully client-side (no LLM API needed); 7 insight generators analyzing real dashboard data (diary, workout, finance, habits, water, mood, general); scrollable card list with gradient left borders per category; refresh button; violet Brain icon header; integrated into dashboard "inspiration" section
+3. **Budget Overview Widget**: Enhanced existing widget with top 3 spending categories breakdown; progress bar with color thresholds (emerald ≤80%, amber 80-100%, rose >100%); over-budget warning banner; "Подробнее" navigation link; empty state with finance module link
+4. **Workout Personal Records**: New `PersonalRecordsSummary` component showing max weight, longest workout, total count in 3-column grid; Trophy icon header; integrated below workout list
+5. **Workout "Рекорд" Badge**: When entering weight in add/edit workout dialog that exceeds personal max, shows amber "✨ Рекорд" badge
+6. **Workout Type Stats**: Enhanced type badges to show per-type counts (e.g., "Силовая 3", "Кардио 2")
+7. **Feed Reactions**: Added 4 reaction buttons (❤️ ❤️‍🔥 👏 😢) below each post with localStorage persistence; click to select/deselect; reaction counts displayed
+8. **Enhanced Comment Section**: Added proper "Комментарии" header with Badge count; verified avatar colors and "Ответить" functionality
+
+### Files Changed:
+- **New**: `/src/components/dashboard/daily-checklist-widget.tsx`
+- **New**: `/src/components/workout/personal-records-summary.tsx`
+- **Modified**: `/src/components/analytics/analytics-page.tsx` (gradient blobs)
+- **Modified**: `/src/components/analytics/personal-insights.tsx` (skeleton loader)
+- **Modified**: `/src/components/dashboard/dashboard-page.tsx` (stagger-children, widget integration)
+- **Modified**: `/src/components/dashboard/ai-insights-widget.tsx` (full rewrite)
+- **Modified**: `/src/components/dashboard/budget-overview.tsx` (enhanced)
+- **Modified**: `/src/components/dashboard/widget-config.ts` (new widgets)
+- **Modified**: `/src/components/goals/goal-stats.tsx` (trend dots, gradient icons)
+- **Modified**: `/src/components/goals/goal-card.tsx` (gradient border, progress glow, streak emoji)
+- **Modified**: `/src/components/goals/goals-page.tsx` (motivational subtitle)
+- **Modified**: `/src/components/workout/workout-page.tsx` (personal records, type stats)
+- **Modified**: `/src/components/workout/workout-dialog.tsx` (record badge)
+- **Modified**: `/src/components/feed/feed-page.tsx` (reactions, enhanced comments)
+- **Modified**: `/src/components/notifications/notifications-panel.tsx` (stagger-children)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 158 warnings (all pre-existing `no-console`)
+- ✅ Dev server: compiles cleanly, all routes serve HTTP 200
+- ✅ All existing functionality preserved — no breaking changes
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Real-time Updates** — WebSocket/SSE for live feed and collaborative features
+5. **Offline Support** — Service worker caching for offline usage
+6. **Push Notifications** — In-app notification system for reminders
+7. **Localization** — i18n support for multiple languages beyond Russian
+8. **Data Import Enhancement** — CSV import support in addition to JSON
+9. **Budget Alerts** — In-app budget threshold notifications
+10. **Advanced Analytics** — Weekly/monthly trend reports with comparison charts

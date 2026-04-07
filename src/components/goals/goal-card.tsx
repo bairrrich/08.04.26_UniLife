@@ -158,6 +158,15 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
 
   const isCompleted = goal.status === 'completed'
 
+  // ─── Streak: days since creation when progress > 0 ──────────────────────
+  const goalStreak = useMemo(() => {
+    if (goal.progress === 0 || isCompleted) return 0
+    const created = new Date(goal.createdAt)
+    const now = new Date()
+    const daysElapsed = Math.ceil((now.getTime() - created.getTime()) / (1000 * 60 * 60 * 24))
+    return Math.max(0, daysElapsed)
+  }, [goal.progress, goal.createdAt, isCompleted])
+
   // ─── Suggested tags based on category (with icons from SUBCATEGORIES) ────
   const subcategoryDefs = SUBCATEGORIES[goal.category] || []
 
@@ -201,8 +210,19 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
         isOverdue && 'ring-2 ring-rose-400/40 ring-offset-2 ring-offset-background dark:ring-offset-card',
       )}
     >
-      {/* ─── Thin full-width progress bar at very top ─────────────────────── */}
-      <div className="absolute top-0 left-0 right-0 h-1 z-10 rounded-t-xl overflow-hidden">
+      {/* ─── Gradient top border accent (3px) based on category ────────── */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] z-10 rounded-t-xl">
+        <div
+          className="h-full rounded-t-xl transition-all duration-1000 ease-out"
+          style={{
+            width: `${Math.max(animatedProgress, 15)}%`,
+            background: `linear-gradient(90deg, ${catConfig.borderColor}, ${catConfig.borderColor}88, transparent)`,
+          }}
+        />
+      </div>
+
+      {/* ─── Thin full-width progress bar below top accent ────────────────── */}
+      <div className="absolute top-[3px] left-0 right-0 h-1 z-10 rounded-t-xl overflow-hidden">
         <div
           className="h-full transition-all duration-1000 ease-out rounded-t-xl"
           style={{
@@ -369,6 +389,11 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
             {isCompleted && (
               <CheckCircle className="inline h-3.5 w-3.5 text-emerald-500 shrink-0" />
             )}
+            {goalStreak >= 3 && !isCompleted && (
+              <span className="inline-flex items-center text-xs shrink-0" title={`Прогресс уже ${goalStreak} дн.`}>
+                🔥
+              </span>
+            )}
           </h3>
           {goal.description && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{goal.description}</p>
@@ -392,6 +417,14 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
             </div>
           </div>
           <div className="relative">
+            {/* Glow effect behind progress indicator */}
+            <div
+              className="absolute inset-y-0 left-0 rounded-full blur-sm transition-all duration-1000 ease-out pointer-events-none"
+              style={{
+                width: `${animatedProgress}%`,
+                backgroundColor: isCompleted ? 'rgba(16, 185, 129, 0.25)' : animatedProgress >= 70 ? 'rgba(16, 185, 129, 0.2)' : animatedProgress >= 40 ? 'rgba(245, 158, 11, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+              }}
+            />
             <Progress
               value={goal.progress}
               className={cn('h-2', getProgressTrackColor(goal.progress), getProgressColor(goal.progress))}

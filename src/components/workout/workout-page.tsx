@@ -20,6 +20,7 @@ import { WorkoutDialog } from './workout-dialog'
 import { MonthNav } from './month-nav'
 import { WorkoutVolumeChart } from './volume-chart'
 import { PersonalRecords } from './personal-records'
+import { PersonalRecordsSummary } from './personal-records-summary'
 import { WorkoutTemplates } from './workout-templates'
 import { WarmUpReminder } from './warm-up-reminder'
 import { PerExerciseRecords } from './per-exercise-records'
@@ -116,9 +117,12 @@ export function WorkoutPage() {
                     {exerciseTypes.map((type) => {
                       const config = WORKOUT_TYPE_CONFIG[type as keyof typeof WORKOUT_TYPE_CONFIG]
                       if (!config) return null
+                      const typeCount = workouts.filter((w) => detectWorkoutType(w.name) === type).length
                       return (
                         <Badge key={type} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs font-medium">
-                          {config.icon}{config.label || type}
+                          <span className={config.iconColor}>{config.icon}</span>
+                          {config.label || type}
+                          <span className="ml-0.5 tabular-nums font-semibold">{typeCount}</span>
                         </Badge>
                       )
                     })}
@@ -243,6 +247,15 @@ export function WorkoutPage() {
         </ScrollArea>
       )}
 
+      {/* Personal Records Summary — below workout list */}
+      {!loading && workouts.length > 0 && (
+        <PersonalRecordsSummary
+          heaviestWeight={personalRecords.heaviestWeight}
+          longestDuration={personalRecords.longestDuration}
+          totalWorkouts={totalWorkouts}
+        />
+      )}
+
       {/* Dialogs */}
       <WorkoutDialog
         {...formProps}
@@ -252,6 +265,7 @@ export function WorkoutPage() {
         title="Новая тренировка"
         submitLabel="Сохранить тренировку"
         showPresets
+        exerciseMaxWeights={personalRecords.maxWeightsByName}
       />
       <WorkoutDialog
         {...formProps}
@@ -260,6 +274,7 @@ export function WorkoutPage() {
         onSubmit={handleEditSubmit}
         title="Редактирование тренировки"
         submitLabel="Сохранить изменения"
+        exerciseMaxWeights={personalRecords.maxWeightsByName}
       />
 
       <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={workoutSections} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Тренировки" />

@@ -455,7 +455,7 @@ export function NotificationsPanel({
               <SkeletonList />
             </div>
           ) : data && data.notifications.length > 0 ? (
-            <div className="p-3 space-y-1 animate-fade-in">
+            <div className="p-3 space-y-1 animate-fade-in stagger-children">
               {Object.entries(grouped).map(([type, items]) => (
                 <div key={type}>
                   <GroupHeader

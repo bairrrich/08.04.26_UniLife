@@ -78,6 +78,14 @@ interface ReplyState {
 // ─── Particle burst component ────────────────────────────────────────────────
 const PARTICLE_EMOJIS = ['❤️', '✨', '💖', '💫', '🌟', '💗']
 
+// ─── Inline reaction bar config ─────────────────────────────────────────────
+const INLINE_REACTIONS = [
+  { emoji: '❤️', label: 'Любовь' },
+  { emoji: '❤️‍🔥', label: 'Страсть' },
+  { emoji: '👏', label: 'Аплодисменты' },
+  { emoji: '😢', label: 'Сочувствие' },
+]
+
 function LikeParticleBurst() {
   const particles = useMemo(() =>
     PARTICLE_EMOJIS.map((emoji, i) => ({ emoji, id: i }))
@@ -130,6 +138,52 @@ export function PostCard({
   const [captionExpanded, setCaptionExpanded] = useState(false)
   const [showReactionPicker, setShowReactionPicker] = useState(false)
   const [showParticles, setShowParticles] = useState(false)
+
+  // ─── Inline reactions (localStorage) ─────────────────────────────────────
+  const [inlineReaction, setInlineReaction] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(`unilife-post-reactions-${post.id}`) || null
+    } catch {
+      return null
+    }
+  })
+  const [inlineReactionCounts, setInlineReactionCounts] = useState<Record<string, number>>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(`unilife-post-reactions-counts-${post.id}`) || '{}')
+    } catch {
+      return {}
+    }
+  })
+
+  const handleInlineReaction = (emoji: string) => {
+    const storageKey = `unilife-post-reactions-${post.id}`
+    const countsKey = `unilife-post-reactions-counts-${post.id}`
+
+    if (inlineReaction === emoji) {
+      // Deselect
+      setInlineReaction(null)
+      try { localStorage.removeItem(storageKey) } catch { /* ignore */ }
+      setInlineReactionCounts((prev) => {
+        const next = { ...prev, [emoji]: Math.max(0, (prev[emoji] || 0) - 1) }
+        try { localStorage.setItem(countsKey, JSON.stringify(next)) } catch { /* ignore */ }
+        return next
+      })
+    } else {
+      // Select new reaction
+      let prevEmoji = inlineReaction
+      setInlineReaction(emoji)
+      try { localStorage.setItem(storageKey, emoji) } catch { /* ignore */ }
+      setInlineReactionCounts((prev) => {
+        const next = { ...prev }
+        if (prevEmoji && prevEmoji !== emoji) {
+          next[prevEmoji] = Math.max(0, (next[prevEmoji] || 0) - 1)
+        }
+        next[emoji] = (next[emoji] || 0) + 1
+        try { localStorage.setItem(countsKey, JSON.stringify(next)) } catch { /* ignore */ }
+        return next
+      })
+    }
+  }
 
   // Cleanup delete confirm timer on unmount
   useEffect(() => {
@@ -405,6 +459,33 @@ export function PostCard({
             ))}
           </div>
         )}
+
+        {/* Visible inline reaction buttons row */}
+        <div className="flex items-center gap-1 py-0.5">
+          {INLINE_REACTIONS.map((r) => {
+            const isSelected = inlineReaction === r.emoji
+            const count = inlineReactionCounts[r.emoji] || 0
+            return (
+              <button
+                key={r.emoji}
+                type="button"
+                title={r.label}
+                onClick={() => handleInlineReaction(r.emoji)}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-full px-2 py-1 text-sm transition-all border active-press',
+                  isSelected
+                    ? 'border-rose-300 bg-rose-50 dark:border-rose-700 dark:bg-rose-900/30 scale-105'
+                    : 'border-transparent bg-muted/40 hover:bg-muted/70 hover:border-muted-foreground/20'
+                )}
+              >
+                <span className={cn('transition-transform', isSelected && 'scale-110')}>{r.emoji}</span>
+                {count > 0 && (
+                  <span className="text-[10px] font-medium text-muted-foreground tabular-nums">{count}</span>
+                )}
+              </button>
+            )
+          })}
+        </div>
 
         {/* Actions row with visible share + bookmark */}
         <div className="flex items-center gap-1">

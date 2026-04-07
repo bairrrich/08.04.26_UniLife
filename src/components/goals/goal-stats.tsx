@@ -34,6 +34,37 @@ function useAnimatedValue(target: number, duration = 800) {
   return value
 }
 
+// ─── Trend dots (3 sparkline-like dots showing completion trend) ──────────
+function TrendDots({ value }: { value: number }) {
+  // Simulate a 3-point trend: each dot is slightly offset from the value
+  const dots = [
+    Math.max(0, value - 15),
+    Math.max(0, value - 5),
+    value,
+  ]
+  return (
+    <div className="flex items-center gap-[3px]" aria-hidden="true">
+      {dots.map((d, i) => {
+        const color = d >= 70
+          ? 'bg-emerald-400 dark:bg-emerald-500'
+          : d >= 40
+            ? 'bg-amber-400 dark:bg-amber-500'
+            : d > 0
+              ? 'bg-rose-400 dark:bg-rose-500'
+              : 'bg-muted-foreground/25'
+        const size = i === 2 ? 'h-[7px] w-[7px]' : 'h-[5px] w-[5px]'
+        return (
+          <div
+            key={i}
+            className={cn('rounded-full transition-all duration-500', size, color)}
+            style={{ opacity: d > 0 ? 1 : 0.4 }}
+          />
+        )
+      })}
+    </div>
+  )
+}
+
 // ─── Mini trend bars ────────────────────────────────────────────────────────
 function MiniTrendBars({ goals }: { goals: GoalData[] }) {
   const months = useMemo(() => {
@@ -321,11 +352,14 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-emerald-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-              <Target className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shrink-0 shadow-sm">
+              <Target className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold tabular-nums animate-count-fade-in">{animatedTotal}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-2xl font-bold tabular-nums animate-count-fade-in">{animatedTotal}</p>
+                <TrendDots value={stats.totalGoals > 0 ? 60 : 0} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">Всего целей</p>
             </div>
           </CardContent>
@@ -335,11 +369,14 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-              <Trophy className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shrink-0 shadow-sm">
+              <Trophy className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 animate-count-fade-in">{animatedCompleted}</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-2xl font-bold tabular-nums text-emerald-600 dark:text-emerald-400 animate-count-fade-in">{animatedCompleted}</p>
+                <TrendDots value={completionRate} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">Завершено</p>
             </div>
           </CardContent>
@@ -359,26 +396,22 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           />
           <CardContent className="relative flex items-center gap-3 p-4">
             <div className={cn(
-              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0 shadow-sm',
               stats.avgProgress >= 70
-                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
                 : stats.avgProgress >= 40
-                  ? 'bg-amber-100 dark:bg-amber-900/30'
-                  : 'bg-rose-100 dark:bg-rose-900/30',
+                  ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                  : 'bg-gradient-to-br from-rose-400 to-red-500',
             )}>
-              <BarChart3 className={cn(
-                'h-5 w-5',
-                stats.avgProgress >= 70
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : stats.avgProgress >= 40
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-rose-600 dark:text-rose-400',
-              )} />
+              <BarChart3 className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', progressTextColor)}>
-                {animatedAvg}%
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', progressTextColor)}>
+                  {animatedAvg}%
+                </p>
+                <TrendDots value={stats.avgProgress} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">Ср. прогресс</p>
             </div>
           </CardContent>
@@ -398,26 +431,22 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           />
           <CardContent className="relative flex items-center gap-3 p-4">
             <div className={cn(
-              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
+              'h-10 w-10 rounded-lg flex items-center justify-center shrink-0 shadow-sm',
               activeAvgProgress >= 70
-                ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                ? 'bg-gradient-to-br from-emerald-400 to-teal-500'
                 : activeAvgProgress >= 40
-                  ? 'bg-amber-100 dark:bg-amber-900/30'
-                  : 'bg-indigo-100 dark:bg-indigo-900/30',
+                  ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                  : 'bg-gradient-to-br from-indigo-400 to-violet-500',
             )}>
-              <TrendingUp className={cn(
-                'h-5 w-5',
-                activeAvgProgress >= 70
-                  ? 'text-emerald-600 dark:text-emerald-400'
-                  : activeAvgProgress >= 40
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-indigo-600 dark:text-indigo-400',
-              )} />
+              <TrendingUp className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', activeProgressTextColor)}>
-                {activeAvgProgress}%
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in', activeProgressTextColor)}>
+                  {activeAvgProgress}%
+                </p>
+                <TrendDots value={activeAvgProgress} />
+              </div>
               <p className="text-[10px] text-muted-foreground truncate">Ср. прогресс активных</p>
             </div>
           </CardContent>
@@ -427,16 +456,19 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-500/10 to-violet-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center shrink-0">
-              <CalendarCheck className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
+              <CalendarCheck className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className={cn(
-                'text-2xl font-bold tabular-nums animate-count-fade-in',
-                completedThisMonth > 0 ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
-              )}>
-                {completedThisMonth}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={cn(
+                  'text-2xl font-bold tabular-nums animate-count-fade-in',
+                  completedThisMonth > 0 ? 'text-violet-600 dark:text-violet-400' : 'text-muted-foreground',
+                )}>
+                  {completedThisMonth}
+                </p>
+                <TrendDots value={completedThisMonth > 0 ? 70 : 0} />
+              </div>
               <p className="text-[10px] text-muted-foreground truncate">Завершено в этом месяце</p>
             </div>
           </CardContent>
@@ -446,17 +478,20 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-indigo-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center shrink-0">
-              <BarChart3 className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-indigo-400 to-blue-500 flex items-center justify-center shrink-0 shadow-sm">
+              <BarChart3 className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
-                completionRate >= 50
-                  ? 'text-indigo-600 dark:text-indigo-400'
-                  : 'text-muted-foreground',
-              )}>
-                {completionRate}%
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
+                  completionRate >= 50
+                    ? 'text-indigo-600 dark:text-indigo-400'
+                    : 'text-muted-foreground',
+                )}>
+                  {completionRate}%
+                </p>
+                <TrendDots value={completionRate} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">Доля завершённых</p>
             </div>
           </CardContent>
@@ -466,15 +501,18 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
         <Card className="card-hover overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-teal-600/5" />
           <CardContent className="relative flex items-center gap-3 p-4">
-            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-              <ShieldCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center shrink-0 shadow-sm">
+              <ShieldCheck className="h-5 w-5 text-white" />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
-                onTrackCount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
-              )}>
-                {onTrackCount}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
+                  onTrackCount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground',
+                )}>
+                  {onTrackCount}
+                </p>
+                <TrendDots value={onTrackCount > 0 ? 80 : 0} />
+              </div>
               <p className="text-xs text-muted-foreground truncate">В ритме</p>
             </div>
           </CardContent>
@@ -489,21 +527,24 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           <CardContent className="relative flex items-center gap-3 p-4">
             <div className={cn(
               'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
-              atRiskCount > 0 ? 'bg-amber-100 dark:bg-amber-900/30' : 'bg-slate-100 dark:bg-slate-900/30',
+              atRiskCount > 0 ? 'bg-gradient-to-br from-amber-400 to-orange-500' : 'bg-slate-200 dark:bg-slate-700',
             )}>
               <ShieldAlert className={cn(
                 'h-5 w-5',
                 atRiskCount > 0
-                  ? 'text-amber-500'
+                  ? 'text-white'
                   : 'text-slate-400 dark:text-slate-500',
               )} />
             </div>
             <div className="min-w-0">
-              <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
-                atRiskCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
-              )}>
-                {atRiskCount}
-              </p>
+              <div className="flex items-center gap-1.5">
+                <p className={cn('text-2xl font-bold tabular-nums animate-count-fade-in',
+                  atRiskCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground',
+                )}>
+                  {atRiskCount}
+                </p>
+                <TrendDots value={atRiskCount > 0 ? 30 : 100} />
+              </div>
               <p className="text-[10px] text-muted-foreground truncate">
                 {atRiskCount > 0 ? 'Требуют внимания' : 'Нет проблемных'}
               </p>

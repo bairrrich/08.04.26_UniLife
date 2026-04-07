@@ -1,142 +1,388 @@
 'use client'
 
-import { useState, useEffect, useCallback, memo } from 'react'
+import { useState, useMemo, useCallback, memo } from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Brain, Sparkles, RefreshCw, AlertCircle, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react'
+import { Brain, RefreshCw, BookOpen, Dumbbell, Wallet, Target, Droplets, Smile, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 // ── Types ──────────────────────────────────────────────────────────────
 
-interface InsightsData {
-  summary: string
-  tips: string[]
-  mood: string
-  score: number
-  generatedAt: string
+interface AiInsightsWidgetProps {
+  loading?: boolean
+  weekEntryCount?: number
+  weekWorkoutCount?: number
+  transactionsData?: Array<{ type: string; amount: number; date: string }>
+  habitsPercentage?: number
+  habitsTotal?: number
+  habitsCompleted?: number
+  waterTodayMl?: number
+  recentMoods?: Array<{ date: string; mood: number | null }>
+  weekExpenseSum?: number
 }
 
-// ── Circular Progress Ring ──────────────────────────────────────────────
+type InsightCategory = 'diary' | 'workout' | 'finance' | 'habits' | 'water' | 'mood' | 'general'
 
-function ScoreRing({ score, mood }: { score: number; mood: string }) {
-  const radius = 32
-  const circumference = 2 * Math.PI * radius
-  const offset = circumference * (1 - score / 100)
-  const color =
-    score >= 80 ? 'text-emerald-500' :
-    score >= 60 ? 'text-teal-500' :
-    score >= 40 ? 'text-amber-500' :
-    'text-red-400'
-  const strokeColor =
-    score >= 80 ? 'stroke-emerald-500' :
-    score >= 60 ? 'stroke-teal-500' :
-    score >= 40 ? 'stroke-amber-500' :
-    'stroke-red-400'
-
-  return (
-    <div className="relative flex items-center justify-center">
-      <svg width="76" height="76" className="-rotate-90">
-        <circle
-          cx="38"
-          cy="38"
-          r={radius}
-          fill="none"
-          strokeWidth="5"
-          className="stroke-muted"
-        />
-        <circle
-          cx="38"
-          cy="38"
-          r={radius}
-          fill="none"
-          strokeWidth="5"
-          strokeLinecap="round"
-          className={cn(strokeColor, 'transition-all duration-1000 ease-out')}
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
-        />
-      </svg>
-      <div className="absolute flex flex-col items-center">
-        <span className="text-lg">{mood}</span>
-        <span className={cn('text-xs font-bold tabular-nums', color)}>{score}</span>
-      </div>
-    </div>
-  )
+interface Insight {
+  id: string
+  category: InsightCategory
+  icon: React.ReactNode
+  text: string
+  borderGradient: string
+  accentBg: string
+  accentText: string
 }
 
-// ── Typing Animation for Summary ────────────────────────────────────────
+// ── Category Visual Config ─────────────────────────────────────────────
 
-function TypingSummary({ text, onComplete }: { text: string; onComplete?: () => void }) {
-  const [displayed, setDisplayed] = useState('')
-  const [isTyping, setIsTyping] = useState(true)
+const CATEGORY_CONFIG: Record<InsightCategory, {
+  icon: React.ReactNode
+  borderGradient: string
+  accentBg: string
+  accentText: string
+  label: string
+}> = {
+  diary: {
+    icon: <BookOpen className="h-4 w-4" />,
+    borderGradient: 'from-emerald-400 via-emerald-500 to-teal-500',
+    accentBg: 'bg-emerald-100 dark:bg-emerald-900/30',
+    accentText: 'text-emerald-600 dark:text-emerald-400',
+    label: 'Дневник',
+  },
+  workout: {
+    icon: <Dumbbell className="h-4 w-4" />,
+    borderGradient: 'from-blue-400 via-blue-500 to-cyan-500',
+    accentBg: 'bg-blue-100 dark:bg-blue-900/30',
+    accentText: 'text-blue-600 dark:text-blue-400',
+    label: 'Тренировки',
+  },
+  finance: {
+    icon: <Wallet className="h-4 w-4" />,
+    borderGradient: 'from-amber-400 via-orange-500 to-red-400',
+    accentBg: 'bg-amber-100 dark:bg-amber-900/30',
+    accentText: 'text-amber-600 dark:text-amber-400',
+    label: 'Финансы',
+  },
+  habits: {
+    icon: <Target className="h-4 w-4" />,
+    borderGradient: 'from-violet-400 via-violet-500 to-purple-500',
+    accentBg: 'bg-violet-100 dark:bg-violet-900/30',
+    accentText: 'text-violet-600 dark:text-violet-400',
+    label: 'Привычки',
+  },
+  water: {
+    icon: <Droplets className="h-4 w-4" />,
+    borderGradient: 'from-sky-400 via-cyan-400 to-teal-400',
+    accentBg: 'bg-sky-100 dark:bg-sky-900/30',
+    accentText: 'text-sky-600 dark:text-sky-400',
+    label: 'Гидратация',
+  },
+  mood: {
+    icon: <Smile className="h-4 w-4" />,
+    borderGradient: 'from-rose-400 via-pink-400 to-fuchsia-400',
+    accentBg: 'bg-rose-100 dark:bg-rose-900/30',
+    accentText: 'text-rose-600 dark:text-rose-400',
+    label: 'Настроение',
+  },
+  general: {
+    icon: <Sparkles className="h-4 w-4" />,
+    borderGradient: 'from-slate-300 via-gray-400 to-zinc-400',
+    accentBg: 'bg-slate-100 dark:bg-slate-900/30',
+    accentText: 'text-slate-600 dark:text-slate-400',
+    label: 'Совет дня',
+  },
+}
 
-  useEffect(() => {
-    setDisplayed('')
-    setIsTyping(true)
+// ── Insight Generation (Pure Functions) ────────────────────────────────
 
-    let index = 0
-    const interval = setInterval(() => {
-      if (index < text.length) {
-        setDisplayed(prev => prev + text[index])
-        index++
-      } else {
-        setIsTyping(false)
-        clearInterval(interval)
-        onComplete?.()
+function generateDiaryInsight(count: number): Insight | null {
+  const cfg = CATEGORY_CONFIG.diary
+  if (count === 0) {
+    return {
+      id: 'diary-0',
+      category: 'diary',
+      icon: cfg.icon,
+      text: 'На этой неделе ещё нет записей в дневнике. Попробуйте написать хотя бы пару строк о своих мыслях и чувствах 📝',
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (count < 3) {
+    return {
+      id: 'diary-low',
+      category: 'diary',
+      icon: cfg.icon,
+      text: `Вы писали в дневник лишь ${count} ${count === 1 ? 'раз' : 'раза'} на этой неделе. Регулярные записи помогают отслеживать эмоции 📝`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (count >= 5) {
+    return {
+      id: 'diary-high',
+      category: 'diary',
+      icon: cfg.icon,
+      text: `${count} записей в дневнике за неделю — отличная дисциплина! Продолжайте документировать свой путь 📖`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  return null
+}
+
+function generateWorkoutInsight(count: number): Insight | null {
+  const cfg = CATEGORY_CONFIG.workout
+  if (count > 3) {
+    return {
+      id: 'workout-great',
+      category: 'workout',
+      icon: cfg.icon,
+      text: `Отличная неделя тренировок! ${count} занятий — это впечатляющий результат 🏋️`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (count === 0) {
+    return {
+      id: 'workout-none',
+      category: 'workout',
+      icon: cfg.icon,
+      text: 'На этой неделе ещё не было тренировок. Даже 15 минут активности улучшат ваше самочувствие 🏃',
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  return null
+}
+
+function generateFinanceInsight(
+  transactions: Array<{ type: string; amount: number; date: string }>,
+  weekExpenseSum: number,
+): Insight | null {
+  if (!transactions.length) return null
+  const cfg = CATEGORY_CONFIG.finance
+
+  const now = new Date()
+  const thisWeekStart = new Date(now)
+  thisWeekStart.setDate(now.getDate() - 7)
+  thisWeekStart.setHours(0, 0, 0, 0)
+
+  const lastWeekStart = new Date(thisWeekStart)
+  lastWeekStart.setDate(thisWeekStart.getDate() - 7)
+  const lastWeekEnd = new Date(thisWeekStart)
+
+  const lastWeekExpenses = transactions
+    .filter((t) => {
+      if (t.type !== 'EXPENSE') return false
+      const d = new Date(t.date).getTime()
+      return d >= lastWeekStart.getTime() && d < lastWeekEnd.getTime()
+    })
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  if (lastWeekExpenses > 0) {
+    const changePercent = Math.round(((weekExpenseSum - lastWeekExpenses) / lastWeekExpenses) * 100)
+    if (changePercent > 15) {
+      return {
+        id: 'finance-up',
+        category: 'finance',
+        icon: cfg.icon,
+        text: `Расходы выросли на ${changePercent}% по сравнению с прошлой неделей. Проверьте бюджет 💰`,
+        borderGradient: cfg.borderGradient,
+        accentBg: cfg.accentBg,
+        accentText: cfg.accentText,
       }
-    }, 18)
+    }
+    if (changePercent < -15) {
+      return {
+        id: 'finance-down',
+        category: 'finance',
+        icon: cfg.icon,
+        text: `Расходы снизились на ${Math.abs(changePercent)}%! Отличная работа по экономии 💰`,
+        borderGradient: cfg.borderGradient,
+        accentBg: cfg.accentBg,
+        accentText: cfg.accentText,
+      }
+    }
+  }
 
-    return () => clearInterval(interval)
-  }, [text, onComplete])
-
-  return (
-    <p className="text-sm leading-relaxed text-foreground/90">
-      {displayed}
-      {isTyping && (
-        <span className="ml-0.5 inline-block h-4 w-0.5 animate-pulse bg-primary" />
-      )}
-    </p>
-  )
+  return null
 }
 
-// ── Expandable Tip Item ─────────────────────────────────────────────────
+function generateHabitsInsight(percentage: number, total: number, completed: number): Insight | null {
+  if (total === 0) return null
+  const cfg = CATEGORY_CONFIG.habits
 
-function TipItem({ tip, index }: { tip: string; index: number }) {
-  const [expanded, setExpanded] = useState(false)
+  if (percentage >= 80) {
+    return {
+      id: 'habits-great',
+      category: 'habits',
+      icon: cfg.icon,
+      text: `Привычки выполняются на ${percentage}%! Вы на пути к формированию полезных привычек 🎯`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (percentage === 100) {
+    return {
+      id: 'habits-perfect',
+      category: 'habits',
+      icon: cfg.icon,
+      text: `Все ${total} привычек выполнены! Идеальная дисциплина сегодня 🎯`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (percentage > 0 && percentage < 50) {
+    return {
+      id: 'habits-low',
+      category: 'habits',
+      icon: cfg.icon,
+      text: `Выполнено ${completed} из ${total} привычек. Есть над чем поработать, но вы уже начали! 🎯`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  return null
+}
 
-  return (
-    <button
-      onClick={() => setExpanded(!expanded)}
-      className={cn(
-        'group flex w-full items-start gap-2.5 rounded-lg p-2.5 text-left transition-all duration-200',
-        'hover:bg-muted/60 active:scale-[0.98]',
-        expanded && 'bg-muted/40',
-      )}
-    >
-      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-        <Lightbulb className="h-3.5 w-3.5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-xs font-medium text-muted-foreground">
-            Совет {index + 1}
-          </span>
-          {expanded ? (
-            <ChevronUp className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-          ) : (
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-          )}
-        </div>
-        <p className={cn(
-          'text-sm text-foreground/85 transition-all duration-200',
-          !expanded && 'line-clamp-2',
-        )}>
-          {tip}
-        </p>
-      </div>
-    </button>
+function generateWaterInsight(ml: number): Insight | null {
+  const cfg = CATEGORY_CONFIG.water
+  const glasses = Math.round(ml / 250)
+  const goalGlasses = 8
+
+  if (glasses >= goalGlasses) {
+    return {
+      id: 'water-good',
+      category: 'water',
+      icon: cfg.icon,
+      text: `Гидратация в норме! Вы выпили ${glasses} стаканов воды 💧`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (glasses >= goalGlasses * 0.6) {
+    return {
+      id: 'water-almost',
+      category: 'water',
+      icon: cfg.icon,
+      text: `Выпито ${glasses} из ${goalGlasses} стаканов. Ещё немного до дневной нормы! 💧`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (glasses > 0 && glasses < goalGlasses * 0.6) {
+    return {
+      id: 'water-low',
+      category: 'water',
+      icon: cfg.icon,
+      text: `Только ${glasses} стаканов воды за сегодня. Не забывайте пить regularly! 💧`,
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  return null
+}
+
+function generateMoodInsight(recentMoods: Array<{ date: string; mood: number | null }>): Insight | null {
+  const cfg = CATEGORY_CONFIG.mood
+  const moodsWithData = recentMoods.filter((m) => m.mood !== null && m.mood > 0)
+  if (moodsWithData.length === 0) return null
+
+  const avgMood = moodsWithData.reduce((sum, m) => sum + (m.mood ?? 0), 0) / moodsWithData.length
+
+  if (avgMood >= 3.5) {
+    return {
+      id: 'mood-positive',
+      category: 'mood',
+      icon: cfg.icon,
+      text: 'Ваше настроение в основном позитивное. Продолжайте в том же духе! 😊',
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  if (avgMood <= 1.5) {
+    return {
+      id: 'mood-low',
+      category: 'mood',
+      icon: cfg.icon,
+      text: 'Ваше настроение в последнее время снизилось. Попробуйте прогулку или разговор с близким человеком 💙',
+      borderGradient: cfg.borderGradient,
+      accentBg: cfg.accentBg,
+      accentText: cfg.accentText,
+    }
+  }
+  return null
+}
+
+const GENERAL_INSIGHTS = [
+  'Начните день с маленького шага к большой цели 🌟',
+  'Каждый прогресс, даже маленький — это всё равно прогресс 🚀',
+  'Не забывайте делать перерывы. Отдых — часть продуктивности ☕',
+  'Фокус на главном — ключ к результатам 🎯',
+  'Похвалите себя за то, что уже сделали сегодня 👏',
+]
+
+function generateGeneralInsight(): Insight {
+  const cfg = CATEGORY_CONFIG.general
+  const text = GENERAL_INSIGHTS[Math.floor(Math.random() * GENERAL_INSIGHTS.length)]
+  return {
+    id: 'general-' + Math.random().toString(36).slice(2, 7),
+    category: 'general',
+    icon: cfg.icon,
+    text,
+    borderGradient: cfg.borderGradient,
+    accentBg: cfg.accentBg,
+    accentText: cfg.accentText,
+  }
+}
+
+function generateAllInsights(props: AiInsightsWidgetProps): Insight[] {
+  const insights: Insight[] = []
+
+  const diaryInsight = generateDiaryInsight(props.weekEntryCount ?? 0)
+  if (diaryInsight) insights.push(diaryInsight)
+
+  const workoutInsight = generateWorkoutInsight(props.weekWorkoutCount ?? 0)
+  if (workoutInsight) insights.push(workoutInsight)
+
+  const financeInsight = generateFinanceInsight(
+    props.transactionsData ?? [],
+    props.weekExpenseSum ?? 0,
   )
+  if (financeInsight) insights.push(financeInsight)
+
+  const habitsInsight = generateHabitsInsight(
+    props.habitsPercentage ?? 0,
+    props.habitsTotal ?? 0,
+    props.habitsCompleted ?? 0,
+  )
+  if (habitsInsight) insights.push(habitsInsight)
+
+  const waterInsight = generateWaterInsight(props.waterTodayMl ?? 0)
+  if (waterInsight) insights.push(waterInsight)
+
+  const moodInsight = generateMoodInsight(props.recentMoods ?? [])
+  if (moodInsight) insights.push(moodInsight)
+
+  // Always include at least one general insight
+  insights.push(generateGeneralInsight())
+
+  // Shuffle and take up to 3
+  const shuffled = insights.sort(() => Math.random() - 0.5)
+  return shuffled.slice(0, 3)
 }
 
 // ── Skeleton State ──────────────────────────────────────────────────────
@@ -144,242 +390,178 @@ function TipItem({ tip, index }: { tip: string; index: number }) {
 function InsightsSkeleton() {
   return (
     <Card className="overflow-hidden rounded-xl border border-border/50">
-      {/* Gradient header skeleton */}
-      <div className="h-2 w-full bg-gradient-to-r from-muted to-muted" />
-
+      <div className="h-1.5 w-full bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400" />
       <CardContent className="space-y-4 p-5">
-        {/* Title skeleton */}
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-5 w-5 rounded-md" />
-          <Skeleton className="h-5 w-40" />
-        </div>
-
-        {/* Summary skeleton */}
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-3/4" />
-        </div>
-
-        {/* Score + tips skeleton */}
-        <div className="flex items-start gap-4">
-          <Skeleton className="h-[76px] w-[76px] rounded-full" />
-          <div className="flex-1 space-y-2">
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <Skeleton className="h-8 w-8 rounded-lg" />
+            <div className="space-y-1.5">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-3 w-44" />
+            </div>
           </div>
+          <Skeleton className="h-8 w-20 rounded-md" />
+        </div>
+        <div className="space-y-2.5">
+          <Skeleton className="h-[72px] w-full rounded-lg" />
+          <Skeleton className="h-[72px] w-full rounded-lg" />
+          <Skeleton className="h-[72px] w-full rounded-lg" />
         </div>
       </CardContent>
     </Card>
   )
 }
 
-// ── Error State ─────────────────────────────────────────────────────────
+// ── Single Insight Card ────────────────────────────────────────────────
 
-function InsightsError({ onRetry }: { onRetry: () => void }) {
+function InsightCard({ insight }: { insight: Insight }) {
+  const cfg = CATEGORY_CONFIG[insight.category]
+
   return (
-    <Card className="overflow-hidden rounded-xl border border-destructive/30">
-      <div className="h-2 bg-gradient-to-r from-red-400 to-orange-400" />
-      <CardContent className="flex flex-col items-center gap-3 p-6 text-center">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-destructive/10">
-          <AlertCircle className="h-5 w-5 text-destructive" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-foreground">Не удалось загрузить инсайты</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Произошла ошибка при генерации AI-инсайтов
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onRetry}
-          className="gap-1.5 text-xs"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Попробовать снова
-        </Button>
-      </CardContent>
-    </Card>
+    <div className="group relative flex items-start gap-3 rounded-lg border border-border/40 bg-muted/20 p-3 transition-all duration-200 hover:bg-muted/40">
+      {/* Gradient left border accent */}
+      <div className={cn(
+        'absolute left-0 top-0 bottom-0 w-1 rounded-l-lg bg-gradient-to-b',
+        insight.borderGradient,
+      )} />
+
+      {/* Icon */}
+      <div className={cn(
+        'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-105',
+        cfg.accentBg,
+        cfg.accentText,
+      )}>
+        {cfg.icon}
+      </div>
+
+      {/* Text */}
+      <div className="min-w-0 flex-1">
+        <p className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+          {cfg.label}
+        </p>
+        <p className="text-sm leading-relaxed text-foreground/90">
+          {insight.text}
+        </p>
+      </div>
+    </div>
   )
 }
 
 // ── Main Widget ─────────────────────────────────────────────────────────
 
-export default memo(function AiInsightsWidget() {
-  const [insights, setInsights] = useState<InsightsData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
+export default memo(function AiInsightsWidget({
+  loading = false,
+  weekEntryCount = 0,
+  weekWorkoutCount = 0,
+  transactionsData = [],
+  habitsPercentage = 0,
+  habitsTotal = 0,
+  habitsCompleted = 0,
+  waterTodayMl = 0,
+  recentMoods = [],
+  weekExpenseSum = 0,
+}: AiInsightsWidgetProps) {
+  const [seed, setSeed] = useState(0)
   const [refreshing, setRefreshing] = useState(false)
-  const [typingDone, setTypingDone] = useState(false)
 
-  const fetchInsights = useCallback(async (isRefresh = false) => {
-    if (isRefresh) {
-      setRefreshing(true)
-      setError(false)
-      setTypingDone(false)
-    } else {
-      setLoading(true)
-      setError(false)
-    }
+  // Generate insights from data — re-compute when props or seed change
+  const insights = useMemo(() => {
+    if (loading) return [] as Insight[]
+    return generateAllInsights({
+      weekEntryCount,
+      weekWorkoutCount,
+      transactionsData,
+      habitsPercentage,
+      habitsTotal,
+      habitsCompleted,
+      waterTodayMl,
+      recentMoods,
+      weekExpenseSum,
+    })
+  }, [
+    loading,
+    weekEntryCount,
+    weekWorkoutCount,
+    transactionsData,
+    habitsPercentage,
+    habitsTotal,
+    habitsCompleted,
+    waterTodayMl,
+    recentMoods,
+    weekExpenseSum,
+    seed,
+  ])
 
-    try {
-      const today = new Date().toISOString().slice(0, 10)
-      const res = await fetch(`/api/ai/insights?date=${today}`, {
-        signal: AbortSignal.timeout(30000),
-      })
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-
-      const text = await res.text()
-      if (text.trimStart().startsWith('<')) throw new Error('Received HTML')
-
-      const json = JSON.parse(text)
-      if (!json.success || !json.data) throw new Error('Invalid response')
-
-      setInsights(json.data)
-      setTypingDone(false)
-    } catch (err) {
-      console.error('Failed to fetch AI insights:', err)
-      setError(true)
-    } finally {
-      setLoading(false)
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true)
+    // Small delay for visual feedback
+    setTimeout(() => {
+      setSeed((s) => s + 1)
       setRefreshing(false)
-    }
+    }, 500)
   }, [])
-
-  useEffect(() => {
-    fetchInsights()
-  }, [fetchInsights])
 
   // ── Render ──────────────────────────────────────────────────────────
 
   if (loading) return <InsightsSkeleton />
 
-  if (error && !insights) return <InsightsError onRetry={() => fetchInsights(true)} />
-
-  if (!insights) return null
-
-  const scoreLabel =
-    insights.score >= 80 ? 'Отлично!' :
-    insights.score >= 60 ? 'Хорошо' :
-    insights.score >= 40 ? 'Нормально' :
-    'Есть над чем работать'
-
   return (
-    <div className="animate-slide-up">
-      <Card className="group overflow-hidden rounded-xl border border-border/50 shadow-sm transition-shadow duration-300 hover:shadow-md">
-        {/* ── Gradient Header Bar ─────────────────────────────────── */}
-        <div className="relative h-2 w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-400" />
+    <Card className="card-hover overflow-hidden rounded-xl border border-border/50 shadow-sm">
+      {/* ── Gradient Header Bar ───────────────────────────────────── */}
+      <div className="h-1.5 w-full bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400" />
 
-        <CardContent className="p-5">
-          {/* ── Header ─────────────────────────────────────────────── */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-500 shadow-sm">
-                <Brain className="h-4.5 w-4.5 text-white" />
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-semibold text-foreground">AI-инсайты</h3>
-                  <Sparkles className="h-3.5 w-3.5 text-amber-500" />
-                </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Персонализированный анализ дня
-                </p>
-              </div>
+      <CardContent className="p-5">
+        {/* ── Header ───────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-violet-100 dark:bg-violet-900/30 shadow-sm">
+              <Brain className="h-4 w-4 text-violet-500" />
             </div>
-
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => fetchInsights(true)}
-              disabled={refreshing}
-              className="h-8 gap-1.5 px-2 text-xs text-muted-foreground hover:text-foreground"
-            >
-              <RefreshCw
-                className={cn(
-                  'h-3.5 w-3.5',
-                  refreshing && 'animate-spin',
-                )}
-              />
-              <span className="hidden sm:inline">Обновить</span>
-            </Button>
-          </div>
-
-          {/* ── Main Content ──────────────────────────────────────── */}
-          <div className="mt-4 flex items-start gap-4">
-            {/* Score Ring */}
-            <div className="shrink-0 pt-0.5">
-              <ScoreRing score={insights.score} mood={insights.mood} />
-              <p className="mt-1.5 text-center text-[10px] font-medium text-muted-foreground">
-                {scoreLabel}
+            <div>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm font-semibold text-foreground">Умные инсайты</h3>
+                <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Персонализированные рекомендации
               </p>
             </div>
-
-            {/* Summary + Tips */}
-            <div className="min-w-0 flex-1 space-y-3">
-              {/* Summary with typing effect */}
-              <div className="rounded-lg bg-muted/30 p-3">
-                <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  <Brain className="h-3 w-3" />
-                  Итог дня
-                </p>
-                <TypingSummary
-                  text={insights.summary}
-                  onComplete={() => setTypingDone(true)}
-                />
-              </div>
-
-              {/* Expandable Tips */}
-              {typingDone && insights.tips.length > 0 && (
-                <div className="fade-in-bottom space-y-1">
-                  <p className="mb-1.5 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                    <Lightbulb className="h-3 w-3 text-amber-500" />
-                    Рекомендации
-                  </p>
-                  <div className="max-h-64 space-y-0.5 overflow-y-auto rounded-lg border border-border/40 p-1 scrollbar-thin">
-                    {insights.tips.map((tip, i) => (
-                      <TipItem key={i} tip={tip} index={i} />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Error retry when refreshing fails */}
-              {error && insights && (
-                <div className="flex items-center gap-2 rounded-lg bg-destructive/5 p-2.5">
-                  <AlertCircle className="h-4 w-4 shrink-0 text-destructive" />
-                  <p className="text-xs text-destructive/80">Ошибка обновления</p>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => fetchInsights(true)}
-                    className="ml-auto h-6 px-2 text-[11px]"
-                  >
-                    Повторить
-                  </Button>
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* ── Footer ─────────────────────────────────────────────── */}
-          <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5">
-            <p className="text-[10px] text-muted-foreground/60">
-              Создано с помощью AI
-            </p>
-            {insights.generatedAt && (
-              <p className="text-[10px] text-muted-foreground/60">
-                {new Date(insights.generatedAt).toLocaleTimeString('ru-RU', {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="h-8 gap-1.5 px-2.5 text-xs text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw
+              className={cn(
+                'h-3.5 w-3.5',
+                refreshing && 'animate-spin',
+              )}
+            />
+            <span className="hidden sm:inline">Обновить</span>
+          </Button>
+        </div>
+
+        {/* ── Insights List ──────────────────────────────────────── */}
+        <div className="stagger-children mt-4 max-h-48 space-y-2.5 overflow-y-auto pr-1 scrollbar-thin">
+          {insights.map((insight) => (
+            <InsightCard key={insight.id} insight={insight} />
+          ))}
+        </div>
+
+        {/* ── Footer ───────────────────────────────────────────────── */}
+        <div className="mt-3 flex items-center justify-between border-t border-border/40 pt-2.5">
+          <p className="text-[10px] text-muted-foreground/60">
+            На основе ваших данных
+          </p>
+          <p className="text-[10px] text-muted-foreground/60">
+            {insights.length} {insights.length === 1 ? 'инсайт' : insights.length < 5 ? 'инсайта' : 'инсайтов'}
+          </p>
+        </div>
+      </CardContent>
+    </Card>
   )
 })
