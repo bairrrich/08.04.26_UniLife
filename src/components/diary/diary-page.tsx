@@ -39,6 +39,8 @@ import { WritingStatsWidget } from './writing-stats-widget'
 import { WritingPrompts } from './writing-prompts'
 import { WritingStreakBadge } from './writing-streak-badge'
 import { WritingStreakCard } from './writing-streak-card'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 
 const emptyForm: EntryFormData = {
   title: '',
@@ -66,6 +68,18 @@ export default function DiaryPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
   const [weekFilterDate, setWeekFilterDate] = useState<Date | null>(null)
+
+  // ─── Section Config ───────────────────────────────────────────────────
+  const diarySections: SectionDef[] = useMemo(() => [
+    { id: 'streak-stats', title: 'Статистика и серия', icon: '🔥', defaultVisible: true, defaultOrder: 0 },
+    { id: 'mood-insights', title: 'Аналитика настроения', icon: '😊', defaultVisible: true, defaultOrder: 1 },
+    { id: 'prompts', title: 'Идеи для записи', icon: '💡', defaultVisible: true, defaultOrder: 2 },
+    { id: 'week-strip', title: 'Неделя', icon: '📅', defaultVisible: true, defaultOrder: 3 },
+    { id: 'quick-mood', title: 'Быстрое настроение', icon: '🎨', defaultVisible: true, defaultOrder: 4 },
+  ], [])
+
+  const { config, loaded, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('diary', diarySections)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
 
   const toggleExpanded = (entryId: string) => {
     setExpandedEntries((prev) => {
@@ -363,6 +377,7 @@ export default function DiaryPage() {
         }
         actions={
           <div className="flex items-center gap-2">
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
             <div className="flex items-center border rounded-xl overflow-hidden">
               <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')} className="rounded-none px-3">
                 <CalendarDays className="h-4 w-4" />
@@ -387,132 +402,147 @@ export default function DiaryPage() {
         }
       />
 
-      {/* Writing Streak Card */}
-      <WritingStreakCard entries={entries} today={today} isLoading={isLoading} className="card-hover" />
+      {/* Configurable Sections */}
+      {loaded && visibleOrder.map(sectionId => {
+        switch (sectionId) {
+          case 'streak-stats':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Статистика и серия" icon={<span>🔥</span>}>
+                <WritingStreakCard entries={entries} today={today} isLoading={isLoading} className="card-hover" />
+                <WritingStatsWidget className="stagger-children" />
+              </DashboardSection>
+            )
+          case 'mood-insights':
+            return !isLoading && entries.length > 0 ? (
+              <DashboardSection key={sectionId} id={sectionId} title="Аналитика настроения" icon={<span>😊</span>}>
+                <MoodInsights entries={entries} today={today} className="card-hover" />
+              </DashboardSection>
+            ) : null
+          case 'prompts':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Идеи для записи" icon={<span>💡</span>}>
+                <WritingPrompts
+                  className="card-hover"
+                  onPromptClick={(prompt) => {
+                    setForm({ ...emptyForm, date: selectedDate || today, content: prompt })
+                    setTagInput('')
+                    setShowNewDialog(true)
+                  }}
+                />
+              </DashboardSection>
+            )
+          case 'week-strip':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Неделя" icon={<span>📅</span>}>
+                <Card className="rounded-xl border overflow-hidden">
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-medium text-muted-foreground">Эта неделя</span>
+                      {weekFilterDate && (
+                        <button
+                          type="button"
+                          onClick={() => setWeekFilterDate(null)}
+                          className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
+                        >
+                          Все дни
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between gap-1">
+                      {(() => {
+                        const todayDate = today
+                        const dayOfWeek = todayDate.getDay()
+                        const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
+                        const monday = new Date(todayDate)
+                        monday.setDate(todayDate.getDate() + mondayOffset)
 
-      {/* Writing Stats Widget */}
-      <WritingStatsWidget className="stagger-children" />
+                        return Array.from({ length: 7 }).map((_, i) => {
+                          const d = new Date(monday)
+                          d.setDate(monday.getDate() + i)
+                          const dateKey = formatDateKey(d)
+                          const dayEntries = entriesByDate.get(dateKey)
+                          const hasEntries = dayEntries && dayEntries.length > 0
+                          const primaryMood = hasEntries ? dayEntries![0].mood : null
+                          const isToday =
+                            d.getFullYear() === todayDate.getFullYear() &&
+                            d.getMonth() === todayDate.getMonth() &&
+                            d.getDate() === todayDate.getDate()
+                          const isSelected =
+                            weekFilterDate &&
+                            d.getFullYear() === weekFilterDate.getFullYear() &&
+                            d.getMonth() === weekFilterDate.getMonth() &&
+                            d.getDate() === weekFilterDate.getDate()
+                          const isWeekend = i >= 5
 
-      {/* Mood Insights Widget */}
-      {!isLoading && entries.length > 0 && (
-        <MoodInsights entries={entries} today={today} className="card-hover" />
-      )}
-
-      {/* Writing Prompts */}
-      <WritingPrompts
-        className="card-hover"
-        onPromptClick={(prompt) => {
-          setForm((f) => ({
-            ...emptyForm,
-            date: selectedDate || today,
-            content: prompt,
-          }))
-          setTagInput('')
-          setShowNewDialog(true)
-        }}
-      />
-
-      {/* Weekly Calendar Strip */}
-      <Card className="rounded-xl border overflow-hidden">
-        <CardContent className="p-3">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-muted-foreground">Эта неделя</span>
-            {weekFilterDate && (
-              <button
-                type="button"
-                onClick={() => setWeekFilterDate(null)}
-                className="text-xs text-primary hover:text-primary/80 font-medium transition-colors"
-              >
-                Все дни
-              </button>
-            )}
-          </div>
-          <div className="flex items-center justify-between gap-1">
-            {(() => {
-              const todayDate = today
-              const dayOfWeek = todayDate.getDay()
-              const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek
-              const monday = new Date(todayDate)
-              monday.setDate(todayDate.getDate() + mondayOffset)
-
-              return Array.from({ length: 7 }).map((_, i) => {
-                const d = new Date(monday)
-                d.setDate(monday.getDate() + i)
-                const dateKey = formatDateKey(d)
-                const dayEntries = entriesByDate.get(dateKey)
-                const hasEntries = dayEntries && dayEntries.length > 0
-                const primaryMood = hasEntries ? dayEntries![0].mood : null
-                const isToday =
-                  d.getFullYear() === todayDate.getFullYear() &&
-                  d.getMonth() === todayDate.getMonth() &&
-                  d.getDate() === todayDate.getDate()
-                const isSelected =
-                  weekFilterDate &&
-                  d.getFullYear() === weekFilterDate.getFullYear() &&
-                  d.getMonth() === weekFilterDate.getMonth() &&
-                  d.getDate() === weekFilterDate.getDate()
-                const isWeekend = i >= 5
-
-                return (
-                  <button
-                    key={dateKey}
-                    type="button"
-                    onClick={() => {
-                      if (weekFilterDate && isSelected) {
-                        setWeekFilterDate(null)
-                      } else {
-                        setWeekFilterDate(d)
-                        setSelectedDate(d)
-                        const dayEn = entriesByDate.get(dateKey)
-                        if (dayEn && dayEn.length > 0) {
-                          setSelectedEntry(dayEn[0])
-                        } else {
-                          setSelectedEntry(null)
-                        }
-                      }
-                    }}
-                    className={cn(
-                      'flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 transition-all min-w-[42px] border border-transparent',
-                      isToday && !isSelected && 'bg-primary/10 ring-2 ring-primary/30 border-primary/20',
-                      isSelected && 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20',
-                      !isToday && !isSelected && 'hover:bg-accent hover:border-accent',
-                      isWeekend && !isToday && !isSelected && 'text-muted-foreground/80'
-                    )}
-                  >
-                    <span className={cn(
-                      'text-[10px] font-semibold uppercase tracking-wider',
-                      isSelected ? 'text-primary-foreground/70' : isWeekend ? 'text-orange-500/70 dark:text-orange-400/50' : 'text-muted-foreground'
-                    )}>
-                      {RU_DAYS_SHORT[i]}
-                    </span>
-                    <span className={cn(
-                      'text-sm font-bold tabular-nums',
-                      isSelected ? 'text-primary-foreground' : isToday ? 'text-primary' : ''
-                    )}>
-                      {d.getDate()}
-                    </span>
-                    {primaryMood && (
-                      <span className={cn(
-                        'text-xs leading-none transition-transform',
-                        isSelected && 'scale-110'
-                      )}>{MOOD_EMOJI[primaryMood]}</span>
-                    )}
-                    {hasEntries && !primaryMood && (
-                      <div className={cn(
-                        'h-1.5 w-1.5 rounded-full',
-                        isSelected ? 'bg-primary-foreground' : 'bg-primary'
-                      )} />
-                    )}
-                  </button>
-                )
-              })
-            })()}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Quick Mood Check */}
-      <WeekMoodBar todayMood={todayMood} onQuickMood={handleQuickMood} />
+                          return (
+                            <button
+                              key={dateKey}
+                              type="button"
+                              onClick={() => {
+                                if (weekFilterDate && isSelected) {
+                                  setWeekFilterDate(null)
+                                } else {
+                                  setWeekFilterDate(d)
+                                  setSelectedDate(d)
+                                  const dayEn = entriesByDate.get(dateKey)
+                                  if (dayEn && dayEn.length > 0) {
+                                    setSelectedEntry(dayEn[0])
+                                  } else {
+                                    setSelectedEntry(null)
+                                  }
+                                }
+                              }}
+                              className={cn(
+                                'flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 transition-all min-w-[42px] border border-transparent',
+                                isToday && !isSelected && 'bg-primary/10 ring-2 ring-primary/30 border-primary/20',
+                                isSelected && 'bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20',
+                                !isToday && !isSelected && 'hover:bg-accent hover:border-accent',
+                                isWeekend && !isToday && !isSelected && 'text-muted-foreground/80'
+                              )}
+                            >
+                              <span className={cn(
+                                'text-[10px] font-semibold uppercase tracking-wider',
+                                isSelected ? 'text-primary-foreground/70' : isWeekend ? 'text-orange-500/70 dark:text-orange-400/50' : 'text-muted-foreground'
+                              )}>
+                                {RU_DAYS_SHORT[i]}
+                              </span>
+                              <span className={cn(
+                                'text-sm font-bold tabular-nums',
+                                isSelected ? 'text-primary-foreground' : isToday ? 'text-primary' : ''
+                              )}>
+                                {d.getDate()}
+                              </span>
+                              {primaryMood && (
+                                <span className={cn(
+                                  'text-xs leading-none transition-transform',
+                                  isSelected && 'scale-110'
+                                )}>{MOOD_EMOJI[primaryMood]}</span>
+                              )}
+                              {hasEntries && !primaryMood && (
+                                <div className={cn(
+                                  'h-1.5 w-1.5 rounded-full',
+                                  isSelected ? 'bg-primary-foreground' : 'bg-primary'
+                                )} />
+                              )}
+                            </button>
+                          )
+                        })
+                      })()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </DashboardSection>
+            )
+          case 'quick-mood':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Быстрое настроение" icon={<span>🎨</span>}>
+                <WeekMoodBar todayMood={todayMood} onQuickMood={handleQuickMood} />
+              </DashboardSection>
+            )
+          default:
+            return null
+        }
+      })}
 
       {/* Month Navigation */}
       <Card className="w-full rounded-xl">
@@ -683,6 +713,18 @@ export default function DiaryPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Section Customizer Dialog */}
+      <SectionCustomizer
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        sections={diarySections}
+        config={config}
+        onToggle={toggleVisible}
+        onMove={moveSection}
+        onReset={resetConfig}
+        moduleTitle="Дневник"
+      />
     </div>
   )
 }

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 import { Plus, Target, Calendar, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, Tag, Sparkles, TrendingUp, Zap, Rocket } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Card, CardContent } from '@/components/ui/card'
@@ -51,6 +53,17 @@ export default function HabitsPage() {
     handleCreate, handleToggle, handleEdit, handleUpdate,
     handleArchive, handleUnarchive,
   } = useHabits()
+
+  // Section config for hideable/collapsible widgets
+  const habitSections: SectionDef[] = useMemo(() => [
+    { id: 'plan-stats', title: 'План на сегодня', icon: '📋', defaultVisible: true, defaultOrder: 0 },
+    { id: 'heatmap', title: 'Тепловая карта', icon: '🗓️', defaultVisible: true, defaultOrder: 1 },
+    { id: 'streaks', title: 'Серии', icon: '🔥', defaultVisible: true, defaultOrder: 2 },
+    { id: 'progress', title: 'Прогресс', icon: '📈', defaultVisible: true, defaultOrder: 3 },
+  ], [])
+
+  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('habits', habitSections)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
 
   // Toggle for hiding completed habits
   const [showCompleted, setShowCompleted] = useState(true)
@@ -142,9 +155,12 @@ export default function HabitsPage() {
         }
         accent="cyan"
         actions={
-          <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} size="sm" className="gap-1.5 shrink-0">
-            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить привычку</span>
-          </Button>
+          <>
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+            <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить привычку</span>
+            </Button>
+          </>
         }
       />
 
@@ -239,106 +255,116 @@ export default function HabitsPage() {
         </Card>
       ) : (
         <>
-          {/* Today's Plan Summary with motivational message */}
-          <Card className="overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
-            <CardContent className="relative p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                    <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-semibold">План на сегодня</h3>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <span className="font-medium tabular-nums text-foreground">{todaySummary.planned}</span> запланировано
-                      </span>
-                      <span className="text-muted-foreground/30">·</span>
-                      <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle className="h-3 w-3" />
-                        <span className="font-medium tabular-nums">{todaySummary.completed}</span> выполнено
-                      </span>
-                      <span className="text-muted-foreground/30">·</span>
-                      <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
-                        <Clock className="h-3 w-3" />
-                        <span className="font-medium tabular-nums">{todaySummary.remaining}</span> осталось
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                {/* Circular mini progress */}
-                <div className="relative h-12 w-12 shrink-0">
-                  <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
-                    <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3" className="stroke-muted/40" />
-                    <circle
-                      cx="24" cy="24" r="20" fill="none" strokeWidth="3" strokeLinecap="round"
-                      stroke={todaySummary.remaining === 0 ? '#10b981' : todaySummary.completed > 0 ? '#3b82f6' : '#94a3b8'}
-                      strokeDasharray={125.66}
-                      strokeDashoffset={125.66 * (1 - (todaySummary.planned > 0 ? todaySummary.completed / todaySummary.planned : 0))}
-                      className="transition-all duration-700 ease-out"
-                    />
-                  </svg>
-                  <span className="absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums">
-                    {todaySummary.planned > 0 ? Math.round((todaySummary.completed / todaySummary.planned) * 100) : 0}%
-                  </span>
-                </div>
-              </div>
+          {loaded && visibleOrder.map(sectionId => {
+            switch (sectionId) {
+              case 'plan-stats':
+                return (
+                  <DashboardSection key={sectionId} id={sectionId} title="План на сегодня" icon={<span>📋</span>}>
+                    <Card className="overflow-hidden relative">
+                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-cyan-500/5 pointer-events-none" />
+                      <CardContent className="relative p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
+                              <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                              <h3 className="text-sm font-semibold">План на сегодня</h3>
+                              <div className="flex items-center gap-3 mt-1">
+                                <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                  <span className="font-medium tabular-nums text-foreground">{todaySummary.planned}</span> запланировано
+                                </span>
+                                <span className="text-muted-foreground/30">·</span>
+                                <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                                  <CheckCircle className="h-3 w-3" />
+                                  <span className="font-medium tabular-nums">{todaySummary.completed}</span> выполнено
+                                </span>
+                                <span className="text-muted-foreground/30">·</span>
+                                <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                                  <Clock className="h-3 w-3" />
+                                  <span className="font-medium tabular-nums">{todaySummary.remaining}</span> осталось
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Circular mini progress */}
+                          <div className="relative h-12 w-12 shrink-0">
+                            <svg className="h-12 w-12 -rotate-90" viewBox="0 0 48 48">
+                              <circle cx="24" cy="24" r="20" fill="none" strokeWidth="3" className="stroke-muted/40" />
+                              <circle
+                                cx="24" cy="24" r="20" fill="none" strokeWidth="3" strokeLinecap="round"
+                                stroke={todaySummary.remaining === 0 ? '#10b981' : todaySummary.completed > 0 ? '#3b82f6' : '#94a3b8'}
+                                strokeDasharray={125.66}
+                                strokeDashoffset={125.66 * (1 - (todaySummary.planned > 0 ? todaySummary.completed / todaySummary.planned : 0))}
+                                className="transition-all duration-700 ease-out"
+                              />
+                            </svg>
+                            <span className="absolute inset-0 flex items-center justify-center text-xs font-bold tabular-nums">
+                              {todaySummary.planned > 0 ? Math.round((todaySummary.completed / todaySummary.planned) * 100) : 0}%
+                            </span>
+                          </div>
+                        </div>
 
-              {/* Motivational message */}
-              {todaySummary.planned > 0 && (
-                <div className={cn(
-                  'flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-muted/30 dark:bg-muted/20 motivation-enter',
-                )}>
-                  <span className={motivation.className}>{motivation.icon}</span>
-                  <span className={cn('text-xs font-medium', motivation.className)}>{motivation.text}</span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Stats */}
-          <HabitStats stats={stats} habits={activeHabits} />
-
-          {/* Longest streak celebration banner */}
-          {longestStreakHabit && (
-            <div className="relative overflow-hidden rounded-xl border border-amber-200 dark:border-amber-800/50 animate-slide-up">
-              <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 pointer-events-none" />
-              <div className="relative flex items-center gap-3 p-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/25">
-                  <Trophy className="h-6 w-6 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
-                    Рекордная серия!
-                    <span className="text-base">🔥</span>
-                  </h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    <span className="font-medium text-foreground">{longestStreakHabit.emoji} {longestStreakHabit.name}</span>
-                    {' '}— {longestStreakHabit.streak} дней подряд!
-                  </p>
-                </div>
-                <Badge className="shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 text-xs font-bold tabular-nums px-2.5">
-                  {longestStreakHabit.streak}д
-                </Badge>
-              </div>
-            </div>
-          )}
-
-          {/* Week Overview Heatmap — completion rates per day */}
-          <WeeklyOverviewHeatmap habits={activeHabits} last7Days={last7Days} />
-
-          {/* Heatmap Calendar */}
-          <HabitHeatmap habits={activeHabits} />
-
-          {/* Best Streak */}
-          <BestStreakCard habits={activeHabits} />
-
-          {/* Weekly Progress */}
-          <WeeklyProgress rate={weeklyStats.rate} color={weeklyStats.color} />
-
-          {/* Streak Records */}
-          <StreakRecords habits={activeHabits} />
+                        {/* Motivational message */}
+                        {todaySummary.planned > 0 && (
+                          <div className={cn(
+                            'flex items-center gap-2 mt-3 px-3 py-2 rounded-lg bg-muted/30 dark:bg-muted/20 motivation-enter',
+                          )}>
+                            <span className={motivation.className}>{motivation.icon}</span>
+                            <span className={cn('text-xs font-medium', motivation.className)}>{motivation.text}</span>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                    <HabitStats stats={stats} habits={activeHabits} />
+                    {longestStreakHabit && (
+                      <div className="relative overflow-hidden rounded-xl border border-amber-200 dark:border-amber-800/50 animate-slide-up">
+                        <div className="absolute inset-0 bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-amber-500/10 pointer-events-none" />
+                        <div className="relative flex items-center gap-3 p-4">
+                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0 shadow-lg shadow-amber-500/25">
+                            <Trophy className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-1.5">
+                              Рекордная серия!
+                              <span className="text-base">🔥</span>
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              <span className="font-medium text-foreground">{longestStreakHabit.emoji} {longestStreakHabit.name}</span>
+                              {' '}— {longestStreakHabit.streak} дней подряд!
+                            </p>
+                          </div>
+                          <Badge className="shrink-0 bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/40 dark:text-amber-400 dark:border-amber-800/50 text-xs font-bold tabular-nums px-2.5">
+                            {longestStreakHabit.streak}д
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </DashboardSection>
+                )
+              case 'heatmap':
+                return (
+                  <DashboardSection key={sectionId} id={sectionId} title="Тепловая карта" icon={<span>🗓️</span>}>
+                    <WeeklyOverviewHeatmap habits={activeHabits} last7Days={last7Days} />
+                    <HabitHeatmap habits={activeHabits} />
+                  </DashboardSection>
+                )
+              case 'streaks':
+                return (
+                  <DashboardSection key={sectionId} id={sectionId} title="Серии" icon={<span>🔥</span>}>
+                    <BestStreakCard habits={activeHabits} />
+                    <StreakRecords habits={activeHabits} />
+                  </DashboardSection>
+                )
+              case 'progress':
+                return (
+                  <DashboardSection key={sectionId} id={sectionId} title="Прогресс" icon={<span>📈</span>}>
+                    <WeeklyProgress rate={weeklyStats.rate} color={weeklyStats.color} />
+                  </DashboardSection>
+                )
+              default: return null
+            }
+          })}
 
           {/* Category Filter */}
           <div className="space-y-3">
@@ -519,6 +545,8 @@ export default function HabitsPage() {
           )}
         </>
       )}
+
+      <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={habitSections} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Привычки" />
     </div>
   )
 }

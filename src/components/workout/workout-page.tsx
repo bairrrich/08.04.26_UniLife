@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncExternalStore } from 'react'
+import { useState, useMemo, useSyncExternalStore } from 'react'
 import { Dumbbell, Plus, Clock } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 
 import { useWorkouts } from './hooks'
 import { WORKOUT_TYPE_CONFIG, WORKOUT_PRESETS, WORKOUT_PHRASES, detectWorkoutType } from './constants'
@@ -56,6 +59,16 @@ export function WorkoutPage() {
   )
   const phraseIdx = mounted ? new Date().getDate() % WORKOUT_PHRASES.length : 0
 
+  const workoutSections: SectionDef[] = useMemo(() => [
+    { id: 'stats', title: 'Статистика', icon: '📊', defaultVisible: true, defaultOrder: 0 },
+    { id: 'templates', title: 'Шаблоны', icon: '📋', defaultVisible: true, defaultOrder: 1 },
+    { id: 'records', title: 'Рекорды', icon: '🏆', defaultVisible: true, defaultOrder: 2 },
+    { id: 'volume-chart', title: 'График объёма', icon: '📈', defaultVisible: true, defaultOrder: 3 },
+  ], [])
+
+  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('workout', workoutSections)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
   return (
     <div className="space-y-6 animate-slide-up">
       <PageHeader
@@ -73,76 +86,86 @@ export function WorkoutPage() {
         }
         accent="red"
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
-          </Button>
+          <>
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
+            </Button>
+          </>
         }
       />
 
-      <StatCards
-        totalWorkouts={totalWorkouts}
-        totalMinutes={totalMinutes}
-        avgDuration={avgDuration}
-        totalExercises={totalExercises}
-        totalVolume={totalVolume}
-        prCount={personalRecords.prCount}
-        weeklyFrequency={weeklyFrequency}
-        sparklineData={sparklineData}
-        periodComparison={periodComparison}
-      />
-
-      {/* Exercise Type Badges + Duration Row */}
-      {!loading && workouts.length > 0 && (
-        <div className="flex flex-wrap items-center gap-2">
-          {exerciseTypes.map((type) => {
-            const config = WORKOUT_TYPE_CONFIG[type as keyof typeof WORKOUT_TYPE_CONFIG]
-            if (!config) return null
+      {!loading && visibleOrder.map(sectionId => {
+        switch (sectionId) {
+          case 'stats':
             return (
-              <Badge key={type} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs font-medium">
-                {config.icon}{config.label || type}
-              </Badge>
+              <DashboardSection key={sectionId} id={sectionId} title="Статистика" icon={<span>📊</span>}>
+                <StatCards
+                  totalWorkouts={totalWorkouts}
+                  totalMinutes={totalMinutes}
+                  avgDuration={avgDuration}
+                  totalExercises={totalExercises}
+                  totalVolume={totalVolume}
+                  prCount={personalRecords.prCount}
+                  weeklyFrequency={weeklyFrequency}
+                  sparklineData={sparklineData}
+                  periodComparison={periodComparison}
+                />
+                {!loading && workouts.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {exerciseTypes.map((type) => {
+                      const config = WORKOUT_TYPE_CONFIG[type as keyof typeof WORKOUT_TYPE_CONFIG]
+                      if (!config) return null
+                      return (
+                        <Badge key={type} variant="secondary" className="gap-1.5 px-2.5 py-1 text-xs font-medium">
+                          {config.icon}{config.label || type}
+                        </Badge>
+                      )
+                    })}
+                    <Separator orientation="vertical" className="h-4 mx-1" />
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      <span className="font-semibold tabular-nums">{totalHours}ч</span> за месяц
+                    </span>
+                  </div>
+                )}
+              </DashboardSection>
             )
-          })}
-          <Separator orientation="vertical" className="h-4 mx-1" />
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            <span className="font-semibold tabular-nums">{totalHours}ч</span> за месяц
-          </span>
-        </div>
-      )}
-
-      <MonthNav month={month} onChange={changeMonth} />
-
-      {/* Workout Templates */}
-      <WorkoutTemplates
-        onLoadTemplate={(name, duration, exercises) => {
-          handleApplyPreset({ label: name, name, duration, exercises })
-          setDialogOpen(true)
-        }}
-      />
-
-      {/* Warm-up Reminder */}
-      <WarmUpReminder workoutCount={workouts.length} />
-
-      {/* Personal Records */}
-      {!loading && workouts.length > 0 && (
-        <PersonalRecords
-          heaviestWeight={personalRecords.heaviestWeight}
-          longestDuration={personalRecords.longestDuration}
-          mostExercises={personalRecords.mostExercises}
-          totalVolumeAllTime={personalRecords.totalVolumeAllTime}
-        />
-      )}
-
-      {/* Per-Exercise Records */}
-      {!loading && workouts.length > 1 && (
-        <PerExerciseRecords workouts={workouts} />
-      )}
-
-      {/* Volume Chart */}
-      {!loading && workouts.length > 0 && (
-        <WorkoutVolumeChart />
-      )}
+          case 'templates':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Шаблоны" icon={<span>📋</span>}>
+                <MonthNav month={month} onChange={changeMonth} />
+                <WorkoutTemplates
+                  onLoadTemplate={(name, duration, exercises) => {
+                    handleApplyPreset({ label: name, name, duration, exercises })
+                    setDialogOpen(true)
+                  }}
+                />
+                <WarmUpReminder workoutCount={workouts.length} />
+              </DashboardSection>
+            )
+          case 'records':
+            return !loading && workouts.length > 0 ? (
+              <DashboardSection key={sectionId} id={sectionId} title="Рекорды" icon={<span>🏆</span>}>
+                <PersonalRecords
+                  heaviestWeight={personalRecords.heaviestWeight}
+                  longestDuration={personalRecords.longestDuration}
+                  mostExercises={personalRecords.mostExercises}
+                  totalVolumeAllTime={personalRecords.totalVolumeAllTime}
+                />
+                {workouts.length > 1 && <PerExerciseRecords workouts={workouts} />}
+              </DashboardSection>
+            ) : null
+          case 'volume-chart':
+            return !loading && workouts.length > 0 ? (
+              <DashboardSection key={sectionId} id={sectionId} title="График объёма" icon={<span>📈</span>}>
+                <WorkoutVolumeChart />
+              </DashboardSection>
+            ) : null
+          default:
+            return null
+        }
+      })}
 
       {/* Workout List */}
       {loading ? (
@@ -238,6 +261,8 @@ export function WorkoutPage() {
         title="Редактирование тренировки"
         submitLabel="Сохранить изменения"
       />
+
+      <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={workoutSections} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Тренировки" />
     </div>
   )
 }

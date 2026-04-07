@@ -10552,3 +10552,72 @@ Stage Summary:
 - Fix: Database reset + reseed with current PrismaBetterSqlite3 v7 adapter
 - All APIs verified working: dashboard, habits, goals, module-counts, feed
 - Data counts: 6 diary entries, 12 transactions, 2 workouts, 5 habits, 5 feed posts, 7 goals, 41 collections, 4 meals
+
+---
+## Task ID: 7
+### Agent: Main
+### Task: Add hideable widget sections to Workout module
+
+### Work Summary:
+- Added `useSectionConfig`, `SectionCustomizer`, `CustomizeButton`, and `SectionDef` imports from `@/components/shared`
+- Added `DashboardSection` import from `@/components/dashboard/dashboard-section`
+- Added `useState` and `useMemo` to React imports
+- Defined 4 configurable sections: stats (📊), templates (📋), records (🏆), volume-chart (📈) — all visible by default with orders 0–3
+- Integrated `useSectionConfig('workout', workoutSections)` hook with `config`, `visibleOrder`, `toggleVisible`, `moveSection`, `resetConfig`
+- Added `customizerOpen` state for SectionCustomizer dialog
+- Added `<CustomizeButton>` in PageHeader actions before the existing Plus button
+- Wrapped static widgets in conditional `visibleOrder.map()` rendering with `DashboardSection` components
+- Kept workout list (loading skeleton, empty state, ScrollArea with WorkoutCards) and all dialogs outside the section system
+- Added `<SectionCustomizer>` dialog at end of component tree
+- All existing props, content, and structure preserved
+
+### Stage Summary:
+- Workout module has 4 configurable sections: stats, templates, records, volume-chart
+- Sections are collapsible via DashboardSection and hideable/reorderable via SectionCustomizer
+- ESLint passes (only pre-existing warning in use-section-config.ts, not in workout-page.tsx)
+
+---
+## Task ID: 6
+### Agent: Main
+### Task: Add hideable widget sections to Nutrition module
+
+### Stage Summary:
+- Nutrition module now has 6 configurable sections: macros, quick-food, weekly-overview, streak, water, weekly-chart
+- CustomizeButton added to PageHeader
+- All widget sections wrapped in DashboardSection with conditional rendering via visibleOrder
+- "Приёмы пищи" header, TimeIndicator, MealTimeline, and all dialogs remain always visible outside configurable sections
+- SectionCustomizer dialog added for toggling/reordering sections
+- Existing streak Card content preserved exactly as-is
+- ESLint passes for nutrition-page.tsx (pre-existing lint issue in shared use-section-config.ts is unrelated)
+
+---
+## Task ID: 8
+### Agent: Main
+### Task: Add hideable widget sections to Habits module
+### Stage Summary:
+- Habits module has 4 configurable sections: plan-stats, heatmap, streaks, progress
+
+---
+## Task ID: 5
+### Agent: Main
+### Task: Add hideable widget sections to Diary module
+
+### Work Log:
+- Created shared useSectionConfig hook, SectionCustomizer dialog, CustomizeButton component
+- Added SectionDef definitions for 5 diary sections: streak-stats, mood-insights, prompts, week-strip, quick-mood
+- Wrapped existing widgets in DashboardSection with visibility control
+- Added customize button to PageHeader actions
+- Each widget section now uses collapsible DashboardSection wrapper with toggle
+- SectionCustomizer dialog allows users to show/hide and reorder sections
+- Config persisted per module ('diary') in localStorage via useSectionConfig hook
+- Month Navigation, loading skeleton, main content (CalendarView/EntryList + EntryDetail), and all dialogs remain always visible
+- The `loaded` check from useSectionConfig prevents flash of unstyled content
+- Week strip content preserved exactly as it was
+
+### Verification:
+- ESLint: 0 errors in diary-page.tsx
+- Pre-existing lint warning in shared use-section-config.ts (react-hooks/set-state-in-effect) — not introduced by this change
+
+### Stage Summary:
+- Diary module now has customizable widget visibility/order like Dashboard
+- Config persisted per module in localStorage

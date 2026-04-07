@@ -45,6 +45,8 @@ import {
 } from '@/components/ui/animated-number'
 import { RU_DAYS_SHORT, formatCurrency } from '@/lib/format'
 import { PageHeader } from '@/components/layout/page-header'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 import type { ChartConfig } from '@/components/ui/chart'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -176,6 +178,18 @@ export default function AnalyticsPage() {
     }
   }, [period])
 
+  // Section config for hideable/collapsible widgets
+  const sectionDefs: SectionDef[] = useMemo(() => [
+    { id: 'stats-cards', title: 'Обзор', icon: '📊', defaultVisible: true, defaultOrder: 0 },
+    { id: 'activity-chart', title: 'Активность по месяцам', icon: '📈', defaultVisible: true, defaultOrder: 1 },
+    { id: 'mood-categories', title: 'Настроения и категории', icon: '😊', defaultVisible: true, defaultOrder: 2 },
+    { id: 'habit-trend', title: 'Тренд привычек', icon: '✅', defaultVisible: true, defaultOrder: 3 },
+    { id: 'collections-chart', title: 'Коллекции', icon: '📚', defaultVisible: true, defaultOrder: 4 },
+    { id: 'heatmap', title: 'Тепловая карта', icon: '🗓️', defaultVisible: true, defaultOrder: 5 },
+  ], [])
+  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('analytics', sectionDefs)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
@@ -193,17 +207,20 @@ export default function AnalyticsPage() {
           </Badge>
         }
         actions={
-          <Tabs
-            value={period}
-            onValueChange={(v) => setPeriod(v as Period)}
-          >
-            <TabsList className="bg-muted/60">
-              <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
-              <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
-              <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
-              <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <>
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+            <Tabs
+              value={period}
+              onValueChange={(v) => setPeriod(v as Period)}
+            >
+              <TabsList className="bg-muted/60">
+                <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
+                <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
+                <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
+                <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </>
         }
       />
 
@@ -228,29 +245,53 @@ export default function AnalyticsPage() {
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       {(loading || hasData) && (
-        <>
-          {/* ── 1. Overview Stats Cards ──────────────────────────────────── */}
-          <OverviewStatsCards loading={loading} data={data} />
-
-          {/* ── 2. Monthly Activity Chart ────────────────────────────────── */}
-          <MonthlyActivityChart loading={loading} data={data} />
-
-          {/* ── 3 & 4. Mood Distribution + Top Categories ────────────────── */}
-          <div className="stagger-children grid gap-4 lg:grid-cols-2">
-            <MoodDistributionChart loading={loading} data={data} />
-            <TopCategoriesChart loading={loading} data={data} />
-          </div>
-
-          {/* ── 5. Habit Completion Trend ───────────────────────────────── */}
-          <HabitCompletionTrend loading={loading} data={data} />
-
-          {/* ── 6. Collections Distribution ──────────────────────────────── */}
-          <CollectionsDistribution loading={loading} data={data} />
-
-          {/* ── 7. Weekly Heatmap ────────────────────────────────────────── */}
-          <WeeklyHeatmapSection loading={loading} data={data} />
-        </>
+        visibleOrder.map(sectionId => {
+          switch (sectionId) {
+            case 'stats-cards':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Обзор" icon={<span>📊</span>}>
+                  <OverviewStatsCards loading={loading} data={data} />
+                </DashboardSection>
+              )
+            case 'activity-chart':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Активность по месяцам" icon={<span>📈</span>}>
+                  <MonthlyActivityChart loading={loading} data={data} />
+                </DashboardSection>
+              )
+            case 'mood-categories':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Настроения и категории" icon={<span>😊</span>}>
+                  <div className="stagger-children grid gap-4 lg:grid-cols-2">
+                    <MoodDistributionChart loading={loading} data={data} />
+                    <TopCategoriesChart loading={loading} data={data} />
+                  </div>
+                </DashboardSection>
+              )
+            case 'habit-trend':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Тренд привычек" icon={<span>✅</span>}>
+                  <HabitCompletionTrend loading={loading} data={data} />
+                </DashboardSection>
+              )
+            case 'collections-chart':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Коллекции" icon={<span>📚</span>}>
+                  <CollectionsDistribution loading={loading} data={data} />
+                </DashboardSection>
+              )
+            case 'heatmap':
+              return (
+                <DashboardSection key={sectionId} id={sectionId} title="Тепловая карта" icon={<span>🗓️</span>}>
+                  <WeeklyHeatmapSection loading={loading} data={data} />
+                </DashboardSection>
+              )
+            default: return null
+          }
+        })
       )}
+
+      <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={sectionDefs} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Аналитика" />
     </div>
   )
 }

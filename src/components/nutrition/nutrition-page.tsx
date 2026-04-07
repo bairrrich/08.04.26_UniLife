@@ -6,6 +6,8 @@ import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 
 import { useNutrition } from './hooks'
 import { MacroRings } from './macro-ring'
@@ -70,6 +72,18 @@ export default function NutritionPage() {
     handleGoalsSaved,
   } = useNutrition()
 
+  const nutritionSections: SectionDef[] = useMemo(() => [
+    { id: 'macros', title: 'Макронутриенты', icon: '🎯', defaultVisible: true, defaultOrder: 0 },
+    { id: 'quick-food', title: 'Быстрое добавление', icon: '🍔', defaultVisible: true, defaultOrder: 1 },
+    { id: 'weekly-overview', title: 'Обзор за неделю', icon: '📊', defaultVisible: true, defaultOrder: 2 },
+    { id: 'streak', title: 'Серия отслеживания', icon: '🔥', defaultVisible: true, defaultOrder: 3 },
+    { id: 'water', title: 'Вода', icon: '💧', defaultVisible: true, defaultOrder: 4 },
+    { id: 'weekly-chart', title: 'График за неделю', icon: '📈', defaultVisible: true, defaultOrder: 5 },
+  ], [])
+
+  const { config, loaded, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('nutrition', nutritionSections)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
   return (
     <div className="space-y-6 animate-slide-up">
       <PageHeader
@@ -87,6 +101,7 @@ export default function NutritionPage() {
         }
         actions={
           <div className="flex items-center gap-2">
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
             <Button variant="outline" size="icon" className="size-8" onClick={() => setShowGoalsDialog(true)}>
               <Settings2 className="size-4 text-muted-foreground" />
             </Button>
@@ -97,63 +112,76 @@ export default function NutritionPage() {
         }
       />
 
-      {/* Macro Rings + Daily Score — side by side on desktop */}
-      <div className="grid gap-4 lg:grid-cols-2 stagger-children">
-        <MacroRings stats={stats} goals={goals} />
-        <DailyNutritionScore stats={stats} goals={goals} />
-      </div>
-
-      {/* Quick Food Presets */}
-      <QuickFoodBar onAddFood={(item: MealFormItem) => {
-        setMealItems([item])
-        setShowNewMealDialog(true)
-      }} />
-
-      {/* Weekly Overview Card */}
-      <WeeklyOverview goals={goals} />
-
-      {/* Nutrition Streak Card */}
-      {nutritionStreak > 0 && (
-        <Card className="overflow-hidden card-hover">
-          <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-orange-500/5 pointer-events-none" />
-          <CardContent className="relative flex items-center gap-4 py-4">
-            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 shadow-md shadow-orange-500/20">
-              <Flame className="h-6 w-6 text-white" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">Серия отслеживания</p>
-              <p className="text-xs text-muted-foreground">
-                {nutritionStreak === 1
-                  ? 'Вчера ты начал(а) отслеживать питание'
-                  : nutritionStreak < 7
-                    ? `Отличное начало — продолжай в том же духе!`
-                    : nutritionStreak < 30
-                      ? `Невероятная дисциплина — так держать!`
-                      : `Месяц непрерывного отслеживания!`}
-              </p>
-            </div>
-            <div className="text-right shrink-0">
-              <p className="text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{nutritionStreak}</p>
-              <p className="text-xs text-muted-foreground">
-                {nutritionStreak === 1 ? 'день' : nutritionStreak < 5 ? 'дня' : 'дней'} подряд
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Water Tracker */}
-      <WaterTracker
-        waterStats={waterStats}
-        waterAnimating={waterAnimating}
-        waterChartDays={waterChartDays}
-        goals={goals}
-        onAddWater={handleAddWater}
-        onResetWater={handleResetWater}
-      />
-
-      {/* Weekly Nutrition Chart */}
-      <WeeklyNutritionChart goals={goals} />
+      {loaded && visibleOrder.map(sectionId => {
+        switch (sectionId) {
+          case 'macros':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Макронутриенты" icon={<span>🎯</span>}>
+                <div className="grid gap-4 lg:grid-cols-2 stagger-children">
+                  <MacroRings stats={stats} goals={goals} />
+                  <DailyNutritionScore stats={stats} goals={goals} />
+                </div>
+              </DashboardSection>
+            )
+          case 'quick-food':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Быстрое добавление" icon={<span>🍔</span>}>
+                <QuickFoodBar onAddFood={(item) => { setMealItems([item]); setShowNewMealDialog(true) }} />
+              </DashboardSection>
+            )
+          case 'weekly-overview':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Обзор за неделю" icon={<span>📊</span>}>
+                <WeeklyOverview goals={goals} />
+              </DashboardSection>
+            )
+          case 'streak':
+            return nutritionStreak > 0 ? (
+              <DashboardSection key={sectionId} id={sectionId} title="Серия отслеживания" icon={<span>🔥</span>}>
+                <Card className="overflow-hidden card-hover">
+                  <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-amber-500/5 to-orange-500/5 pointer-events-none" />
+                  <CardContent className="relative flex items-center gap-4 py-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-amber-500 shadow-md shadow-orange-500/20">
+                      <Flame className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Серия отслеживания</p>
+                      <p className="text-xs text-muted-foreground">
+                        {nutritionStreak === 1
+                          ? 'Вчера ты начал(а) отслеживать питание'
+                          : nutritionStreak < 7
+                            ? `Отличное начало — продолжай в том же духе!`
+                            : nutritionStreak < 30
+                              ? `Невероятная дисциплина — так держать!`
+                              : `Месяц непрерывного отслеживания!`}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-3xl font-bold tabular-nums text-orange-600 dark:text-orange-400">{nutritionStreak}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {nutritionStreak === 1 ? 'день' : nutritionStreak < 5 ? 'дня' : 'дней'} подряд
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </DashboardSection>
+            ) : null
+          case 'water':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Вода" icon={<span>💧</span>}>
+                <WaterTracker waterStats={waterStats} waterAnimating={waterAnimating} waterChartDays={waterChartDays} goals={goals} onAddWater={handleAddWater} onResetWater={handleResetWater} />
+              </DashboardSection>
+            )
+          case 'weekly-chart':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="График за неделю" icon={<span>📈</span>}>
+                <WeeklyNutritionChart goals={goals} />
+              </DashboardSection>
+            )
+          default:
+            return null
+        }
+      })}
 
       {/* Meal Timeline */}
       <div className="flex items-center justify-between">
@@ -202,6 +230,17 @@ export default function NutritionPage() {
         onOpenChange={setShowGoalsDialog}
         goals={goals}
         onGoalsSaved={handleGoalsSaved}
+      />
+
+      <SectionCustomizer
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        sections={nutritionSections}
+        config={config}
+        onToggle={toggleVisible}
+        onMove={moveSection}
+        onReset={resetConfig}
+        moduleTitle="Питание"
       />
     </div>
   )

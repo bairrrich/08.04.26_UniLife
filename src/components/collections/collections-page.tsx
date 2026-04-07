@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,8 @@ import { AddItemDialog } from './add-item-dialog'
 import { ItemDialog } from './item-dialog'
 import { cn } from '@/lib/utils'
 import { PageHeader } from '@/components/layout/page-header'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 
 // Empty state messages per type
 const EMPTY_STATE_MESSAGES: Record<string, { title: string; description: string }> = {
@@ -75,6 +77,15 @@ export default function CollectionsPage() {
     recentlyAdded,
   } = useCollections()
 
+  // Section config for hideable/collapsible widgets
+  const sectionDefs: SectionDef[] = useMemo(() => [
+    { id: 'stats-bar', title: 'Статистика', icon: '📊', defaultVisible: true, defaultOrder: 0 },
+    { id: 'recently-added', title: 'Недавно добавленные', icon: '🕐', defaultVisible: true, defaultOrder: 1 },
+    { id: 'templates', title: 'Быстрое добавление', icon: '⚡', defaultVisible: true, defaultOrder: 2 },
+  ], [])
+  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('collections', sectionDefs)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
   // ── Keyboard shortcut: N to open add dialog ────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -124,9 +135,12 @@ export default function CollectionsPage() {
           </kbd>
         }
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-            <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
-          </Button>
+          <>
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
+            </Button>
+          </>
         }
       />
       <AddItemDialog
@@ -153,6 +167,124 @@ export default function CollectionsPage() {
           className="pl-9"
         />
       </div>
+
+      {/* Configurable Widget Sections */}
+      {visibleOrder.map(sectionId => {
+        switch (sectionId) {
+          case 'stats-bar':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Статистика" icon={<span>📊</span>}>
+                <StatsBar
+                  loading={loading}
+                  totalCount={totalCount}
+                  averageRating={averageRating}
+                  typeCounts={typeCounts}
+                />
+              </DashboardSection>
+            )
+          case 'recently-added':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Недавно добавленные" icon={<span>🕐</span>}>
+                {!searchQuery.trim() && activeType === 'all' && recentlyAdded.length > 0 && (
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-semibold text-muted-foreground">Недавно добавленные</h3>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => scrollRecentlyAdded('left')}
+                          className="p-1 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => scrollRecentlyAdded('right')}
+                          className="p-1 rounded-md hover:bg-muted/80 transition-colors text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div
+                      ref={scrollRef}
+                      className="flex gap-3 overflow-x-auto scroll-smooth pb-2"
+                      style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                    >
+                      {recentlyAdded.map((item, idx) => (
+                        <motion.div
+                          key={item.id}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.06, duration: 0.3 }}
+                          className="shrink-0 w-[160px] sm:w-[180px]"
+                        >
+                          <Card
+                            className="overflow-hidden cursor-pointer group hover-lift active-press"
+                            onClick={() => openDetail(item)}
+                          >
+                            <CardContent className="p-0">
+                              <div
+                                className={`h-20 w-full bg-gradient-to-br ${getCoverGradient(item.id)} flex items-center justify-center relative`}
+                              >
+                                <div className="text-white/80 group-hover:scale-110 transition-transform duration-300">
+                                  {TYPE_ICONS_LARGE[item.type as CollectionType] && (
+                                    <span className="[&>svg]:h-6 [&>svg]:w-6">{TYPE_ICONS_LARGE[item.type as CollectionType]}</span>
+                                  )}
+                                </div>
+                                <span
+                                  className={`absolute top-1.5 right-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-medium bg-white/20 backdrop-blur-sm text-white border border-white/30`}
+                                >
+                                  {TYPE_EMOJIS[item.type as CollectionType]}
+                                </span>
+                              </div>
+                              <div className="p-2.5">
+                                <p className="text-xs font-medium line-clamp-1">{item.title}</p>
+                                {item.author && (
+                                  <p className="text-[10px] text-muted-foreground truncate mt-0.5">{item.author}</p>
+                                )}
+                                {item.rating && (
+                                  <div className="flex items-center gap-0.5 mt-1">
+                                    {Array.from({ length: 5 }).map((_, i) => (
+                                      <Star key={i} className={cn(
+                                        'h-2.5 w-2.5',
+                                        i < (item.rating || 0) ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/30',
+                                      )} />
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </DashboardSection>
+            )
+          case 'templates':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Быстрое добавление" icon={<span>⚡</span>}>
+                <div className="flex gap-2 flex-wrap">
+                  {QUICK_ADD_TEMPLATES.map((template) => (
+                    <Button
+                      key={template.type}
+                      variant="ghost"
+                      size="sm"
+                      className={`gap-1.5 text-xs font-medium ${template.color} border-0 shadow-sm`}
+                      onClick={() => openQuickAdd(template.type)}
+                    >
+                      {template.icon}
+                      {template.label}
+                    </Button>
+                  ))}
+                </div>
+              </DashboardSection>
+            )
+          default: return null
+        }
+      })}
 
       {/* Type Tabs */}
       <Tabs value={activeType} onValueChange={setActiveType}>

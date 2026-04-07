@@ -12,6 +12,8 @@ import { useFeed } from './hooks'
 import { getTimeGroup } from './constants'
 import { useState, useMemo } from 'react'
 import { PageHeader } from '@/components/layout/page-header'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 import { cn } from '@/lib/utils'
 
 // Suggested hashtags for the feed header
@@ -47,6 +49,13 @@ export default function FeedPage() {
 
   const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all')
+
+  // Section config for hideable/collapsible widgets
+  const sectionDefs: SectionDef[] = useMemo(() => [
+    { id: 'trending', title: 'Популярные темы', icon: '📈', defaultVisible: true, defaultOrder: 0 },
+  ], [])
+  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('feed', sectionDefs)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
 
   // Apply hashtag + filter together
   const filteredPosts = useMemo(() => {
@@ -117,11 +126,14 @@ export default function FeedPage() {
           </Badge>
         }
         actions={
-          <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-            <PenLine className="h-4 w-4" />
-            <span className="hidden sm:inline">Написать пост</span>
-            <span className="sm:hidden">Пост</span>
-          </Button>
+          <>
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
+            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
+              <PenLine className="h-4 w-4" />
+              <span className="hidden sm:inline">Написать пост</span>
+              <span className="sm:hidden">Пост</span>
+            </Button>
+          </>
         }
       />
 
@@ -168,48 +180,58 @@ export default function FeedPage() {
         </div>
       )}
 
-      {/* Trending Topics */}
-      <Card className="rounded-xl border overflow-hidden">
-        <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center justify-between mb-2.5">
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" />
-              <span className="text-xs font-semibold text-foreground">Популярные темы</span>
-            </div>
-            {selectedHashtag && (
-              <button
-                type="button"
-                onClick={() => setSelectedHashtag(null)}
-                className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium transition-colors"
-              >
-                <RefreshCw className="h-3 w-3" />
-                Показать все
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {SUGGESTED_HASHTAGS.map((item) => {
-              const isActive = selectedHashtag === item.tag
-              return (
-                <button
-                  key={item.tag}
-                  type="button"
-                  onClick={() => setSelectedHashtag(isActive ? null : item.tag)}
-                  className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all active-press',
-                    isActive
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  <span className="text-xs">{item.emoji}</span>
-                  #{item.tag}
-                </button>
-              )
-            })}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Configurable Widget Sections */}
+      {visibleOrder.map(sectionId => {
+        switch (sectionId) {
+          case 'trending':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Популярные темы" icon={<span>📈</span>}>
+                <Card className="rounded-xl border overflow-hidden">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex items-center justify-between mb-2.5">
+                      <div className="flex items-center gap-2">
+                        <TrendingUp className="h-4 w-4 text-primary" />
+                        <span className="text-xs font-semibold text-foreground">Популярные темы</span>
+                      </div>
+                      {selectedHashtag && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedHashtag(null)}
+                          className="flex items-center gap-1 text-[10px] text-primary hover:text-primary/80 font-medium transition-colors"
+                        >
+                          <RefreshCw className="h-3 w-3" />
+                          Показать все
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {SUGGESTED_HASHTAGS.map((item) => {
+                        const isActive = selectedHashtag === item.tag
+                        return (
+                          <button
+                            key={item.tag}
+                            type="button"
+                            onClick={() => setSelectedHashtag(isActive ? null : item.tag)}
+                            className={cn(
+                              'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-all active-press',
+                              isActive
+                                ? 'bg-primary text-primary-foreground shadow-sm'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                            )}
+                          >
+                            <span className="text-xs">{item.emoji}</span>
+                            #{item.tag}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              </DashboardSection>
+            )
+          default: return null
+        }
+      })}
 
       <PostDialog
         open={dialogOpen} onOpenChange={setDialogOpen}
@@ -343,6 +365,8 @@ export default function FeedPage() {
           ))
         )}
       </div>
+
+      <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={sectionDefs} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Лента" />
     </div>
   )
 }

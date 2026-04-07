@@ -10,6 +10,8 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { useGoals } from './hooks'
 import { PageHeader } from '@/components/layout/page-header'
+import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 import { getMotivationalPhrase, getMotivationalQuote } from './constants'
 import { GoalStats } from './goal-stats'
 import { GoalCard } from './goal-card'
@@ -183,6 +185,14 @@ export default function GoalsPage() {
   // Motivational quote
   const quote = useMemo(() => getMotivationalQuote(), [])
 
+  // Section config for hideable/collapsible widgets
+  const sectionDefs: SectionDef[] = useMemo(() => [
+    { id: 'stats', title: 'Статистика', icon: '📊', defaultVisible: true, defaultOrder: 0 },
+    { id: 'quote', title: 'Мотивация', icon: '💬', defaultVisible: true, defaultOrder: 1 },
+  ], [])
+  const { config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('goals', sectionDefs)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
@@ -201,6 +211,7 @@ export default function GoalsPage() {
         accent="indigo"
         actions={
           <div className="flex items-center gap-2 shrink-0">
+            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
             <Button onClick={openAddDialog} size="sm" className="gap-1.5 shrink-0">
               <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
             </Button>
@@ -356,28 +367,41 @@ export default function GoalsPage() {
         </div>
       ) : (
         <>
-          <GoalStats goals={goals} stats={stats} />
-
-          {/* Motivational Quote */}
-          <Card className="overflow-hidden relative card-hover">
-            <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-            <CardContent className="relative p-4">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
-                  <Quote className="h-4 w-4 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-foreground/90 italic leading-relaxed">
-                    &ldquo;{quote.text}&rdquo;
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                    <Sparkles className="h-3 w-3 text-amber-500" />
-                    — {quote.author}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {visibleOrder.map(sectionId => {
+            switch (sectionId) {
+              case 'stats':
+                return (
+                  <DashboardSection key={sectionId} id={sectionId} title="Статистика" icon={<span>📊</span>}>
+                    <GoalStats goals={goals} stats={stats} />
+                  </DashboardSection>
+                )
+              case 'quote':
+                return (
+                  <DashboardSection key={sectionId} id={sectionId} title="Мотивация" icon={<span>💬</span>}>
+                    <Card className="overflow-hidden relative card-hover">
+                      <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+                      <CardContent className="relative p-4">
+                        <div className="flex items-start gap-3">
+                          <div className="flex h-9 w-9 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
+                            <Quote className="h-4 w-4 text-white" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground/90 italic leading-relaxed">
+                              &ldquo;{quote.text}&rdquo;
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                              <Sparkles className="h-3 w-3 text-amber-500" />
+                              — {quote.author}
+                            </p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </DashboardSection>
+                )
+              default: return null
+            }
+          })}
 
           {/* Overdue Goals Attention Banner */}
           {overdueGoals.length > 0 && (
@@ -429,6 +453,8 @@ export default function GoalsPage() {
           )}
         </>
       )}
+
+      <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={sectionDefs} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Цели" />
     </div>
   )
 }
