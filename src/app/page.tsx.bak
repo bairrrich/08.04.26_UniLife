@@ -1,0 +1,196 @@
+'use client'
+
+import { useAppStore } from '@/store/use-app-store'
+import { AppSidebar } from '@/components/layout/app-sidebar'
+import dynamic from 'next/dynamic'
+import { Skeleton } from '@/components/ui/skeleton'
+import { AnimatePresence, motion } from 'framer-motion'
+
+// ─── Lazy-loaded module pages ──────────────────────────────────────────
+// Using next/dynamic creates separate chunk boundaries so Turbopack
+// only compiles the active module instead of all 11 at once.
+
+const DashboardPage = dynamic(() => import('@/components/dashboard/dashboard-page'), {
+  loading: () => <PageSkeleton />,
+})
+const DiaryPage = dynamic(() => import('@/components/diary/diary-page'), {
+  loading: () => <PageSkeleton />,
+})
+const FinancePage = dynamic(() => import('@/components/finance/finance-page'), {
+  loading: () => <PageSkeleton />,
+})
+const NutritionPage = dynamic(() => import('@/components/nutrition/nutrition-page'), {
+  loading: () => <PageSkeleton />,
+})
+const WorkoutPage = dynamic(() => import('@/components/workout/workout-page'), {
+  loading: () => <PageSkeleton />,
+})
+const CollectionsPage = dynamic(() => import('@/components/collections/collections-page'), {
+  loading: () => <PageSkeleton />,
+})
+const FeedPage = dynamic(() => import('@/components/feed/feed-page'), {
+  loading: () => <PageSkeleton />,
+})
+const HabitsPage = dynamic(() => import('@/components/habits/habit-page'), {
+  loading: () => <PageSkeleton />,
+})
+const GoalsPage = dynamic(() => import('@/components/goals/goals-page'), {
+  loading: () => <PageSkeleton />,
+})
+const AnalyticsPage = dynamic(() => import('@/components/analytics/analytics-page'), {
+  loading: () => <PageSkeleton />,
+})
+const SettingsPage = dynamic(() => import('@/components/layout/settings-page'), {
+  loading: () => <PageSkeleton />,
+})
+
+// ─── Welcome screen (small, keep as static import) ─────────────────────
+import { WelcomeScreen } from '@/components/onboarding/welcome-screen'
+
+// ─── Page skeleton for lazy loading ────────────────────────────────────
+function PageSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div className="space-y-2">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[130px] rounded-xl" />
+        ))}
+      </div>
+      <Skeleton className="h-[300px] rounded-xl" />
+      <Skeleton className="h-[200px] rounded-xl" />
+    </div>
+  )
+}
+
+// ─── Module renderer ───────────────────────────────────────────────────
+function ModuleContent({ activeModule }: { activeModule: string }) {
+  switch (activeModule) {
+    case 'dashboard':
+      return <DashboardPage />
+    case 'diary':
+      return <DiaryPage />
+    case 'finance':
+      return <FinancePage />
+    case 'nutrition':
+      return <NutritionPage />
+    case 'workout':
+      return <WorkoutPage />
+    case 'collections':
+      return <CollectionsPage />
+    case 'feed':
+      return <FeedPage />
+    case 'habits':
+      return <HabitsPage />
+    case 'goals':
+      return <GoalsPage />
+    case 'analytics':
+      return <AnalyticsPage />
+    case 'settings':
+      return <SettingsPage />
+    default:
+      return <DashboardPage />
+  }
+}
+
+// ─── Main Page ─────────────────────────────────────────────────────────
+export default function Home() {
+  const { activeModule } = useAppStore()
+
+  return (
+    <div className="min-h-screen bg-background">
+      <WelcomeScreen />
+      <AppSidebar />
+      <main className="md:ml-60 min-h-screen flex flex-col">
+        <div className="flex-1 p-4 pt-16 md:p-6 md:pt-6 max-w-7xl mx-auto w-full">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeModule}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.15 }}
+            >
+              <ModuleContent activeModule={activeModule} />
+            </motion.div>
+          </AnimatePresence>
+        </div>
+        <footer className="mt-auto border-t bg-muted/30">
+          {/* Desktop: Four-column footer */}
+          <div className="hidden md:grid md:grid-cols-4 divide-x divide-border">
+            {/* Column 1: Logo + Tagline */}
+            <div className="px-6 py-5">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                  <span className="text-sm font-bold">U</span>
+                </div>
+                <span className="font-bold text-sm">UniLife</span>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+                Вся жизнь в одном месте. Отслеживайте дневник, финансы, питание и тренировки.
+              </p>
+            </div>
+
+            {/* Column 2: Quick Links */}
+            <div className="px-6 py-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Быстрые ссылки</h3>
+              <ul className="space-y-1">
+                {['Дневник', 'Финансы', 'Питание', 'Тренировки'].map((link) => (
+                  <li key={link}>
+                    <span className="text-xs text-muted-foreground hover:text-foreground transition cursor-pointer">
+                      {link}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 3: Modules */}
+            <div className="px-6 py-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Модули</h3>
+              <ul className="space-y-1">
+                {['Дневник', 'Финансы', 'Питание', 'Тренировки', 'Привычки', 'Коллекции'].map((link) => (
+                  <li key={link}>
+                    <span className="text-xs text-muted-foreground">
+                      {link}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Column 4: Version */}
+            <div className="px-6 py-5 text-right">
+              <p className="text-xs text-muted-foreground">
+                UniLife v1.0
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground/60">
+                Сделано с 💚
+              </p>
+            </div>
+          </div>
+
+          {/* Copyright bar */}
+          <div className="border-t px-6 py-2.5 flex items-center justify-center gap-1.5">
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-primary text-primary-foreground">
+              <span className="text-[9px] font-bold leading-none">U</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground/70">
+              © 2026 UniLife · Все права защищены
+            </p>
+          </div>
+
+          {/* Mobile: Simple centered footer */}
+          <div className="md:hidden px-4 py-3 text-center">
+            <p className="text-[11px] text-muted-foreground/70">
+              Сделано с 💚 · © 2026 UniLife · Все права защищены
+            </p>
+          </div>
+        </footer>
+      </main>
+    </div>
+  )
+}
