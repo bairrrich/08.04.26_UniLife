@@ -3,7 +3,7 @@
 import { useMemo, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Zap, TrendingUp } from 'lucide-react'
+import { Zap, TrendingUp, CheckCircle2, Circle } from 'lucide-react'
 import { AnimatedNumber } from '@/components/ui/animated-number'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
@@ -23,32 +23,26 @@ interface ProductivityScoreProps {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function getScoreColor(score: number): { stroke: string; text: string; bg: string; ring: string; barGradient: string } {
-  if (score >= 81) {
-    return {
-      stroke: 'stroke-yellow-500',
-      text: 'text-yellow-600 dark:text-yellow-400',
-      bg: 'bg-yellow-50 dark:bg-yellow-950/30',
-      ring: 'ring-yellow-500/20',
-      barGradient: 'bg-gradient-to-r from-yellow-400 to-amber-500',
-    }
-  }
-  if (score >= 61) {
+function getScoreColor(score: number): { stroke: string; text: string; bg: string; ring: string; barGradient: string; glowColor: string } {
+  // Green ≥80%, amber ≥50%, red <50%
+  if (score >= 80) {
     return {
       stroke: 'stroke-emerald-500',
       text: 'text-emerald-600 dark:text-emerald-400',
       bg: 'bg-emerald-50 dark:bg-emerald-950/30',
       ring: 'ring-emerald-500/20',
       barGradient: 'bg-gradient-to-r from-emerald-400 to-teal-500',
+      glowColor: 'shadow-emerald-500/30',
     }
   }
-  if (score >= 31) {
+  if (score >= 50) {
     return {
       stroke: 'stroke-amber-500',
       text: 'text-amber-600 dark:text-amber-400',
       bg: 'bg-amber-50 dark:bg-amber-950/30',
       ring: 'ring-amber-500/20',
       barGradient: 'bg-gradient-to-r from-amber-400 to-orange-500',
+      glowColor: 'shadow-amber-500/30',
     }
   }
   return {
@@ -57,23 +51,23 @@ function getScoreColor(score: number): { stroke: string; text: string; bg: strin
     bg: 'bg-red-50 dark:bg-red-950/30',
     ring: 'ring-red-500/20',
     barGradient: 'bg-gradient-to-r from-red-400 to-rose-500',
+    glowColor: 'shadow-red-500/30',
   }
 }
 
 function getScoreLabel(score: number): string {
-  if (score >= 81) return 'Мастер продуктивности'
-  if (score >= 61) return 'Восходящая звезда'
-  if (score >= 31) return 'Стабильный прогресс'
-  if (score >= 1) return 'Начало пути'
+  if (score >= 80) return 'Отличный день!'
+  if (score >= 50) return 'Хороший прогресс'
+  if (score >= 1) return 'Есть над чем работать'
   return 'Время действовать!'
 }
 
 function getStatusText(score: number): string {
   if (score >= 90) return 'Невероятный день! 🔥'
-  if (score >= 75) return 'Отличный день! ✨'
+  if (score >= 80) return 'Прекрасно! ✨'
   if (score >= 60) return 'Хороший день! 👍'
-  if (score >= 40) return 'Можно лучше 💪'
-  if (score >= 20) return 'Начни с малого 🌱'
+  if (score >= 50) return 'Неплохо! 💪'
+  if (score >= 25) return 'Можно лучше 🌱'
   return 'Время действовать! ⚡'
 }
 
@@ -232,11 +226,10 @@ export const ProductivityScore = memo(function ProductivityScore({
   const circumference = 2 * Math.PI * 54
   const dashOffset = circumference * (1 - score / 100)
 
-  // Sparkline color based on score
+  // Sparkline color based on score thresholds: green ≥80%, amber ≥50%, red <50%
   const sparkColor = useMemo(() => {
-    if (score >= 81) return '#eab308' // yellow
-    if (score >= 61) return '#10b981' // emerald
-    if (score >= 31) return '#f59e0b' // amber
+    if (score >= 80) return '#10b981' // emerald
+    if (score >= 50) return '#f59e0b' // amber
     return '#ef4444' // red
   }, [score])
 
@@ -245,11 +238,13 @@ export const ProductivityScore = memo(function ProductivityScore({
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Zap className="h-4 w-4 text-emerald-500" />
-            Продуктивность сегодня
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 shadow-sm shadow-emerald-500/20">
+              <Zap className="h-4 w-4 text-white" />
+            </div>
+            Продуктивность за сегодня
           </CardTitle>
           {!loading && (
-            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
+            <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
               {scoreLabel}
             </span>
           )}

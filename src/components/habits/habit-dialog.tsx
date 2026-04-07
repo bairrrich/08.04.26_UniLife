@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -172,6 +173,7 @@ export function HabitDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="sr-only">Создание или редактирование привычки</DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[70vh] pr-1">
           <div className="space-y-4 pt-2 pb-2">

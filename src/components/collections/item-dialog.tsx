@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -194,6 +195,7 @@ export function ItemDialog({
             <DialogTitle className="text-lg leading-snug">
               {isEditing ? 'Редактирование' : item.title}
             </DialogTitle>
+            <DialogDescription className="sr-only">Просмотр и редактирование элемента коллекции</DialogDescription>
             {!isEditing && item.author && (
               <p className="text-sm text-muted-foreground mt-0.5">
                 {item.author}

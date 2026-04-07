@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useAppStore } from '@/store/use-app-store'
 import { AppModule } from '@/store/use-app-store'
-import { LayoutDashboard, Settings2 } from 'lucide-react'
+import { LayoutDashboard, Settings2, CalendarDays, Flame, Target, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import {
   toDateStr,
@@ -16,6 +16,7 @@ import {
 } from '@/lib/format'
 
 import DashboardSection from './dashboard-section'
+import QuickInsightsCard from './quick-insights-card'
 
 import type {
   DiaryEntry,
@@ -573,6 +574,13 @@ export default function DashboardPage() {
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} icon={icon}>
             <QuickActions onNavigate={setActiveModule} />
+            {/* Quick Insights Card */}
+            <QuickInsightsCard
+              maxStreak={maxStreak}
+              diaryStreak={diaryStreak}
+              todayMood={todayMood}
+              loading={loading}
+            />
           </DashboardSection>
         )
 
@@ -728,15 +736,20 @@ export default function DashboardPage() {
   // ── Render ──────────────────────────────────────────────────────────
 
   return (
-    <div className="animate-slide-up space-y-6">
+    <div className="animate-slide-up space-y-8">
       {/* ── Page Header ────────────────────────────────────────────── */}
       <PageHeader
         icon={LayoutDashboard}
         title="Главная"
         description="Ваш личный центр управления жизнью"
         accent="emerald"
-        noBlobs
         compact
+        badge={
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200/50 bg-emerald-50/80 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-800/30 dark:bg-emerald-950/30 dark:text-emerald-400">
+            <CalendarDays className="h-3 w-3" />
+            {now.toLocaleDateString('ru-RU', { weekday: 'long' })}
+          </span>
+        }
         actions={
           <button
             type="button"

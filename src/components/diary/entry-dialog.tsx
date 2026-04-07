@@ -4,6 +4,7 @@ import React from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -90,6 +91,7 @@ export function EntryDialog({
               </>
             )}
           </DialogTitle>
+          <DialogDescription className="sr-only">Создание или редактирование записи в дневнике</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">

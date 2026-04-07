@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -304,6 +305,7 @@ export function SavingsGoalsManager() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Новая цель накопления</DialogTitle>
+            <DialogDescription className="sr-only">Создание новой цели для накопления средств</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -392,6 +394,7 @@ export function SavingsGoalsManager() {
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Пополнить цель</DialogTitle>
+            <DialogDescription className="sr-only">Добавление средств на счёт цели накопления</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">
@@ -425,6 +428,7 @@ export function SavingsGoalsManager() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Редактировать цель</DialogTitle>
+            <DialogDescription className="sr-only">Редактирование параметров цели накопления</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">

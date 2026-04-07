@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -185,6 +186,7 @@ export function GoalDialog({
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editingGoal ? 'Редактировать цель' : 'Новая цель'}</DialogTitle>
+          <DialogDescription className="sr-only">Создание или редактирование цели с этапами</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           {/* Preset Goal Templates — only shown when creating new goal */}

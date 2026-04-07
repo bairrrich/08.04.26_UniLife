@@ -52,14 +52,14 @@ export const AchievementBadge = memo(function AchievementBadge({
       className={cn(
         'group relative flex flex-col items-center gap-1.5 rounded-xl p-2.5 transition-all duration-200',
         earned
-          ? 'cursor-default bg-background shadow-sm hover:shadow-md'
-          : 'cursor-default bg-muted/40 opacity-60'
+          ? 'cursor-default bg-background shadow-sm hover:shadow-md hover-lift'
+          : 'cursor-default bg-muted/40 opacity-60 grayscale-[30%] hover:grayscale-0 hover:opacity-80 transition-all duration-300'
       )}
     >
       {/* Icon Circle */}
       <div
         className={cn(
-          'relative flex h-10 w-10 items-center justify-center rounded-full text-lg transition-transform duration-200',
+          'relative flex h-10 w-10 items-center justify-center rounded-full text-lg transition-all duration-200',
           earned
             ? cn(
                 'bg-gradient-to-br shadow-lg',
@@ -74,6 +74,11 @@ export const AchievementBadge = memo(function AchievementBadge({
           icon
         ) : (
           <Lock className="h-4 w-4 text-muted-foreground" />
+        )}
+
+        {/* Subtle glow effect for unlocked achievements */}
+        {earned && (
+          <div className="absolute -inset-1 rounded-full bg-gradient-to-br opacity-0 group-hover:opacity-40 blur-md transition-opacity duration-300" style={{ backgroundImage: 'inherit' }} />
         )}
 
         {/* Newly earned glow */}
@@ -119,7 +124,7 @@ export const AchievementBadge = memo(function AchievementBadge({
 
       {/* Earned badge */}
       {earned && !compact && (
-        <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[8px] shadow-sm">
+        <div className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-[8px] shadow-sm shadow-amber-500/30">
           ✓
         </div>
       )}

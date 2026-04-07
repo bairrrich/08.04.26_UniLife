@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -84,6 +85,7 @@ export function KeyboardShortcutsDialog() {
             <Keyboard className="h-5 w-5" />
             Клавиатурные сокращения
           </DialogTitle>
+          <DialogDescription className="sr-only">Список доступных клавиатурных сокращений для навигации</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-5">

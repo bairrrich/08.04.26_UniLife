@@ -4,6 +4,7 @@ import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -230,6 +231,7 @@ export function AddMealDialog({
             <UtensilsCrossed className="size-5 text-orange-500" />
             Добавить приём пищи
           </DialogTitle>
+          <DialogDescription className="sr-only">Добавление нового приёма пищи с указанием блюд и калорий</DialogDescription>
         </DialogHeader>
 
         <MealItemsForm
@@ -297,6 +299,7 @@ export function EditMealDialog({
             <Pencil className="size-5 text-orange-500" />
             Редактировать приём пищи
           </DialogTitle>
+          <DialogDescription className="sr-only">Редактирование существующего приёма пищи</DialogDescription>
         </DialogHeader>
 
         <MealItemsForm

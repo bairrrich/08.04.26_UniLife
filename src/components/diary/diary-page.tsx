@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -677,6 +678,7 @@ export default function DiaryPage() {
         <DialogContent className="sm:max-w-md rounded-xl">
           <DialogHeader>
             <DialogTitle>Удалить запись?</DialogTitle>
+            <DialogDescription className="sr-only">Подтверждение удаления записи из дневника</DialogDescription>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
             Это действие нельзя отменить. Запись будет удалена навсегда.

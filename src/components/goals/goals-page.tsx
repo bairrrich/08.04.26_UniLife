@@ -196,19 +196,25 @@ export default function GoalsPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <PageHeader
-        icon={Crosshair}
-        title="Цели"
-        description={
-          <span className="flex items-center gap-2 flex-wrap">
-            <span>Трекер целей и достижений</span>
-            <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
-              <Calendar className="h-3 w-3" />
-              {todayBadge}
-            </Badge>
-          </span>
-        }
-        accent="indigo"
+      <div className="relative overflow-hidden">
+        {/* Decorative gradient blobs — emerald/teal + amber/orange */}
+        <div className="pointer-events-none absolute -top-12 -left-12 h-40 w-40 rounded-full blur-3xl bg-gradient-to-br from-emerald-400/20 to-teal-500/20" />
+        <div className="pointer-events-none absolute -top-4 -right-8 h-32 w-32 rounded-full blur-3xl bg-gradient-to-br from-amber-400/15 to-orange-500/10" />
+        <div className="pointer-events-none absolute top-16 left-1/3 h-24 w-24 rounded-full blur-3xl bg-gradient-to-br from-teal-400/10 to-emerald-500/5" />
+        <PageHeader
+          icon={Crosshair}
+          title="Цели"
+          description={
+            <span className="flex items-center gap-2 flex-wrap">
+              <span>Трекер целей и достижений</span>
+              <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
+                <Calendar className="h-3 w-3" />
+                {todayBadge}
+              </Badge>
+            </span>
+          }
+          accent="emerald"
+          noBlobs
         actions={
           <div className="flex items-center gap-2 shrink-0">
             <CustomizeButton onClick={() => setCustomizerOpen(true)} />
@@ -237,7 +243,7 @@ export default function GoalsPage() {
                 )}
               </div>
             )}
-            <GoalDialog
+          <GoalDialog
               open={dialogOpen} onOpenChange={handleDialogChange}
               editingGoal={editingGoal}
               formTitle={formTitle} setFormTitle={setFormTitle}
@@ -256,7 +262,8 @@ export default function GoalsPage() {
             />
           </div>
         }
-      />
+        />
+      </div>
 
       {loading ? (
         <div className="space-y-6">

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -117,6 +118,7 @@ export function PostDialog({
               </Button>
             </div>
           </DialogTitle>
+          <DialogDescription className="sr-only">Создание новой записи в ленте</DialogDescription>
         </DialogHeader>
 
         {showPreview ? (

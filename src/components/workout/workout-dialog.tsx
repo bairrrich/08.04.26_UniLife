@@ -3,6 +3,7 @@
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -204,6 +205,7 @@ export function WorkoutDialog({
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="sr-only">Создание или редактирование тренировки с упражнениями</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           {showPresets && (

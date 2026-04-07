@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -168,6 +169,7 @@ export function AccountsManager() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Новый счёт</DialogTitle>
+            <DialogDescription className="sr-only">Создание нового финансового счёта</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-2">
             <div className="space-y-2">

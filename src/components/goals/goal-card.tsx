@@ -546,17 +546,21 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
                 >
                   <div
                     className={cn(
-                      'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all',
+                      'h-4 w-4 rounded border-2 flex items-center justify-center shrink-0 transition-all duration-300',
                       ms.completed
-                        ? 'bg-emerald-500 border-emerald-500 scale-110'
+                        ? 'bg-emerald-500 border-emerald-500 scale-110 shadow-sm shadow-emerald-500/30'
                         : 'border-muted-foreground/30 hover:border-muted-foreground/50',
                       ms.completed && 'animate-count-fade-in',
                     )}
                   >
-                    {ms.completed && <CheckCircle className="h-3 w-3 text-white" />}
+                    {ms.completed && (
+                      <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
                   </div>
                   <span className={cn(
-                    'text-[11px] flex-1 truncate',
+                    'text-[11px] flex-1 truncate transition-colors duration-300',
                     ms.completed && 'line-through text-muted-foreground',
                   )}>
                     {ms.title}
@@ -749,10 +753,12 @@ export function GoalCard({ goal, onEdit, onUpdateProgress, onComplete, onDelete 
           </div>
         </div>
       </CardContent>
-      {/* Left colored border accent — 3px */}
+      {/* Subtle gradient left border accent */}
       <div
-        className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl opacity-70"
-        style={{ backgroundColor: catConfig.borderColor }}
+        className="absolute left-0 top-0 bottom-0 w-1 rounded-l-xl opacity-80"
+        style={{
+          background: `linear-gradient(to bottom, ${catConfig.borderColor}, ${catConfig.borderColor}66)`,
+        }}
       />
 
       {/* ─── Thin full-width progress bar at very bottom ──────────────── */}

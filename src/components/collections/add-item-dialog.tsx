@@ -8,6 +8,7 @@ import { Star, ImageIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
@@ -81,6 +82,7 @@ export function AddItemDialog({
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Новый элемент</DialogTitle>
+          <DialogDescription className="sr-only">Добавление нового элемента в коллекцию</DialogDescription>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           {/* Type selector as 3x3 emoji grid */}

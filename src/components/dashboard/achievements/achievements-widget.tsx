@@ -242,6 +242,28 @@ function evaluateAchievement(
     case 'general_full_harmony':
       return { earned: activeDay, earnedAt: activeDay ? todayDateStr : null, current: activeDay ? 1 : 0, threshold: 1 }
 
+    // ── New Achievements ──
+    case 'week_streak':
+      return { earned: activeDayStreak >= 7, earnedAt: activeDayStreak >= 7 ? todayDateStr : null, current: activeDayStreak, threshold: 7 }
+
+    case 'bookworm_10':
+      return { earned: ctx.diaryEntries.length >= 10, earnedAt: ctx.diaryEntries.length >= 10 ? ctx.diaryEntries[Math.max(0, ctx.diaryEntries.length - 10)]?.date ?? null : null, current: ctx.diaryEntries.length, threshold: 10 }
+
+    case 'finance_guru':
+      return { earned: ctx.transactionsCount >= 50, earnedAt: ctx.transactionsCount >= 50 ? todayDateStr : null, current: ctx.transactionsCount, threshold: 50 }
+
+    case 'iron_will':
+      return { earned: weekWorkouts >= 10, earnedAt: weekWorkouts >= 10 ? todayDateStr : null, current: weekWorkouts, threshold: 10 }
+
+    case 'water_balance':
+      return { earned: ctx.waterTodayMl >= 2000, earnedAt: ctx.waterTodayMl >= 2000 ? todayDateStr : null, current: ctx.waterTodayMl, threshold: 2000 }
+
+    case 'goal_achiever':
+      return { earned: false, earnedAt: null, current: 0, threshold: 5 }
+
+    case 'perfect_day':
+      return { earned: ctx.allHabitsCompleted, earnedAt: ctx.allHabitsCompleted ? todayDateStr : null, current: ctx.allHabitsCompleted ? 1 : 0, threshold: 1 }
+
     default:
       return { earned: false, earnedAt: null, current: 0, threshold: 1 }
   }
@@ -379,7 +401,7 @@ export const AchievementsWidget = memo(function AchievementsWidget({
     [achievements]
   )
 
-  // ── Filtered achievements ──
+  // ── Filtered achievements (sorted: unlocked first, then locked) ──
   const filteredAchievements = useMemo(() => {
     const filtered = categoryFilter === 'all'
       ? achievements
@@ -422,8 +444,10 @@ export const AchievementsWidget = memo(function AchievementsWidget({
   }
 
   return (
-    <Card className="rounded-xl border">
-      <CardHeader className="pb-3">
+    <Card className="card-hover rounded-xl border overflow-hidden">
+      {/* Subtle gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 via-transparent to-emerald-500/5 pointer-events-none" />
+      <CardHeader className="pb-3 relative">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 shadow-sm">
@@ -440,9 +464,15 @@ export const AchievementsWidget = memo(function AchievementsWidget({
           </div>
         </div>
 
-        {/* Progress bar */}
-        <div className="mt-1 space-y-1.5">
-          <Progress value={progressPct} className="h-2 [&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:to-teal-500" />
+        {/* Progress bar — enhanced with gradient and label */}
+        <div className="mt-2 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-foreground">
+              {earnedCount} из {totalCount} разблокировано
+            </span>
+            <span className="text-xs tabular-nums font-semibold text-primary">{progressPct}%</span>
+          </div>
+          <Progress value={progressPct} className="h-2.5 [&>div]:bg-gradient-to-r [&>div]:from-emerald-500 [&>div]:via-teal-500 [&>div]:to-cyan-500 [&>div]:rounded-full" />
           <p className="text-xs text-muted-foreground">
             {earnedCount === totalCount
               ? '🎉 Все достижения получены!'
@@ -523,7 +553,7 @@ export const AchievementsWidget = memo(function AchievementsWidget({
 
         {/* Earned Achievements Grid */}
         {filteredAchievements.earned.length > 0 ? (
-          <div className="stagger-children grid grid-cols-3 gap-2 sm:grid-cols-4">
+          <div className="stagger-children grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-5">
             {filteredAchievements.earned.map((achievement) => (
               <AchievementBadge key={achievement.id} achievement={achievement} />
             ))}

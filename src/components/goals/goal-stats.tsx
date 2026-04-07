@@ -204,7 +204,7 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
   const ringCircumference = 2 * Math.PI * ringRadius
 
   return (
-    <>
+    <div className="animate-slide-up space-y-4">
       {/* Overall Progress Summary with Enhanced Ring */}
       <Card className="card-hover rounded-xl border overflow-hidden">
         {/* Subtle gradient header background */}
@@ -511,6 +511,6 @@ export function GoalStats({ goals, stats }: GoalStatsProps) {
           </CardContent>
         </Card>
       </div>
-    </>
+    </div>
   )
 }

@@ -3,7 +3,7 @@
 import React, { useCallback, memo, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion } from 'framer-motion'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,22 +92,17 @@ export default memo(function DashboardSection({
       </button>
 
       {/* ── Section Content ─────────────────────────────────── */}
-      <AnimatePresence initial={false}>
-        {!collapsed && (
-          <motion.div
-            key={id}
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden"
-          >
-            <div className="space-y-4 pt-1">
-              {children}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {!collapsed && (
+        <motion.div
+          key={id}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2 }}
+          className="space-y-4 pt-1"
+        >
+          {children}
+        </motion.div>
+      )}
     </div>
   )
 })
