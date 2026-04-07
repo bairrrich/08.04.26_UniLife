@@ -52,6 +52,17 @@ const MODULE_NAV_ITEMS: NavItemConfig[] = [
   { id: 'settings', label: 'Настройки', icon: Settings },
 ]
 
+const COUNT_LABELS: Record<string, string> = {
+  diary: 'Дневник',
+  finance: 'Финансы',
+  nutrition: 'Питание',
+  workout: 'Тренировки',
+  habits: 'Привычки',
+  goals: 'Цели',
+  collections: 'Коллекции',
+  feed: 'Лента',
+}
+
 function NavItem({
   item,
   isActive,
@@ -113,6 +124,28 @@ function MoreSheet({
   hasNewFeedPosts: boolean
 }) {
   const [open, setOpen] = useState(false)
+  const [counts, setCounts] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    async function fetchCounts() {
+      try {
+        const res = await fetch('/api/module-counts')
+        if (!res.ok || cancelled) return
+        const json = await res.json()
+        if (json.success && json.counts) {
+          setCounts(json.counts)
+        }
+      } catch {
+        // Silently fail
+      }
+    }
+    fetchCounts()
+    return () => { cancelled = true }
+  }, [open])
+
+  const totalCount = Object.values(counts).reduce((sum, c) => sum + c, 0)
 
   const handleNavigate = (id: AppModule) => {
     onNavigate(id)
@@ -159,27 +192,36 @@ function MoreSheet({
             {MODULE_NAV_ITEMS.map((item) => {
               const Icon = item.icon
               const isActive = activeModule === item.id
+              const count = counts[item.id]
               return (
-                <button
+                <motion.button
                   key={item.id}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
-                    'active-press glass-card flex flex-col items-center justify-center gap-2.5 rounded-xl p-4 transition-all duration-200',
+                    'glass-card flex flex-col items-center justify-center gap-2.5 rounded-xl p-4 transition-all duration-200',
                     isActive
                       ? 'bg-primary/10 text-primary ring-1 ring-primary/20'
                       : 'hover:bg-accent text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <div className={cn(
-                    'flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
-                    isActive ? 'bg-primary/15' : 'bg-muted'
-                  )}>
-                    <Icon className="h-5 w-5" />
+                  <div className="relative">
+                    <div className={cn(
+                      'flex h-11 w-11 items-center justify-center rounded-lg transition-colors',
+                      isActive ? 'bg-primary/15' : 'bg-muted'
+                    )}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    {count !== undefined && count > 0 && (
+                      <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold px-1 shadow-sm">
+                        {count > 99 ? '99+' : count}
+                      </span>
+                    )}
                   </div>
                   <span className="text-xs font-medium truncate w-full text-center">
                     {item.label}
                   </span>
-                </button>
+                </motion.button>
               )
             })}
           </div>
@@ -194,12 +236,14 @@ function MoreSheet({
             {MAIN_NAV_ITEMS.slice(0, 5).map((item) => {
               const Icon = item.icon
               const isActive = activeModule === item.id
+              const count = counts[item.id]
               return (
-                <button
+                <motion.button
                   key={item.id}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
-                    'active-press flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200',
+                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 transition-all duration-200',
                     isActive
                       ? 'bg-primary/10 text-primary ring-1 ring-primary/20'
                       : 'text-muted-foreground/60 hover:text-foreground hover:bg-muted/50'
@@ -209,9 +253,39 @@ function MoreSheet({
                   <span className="text-[11px] font-medium">
                     {item.label}
                   </span>
-                </button>
+                  {count !== undefined && count > 0 && (
+                    <span className="ml-0.5 min-w-[16px] h-[16px] flex items-center justify-center rounded-full bg-primary/15 text-primary text-[9px] font-bold px-1">
+                      {count > 99 ? '99' : count}
+                    </span>
+                  )}
+                </motion.button>
               )
             })}
+
+          {/* Statistics Summary */}
+          {totalCount > 0 && (
+            <div className="mt-3 rounded-xl bg-gradient-to-r from-primary/5 to-primary/10 p-3 border border-primary/10">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[10px] uppercase tracking-wider text-muted-foreground/60 font-semibold">
+                  Статистика
+                </span>
+                <span className="text-xs font-bold text-primary tabular-nums">{totalCount} записей</span>
+              </div>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1">
+                {Object.entries(counts)
+                  .filter(([, v]) => v > 0)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([key, value]) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">
+                        {COUNT_LABELS[key] || key}
+                      </span>
+                      <span className="text-[10px] font-semibold tabular-nums">{value}</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
           </div>
         </div>
       </SheetContent>

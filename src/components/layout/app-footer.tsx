@@ -50,6 +50,12 @@ const MODULE_SHORTCUTS: { module: 'diary' | 'finance' | 'nutrition' | 'workout' 
   { module: 'collections', icon: Library, gradient: 'bg-gradient-to-br from-cyan-400 to-teal-500' },
 ]
 
+const KEYBOARD_SHORTCUTS = [
+  { keys: ['⌘', 'K'], description: 'Поиск' },
+  { keys: ['⌘', '1–5'], description: 'Навигация' },
+  { keys: ['⌘', 'D'], description: 'Новая запись' },
+]
+
 const STATS_ITEMS = [
   { key: 'diary' as const, label: 'записей', icon: BookOpen, iconColor: 'text-emerald-500' },
   { key: 'workout' as const, label: 'тренировок', icon: Activity, iconColor: 'text-sky-500' },
@@ -131,7 +137,7 @@ const Footer = memo(function Footer() {
         </div>
 
         {/* Modules column */}
-        <div className="col-span-3 px-6 py-5">
+        <div className="col-span-2 px-6 py-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
             Модули
           </h3>
@@ -153,8 +159,32 @@ const Footer = memo(function Footer() {
           </ul>
         </div>
 
+        {/* Keyboard shortcuts column */}
+        <div className="col-span-2 px-6 py-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
+            Горячие клавиши
+          </h3>
+          <ul className="space-y-2">
+            {KEYBOARD_SHORTCUTS.map((shortcut) => (
+              <li key={shortcut.description} className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="inline-flex items-center gap-0.5">
+                  {shortcut.keys.map((key, i) => (
+                    <kbd
+                      key={`${key}-${i}`}
+                      className="inline-flex h-5 min-w-5 items-center justify-center rounded border border-border bg-muted px-1 font-mono text-[10px] font-medium leading-none text-foreground/80"
+                    >
+                      {key}
+                    </kbd>
+                  ))}
+                </span>
+                <span>{shortcut.description}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
         {/* Stats column */}
-        <div className="col-span-3 px-6 py-5">
+        <div className="col-span-2 px-6 py-5">
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2.5">
             Статистика
           </h3>
@@ -199,6 +229,14 @@ const Footer = memo(function Footer() {
               </button>
             )
           })}
+        </div>
+        {/* Keyboard shortcut hint — mobile compact badge */}
+        <div className="flex items-center justify-center mb-2">
+          <button className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[10px] text-muted-foreground">
+            <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-border bg-background px-0.5 font-mono text-[9px] font-medium text-foreground/70">⌘</kbd>
+            <kbd className="inline-flex h-4 min-w-4 items-center justify-center rounded border border-border bg-background px-0.5 font-mono text-[9px] font-medium text-foreground/70">K</kbd>
+            <span className="ml-0.5">Поиск</span>
+          </button>
         </div>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

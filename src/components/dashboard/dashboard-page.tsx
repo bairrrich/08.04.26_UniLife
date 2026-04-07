@@ -48,6 +48,7 @@ const smallLoad = () => <div className="h-[100px] rounded-xl skeleton-shimmer" /
 
 // ─── Lazy-loaded Widgets ──────────────────────────────────────────────
 const WelcomeWidget = dynamic(() => import('./welcome-widget'), { ssr: false, loading: widgetLoad })
+const MotivationalBanner = dynamic(() => import('./motivational-banner'), { ssr: false, loading: smallLoad })
 
 const ProductivityScore = dynamic(() => import('./productivity-score'), { ssr: false, loading: widgetLoad })
 const StatCards = dynamic(() => import('./stat-cards'), { ssr: false, loading: widgetLoad })
@@ -803,6 +804,13 @@ export default function DashboardPage() {
         todayWorkoutDone={todayWorkout}
         habitsCompletedToday={completedToday}
         habitsTotal={totalActive}
+      />
+
+      {/* ── Motivational Banner ───────────────────────────────────── */}
+      <MotivationalBanner
+        diaryStreak={diaryStreak}
+        workoutStreak={workoutStreak}
+        habitsStreak={habitsStreak}
       />
 
       {/* ── Configurable Sections ──────────────────────────────────── */}

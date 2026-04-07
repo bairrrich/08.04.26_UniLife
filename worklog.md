@@ -11248,3 +11248,54 @@ Stage Summary:
 8. **Advanced Analytics** — Weekly/monthly trend reports
 9. **Data Import Enhancement** — CSV import support
 10. **Budget Alerts** — In-app budget threshold notifications
+
+---
+## Task ID: qa-round-8-scrollto-footer-mobile-notifications-banner
+### Agent: main-coordinator
+### Task: QA testing, styling improvements (scroll-to-top, footer, mobile nav, notifications), new features (motivational banner)
+
+### Current Project Status Assessment:
+- **Overall Health**: ✅ Stable — all 11+ modules render correctly
+- **Database**: SQLite via Prisma with 15+ models
+- **Lint**: 0 errors, 157 warnings (all pre-existing `no-console`)
+- **Build**: All routes compile successfully via Turbopack
+- **APIs**: All tested endpoints returning HTTP 200
+
+### Completed This Round:
+
+#### Bug Fixes
+1. **Motivational Banner lint error**: Fixed `Calling setState synchronously within an effect` by replacing `useEffect(() => { setMounted(true) }, [])` with `useState(() => typeof window !== 'undefined')` lazy initializer
+
+#### Styling Improvements (Mandatory)
+1. **Scroll-to-Top with Progress Ring**: Replaced simple circle button with SVG circular progress ring (stroke-dasharray/dashoffset). Ring fills as user scrolls, primary color stroke with muted background, smooth CSS transition. Button hidden when progress < 5%. ArrowUp icon centered inside ring.
+2. **Footer with Keyboard Shortcuts**: Added "Горячие клавиши" column to desktop footer showing ⌘K Поиск, ⌘1-5 Навигация, ⌘D Новая запись with styled `<kbd>` elements. Mobile shows compact ⌘K Поиск pill badge.
+3. **Mobile Nav More Sheet Enhancement**: Module counts from `/api/module-counts` displayed as small badges next to each module. "Статистика" summary card at bottom showing total items across modules. All buttons use `motion.button` with `whileTap={{ scale: 0.95 }}` haptic feedback.
+
+#### New Features (Mandatory)
+1. **Dashboard Motivational Banner**: Dynamic greeting based on time of day (morning/afternoon/evening/night) with matching gradient backgrounds. 18 Russian motivational quotes stored in localStorage (one per day). Streak counter badges (diary, workout, habits) with 🔥 for streaks > 3. Decorative floating gradient blobs, skeleton loading state, dark mode support.
+2. **Enhanced Notification Panel**: Real contextual notifications fetched from habits, water, and diary APIs. Habit reminders (X привычек ждут выполнения), water reminder (when < 4 glasses), diary/workout streak notifications (3+ days). "Mark all as read" button, localStorage persistence, unread count badge.
+
+### Files Changed:
+- **New**: `/src/components/dashboard/motivational-banner.tsx` (motivational banner widget)
+- **Modified**: `/src/components/layout/scroll-to-top.tsx` (SVG progress ring)
+- **Modified**: `/src/components/layout/app-footer.tsx` (keyboard shortcuts column)
+- **Modified**: `/src/components/layout/mobile-nav.tsx` (module counts, haptic feedback)
+- **Modified**: `/src/components/notifications/notifications-panel.tsx` (contextual notifications)
+- **Modified**: `/src/components/dashboard/dashboard-page.tsx` (banner integration)
+
+### Verification Results:
+- ✅ ESLint: 0 errors, 157 warnings (all pre-existing `no-console`)
+- ✅ Dev server: compiles cleanly, GET / returns HTTP 200
+- ✅ All existing functionality preserved — no breaking changes
+
+### Unresolved Issues / Next Phase Priorities:
+1. **User Authentication** — NextAuth.js for multi-user support (highest priority)
+2. **PWA Support** — Service worker + manifest for mobile install
+3. **Image Upload** — Photo support for diary entries and collection items
+4. **Real-time Updates** — WebSocket/SSE for live feed
+5. **Offline Support** — Service worker caching
+6. **Push Notifications** — In-app notification system
+7. **Localization** — i18n support for multiple languages
+8. **Advanced Analytics** — Weekly/monthly trend reports
+9. **Data Import Enhancement** — CSV import support
+10. **Budget Alerts** — In-app budget threshold notifications

@@ -24,6 +24,7 @@ import {
   Check,
   RefreshCw,
   Bell,
+  Target,
 } from 'lucide-react'
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -90,6 +91,7 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Dumbbell,
   Trophy,
   Bell,
+  Target,
 }
 
 // ── Relative time formatting ──────────────────────────────────────────
@@ -113,6 +115,137 @@ function formatRelativeTime(dateStr: string): string {
     'июл', 'авг', 'сен', 'окт', 'ноя', 'дек',
   ]
   return `${date.getDate()} ${months[date.getMonth()]}`
+}
+
+// ── Pluralization & Streak helpers ────────────────────────────────────
+
+function pluralize(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(n)
+  const mod10 = abs % 10
+  const mod100 = abs % 100
+  if (mod10 === 1 && mod100 !== 11) return one
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few
+  return many
+}
+
+function computeStreak(dates: Date[]): number {
+  if (dates.length === 0) return 0
+  const dateSet = new Set<string>()
+  for (const d of dates) {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    dateSet.add(key)
+  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+  let checkDate = new Date(today)
+  if (!dateSet.has(todayKey)) {
+    checkDate.setDate(checkDate.getDate() - 1)
+  }
+  let streak = 0
+  for (let i = 0; i < 365; i++) {
+    const target = new Date(checkDate)
+    target.setDate(target.getDate() - i)
+    const key = `${target.getFullYear()}-${String(target.getMonth() + 1).padStart(2, '0')}-${String(target.getDate()).padStart(2, '0')}`
+    if (dateSet.has(key)) {
+      streak++
+    } else {
+      break
+    }
+  }
+  return streak
+}
+
+async function fetchContextualNotifications(): Promise<NotificationItem[]> {
+  const notifications: NotificationItem[] = []
+  const now = new Date()
+
+  try {
+    const [habitsRes, waterRes, diaryRes, workoutRes] = await Promise.all([
+      fetch('/api/habits').then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/nutrition/water').then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/diary').then((r) => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/workout').then((r) => r.ok ? r.json() : null).catch(() => null),
+    ])
+
+    // Habit reminders — uncompleted habits today
+    if (habitsRes?.success && Array.isArray(habitsRes.data)) {
+      const uncompleted = habitsRes.data.filter((h: { todayCompleted: boolean }) => !h.todayCompleted).length
+      if (uncompleted > 0) {
+        notifications.push({
+          id: `ctx-habits-pending-${Date.now()}`,
+          type: 'reminder',
+          title: `${uncompleted} ${pluralize(uncompleted, 'привычка', 'привычки', 'привычек')} ждут выполнения`,
+          description: 'Не забудьте выполнить свои привычки на сегодня. Каждое маленькое действие приближает к цели.',
+          icon: 'Target',
+          module: 'habits',
+          actionUrl: '/?module=habits',
+          createdAt: now.toISOString(),
+          read: false,
+        })
+      }
+    }
+
+    // Water reminder — if < 4 glasses
+    if (waterRes?.success && waterRes.data) {
+      const glasses = waterRes.data.glasses ?? 0
+      if (glasses < 4) {
+        notifications.push({
+          id: `ctx-water-${Date.now()}`,
+          type: 'reminder',
+          title: 'Не забудьте попить воды \uD83D\uDCA7',
+          description: `Вы выпили только ${glasses} из 8 стаканов. Регулярное питьё воды — залог здоровья и энергии.`,
+          icon: 'Droplets',
+          module: 'nutrition',
+          actionUrl: '/?module=nutrition',
+          createdAt: now.toISOString(),
+          read: false,
+        })
+      }
+    }
+
+    // Diary streak — 3+ consecutive days
+    if (diaryRes?.data && Array.isArray(diaryRes.data)) {
+      const dates = diaryRes.data.map((e: { date: string }) => new Date(e.date))
+      const streak = computeStreak(dates)
+      if (streak >= 3) {
+        notifications.push({
+          id: `ctx-diary-streak-${Date.now()}`,
+          type: 'success',
+          title: `Серия дневника: ${streak} дней \uD83D\uDD25`,
+          description: 'Вы ведёте дневник уже несколько дней подряд. Отличная дисциплина!',
+          icon: 'BookOpen',
+          module: 'diary',
+          actionUrl: '/?module=diary',
+          createdAt: now.toISOString(),
+          read: false,
+        })
+      }
+    }
+
+    // Workout streak — 3+ consecutive days
+    if (workoutRes?.success && Array.isArray(workoutRes.data)) {
+      const dates = workoutRes.data.map((w: { date: string }) => new Date(w.date))
+      const streak = computeStreak(dates)
+      if (streak >= 3) {
+        notifications.push({
+          id: `ctx-workout-streak-${Date.now()}`,
+          type: 'success',
+          title: `Серия тренировок: ${streak} дней \uD83D\uDCAA`,
+          description: 'Отличная серия! Продолжайте тренироваться регулярно.',
+          icon: 'Dumbbell',
+          module: 'workout',
+          actionUrl: '/?module=workout',
+          createdAt: now.toISOString(),
+          read: false,
+        })
+      }
+    }
+  } catch {
+    // Silently fail — contextual notifications are optional enhancements
+  }
+
+  return notifications
 }
 
 // ── Skeleton Loader ────────────────────────────────────────────────────
@@ -156,6 +289,27 @@ function EmptyState() {
       </h3>
       <p className="text-xs text-muted-foreground/60 max-w-[200px]">
         Все в порядке! Новые уведомления появятся здесь автоматически.
+      </p>
+    </div>
+  )
+}
+
+// ── All Read State ─────────────────────────────────────────────────────
+
+function AllReadState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+      <div className="relative mb-4">
+        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/20 to-primary/20 blur-sm" />
+        <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-muted/50">
+          <Check className="h-8 w-8 text-emerald-500/60" />
+        </div>
+      </div>
+      <h3 className="text-sm font-semibold text-muted-foreground mb-1">
+        Всё прочитано
+      </h3>
+      <p className="text-xs text-muted-foreground/60 max-w-[200px]">
+        Новых уведомлений нет. Вы в курсе всех событий!
       </p>
     </div>
   )
@@ -294,7 +448,7 @@ export function NotificationsPanel({
   const scrollRef = useRef<HTMLDivElement>(null)
   const touchStartRef = useRef<number | null>(null)
 
-  // Fetch notifications
+  // Fetch notifications (API + contextual client-side)
   const fetchNotifications = useCallback(async (isRefresh = false) => {
     if (isRefresh) {
       setRefreshing(true)
@@ -303,11 +457,37 @@ export function NotificationsPanel({
     }
 
     try {
-      const res = await fetch('/api/notifications')
-      const json = await res.json()
-      if (json.success && json.data) {
-        setData(json.data)
+      const [apiResult, contextual] = await Promise.all([
+        fetch('/api/notifications')
+          .then((r) => r.ok ? r.json() : null)
+          .catch(() => null),
+        fetchContextualNotifications(),
+      ])
+
+      const apiData = apiResult?.success && apiResult?.data
+        ? apiResult.data as NotificationsData
+        : null
+
+      // Merge: contextual notifications first, then API (deduplicate by icon+module)
+      const seen = new Set<string>()
+      const merged: NotificationItem[] = []
+      for (const ctx of contextual) {
+        merged.push(ctx)
+        seen.add(`${ctx.icon}-${ctx.module}`)
       }
+      if (apiData?.notifications) {
+        for (const n of apiData.notifications) {
+          const key = `${n.icon}-${n.module}`
+          if (!seen.has(key)) {
+            merged.push(n)
+          }
+        }
+      }
+
+      setData({
+        notifications: merged,
+        unreadCount: merged.length,
+      })
     } catch (err) {
       console.error('Failed to fetch notifications:', err)
     } finally {
@@ -454,7 +634,11 @@ export function NotificationsPanel({
             <div className="p-3">
               <SkeletonList />
             </div>
-          ) : data && data.notifications.length > 0 ? (
+          ) : !data || data.notifications.length === 0 ? (
+            <EmptyState />
+          ) : unreadCount === 0 ? (
+            <AllReadState />
+          ) : (
             <div className="p-3 space-y-1 animate-fade-in stagger-children">
               {Object.entries(grouped).map(([type, items]) => (
                 <div key={type}>
@@ -485,8 +669,6 @@ export function NotificationsPanel({
                 </div>
               )}
             </div>
-          ) : (
-            <EmptyState />
           )}
         </div>
 
