@@ -14,6 +14,8 @@ export async function GET() {
       postCount,
       commentCount,
       likeCount,
+      habitCount,
+      goalCount,
     ] = await Promise.all([
       db.diaryEntry.count({ where: { userId: DEMO_USER_ID } }),
       db.transaction.count({ where: { userId: DEMO_USER_ID } }),
@@ -25,6 +27,8 @@ export async function GET() {
       db.post.count({ where: { userId: DEMO_USER_ID } }),
       db.comment.count(),
       db.like.count(),
+      db.habit.count({ where: { userId: DEMO_USER_ID } }),
+      db.goal.count({ where: { userId: DEMO_USER_ID } }),
     ])
 
     const totalRecords =
@@ -37,7 +41,9 @@ export async function GET() {
       collectionCount +
       postCount +
       commentCount +
-      likeCount
+      likeCount +
+      habitCount +
+      goalCount
 
     // Rough storage estimate: ~500 bytes per record on average
     const storageEstimateKB = Math.round(totalRecords * 0.5)
@@ -54,6 +60,8 @@ export async function GET() {
         posts: postCount,
         comments: commentCount,
         likes: likeCount,
+        habits: habitCount,
+        goals: goalCount,
       },
       totalRecords,
       storageEstimateKB,

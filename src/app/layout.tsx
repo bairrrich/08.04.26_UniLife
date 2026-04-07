@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/layout/theme-provider";
+import { ScrollProgress } from "@/components/layout/scroll-progress";
 // ServiceWorkerRegistration is only imported in production builds
 
 const geistSans = Geist({
@@ -49,6 +50,7 @@ export default function RootLayout({
           enableSystem={true}
           disableTransitionOnChange
         >
+          <ScrollProgress />
           {children}
           <SonnerToaster richColors position="top-right" />
           {/* Service worker registration removed for dev stability */}

@@ -19,6 +19,9 @@ export const DEFAULT_SECTIONS: WidgetSectionConfig[] = [
   { id: 'inspiration', title: 'Вдохновение', icon: '✨', defaultCollapsed: true, defaultVisible: true, defaultOrder: 8 },
   { id: 'tools', title: 'Инструменты', icon: '🛠️', defaultCollapsed: true, defaultVisible: true, defaultOrder: 9 },
   { id: 'activity', title: 'Активность и цели', icon: '🎯', defaultCollapsed: true, defaultVisible: true, defaultOrder: 10 },
+  { id: 'mood-recommendations', title: 'Рекомендации по настроению', icon: '💭', defaultCollapsed: true, defaultVisible: true, defaultOrder: 11 },
+  { id: 'data-stats', title: 'Ваша активность', icon: '📊', defaultCollapsed: true, defaultVisible: true, defaultOrder: 12 },
+  { id: 'tips-carousel', title: 'Советы дня', icon: '💡', defaultCollapsed: true, defaultVisible: true, defaultOrder: 13 },
 ]
 
 const STORAGE_KEY = 'unilife-widget-config'

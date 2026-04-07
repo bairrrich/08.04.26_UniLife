@@ -1,10 +1,12 @@
 'use client'
 
-import { memo } from 'react'
+import { memo, useState, useEffect, useCallback } from 'react'
 import { useAppStore } from '@/store/use-app-store'
 import { useModuleCounts } from '@/lib/module-counts'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   Plus,
   Dumbbell,
@@ -17,7 +19,7 @@ import {
   Library,
   Flag,
   BarChart3,
-  Settings,
+  ArrowUp,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -68,6 +70,23 @@ const Footer = memo(function Footer() {
   const setActiveModule = useAppStore((s) => s.setActiveModule)
   const counts = useModuleCounts()
   const isLoading = Object.keys(counts).length === 0
+  const currentYear = new Date().getFullYear()
+
+  // Back-to-top visibility
+  const [showBackToTop, setShowBackToTop] = useState(false)
+
+  const handleScroll = useCallback(() => {
+    setShowBackToTop(window.scrollY > 300)
+  }, [])
+
+  useEffect(() => {
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [handleScroll])
+
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [])
 
   return (
     <footer className="mt-auto border-t bg-muted/30 pb-20 md:pb-0">
@@ -243,7 +262,10 @@ const Footer = memo(function Footer() {
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
               <span className="text-[8px] font-bold leading-none">U</span>
             </div>
-            <span className="text-xs font-bold">UniLife</span>
+            <div className="flex flex-col">
+              <span className="text-xs font-bold leading-none">UniLife</span>
+              <span className="text-[9px] text-muted-foreground/60 leading-none mt-0.5">v1.0</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {STATS_ITEMS.slice(0, 3).map((stat) => {
@@ -256,18 +278,42 @@ const Footer = memo(function Footer() {
               )
             })}
           </div>
-          <p className="text-[10px] text-muted-foreground/50">© 2026</p>
+          <p className="text-[10px] text-muted-foreground/50">© {currentYear}</p>
         </div>
       </div>
 
       {/* Desktop footer - full */}
-      <div className="hidden md:flex border-t px-6 py-2.5 items-center justify-center gap-2">
-        <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
-          <span className="text-[9px] font-bold leading-none">U</span>
+      <div className="hidden md:flex border-t px-6 py-2.5 items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="flex h-4 w-4 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-teal-500 text-primary-foreground">
+            <span className="text-[9px] font-bold leading-none">U</span>
+          </div>
+          <p className="text-[11px] text-muted-foreground/70">
+            UniLife v1.0 · © {currentYear} · Все права защищены
+          </p>
         </div>
-        <p className="text-[11px] text-muted-foreground/70">
-          © 2026 UniLife · Все права защищены
-        </p>
+
+        {/* Back to top button */}
+        <AnimatePresence>
+          {showBackToTop && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.2 }}
+            >
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={scrollToTop}
+                className="h-7 gap-1.5 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+                Наверх
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </footer>
   )

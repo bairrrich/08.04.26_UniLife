@@ -88,6 +88,10 @@ const RecentGoals = dynamic(() => import('./recent-goals-widget'), { ssr: false,
 const RecentDiary = dynamic(() => import('./recent-diary-widget'), { ssr: false, loading: widgetLoad })
 
 const WeeklyChallengeWidget = dynamic(() => import('./weekly-challenge-widget'), { ssr: false, loading: widgetLoad })
+
+const MoodRecommendations = dynamic(() => import('./mood-recommendations'), { ssr: false, loading: widgetLoad })
+const DataStatsWidget = dynamic(() => import('./data-stats-widget'), { ssr: false, loading: widgetLoad })
+const TipsCarousel = dynamic(() => import('./tips-carousel'), { ssr: false, loading: widgetLoad })
 const DailyTipsWidget = dynamic(() => import('./daily-tips-widget'), { ssr: false, loading: widgetLoad })
 const DailyChecklistWidget = dynamic(() => import('./daily-checklist-widget'), { ssr: false, loading: widgetLoad })
 
@@ -714,7 +718,6 @@ export default function DashboardPage() {
               recentMoods={recentMoods}
               weekExpenseSum={weekExpenseSum}
             />
-            <DailyTipsWidget />
             <DailyInspiration />
           </DashboardSection>
         )
@@ -765,6 +768,27 @@ export default function DashboardPage() {
               <RecentGoals />
               <RecentDiary loading={loading} diaryEntries={diaryEntries} />
             </div>
+          </DashboardSection>
+        )
+
+      case 'mood-recommendations':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <MoodRecommendations todayMood={todayMood} />
+          </DashboardSection>
+        )
+
+      case 'data-stats':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <DataStatsWidget />
+          </DashboardSection>
+        )
+
+      case 'tips-carousel':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <TipsCarousel />
           </DashboardSection>
         )
 
