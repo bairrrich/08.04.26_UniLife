@@ -624,6 +624,7 @@ export default function DiaryPage() {
               selectedDate={selectedDate}
               entriesForSelectedDate={entriesForSelectedDate}
               selectedEntry={selectedEntry}
+              allEntries={entries}
               onEntrySelect={setSelectedEntry}
               onEditClick={(entry) => {
                 setSelectedEntry(entry)
@@ -634,6 +635,10 @@ export default function DiaryPage() {
                 setShowDeleteDialog(true)
               }}
               onNewEntryClick={openNewEntryDialog}
+              onNavigateEntry={(entry) => {
+                setSelectedDate(parseEntryDate(entry.date))
+                setSelectedEntry(entry)
+              }}
             />
           </div>
         </div>

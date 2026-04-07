@@ -8,6 +8,16 @@ import { RU_DAYS_SHORT, MOOD_DOT_COLORS, MOOD_EMOJI, MOOD_LABELS } from '@/lib/f
 import { DiaryEntry, CalendarCell } from './types'
 import { getDaysInMonth, getFirstDayOfMonth, formatDateKey } from './helpers'
 
+// ─── Mood cell background tints ────────────────────────────────────────────
+
+const MOOD_CELL_BG: Record<number, string> = {
+  1: 'bg-rose-50 dark:bg-rose-950/30',
+  2: 'bg-amber-50 dark:bg-amber-950/30',
+  3: 'bg-yellow-50/60 dark:bg-yellow-950/20',
+  4: 'bg-lime-50 dark:bg-lime-950/30',
+  5: 'bg-emerald-50 dark:bg-emerald-950/30',
+}
+
 // ─── Streak calculation ─────────────────────────────────────────────────────
 
 /** Returns a Set of date keys (yyyy-MM-dd) that are part of a streak ≥ minStreak */
@@ -205,19 +215,21 @@ export function CalendarView({
                 type="button"
                 onClick={() => onDayClick(cell)}
                 className={cn(
-                  'h-10 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm relative transition-all duration-200',
+                  'h-10 sm:h-12 w-full flex flex-col items-center justify-center rounded-lg text-xs sm:text-sm relative transition-all duration-200 hover:scale-125',
                   'heatmap-cell',
                   !isCurrentMonth && 'text-muted-foreground/30',
-                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent hover:scale-105 hover:shadow-sm',
-                  isCurrentMonth && !isSelected && hasEntries && 'hover:bg-primary/10 hover:scale-110 hover:shadow-lg',
-                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 scale-105 shadow-lg shadow-primary/25',
-                  // Enhanced today highlight
-                  isToday && !isSelected && 'ring-2 ring-primary ring-offset-2 ring-offset-background font-bold bg-primary/5 dark:bg-primary/10',
-                  hasEntries && !isSelected && 'bg-accent/50'
+                  isCurrentMonth && !isSelected && !hasEntries && 'hover:bg-accent hover:shadow-sm',
+                  isCurrentMonth && !isSelected && hasEntries && primaryMood && MOOD_CELL_BG[primaryMood],
+                  isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 hover:scale-110 shadow-lg shadow-primary/25',
+                  isToday && !isSelected && 'font-bold bg-primary/5 dark:bg-primary/10'
                 )}
               >
+                {/* Pulsing ring for today */}
+                {isToday && !isSelected && (
+                  <span className="absolute inset-0 rounded-lg ring-2 ring-primary/60 animate-pulse pointer-events-none" />
+                )}
                 <span className={cn(
-                  'text-sm tabular-nums',
+                  'text-sm tabular-nums relative z-10',
                   isToday && !isSelected && 'text-primary'
                 )}>
                   {cell.day}

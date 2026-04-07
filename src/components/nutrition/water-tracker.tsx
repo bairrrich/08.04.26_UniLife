@@ -74,6 +74,15 @@ function ConfettiParticles({ active }: { active: boolean }) {
   )
 }
 
+// Motivational messages based on water progress
+function getWaterMessage(pct: number): string {
+  if (pct >= 100) return 'Отличная гидратация! 🎉'
+  if (pct >= 76) return 'Почти у цели! 💧💧💧💧'
+  if (pct >= 51) return 'Отличный прогресс! 💧💧💧'
+  if (pct >= 26) return 'Хорошее начало, продолжайте! 💧💧'
+  return 'Начните пить воду! 💧'
+}
+
 export function WaterTracker({
   waterStats,
   waterAnimating,
@@ -85,16 +94,21 @@ export function WaterTracker({
   const waterGoal = goals?.dailyWater ?? 2000
   const totalGlasses = Math.ceil(waterGoal / DEFAULT_GLASS_ML)
   const goalReached = waterStats.percentage >= 100
+  const waterMessage = getWaterMessage(waterStats.percentage)
 
   // Track which glass is filling — derived from waterAnimating state
   const fillingGlassIndex = waterAnimating ? waterStats.glasses - 1 : -1
 
   return (
-    <Card className={`mb-6 relative transition-all duration-700 ${goalReached ? 'ring-2 ring-blue-400/60 shadow-lg shadow-blue-500/20 dark:ring-blue-500/40 dark:shadow-blue-500/10' : ''}`}>
+    <Card className={`mb-6 relative transition-all duration-700 overflow-hidden ${goalReached ? 'ring-2 ring-blue-400/60 shadow-lg shadow-blue-500/20 dark:ring-blue-500/40 dark:shadow-blue-500/10' : ''}`}>
+      {/* Slow-moving wave gradient background */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="water-wave absolute -inset-[200%] w-[400%] h-[400%] opacity-[0.03] dark:opacity-[0.05] bg-gradient-to-r from-blue-400 via-cyan-300 to-blue-500 rounded-full blur-3xl" />
+      </div>
       {/* Confetti overlay */}
       <ConfettiParticles active={goalReached} />
 
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 relative z-10">
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-base">
             <Droplets className="size-5 text-blue-500" />
@@ -119,7 +133,7 @@ export function WaterTracker({
           )}
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="relative z-10">
         {/* Prominent total ml display */}
         <div className="mb-3 flex items-center justify-between">
           <p className="text-lg font-bold tabular-nums">
@@ -203,8 +217,13 @@ export function WaterTracker({
           />
         </div>
 
+        {/* Motivational message */}
+        <p className="mt-2 text-center text-sm font-medium text-blue-600 dark:text-blue-400 transition-all duration-500">
+          {waterMessage}
+        </p>
+
         {/* Daily progress summary */}
-        <p className="mt-2 text-center text-xs text-muted-foreground">
+        <p className="mt-1 text-center text-xs text-muted-foreground">
           <span className="font-semibold tabular-nums text-foreground">{waterStats.glasses}</span>
           {' из '}
           <span className="tabular-nums">{totalGlasses}</span>

@@ -192,8 +192,8 @@ export function EntryList({
 
                   {/* Middle: content */}
                   <div className="flex-1 min-w-0">
-                    {/* Date & mood badge */}
-                    <div className="flex items-center gap-2 mb-0.5">
+                    {/* Date & mood badge & word count */}
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                       <span className="text-xs font-medium text-muted-foreground tabular-nums">
                         {format(entryDate, 'd MMMM, EEEE', { locale: ru })}
                       </span>
@@ -208,6 +208,10 @@ export function EntryList({
                           {MOOD_LABELS[entry.mood]}
                         </Badge>
                       )}
+                      <Badge variant="outline" className="text-[10px] font-normal text-muted-foreground/50 border-dashed h-5 px-1.5 gap-1 tabular-nums rounded-full">
+                        <FileText className="h-2.5 w-2.5" />
+                        {wordCount} сл.
+                      </Badge>
                     </div>
 
                     {/* Time: relative + creation time */}
@@ -304,6 +308,13 @@ export function EntryList({
                   </div>
                 </div>
               </CardContent>
+              {/* Reading progress indicator bar */}
+              <div className="h-0.5 w-full bg-muted/30 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-400 to-teal-400 transition-all duration-500 ease-out rounded-full"
+                  style={{ width: `${isExpanded ? 100 : Math.min(100, Math.round((150 / Math.max(entry.content.length, 1)) * 100))}%` }}
+                />
+              </div>
             </Card>
           )
         })}

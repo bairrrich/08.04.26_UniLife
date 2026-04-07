@@ -100,7 +100,7 @@ export function MacroRing({
             </span>
           </p>
           <p className="text-xs font-semibold mt-0.5 tabular-nums" style={{ color }}>
-            {Math.round(displayPct)}%
+            {Math.round(displayPct)}% от нормы
           </p>
         </div>
       </div>
@@ -111,6 +111,7 @@ export function MacroRing({
 // ─── All Macro Rings Container ──────────────────────────────────────────────
 
 import { Flame, Beef, Milk, Wheat } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 
 const MACRO_COLORS = {
   kcal: { color: '#f97316', bgColor: '#fff7ed', darkBgColor: '#431407', label: 'Ккал', unit: '' },
@@ -134,49 +135,59 @@ interface MacroRingsProps {
 
 export function MacroRings({ stats, goals }: MacroRingsProps) {
   const g = goals ?? DEFAULT_GOALS
+  const remaining = Math.max(g.dailyKcal - (stats?.totalKcal ?? 0), 0)
 
   return (
-    <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4 stagger-children">
-      <MacroRing
-        value={stats?.totalKcal ?? 0}
-        goal={g.dailyKcal}
-        color={MACRO_COLORS.kcal.color}
-        label={MACRO_COLORS.kcal.label}
-        unit={MACRO_COLORS.kcal.unit}
-        bgColor={MACRO_COLORS.kcal.bgColor}
-        darkBgColor={MACRO_COLORS.kcal.darkBgColor}
-        icon={<Flame className="size-4" />}
-      />
-      <MacroRing
-        value={stats?.totalProtein ?? 0}
-        goal={g.dailyProtein}
-        color={MACRO_COLORS.protein.color}
-        label={MACRO_COLORS.protein.label}
-        unit={MACRO_COLORS.protein.unit}
-        bgColor={MACRO_COLORS.protein.bgColor}
-        darkBgColor={MACRO_COLORS.protein.darkBgColor}
-        icon={<Beef className="size-4" />}
-      />
-      <MacroRing
-        value={stats?.totalFat ?? 0}
-        goal={g.dailyFat}
-        color={MACRO_COLORS.fat.color}
-        label={MACRO_COLORS.fat.label}
-        unit={MACRO_COLORS.fat.unit}
-        bgColor={MACRO_COLORS.fat.bgColor}
-        darkBgColor={MACRO_COLORS.fat.darkBgColor}
-        icon={<Milk className="size-4" />}
-      />
-      <MacroRing
-        value={stats?.totalCarbs ?? 0}
-        goal={g.dailyCarbs}
-        color={MACRO_COLORS.carbs.color}
-        label={MACRO_COLORS.carbs.label}
-        unit={MACRO_COLORS.carbs.unit}
-        bgColor={MACRO_COLORS.carbs.bgColor}
-        darkBgColor={MACRO_COLORS.carbs.darkBgColor}
-        icon={<Wheat className="size-4" />}
-      />
+    <div className="space-y-4">
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4 stagger-children">
+        <MacroRing
+          value={stats?.totalKcal ?? 0}
+          goal={g.dailyKcal}
+          color={MACRO_COLORS.kcal.color}
+          label={MACRO_COLORS.kcal.label}
+          unit={MACRO_COLORS.kcal.unit}
+          bgColor={MACRO_COLORS.kcal.bgColor}
+          darkBgColor={MACRO_COLORS.kcal.darkBgColor}
+          icon={<Flame className="size-4" />}
+        />
+        <MacroRing
+          value={stats?.totalProtein ?? 0}
+          goal={g.dailyProtein}
+          color={MACRO_COLORS.protein.color}
+          label={MACRO_COLORS.protein.label}
+          unit={MACRO_COLORS.protein.unit}
+          bgColor={MACRO_COLORS.protein.bgColor}
+          darkBgColor={MACRO_COLORS.protein.darkBgColor}
+          icon={<Beef className="size-4" />}
+        />
+        <MacroRing
+          value={stats?.totalFat ?? 0}
+          goal={g.dailyFat}
+          color={MACRO_COLORS.fat.color}
+          label={MACRO_COLORS.fat.label}
+          unit={MACRO_COLORS.fat.unit}
+          bgColor={MACRO_COLORS.fat.bgColor}
+          darkBgColor={MACRO_COLORS.fat.darkBgColor}
+          icon={<Milk className="size-4" />}
+        />
+        <MacroRing
+          value={stats?.totalCarbs ?? 0}
+          goal={g.dailyCarbs}
+          color={MACRO_COLORS.carbs.color}
+          label={MACRO_COLORS.carbs.label}
+          unit={MACRO_COLORS.carbs.unit}
+          bgColor={MACRO_COLORS.carbs.bgColor}
+          darkBgColor={MACRO_COLORS.carbs.darkBgColor}
+          icon={<Wheat className="size-4" />}
+        />
+      </div>
+      {/* Calories remaining badge */}
+      <div className="flex justify-center">
+        <Badge variant="outline" className="gap-1.5 px-3 py-1 text-sm font-semibold tabular-nums border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-300">
+          <Flame className="size-3.5 text-orange-500" />
+          Осталось {remaining} ккал
+        </Badge>
+      </div>
     </div>
   )
 }

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
-import { CalendarDays, BookOpen, Plus, Edit, Trash2, Tag, Clock, Copy, FileText } from 'lucide-react'
+import { CalendarDays, BookOpen, Plus, Edit, Trash2, Tag, Clock, Copy, FileText, ChevronLeft, ChevronRight } from 'lucide-react'
 import { AnimatedNumber } from '@/components/ui/animated-number'
 import { toast } from 'sonner'
 import { getRelativeTime } from '@/lib/format'
@@ -12,6 +12,7 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { MOOD_COLORS, MOOD_BORDER_CLASS, MOOD_GRADIENT, MOOD_EMOJI, MOOD_LABELS } from '@/lib/format'
+import { useMemo } from 'react'
 import { DiaryEntry } from './types'
 import { TAG_COLORS, hashTagColor } from './constants'
 import { MoodStars } from './mood-stars'
@@ -21,21 +22,43 @@ interface EntryDetailProps {
   selectedDate: Date | null
   entriesForSelectedDate: DiaryEntry[]
   selectedEntry: DiaryEntry | null
+  allEntries: DiaryEntry[]
   onEntrySelect: (entry: DiaryEntry) => void
   onEditClick: (entry: DiaryEntry) => void
   onDeleteClick: (entry: DiaryEntry) => void
   onNewEntryClick: () => void
+  onNavigateEntry: (entry: DiaryEntry) => void
 }
 
 export function EntryDetail({
   selectedDate,
   entriesForSelectedDate,
   selectedEntry,
+  allEntries,
   onEntrySelect,
   onEditClick,
   onDeleteClick,
   onNewEntryClick,
+  onNavigateEntry,
 }: EntryDetailProps) {
+
+  // Compute prev/next entries from sorted list
+  const sortedEntries = useMemo(() => {
+    return [...allEntries].sort((a, b) => {
+      const dateA = new Date(a.date).getTime()
+      const dateB = new Date(b.date).getTime()
+      if (dateA !== dateB) return dateA - dateB
+      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    })
+  }, [allEntries])
+
+  const currentIndex = useMemo(() => {
+    if (!selectedEntry) return -1
+    return sortedEntries.findIndex((e) => e.id === selectedEntry.id)
+  }, [sortedEntries, selectedEntry])
+
+  const prevEntry = currentIndex > 0 ? sortedEntries[currentIndex - 1] : null
+  const nextEntry = currentIndex < sortedEntries.length - 1 ? sortedEntries[currentIndex + 1] : null
   if (!selectedDate) {
     return (
       <Card className="rounded-xl">
@@ -96,6 +119,8 @@ export function EntryDetail({
             {entry.mood && (
               <div className={cn('absolute inset-0 bg-gradient-to-r pointer-events-none rounded-xl', moodGrad)} />
             )}
+            {/* Subtle gradient header accent */}
+            <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-primary/5 via-primary/3 to-transparent pointer-events-none rounded-t-xl" />
             <CardHeader className="pb-3 relative">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
@@ -129,7 +154,7 @@ export function EntryDetail({
                   {entry.mood && (
                     <div
                       className={cn(
-                        'h-14 w-14 rounded-2xl flex items-center justify-center text-4xl shadow-lg transition-transform hover:scale-110',
+                        'h-16 w-16 rounded-2xl flex items-center justify-center text-5xl shadow-lg transition-transform hover:scale-110',
                         moodClass,
                         isSelected && 'scale-105'
                       )}
@@ -242,6 +267,44 @@ export function EntryDetail({
                   </Button>
                 </div>
               </div>
+
+              {/* Entry navigation */}
+              {(prevEntry || nextEntry) && (
+                <>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                      disabled={!prevEntry}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (prevEntry) onNavigateEntry(prevEntry)
+                      }}
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                      Предыдущая
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                      {currentIndex >= 0 ? `${currentIndex + 1} / ${sortedEntries.length}` : ''}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="gap-1.5 text-xs text-muted-foreground hover:text-foreground rounded-lg"
+                      disabled={!nextEntry}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (nextEntry) onNavigateEntry(nextEntry)
+                      }}
+                    >
+                      Следующая
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         )

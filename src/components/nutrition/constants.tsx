@@ -25,10 +25,10 @@ export const MEAL_TYPE_CONFIG: Record<
   string,
   { label: string; emoji: string; icon: React.ReactNode; borderColor: string; iconBg: string; iconColor: string }
 > = {
-  BREAKFAST: { label: 'Завтрак', emoji: '\u2600\uFE0F', icon: <Coffee className="size-4" />, borderColor: 'border-l-amber-400', iconBg: 'bg-amber-100 dark:bg-amber-900/50', iconColor: 'text-amber-600 dark:text-amber-400' },
-  LUNCH: { label: 'Обед', emoji: '\uD83C\uDFD7\uFE0F', icon: <UtensilsCrossed className="size-4" />, borderColor: 'border-l-orange-400', iconBg: 'bg-orange-100 dark:bg-orange-900/50', iconColor: 'text-orange-600 dark:text-orange-400' },
-  DINNER: { label: 'Ужин', emoji: '\uD83C\uDF19', icon: <Sunset className="size-4" />, borderColor: 'border-l-rose-400', iconBg: 'bg-rose-100 dark:bg-rose-900/50', iconColor: 'text-rose-600 dark:text-rose-400' },
-  SNACK: { label: 'Перекус', emoji: '\uD83C\uDF4E', icon: <CakeSlice className="size-4" />, borderColor: 'border-l-purple-400', iconBg: 'bg-purple-100 dark:bg-purple-900/50', iconColor: 'text-purple-600 dark:text-purple-400' },
+  BREAKFAST: { label: 'Завтрак', emoji: '\u2600\uFE0F', icon: <Coffee className="size-4" />, borderColor: 'border-l-emerald-500', iconBg: 'bg-emerald-100 dark:bg-emerald-900/50', iconColor: 'text-emerald-600 dark:text-emerald-400' },
+  LUNCH: { label: 'Обед', emoji: '\uD83C\uDFD7\uFE0F', icon: <UtensilsCrossed className="size-4" />, borderColor: 'border-l-amber-500', iconBg: 'bg-amber-100 dark:bg-amber-900/50', iconColor: 'text-amber-600 dark:text-amber-400' },
+  DINNER: { label: 'Ужин', emoji: '\uD83C\uDF19', icon: <Sunset className="size-4" />, borderColor: 'border-l-orange-500', iconBg: 'bg-orange-100 dark:bg-orange-900/50', iconColor: 'text-orange-600 dark:text-orange-400' },
+  SNACK: { label: 'Перекус', emoji: '\uD83C\uDF4E', icon: <CakeSlice className="size-4" />, borderColor: 'border-l-violet-500', iconBg: 'bg-violet-100 dark:bg-violet-900/50', iconColor: 'text-violet-600 dark:text-violet-400' },
 }
 
 export const MEAL_TYPE_ORDER = ['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']

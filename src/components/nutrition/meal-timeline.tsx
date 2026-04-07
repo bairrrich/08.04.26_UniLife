@@ -36,10 +36,10 @@ function sortMealsByType(mealsList: MealWithItems[]) {
 
 // Colored circle backgrounds for meal type icons
 const MEAL_ICON_CIRCLES: Record<string, string> = {
-  BREAKFAST: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
-  LUNCH: 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400',
-  DINNER: 'bg-rose-100 dark:bg-rose-900/50 text-rose-600 dark:text-rose-400',
-  SNACK: 'bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400',
+  BREAKFAST: 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400',
+  LUNCH: 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400',
+  DINNER: 'bg-orange-100 dark:bg-orange-900/50 text-orange-600 dark:text-orange-400',
+  SNACK: 'bg-violet-100 dark:bg-violet-900/50 text-violet-600 dark:text-violet-400',
 }
 
 export function MealTimeline({
@@ -110,11 +110,11 @@ export function MealTimeline({
                   <div className="flex flex-col gap-0.5 cursor-grab active:cursor-grabbing opacity-30 hover:opacity-60 transition-opacity">
                     <GripVertical className="size-4 text-muted-foreground" />
                   </div>
-                  {/* Meal type icon with colored circle */}
-                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${iconCircleClass} transition-transform hover:scale-110`}>
-                    <span className="text-sm">{config.icon}</span>
-                  </div>
-                  <span>{config.label}</span>
+                  {/* Gradient icon badge + meal type label */}
+                  <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-semibold ${config.iconBg} ${config.iconColor} shadow-sm`}>
+                    {config.icon}
+                    {config.label}
+                  </span>
                   {/* Prominent time badge */}
                   {formattedTime && (
                     <span className="flex items-center gap-1 rounded-full bg-muted/80 px-2.5 py-0.5 text-xs font-medium tabular-nums text-muted-foreground border border-muted">
