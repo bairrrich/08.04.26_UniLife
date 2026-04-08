@@ -4,6 +4,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: false, // Enabled causes OOM in dev sandbox (512MB limit)
   allowedDevOrigins: ["*.space.z.ai"],
+  turbopack: {},
   async headers() {
     return [
       {

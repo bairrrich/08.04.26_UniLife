@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { apiSuccess, apiServerError, DEMO_USER_ID } from '@/lib/api'
 import { getTodayStr, toDateStr, calculateStreak } from '@/lib/format'
+import type { PrismaClient } from '@prisma/client'
 
 // ─── Achievement Definitions ──────────────────────────────────────────────────
 
@@ -93,39 +94,39 @@ export async function GET() {
     ])
 
     // ── Build existing achievement key set ──
-    const existingKeys = new Set(existingAchievements.map((a) => a.key))
+    const existingKeys = new Set(existingAchievements.map((a: { key: string }) => a.key))
 
     // ── Precompute common data ──
-    const diaryDates = diaryEntries.map((e) => toDateStr(new Date(e.date)))
+    const diaryDates = diaryEntries.map((e: { date: string | Date }) => toDateStr(new Date(e.date)))
     const diaryStreak = calculateStreak(diaryDates)
 
-    const totalIncome = transactions.filter((t) => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
-    const totalExpense = transactions.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+    const totalIncome = transactions.filter((t: { type: string }) => t.type === 'INCOME').reduce((s: number, t: { amount: number }) => s + t.amount, 0)
+    const totalExpense = transactions.filter((t: { type: string }) => t.type === 'EXPENSE').reduce((s: number, t: { amount: number }) => s + t.amount, 0)
     const savingsRate = totalIncome > 0 ? (totalIncome - totalExpense) / totalIncome : 0
 
     // Week range for workout streak
     const weekAgo = new Date(now)
     weekAgo.setDate(weekAgo.getDate() - 7)
     const weekAgoStr = toDateStr(weekAgo)
-    const weekWorkouts = workouts.filter((w) => toDateStr(new Date(w.date)) >= weekAgoStr).length
-    const totalWorkoutMin = workouts.reduce((s, w) => s + (w.durationMin ?? 0), 0)
+    const weekWorkouts = workouts.filter((w: { date: string | Date }) => toDateStr(new Date(w.date)) >= weekAgoStr).length
+    const totalWorkoutMin = workouts.reduce((s: number, w: { durationMin: number | null }) => s + (w.durationMin ?? 0), 0)
 
     // Habits: check today's completion
-    const habitIds = habits.map((h) => h.id)
-    const todayLogs = habitLogs.filter((l) => toDateStr(new Date(l.date)) === today)
-    const completedHabitIdsToday = new Set(todayLogs.map((l) => l.habitId))
+    const habitIds = habits.map((h: { id: string }) => h.id)
+    const todayLogs = habitLogs.filter((l: { date: string | Date; habitId: string }) => toDateStr(new Date(l.date)) === today)
+    const completedHabitIdsToday = new Set(todayLogs.map((l: { habitId: string }) => l.habitId))
     const hasAnyHabitCompleted = completedHabitIdsToday.size > 0
-    const allHabitsCompleted = habitIds.length > 0 && habitIds.every((id) => completedHabitIdsToday.has(id))
+    const allHabitsCompleted = habitIds.length > 0 && habitIds.every((id: string) => completedHabitIdsToday.has(id))
 
     // Habits streak: check if all habits were completed for N consecutive days
     const habitsStreak = (() => {
       if (habitIds.length === 0) return 0
-      const logDates = [...new Set(habitLogs.map((l) => toDateStr(new Date(l.date))))].sort().reverse()
+      const logDates = [...new Set(habitLogs.map((l: { date: string | Date }) => toDateStr(new Date(l.date))))].sort().reverse()
       if (logDates.length === 0) return 0
       let streak = 0
       for (const d of logDates) {
-        const dayLogs = habitLogs.filter((l) => toDateStr(new Date(l.date)) === d)
-        const dayHabitIds = new Set(dayLogs.map((l) => l.habitId))
+        const dayLogs = habitLogs.filter((l: { date: string | Date; habitId: string }) => toDateStr(new Date(l.date)) === d)
+        const dayHabitIds = new Set(dayLogs.map((l: { habitId: string }) => l.habitId))
         if (dayHabitIds.size >= habitIds.length) {
           streak++
         } else {
@@ -137,21 +138,21 @@ export async function GET() {
       return streak
     })()
 
-    const todayMealCount = meals.filter((m) => toDateStr(new Date(m.date)) === today).length
+    const todayMealCount = meals.filter((m: { date: string | Date }) => toDateStr(new Date(m.date)) === today).length
 
-    const todayWaterMl = waterLogs.filter((w) => toDateStr(new Date(w.date)) === today).reduce((s, w) => s + w.amountMl, 0)
+    const todayWaterMl = waterLogs.filter((w: { date: string | Date; amountMl: number }) => toDateStr(new Date(w.date)) === today).reduce((s: number, w: { amountMl: number }) => s + w.amountMl, 0)
 
-    const completedGoals = goals.filter((g) => g.status === 'completed')
+    const completedGoals = goals.filter((g: { status: string }) => g.status === 'completed')
 
     // Early bird check
-    const hasEarlyBirdEntry = diaryEntries.some((e) => {
+    const hasEarlyBirdEntry = diaryEntries.some((e: { date: string | Date }) => {
       const d = new Date(e.date)
       return toDateStr(d) === today && d.getHours() < 8
     })
 
     // Active day: diary + workout + meals + all habits
-    const todayWorkoutDone = workouts.some((w) => toDateStr(new Date(w.date)) === today)
-    const todayDiaryDone = diaryEntries.some((e) => toDateStr(new Date(e.date)) === today)
+    const todayWorkoutDone = workouts.some((w: { date: string | Date }) => toDateStr(new Date(w.date)) === today)
+    const todayDiaryDone = diaryEntries.some((e: { date: string | Date }) => toDateStr(new Date(e.date)) === today)
     const activeDay = todayDiaryDone && todayWorkoutDone && todayMealCount > 0 && allHabitsCompleted
 
     // ── Evaluate each achievement ──
@@ -164,7 +165,7 @@ export async function GET() {
 
       // Skip if already earned
       if (existingKeys.has(def.key)) {
-        const existing = existingAchievements.find((a) => a.key === def.key)
+        const existing = existingAchievements.find((a: { key: string }) => a.key === def.key)
         allResults.push({ ...def, earned: true, earnedAt: existing?.earnedAt.toISOString() ?? null })
         continue
       }
@@ -285,7 +286,7 @@ export async function GET() {
     }
 
     // ── Persist newly earned achievements (atomic with final read) ──
-    const allPersisted = await db.$transaction(async (tx) => {
+    const allPersisted = await db.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => {
       if (newlyEarned.length > 0) {
         // Use upsert per item to avoid skipDuplicates issues in Prisma 7
         await Promise.all(
@@ -321,7 +322,7 @@ export async function GET() {
         category: def.category,
       })),
       all: allResults,
-      persisted: allPersisted.map((a) => ({
+      persisted: allPersisted.map((a: { id: string; key: string; title: string; description: string; icon: string; category: string; earnedAt: Date }) => ({
         id: a.id,
         key: a.key,
         title: a.title,
