@@ -11,14 +11,12 @@ const mealItemSchema = z.object({
   protein: z.number().optional(),
   fat: z.number().optional(),
   carbs: z.number().optional(),
-  servingSize: z.number().optional(),
+  servingSize: z.string().optional(),
   servingUnit: z.string().optional(),
 })
 
 const createMealSchema = z.object({
-  type: z.enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK'], {
-    errorMap: () => ({ message: `Неверный тип приёма пищи. Допустимые значения: BREAKFAST, LUNCH, DINNER, SNACK` }),
-  }),
+  type: z.enum(['BREAKFAST', 'LUNCH', 'DINNER', 'SNACK']),
   date: z.string().min(1, 'Date is required'),
   note: z.string().optional(),
   items: z.array(mealItemSchema).min(1, 'Необходим хотя бы один элемент приёма пищи'),

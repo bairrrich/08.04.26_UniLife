@@ -62,71 +62,71 @@ const STAT_DEFS: {
   iconBg: string
   iconColor: string
 }[] = [
-  {
-    key: 'diary',
-    label: 'Записей в дневнике',
-    emoji: '📝',
-    icon: BookOpen,
-    iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
-    iconColor: 'text-emerald-600 dark:text-emerald-400',
-  },
-  {
-    key: 'transactions',
-    label: 'Транзакций',
-    emoji: '💰',
-    icon: Wallet,
-    iconBg: 'bg-amber-100 dark:bg-amber-900/40',
-    iconColor: 'text-amber-600 dark:text-amber-400',
-  },
-  {
-    key: 'meals',
-    label: 'Приёмов пищи',
-    emoji: '🍽️',
-    icon: UtensilsCrossed,
-    iconBg: 'bg-orange-100 dark:bg-orange-900/40',
-    iconColor: 'text-orange-600 dark:text-orange-400',
-  },
-  {
-    key: 'workouts',
-    label: 'Тренировок',
-    emoji: '💪',
-    icon: Dumbbell,
-    iconBg: 'bg-sky-100 dark:bg-sky-900/40',
-    iconColor: 'text-sky-600 dark:text-sky-400',
-  },
-  {
-    key: 'collections',
-    label: 'Коллекций',
-    emoji: '📚',
-    icon: Library,
-    iconBg: 'bg-violet-100 dark:bg-violet-900/40',
-    iconColor: 'text-violet-600 dark:text-violet-400',
-  },
-  {
-    key: 'habits',
-    label: 'Привычек',
-    emoji: '🎯',
-    icon: Repeat,
-    iconBg: 'bg-rose-100 dark:bg-rose-900/40',
-    iconColor: 'text-rose-600 dark:text-rose-400',
-  },
-  {
-    key: 'posts',
-    label: 'Постов в ленте',
-    emoji: '📋',
-    icon: ClipboardList,
-    iconBg: 'bg-teal-100 dark:bg-teal-900/40',
-    iconColor: 'text-teal-600 dark:text-teal-400',
-  },
-  {
-    key: 'goals',
-    label: 'Целей',
-    emoji: '🎯',
-    icon: Goal,
-    iconBg: 'bg-fuchsia-100 dark:bg-fuchsia-900/40',
-    iconColor: 'text-fuchsia-600 dark:text-fuchsia-400',
-  },
-]
+    {
+      key: 'diary',
+      label: 'Записей в дневнике',
+      emoji: '📝',
+      icon: BookOpen,
+      iconBg: 'bg-emerald-100 dark:bg-emerald-900/40',
+      iconColor: 'text-emerald-600 dark:text-emerald-400',
+    },
+    {
+      key: 'transactions',
+      label: 'Транзакций',
+      emoji: '💰',
+      icon: Wallet,
+      iconBg: 'bg-amber-100 dark:bg-amber-900/40',
+      iconColor: 'text-amber-600 dark:text-amber-400',
+    },
+    {
+      key: 'meals',
+      label: 'Приёмов пищи',
+      emoji: '🍽️',
+      icon: UtensilsCrossed,
+      iconBg: 'bg-orange-100 dark:bg-orange-900/40',
+      iconColor: 'text-orange-600 dark:text-orange-400',
+    },
+    {
+      key: 'workouts',
+      label: 'Тренировок',
+      emoji: '💪',
+      icon: Dumbbell,
+      iconBg: 'bg-sky-100 dark:bg-sky-900/40',
+      iconColor: 'text-sky-600 dark:text-sky-400',
+    },
+    {
+      key: 'collections',
+      label: 'Коллекций',
+      emoji: '📚',
+      icon: Library,
+      iconBg: 'bg-violet-100 dark:bg-violet-900/40',
+      iconColor: 'text-violet-600 dark:text-violet-400',
+    },
+    {
+      key: 'habits',
+      label: 'Привычек',
+      emoji: '🎯',
+      icon: Repeat,
+      iconBg: 'bg-rose-100 dark:bg-rose-900/40',
+      iconColor: 'text-rose-600 dark:text-rose-400',
+    },
+    {
+      key: 'posts',
+      label: 'Постов в ленте',
+      emoji: '📋',
+      icon: ClipboardList,
+      iconBg: 'bg-teal-100 dark:bg-teal-900/40',
+      iconColor: 'text-teal-600 dark:text-teal-400',
+    },
+    {
+      key: 'goals',
+      label: 'Целей',
+      emoji: '🎯',
+      icon: Goal,
+      iconBg: 'bg-fuchsia-100 dark:bg-fuchsia-900/40',
+      iconColor: 'text-fuchsia-600 dark:text-fuchsia-400',
+    },
+  ]
 
 // ─── Container Animation Variants ─────────────────────────────────────────────
 
@@ -148,7 +148,7 @@ const itemVariants = {
     scale: 1,
     transition: {
       duration: 0.35,
-      ease: [0.4, 0, 0.2, 1],
+      ease: 'easeInOut' as const,
     },
   },
 }
@@ -231,14 +231,14 @@ export default function DataStatsWidget() {
 
   const items: StatItem[] | null = stats
     ? STAT_DEFS.map((def) => ({
-        key: def.key,
-        label: def.label,
-        emoji: def.emoji,
-        icon: def.icon,
-        iconBg: def.iconBg,
-        iconColor: def.iconColor,
-        value: stats[def.key] ?? 0,
-      }))
+      key: def.key,
+      label: def.label,
+      emoji: def.emoji,
+      icon: def.icon,
+      iconBg: def.iconBg,
+      iconColor: def.iconColor,
+      value: stats[def.key] ?? 0,
+    }))
     : null
 
   const totalRecords = items?.reduce((sum, item) => sum + item.value, 0) ?? 0

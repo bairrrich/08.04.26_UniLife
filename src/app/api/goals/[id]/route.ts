@@ -70,7 +70,7 @@ export async function PUT(
         ...(status !== undefined && { status }),
         ...(progress !== undefined && { progress: Math.min(100, Math.max(0, Number(progress))) }),
         ...(priority !== undefined && { priority }),
-        ...(milestones !== undefined && { milestones }),
+        ...(milestones !== undefined && { milestones: milestones ? JSON.stringify(milestones) : '[]' }),
         ...(startDate !== undefined && { createdAt: startDate ? new Date(startDate) : goal.createdAt }),
       },
     })

@@ -135,12 +135,12 @@ export function EarningsChart({ earnings, isLoading }: EarningsChartProps) {
             />
             <ChartTooltip
               content={<ChartTooltipContent />}
-              formatter={(value: number) => (
+              formatter={(value) => (
                 <span className="font-medium tabular-nums">
-                  {value.toLocaleString('ru-RU')} ₽
+                  {typeof value === 'number' ? value.toLocaleString('ru-RU') : value} ₽
                 </span>
               )}
-              labelFormatter={(label: number) => `День ${label}`}
+              labelFormatter={(label) => `День ${label}`}
             />
             <Bar
               dataKey="amount"

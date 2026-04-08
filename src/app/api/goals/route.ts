@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
         status: status || 'active',
         progress: progress != null ? Math.min(100, Math.max(0, Number(progress))) : 0,
         priority: priority || 'medium',
-        milestones: milestones || '[]',
+        milestones: milestones ? JSON.stringify(milestones) : '[]',
         ...(startDate ? { createdAt: new Date(startDate) } : {}),
       },
     })

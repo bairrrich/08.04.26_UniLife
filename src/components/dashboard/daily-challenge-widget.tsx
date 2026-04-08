@@ -160,11 +160,10 @@ function DifficultyDots({ difficulty }: { difficulty: Difficulty }) {
       {[1, 2, 3].map((dot) => (
         <span
           key={dot}
-          className={`inline-block h-2 w-2 rounded-full transition-colors ${
-            dot <= config.dots
-              ? config.color
-              : 'bg-muted-foreground/20'
-          }`}
+          className={`inline-block h-2 w-2 rounded-full transition-colors ${dot <= config.dots
+            ? config.color
+            : 'bg-muted-foreground/20'
+            }`}
         />
       ))}
       <span className="ml-1 text-[10px] font-medium text-muted-foreground">
@@ -309,7 +308,7 @@ export default function DailyChallengeWidget() {
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+            transition={{ duration: 0.4, ease: 'easeInOut' as const }}
             className="mb-4"
           >
             <div className="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 px-4 py-3 dark:from-emerald-950/30 dark:to-teal-950/30">

@@ -794,7 +794,7 @@ export default function DashboardPage() {
       case 'mood-recommendations':
         return (
           <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
-            <MoodRecommendations todayMood={todayMood} />
+            <MoodRecommendations />
           </DashboardSection>
         )
 

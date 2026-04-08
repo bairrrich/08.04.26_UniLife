@@ -15,7 +15,7 @@ const createCollectionSchema = z.object({
   date: z.string().optional(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
 })
 
 export async function GET(request: NextRequest) {

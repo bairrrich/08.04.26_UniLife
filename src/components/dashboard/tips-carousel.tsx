@@ -60,13 +60,13 @@ const tipVariants = {
     opacity: 1,
     y: 0,
     filter: 'blur(0px)',
-    transition: { duration: TIP_ANIMATION_DURATION, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: TIP_ANIMATION_DURATION, ease: 'easeInOut' as const },
   },
   exit: {
     opacity: 0,
     y: -10,
     filter: 'blur(4px)',
-    transition: { duration: TIP_ANIMATION_DURATION * 0.7, ease: [0.4, 0, 0.2, 1] },
+    transition: { duration: TIP_ANIMATION_DURATION * 0.7, ease: 'easeInOut' as const },
   },
 }
 
@@ -91,7 +91,7 @@ export default function TipsCarousel() {
     for (let i = arr.length - 1; i > 0; i--) {
       seed = (seed * 16807 + 0) % 2147483647
       const j = seed % (i + 1)
-      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+        ;[arr[i], arr[j]] = [arr[j], arr[i]]
     }
     return arr
   }, [])
@@ -172,11 +172,10 @@ export default function TipsCarousel() {
                   key={idx}
                   type="button"
                   onClick={() => goToTip(idx)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    idx === currentIndex
-                      ? 'w-5 bg-gradient-to-r from-amber-400 to-orange-400'
-                      : 'w-1.5 bg-foreground/15 dark:bg-foreground/20'
-                  }`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex
+                    ? 'w-5 bg-gradient-to-r from-amber-400 to-orange-400'
+                    : 'w-1.5 bg-foreground/15 dark:bg-foreground/20'
+                    }`}
                   aria-label={`Совет ${idx + 1}`}
                 />
               ))}

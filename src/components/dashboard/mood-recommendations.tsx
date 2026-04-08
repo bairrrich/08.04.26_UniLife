@@ -107,7 +107,7 @@ const cardVariants = {
     transition: {
       delay: i * 0.08,
       duration: 0.35,
-      ease: [0.25, 0.46, 0.45, 0.94],
+      ease: 'easeInOut' as const,
     },
   }),
   exit: { opacity: 0, y: -8, scale: 0.95, transition: { duration: 0.2 } },

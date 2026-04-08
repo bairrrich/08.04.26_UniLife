@@ -15,7 +15,7 @@ const updateCollectionSchema = z.object({
   date: z.string().optional(),
   tags: z.array(z.string()).optional(),
   notes: z.string().optional().nullable(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
 })
 
 export async function PUT(

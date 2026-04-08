@@ -159,7 +159,7 @@ export default function DailyTipsWidget() {
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+      transition={{ duration: 0.4, ease: 'easeInOut' as const }}
       className="animate-slide-up"
     >
       <Card className={`card-hover overflow-hidden rounded-xl border ${colors.bg} ${colors.border}`}>
@@ -195,7 +195,7 @@ export default function DailyTipsWidget() {
                   initial={{ opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -12 }}
-                  transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+                  transition={{ duration: 0.25, ease: 'easeInOut' as const }}
                   className="text-sm leading-relaxed text-muted-foreground"
                 >
                   {currentTip.text}
@@ -210,11 +210,10 @@ export default function DailyTipsWidget() {
                       key={idx}
                       type="button"
                       onClick={() => setTipIndex(idx)}
-                      className={`h-1.5 rounded-full transition-all ${
-                        idx === tipIndex % dailyTips.length
-                          ? `w-4 bg-gradient-to-r ${colors.gradient}`
-                          : 'w-1.5 bg-foreground/15 dark:bg-foreground/20'
-                      }`}
+                      className={`h-1.5 rounded-full transition-all ${idx === tipIndex % dailyTips.length
+                        ? `w-4 bg-gradient-to-r ${colors.gradient}`
+                        : 'w-1.5 bg-foreground/15 dark:bg-foreground/20'
+                        }`}
                       aria-label={`Совет ${idx + 1}`}
                     />
                   ))}

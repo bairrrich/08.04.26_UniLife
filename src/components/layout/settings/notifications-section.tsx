@@ -83,6 +83,7 @@ export function NotificationsSection() {
           const categoryKeys = category.items.map((item: NotificationItem) => item.key)
           const categoryEnabled = categoryKeys.filter((key: string) => (notifications as Record<string, boolean>)[key]).length
           const categoryTotal = categoryKeys.length
+          const IconComponent = category.icon
 
           return (
             <div key={category.title} className="rounded-xl border border-muted/50 bg-muted/20 overflow-hidden">
@@ -94,7 +95,7 @@ export function NotificationsSection() {
               >
                 <div className="flex items-center gap-3">
                   <div className="h-8 w-8 rounded-lg bg-background flex items-center justify-center shadow-sm">
-                    {category.icon}
+                    <IconComponent className="h-4 w-4" />
                   </div>
                   <div className="text-left">
                     <div className="flex items-center gap-2">
