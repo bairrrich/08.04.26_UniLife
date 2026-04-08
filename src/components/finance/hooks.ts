@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { getCurrentMonthStr } from '@/lib/format'
+import { formatMonthBadge } from '@/lib/date-format'
 import { toast } from 'sonner'
 
 import type { Transaction, Category, Account, StatsResponse, ChartDataPoint, Investment, InvestmentsResponse, SavingsGoal, RecurringTransaction } from './types'
@@ -208,7 +209,7 @@ export function useFinance() {
 
   const monthLabel = useMemo(() => {
     const [year, mon] = month.split('-').map(Number)
-    return new Intl.DateTimeFormat('ru-RU', { month: 'long', year: 'numeric' }).format(new Date(year, mon - 1, 1))
+    return formatMonthBadge(new Date(year, mon - 1, 1))
   }, [month])
 
   const totalTransfers = useMemo(() => {

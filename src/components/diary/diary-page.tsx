@@ -6,8 +6,6 @@ import { formatDayBadge } from '@/lib/date-format'
 import {
   BookOpen,
   Plus,
-  ChevronLeft,
-  ChevronRight,
   CalendarDays,
   List,
 } from 'lucide-react'
@@ -43,6 +41,7 @@ import { WritingPrompts } from './writing-prompts'
 import { WritingStreakBadge } from './writing-streak-badge'
 import { WritingStreakCard } from './writing-streak-card'
 import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
+import { MonthFilter } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
 const emptyForm: EntryFormData = {
@@ -166,6 +165,15 @@ export default function DiaryPage() {
     setSelectedDate(null)
     setSelectedEntry(null)
   }
+
+  const goToToday = () => {
+    setCurrentYear(today.getFullYear())
+    setCurrentMonth(today.getMonth())
+    setSelectedDate(null)
+    setSelectedEntry(null)
+  }
+
+  const isNotCurrentMonth = currentYear !== today.getFullYear() || currentMonth !== today.getMonth()
 
   const handleDayClick = (cell: CalendarCell) => {
     setSelectedDate(cell.date)
@@ -404,6 +412,14 @@ export default function DiaryPage() {
         }
       />
 
+      {/* Month Navigation */}
+      <MonthFilter
+        label={`${RU_MONTHS[currentMonth]} ${currentYear}`}
+        onNavigate={(dir) => dir < 0 ? goToPrevMonth() : goToNextMonth()}
+        onToday={goToToday}
+        showToday={isNotCurrentMonth}
+      />
+
       {/* 14-Day Mood Calendar Heatmap */}
       <div className="flex items-center gap-3">
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap">
@@ -600,23 +616,6 @@ export default function DiaryPage() {
             return null
         }
       })}
-
-      {/* Month Navigation */}
-      <Card className="w-full rounded-xl">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <Button variant="ghost" size="icon" onClick={goToPrevMonth} className="h-8 w-8 rounded-lg">
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            <h2 className="text-lg font-bold tracking-tight tabular-nums">
-              {RU_MONTHS[currentMonth]} {currentYear}
-            </h2>
-            <Button variant="ghost" size="icon" onClick={goToNextMonth} className="h-8 w-8 rounded-lg">
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Loading skeleton */}
       {isLoading && (

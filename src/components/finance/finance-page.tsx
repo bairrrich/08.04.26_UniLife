@@ -9,9 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCurrentMonthStr } from '@/lib/format'
 import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
-
 import { ModuleHeader } from '@/components/layout/module-header'
-
+import { MonthFilter } from '@/components/shared'
 import { SummaryCards } from './summary-cards'
 import { SavingsGoal } from './savings-goal'
 import { ExpenseChart } from './expense-chart'
@@ -21,7 +20,6 @@ import { IncomeBreakdown } from './income-breakdown'
 import { TransactionList } from './transaction-list'
 import { AddTransactionDialog, EditTransactionDialog } from './transaction-dialog'
 import { AnalyticsSection } from './analytics-section'
-import { MonthNav } from './month-nav'
 import { QuickStatsBar } from './quick-stats-bar'
 import { BudgetProgressBar } from './budget-progress-bar'
 import { BudgetProgress } from './budget-progress'
@@ -103,8 +101,8 @@ export default function FinancePage() {
         }}
       />
 
-      <MonthNav
-        monthLabel={monthLabel}
+      <MonthFilter
+        label={monthLabel}
         onNavigate={navigateMonth}
         onToday={goToToday}
         showToday={isNotCurrentMonth}

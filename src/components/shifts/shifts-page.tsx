@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { ModuleHeader } from '@/components/layout/module-header'
 import { ModuleEmptyState, useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
+import { MonthFilter } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -698,30 +699,11 @@ export function ShiftsPage() {
       />
 
       {/* Month Navigation */}
-      <div className="flex items-center justify-between gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={() => changeMonth(-1)}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold tabular-nums">{monthLabel}</h2>
-          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-            {stats.totalShifts} см.
-          </Badge>
-        </div>
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-8 w-8 shrink-0"
-          onClick={() => changeMonth(1)}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+      <MonthFilter
+        label={monthLabel}
+        onNavigate={changeMonth}
+        badge={`${stats.totalShifts} см.`}
+      />
 
       {/* Configurable Widget Sections */}
       {loaded && visibleOrder.map(sectionId => {
