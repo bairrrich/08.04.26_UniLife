@@ -32,6 +32,19 @@ function getMotivationalSubtitle(): string {
   return MOTIVATIONAL_SUBTITLES[idx]
 }
 
+const GOAL_QUOTES = [
+  { text: 'Цель без плана — это просто желание.', author: 'Antoine de Saint-Exupéry' },
+  { text: 'Дисциплина — это мост между целями и достижениями.', author: 'Jim Rohn' },
+  { text: 'Начни там, где ты есть. Используй то, что имеешь. Делай то, что можешь.', author: 'Arthur Ashe' },
+  { text: 'Успех — это сумма небольших усилий, повторяемых день за днём.', author: 'Robert Collier' },
+  { text: 'Великие дела не делаются импульсивно, а серией маленьких дел.', author: 'Vincent van Gogh' },
+]
+
+function getDailyGoalQuote() {
+  const idx = new Date().getDate() % GOAL_QUOTES.length
+  return GOAL_QUOTES[idx]
+}
+
 function getTodayBadge() {
   const now = new Date()
   const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
@@ -213,6 +226,15 @@ export default function GoalsPage() {
 
   // ─── Motivational subtitle based on active goals count ────────────────────
   const activeGoalsCount = useMemo(() => goals.filter(g => g.status === 'active').length, [goals])
+  const completedThisMonth = useMemo(() => {
+    const now = new Date()
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+    return goals.filter(g => g.status === 'completed' && new Date(g.updatedAt) >= monthStart).length
+  }, [goals])
+  const inProgressCount = useMemo(() =>
+    goals.filter(g => g.status === 'active' && g.progress > 0 && g.progress < 100).length
+  , [goals])
+  const motivationalQuote = useMemo(() => mounted ? getDailyGoalQuote() : { text: '', author: '' }, [mounted])
   const motivationalSubtitle = useMemo(() => {
     if (activeGoalsCount === 0) return 'Начните ставить цели — маленькие шаги ведут к большим результатам'
     if (activeGoalsCount <= 3) return 'Отличный старт! Продолжайте двигаться к своим целям'
@@ -263,6 +285,48 @@ export default function GoalsPage() {
           </p>
         )}
       </div>
+
+      {/* Quick Stats Summary */}
+      <div className="grid grid-cols-3 gap-3 stagger-children">
+        {loading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={`quick-stat-skel-${i}`} className="skeleton-shimmer h-[80px] rounded-xl" />
+          ))
+        ) : (
+          <>
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-indigo-500/10 to-violet-500/10 dark:from-indigo-500/5 dark:to-violet-500/5 border border-indigo-200/50 dark:border-indigo-800/30 p-4 card-hover">
+              <div className="text-2xl mb-2">🎯</div>
+              <div className="text-xl font-bold tabular-nums">{activeGoalsCount}</div>
+              <div className="text-[11px] text-muted-foreground">Активных целей</div>
+            </div>
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:from-emerald-500/5 dark:to-teal-500/5 border border-emerald-200/50 dark:border-emerald-800/30 p-4 card-hover">
+              <div className="text-2xl mb-2">✅</div>
+              <div className="text-xl font-bold tabular-nums">{completedThisMonth}</div>
+              <div className="text-[11px] text-muted-foreground">Выполнено за месяц</div>
+            </div>
+            <div className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:from-amber-500/5 dark:to-orange-500/5 border border-amber-200/50 dark:border-amber-800/30 p-4 card-hover">
+              <div className="text-2xl mb-2">🔄</div>
+              <div className="text-xl font-bold tabular-nums">{inProgressCount}</div>
+              <div className="text-[11px] text-muted-foreground">В процессе</div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Motivational Quote */}
+      {mounted && !loading && (
+        <Card className="overflow-hidden card-hover animate-fade-in">
+          <CardContent className="flex items-center gap-3 py-3 px-4">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 shadow-sm">
+              <Quote className="h-4 w-4 text-white" />
+            </div>
+            <p className="text-sm text-muted-foreground italic leading-relaxed flex-1">
+              &ldquo;{motivationalQuote.text}&rdquo;
+              <span className="text-xs ml-2 not-italic text-muted-foreground/70">— {motivationalQuote.author}</span>
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search bar (below header, above content) */}
       {mounted && goals.length > 0 && (

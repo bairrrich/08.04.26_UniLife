@@ -107,6 +107,8 @@ const QuickGratitudeWidget = dynamic(() => import('./quick-gratitude-widget'), {
 
 const AllStreaksWidget = dynamic(() => import('./all-streaks-widget'), { ssr: false, loading: widgetLoad })
 
+const AnalyticsQuickView = dynamic(() => import('./analytics-quick-view'), { ssr: false, loading: widgetLoad })
+
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -852,6 +854,19 @@ export default function DashboardPage() {
               diaryStreak={diaryStreak}
               workoutStreak={workoutStreak}
               habitsStreak={habitsStreak}
+              loading={loading}
+            />
+          </DashboardSection>
+        )
+
+      case 'analytics-quick':
+        return (
+          <DashboardSection key={sectionId} id={sectionId} title={title} defaultCollapsed={defaultCollapsed} icon={icon}>
+            <AnalyticsQuickView
+              diaryEntries={diaryEntries}
+              workouts={workouts}
+              habitsData={habitsData}
+              transactionsData={transactionsData}
               loading={loading}
             />
           </DashboardSection>

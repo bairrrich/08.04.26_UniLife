@@ -42,6 +42,16 @@ function getExerciseIcon(name: string) {
   return <Zap className="size-3.5 text-amber-500" />
 }
 
+function getWorkoutEmoji(name: string): string {
+  const lower = name.toLowerCase()
+  if (lower.includes('кардио') || lower.includes('бег')) return '🏃'
+  if (lower.includes('силов') || lower.includes('гантел') || lower.includes('штанг')) return '🏋️'
+  if (lower.includes('йога') || lower.includes('растяжк')) return '🧘'
+  if (lower.includes('плаван')) return '🏊'
+  if (lower.includes('вел')) return '🚴'
+  return '💪'
+}
+
 export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, onDelete, exerciseMaxWeights }: WorkoutCardProps) {
   const workoutType = detectWorkoutType(workout.name)
   const typeConfig = WORKOUT_TYPE_CONFIG[workoutType] || WORKOUT_TYPE_CONFIG.strength
@@ -93,7 +103,7 @@ export function WorkoutCard({ workout, isExpanded, onToggle, onEdit, onDelete, e
             </div>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-sm sm:text-base truncate">{workout.name}</CardTitle>
+                <CardTitle className="text-sm sm:text-base truncate"><span className="mr-1.5">{getWorkoutEmoji(workout.name)}</span>{workout.name}</CardTitle>
                 {hasNewPR && (
                   <Badge className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300 border-0 text-[10px] px-1.5 py-0 font-semibold shrink-0">
                     🏆 Новый рекорд!

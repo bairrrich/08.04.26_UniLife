@@ -28,6 +28,7 @@ export const DEFAULT_SECTIONS: WidgetSectionConfig[] = [
   { id: 'productivity-score', title: 'Продуктивность дня', icon: '⚡', defaultCollapsed: false, defaultVisible: true, defaultOrder: 17 },
   { id: 'gratitude', title: 'Дневник благодарности', icon: '🙏', defaultCollapsed: false, defaultVisible: true, defaultOrder: 18 },
   { id: 'all-streaks', title: 'Все серии', icon: '🔥', defaultCollapsed: false, defaultVisible: true, defaultOrder: 19 },
+  { id: 'analytics-quick', title: 'Быстрая аналитика', icon: '📊', defaultCollapsed: true, defaultVisible: true, defaultOrder: 20 },
 ]
 
 const STORAGE_KEY = 'unilife-widget-config'

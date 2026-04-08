@@ -1002,6 +1002,12 @@
   animation: bar-grow 0.7s ease-out;
 }
 
+/* ── Width grow animation (for header gradient underline) ── */
+@keyframes width-grow {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
 /* ── Water confetti animation ───────────────────────── */
 @keyframes water-confetti {
   0% {

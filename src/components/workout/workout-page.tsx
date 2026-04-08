@@ -26,6 +26,14 @@ import { WarmUpReminder } from './warm-up-reminder'
 import { PerExerciseRecords } from './per-exercise-records'
 import type { ExerciseData } from './types'
 
+const WORKOUT_TIPS = [
+  '🏋️ Начинайте тренировку с 5-минутной разминки для подготовки мышц',
+  '💧 Пейте воду до, во время и после тренировки',
+  '😴 Не забывайте о дне отдыха — мышцы растут во время восстановления',
+  '📊 Ведите дневник тренировок для отслеживания прогресса',
+  '🥗 Убедитесь, что получаете достаточно белка после тренировки',
+]
+
 // ─── Component ─────────────────────────────────────────────────────────────
 
 export function WorkoutPage() {
@@ -59,6 +67,7 @@ export function WorkoutPage() {
     () => false,
   )
   const phraseIdx = mounted ? new Date().getDate() % WORKOUT_PHRASES.length : 0
+  const tipIdx = mounted ? new Date().getDate() % WORKOUT_TIPS.length : 0
 
   const workoutSections: SectionDef[] = useMemo(() => [
     { id: 'stats', title: 'Статистика', icon: '📊', defaultVisible: true, defaultOrder: 0 },
@@ -151,6 +160,17 @@ export function WorkoutPage() {
                       <span className="font-semibold tabular-nums">{totalHours}ч</span> за месяц
                     </span>
                   </div>
+                )}
+                {!loading && (
+                  <Card className="glass-card mt-4 overflow-hidden">
+                    <CardContent className="flex items-center gap-3 py-3 px-4">
+                      <Sparkles className="h-4 w-4 text-amber-500 shrink-0" />
+                      <p className="text-xs text-muted-foreground italic leading-relaxed">
+                        <span className="font-medium text-foreground/80 not-italic">Совет дня: </span>
+                        {WORKOUT_TIPS[tipIdx]}
+                      </p>
+                    </CardContent>
+                  </Card>
                 )}
               </DashboardSection>
             )

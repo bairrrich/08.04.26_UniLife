@@ -111,6 +111,24 @@ const SECOND_BLOB_TO: Record<string, string> = {
   zinc: 'to-neutral-400/5',
 }
 
+// ─── Accent Gradient Underline Map ─────────────────────────────────────
+
+const ACCENT_GRADIENTS: Record<string, string> = {
+  emerald: 'from-emerald-400 to-teal-400/0',
+  sky: 'from-sky-400 to-blue-400/0',
+  blue: 'from-blue-400 to-indigo-400/0',
+  amber: 'from-amber-400 to-orange-400/0',
+  violet: 'from-violet-400 to-purple-400/0',
+  rose: 'from-rose-400 to-pink-400/0',
+  teal: 'from-teal-400 to-cyan-400/0',
+  cyan: 'from-cyan-400 to-sky-400/0',
+  orange: 'from-orange-400 to-amber-400/0',
+  red: 'from-red-400 to-rose-400/0',
+  indigo: 'from-indigo-400 to-violet-400/0',
+  pink: 'from-pink-400 to-rose-400/0',
+  zinc: 'from-zinc-400 to-neutral-400/0',
+}
+
 // ─── Component ────────────────────────────────────────────────────────
 
 export function PageHeader({
@@ -130,6 +148,7 @@ export function PageHeader({
   const blobTo = BLOB_TO[accent] || BLOB_TO.emerald
   const secondBlobFrom = SECOND_BLOB_FROM[accent] || SECOND_BLOB_FROM.emerald
   const secondBlobTo = SECOND_BLOB_TO[accent] || SECOND_BLOB_TO.emerald
+  const underlineGradient = ACCENT_GRADIENTS[accent] || ACCENT_GRADIENTS.emerald
 
   return (
     <div className={cn('relative overflow-hidden', className)}>
@@ -174,17 +193,38 @@ export function PageHeader({
                 )}
               >
                 {title}
+                {/* Animated gradient underline */}
+                <span
+                  className={cn(
+                    'mt-1 block h-0.5 bg-gradient-to-r',
+                    underlineGradient,
+                  )}
+                  style={{
+                    animation: 'width-grow 0.5s ease-out forwards',
+                  }}
+                />
               </h1>
-              {badge && <div className="shrink-0">{badge}</div>}
+              {badge && (
+                <div className="shrink-0 shimmer-border rounded-full">{badge}</div>
+              )}
             </div>
             {description && (
-              <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
+              <p
+                className="text-sm text-muted-foreground mt-0.5 fade-in-up"
+                style={{ animationDelay: '150ms', animationFillMode: 'both' }}
+              >
+                {description}
+              </p>
             )}
           </div>
         </div>
 
         {/* Right: Actions */}
-        {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
+        {actions && (
+          <div className="flex items-center gap-2 shrink-0 hover-lift active-press rounded-lg">
+            {actions}
+          </div>
+        )}
       </div>
 
       {/* Extra content below header */}

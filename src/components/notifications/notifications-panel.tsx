@@ -22,6 +22,7 @@ import {
   Dumbbell,
   Trophy,
   Check,
+  CheckCheck,
   RefreshCw,
   Bell,
   Target,
@@ -48,30 +49,34 @@ interface NotificationsData {
 
 // ── Config maps ────────────────────────────────────────────────────────
 
-const TYPE_STYLES: Record<NotificationItem['type'], { border: string; bg: string; iconBg: string; badge: string }> = {
+const TYPE_STYLES: Record<NotificationItem['type'], { border: string; bg: string; iconBg: string; badge: string; dot: string }> = {
   warning: {
     border: 'border-l-red-500',
     bg: 'bg-red-500/5',
     iconBg: 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400',
     badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300',
+    dot: 'bg-red-500',
   },
   success: {
     border: 'border-l-emerald-500',
     bg: 'bg-emerald-500/5',
     iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400',
     badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+    dot: 'bg-emerald-500',
   },
   info: {
     border: 'border-l-blue-500',
     bg: 'bg-blue-500/5',
     iconBg: 'bg-blue-100 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400',
     badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300',
+    dot: 'bg-blue-500',
   },
   reminder: {
     border: 'border-l-amber-500',
     bg: 'bg-amber-500/5',
     iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-500/15 dark:text-amber-400',
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+    dot: 'bg-amber-500',
   },
 }
 
@@ -365,7 +370,7 @@ function NotificationCard({
               {notification.title}
             </h4>
             {!notification.read && (
-              <span className="shrink-0 h-2 w-2 rounded-full bg-primary mt-1.5" />
+              <span className={cn('shrink-0 h-2 w-2 rounded-full mt-1.5', style.dot)} />
             )}
           </div>
           <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 mb-1.5">
@@ -602,7 +607,7 @@ export function NotificationsPanel({
                   onClick={handleMarkAllRead}
                   className="h-7 text-xs text-muted-foreground hover:text-foreground"
                 >
-                  <Check className="h-3.5 w-3.5 mr-1" />
+                  <CheckCheck className="h-3.5 w-3.5 mr-1" />
                   Прочитать все
                 </Button>
               )}
