@@ -16,7 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import { PageHeader } from '@/components/layout/page-header'
+import { ModuleHeader } from '@/components/layout/module-header'
 import { ProfileSection } from './settings/profile-section'
 import { NotificationsSection } from './settings/notifications-section'
 import { ThemeSection } from './settings/theme-section'
@@ -293,12 +293,13 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <PageHeader
+      <ModuleHeader
         icon={Settings}
         title="Настройки"
         description="Управление профилем и параметрами приложения"
         accent="zinc"
         noBlobs
+        showCustomize={false}
       />
 
       {/* Quick Stats Card */}

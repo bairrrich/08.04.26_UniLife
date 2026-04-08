@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import dynamic from 'next/dynamic'
 import { useAppStore } from '@/store/use-app-store'
 import { AppModule } from '@/store/use-app-store'
+import { formatDayBadge } from '@/lib/date-format'
 import { LayoutDashboard, Settings2, CalendarDays, Flame, Target, Sparkles } from 'lucide-react'
 import { PageHeader } from '@/components/layout/page-header'
 import { Badge } from '@/components/ui/badge'
@@ -891,7 +892,7 @@ export default function DashboardPage() {
         badge={
           <Badge variant="secondary" className="hidden gap-1.5 text-[10px] font-normal sm:inline-flex">
             <CalendarDays className="h-3 w-3" />
-            {now.toLocaleDateString('ru-RU', { weekday: 'long' })}
+            {formatDayBadge(now)}
           </Badge>
         }
         actions={

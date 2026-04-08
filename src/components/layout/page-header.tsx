@@ -221,7 +221,7 @@ export function PageHeader({
 
         {/* Right: Actions */}
         {actions && (
-          <div className="flex items-center gap-2 shrink-0 hover-lift active-press rounded-lg">
+          <div className="flex items-center gap-2 shrink-0">
             {actions}
           </div>
         )}

@@ -1,7 +1,8 @@
 'use client'
 
 import { useMemo, useCallback, useState, useEffect } from 'react'
-import { Crosshair, Plus, Target, AlertCircle, Calendar, AlertTriangle, ChevronRight, Quote, Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Heart, Briefcase, ArrowRight, Search, X } from 'lucide-react'
+import { formatDayBadge } from '@/lib/date-format'
+import { Crosshair, Plus, Target, AlertCircle, CalendarDays, AlertTriangle, ChevronRight, Quote, Sparkles, BookOpen, PiggyBank, Dumbbell, GraduationCap, Heart, Briefcase, ArrowRight, Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -10,8 +11,8 @@ import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useGoals } from './hooks'
-import { PageHeader } from '@/components/layout/page-header'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { ModuleHeader } from '@/components/layout/module-header'
+import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 import { getMotivationalPhrase, getMotivationalQuote } from './constants'
 import { GoalStats } from './goal-stats'
@@ -43,13 +44,6 @@ const GOAL_QUOTES = [
 function getDailyGoalQuote() {
   const idx = new Date().getDate() % GOAL_QUOTES.length
   return GOAL_QUOTES[idx]
-}
-
-function getTodayBadge() {
-  const now = new Date()
-  const days = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота']
-  const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
-  return `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`
 }
 
 // ─── Sample goal suggestions for empty state ────────────────────────────────
@@ -131,7 +125,6 @@ const SAMPLE_GOALS = [
 export default function GoalsPage() {
   // ── Hydration guard — timezone-dependent date formatting ──
   const [mounted, setMounted] = useState(false)
-  const todayBadge = useMemo(() => mounted ? getTodayBadge() : '', [mounted])
   const dailyMotivationalPhrase = useMemo(() => mounted ? getMotivationalSubtitle() : '', [mounted])
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -233,7 +226,7 @@ export default function GoalsPage() {
   }, [goals])
   const inProgressCount = useMemo(() =>
     goals.filter(g => g.status === 'active' && g.progress > 0 && g.progress < 100).length
-  , [goals])
+    , [goals])
   const motivationalQuote = useMemo(() => mounted ? getDailyGoalQuote() : { text: '', author: '' }, [mounted])
   const motivationalSubtitle = useMemo(() => {
     if (activeGoalsCount === 0) return 'Начните ставить цели — маленькие шаги ведут к большим результатам'
@@ -251,40 +244,30 @@ export default function GoalsPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Header */}
-      <div className="relative overflow-hidden">
-        {/* Gradient blobs */}
-        <div className="absolute -top-20 -left-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-        <PageHeader
-          icon={Crosshair}
-          title="Цели"
-          description={
-            <span className="flex items-center gap-2 flex-wrap">
-              <span>Трекер целей и достижений</span>
-              <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
-                <Calendar className="h-3 w-3" />
-                {todayBadge}
-              </Badge>
-            </span>
-          }
-          accent="indigo"
-          actions={
-            <div className="flex items-center gap-2 shrink-0">
-              <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-              <Button onClick={openAddDialog} size="sm" className="gap-1.5 shrink-0">
-                <Plus className="h-4 w-4" /><span className="hidden sm:inline">Новая цель</span>
-              </Button>
-            </div>
-          }
-        />
-        {/* Motivational subtitle based on active goals */}
-        {mounted && goals.length > 0 && (
-          <p className="text-sm text-muted-foreground mt-1.5 pl-[2px] animate-fade-in">
-            {motivationalSubtitle}
-          </p>
-        )}
-      </div>
+      <ModuleHeader
+        icon={Crosshair}
+        title="Цели"
+        description="Трекер целей и достижений"
+        badge={
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
+            {formatDayBadge(new Date())}
+          </Badge>
+        }
+        accent="indigo"
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Новая цель',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: openAddDialog,
+        }}
+      />
+      {/* Motivational subtitle based on active goals */}
+      {mounted && goals.length > 0 && (
+        <p className="text-sm text-muted-foreground mt-1.5 pl-[2px] animate-fade-in">
+          {motivationalSubtitle}
+        </p>
+      )}
 
       {/* Quick Stats Summary */}
       <div className="grid grid-cols-3 gap-3 stagger-children">
@@ -314,43 +297,47 @@ export default function GoalsPage() {
       </div>
 
       {/* Motivational Quote */}
-      {mounted && !loading && (
-        <Card className="overflow-hidden card-hover animate-fade-in">
-          <CardContent className="flex items-center gap-3 py-3 px-4">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 shadow-sm">
-              <Quote className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-sm text-muted-foreground italic leading-relaxed flex-1">
-              &ldquo;{motivationalQuote.text}&rdquo;
-              <span className="text-xs ml-2 not-italic text-muted-foreground/70">— {motivationalQuote.author}</span>
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {
+        mounted && !loading && (
+          <Card className="overflow-hidden card-hover animate-fade-in">
+            <CardContent className="flex items-center gap-3 py-3 px-4">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 shadow-sm">
+                <Quote className="h-4 w-4 text-white" />
+              </div>
+              <p className="text-sm text-muted-foreground italic leading-relaxed flex-1">
+                &ldquo;{motivationalQuote.text}&rdquo;
+                <span className="text-xs ml-2 not-italic text-muted-foreground/70">— {motivationalQuote.author}</span>
+              </p>
+            </CardContent>
+          </Card>
+        )
+      }
 
       {/* Search bar (below header, above content) */}
-      {mounted && goals.length > 0 && (
-        <div className="relative max-w-md animate-fade-in">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          <Input
-            type="text"
-            placeholder="Поиск целей..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 pr-8 h-9 text-sm"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-              aria-label="Очистить поиск"
-            >
-              <X className="h-3 w-3" />
-            </button>
-          )}
-        </div>
-      )}
+      {
+        mounted && goals.length > 0 && (
+          <div className="relative max-w-md animate-fade-in">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              placeholder="Поиск целей..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 pr-8 h-9 text-sm"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-5 w-5 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                aria-label="Очистить поиск"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        )
+      }
 
       {/* Goal dialog — rendered at page root, not inside header */}
       <GoalDialog
@@ -371,244 +358,246 @@ export default function GoalsPage() {
         submitting={submitting} onSubmit={handleSubmit}
       />
 
-      {loading ? (
-        <div className="space-y-6">
-          <div className="grid grid-cols-3 gap-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={`stat-skel-${i}`} className="skeleton-shimmer h-[100px] rounded-xl" />
-            ))}
-          </div>
-          <div className="flex gap-2">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={`tab-skel-${i}`} className="skeleton-shimmer h-9 w-24 rounded-lg" />
-            ))}
-          </div>
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={`goal-skel-${i}`} className="skeleton-shimmer h-32 rounded-xl" />
-            ))}
-          </div>
-        </div>
-      ) : goals.length === 0 ? (
-        /* ─── Enhanced Empty State with CSS Illustration ──────────────────── */
-        <div className="space-y-6 animate-slide-up">
-          <Card className="overflow-hidden relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-            <CardContent className="relative py-14 text-center px-4">
-              {/* CSS Illustration — abstract target/bullseye */}
-              <div className="relative mx-auto mb-6 w-32 h-32 sm:w-40 sm:h-40">
-                {/* Outer glow */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/20 blur-xl" />
-                {/* Concentric rings */}
-                <div className="absolute inset-0 rounded-full border-2 border-dashed border-emerald-200/40 dark:border-emerald-700/30" />
-                <div className="absolute inset-4 rounded-full border-2 border-dashed border-emerald-300/30 dark:border-emerald-600/25" />
-                <div className="absolute inset-8 rounded-full border-2 border-emerald-300/40 dark:border-emerald-500/30" />
-                <div className="absolute inset-12 rounded-full border-2 border-emerald-400/50 dark:border-emerald-400/40" />
-                {/* Center icon */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 float-animation">
-                    <Target className="h-10 w-10 text-white" />
-                  </div>
-                </div>
-                {/* Floating decorative elements */}
-                <div className="absolute top-2 right-4 h-3 w-3 rounded-full bg-amber-400/60 particle-dot" />
-                <div className="absolute bottom-4 left-2 h-2.5 w-2.5 rounded-full bg-violet-400/60 particle-dot" />
-                <div className="absolute top-8 left-6 h-2 w-2 rounded-full bg-rose-400/50 particle-dot" />
-                <div className="absolute bottom-8 right-6 h-3 w-3 rounded-full bg-blue-400/50 particle-dot" />
-              </div>
-
-              <h3 className="text-lg font-semibold mb-1.5">Нет целей</h3>
-              <p className="text-muted-foreground text-sm mb-1 max-w-xs mx-auto">
-                Поставьте первую цель и начните двигаться к ней.
-              </p>
-              <p className="text-sm text-muted-foreground/70 italic mb-6 max-w-sm mx-auto">
-                &ldquo;{dailyMotivationalPhrase}&rdquo;
-              </p>
-              <Button
-                onClick={openAddDialog}
-                size="lg"
-                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
-              >
-                <Plus className="h-5 w-5 mr-2" />Поставить цель
-              </Button>
-            </CardContent>
-          </Card>
-
-          {/* Sample Goal Suggestions */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4 text-amber-500" />
-              <h3 className="text-sm font-semibold">Идеи для целей</h3>
-              <span className="text-xs text-muted-foreground">— нажмите, чтобы начать</span>
+      {
+        loading ? (
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={`stat-skel-${i}`} className="skeleton-shimmer h-[100px] rounded-xl" />
+              ))}
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
-              {SAMPLE_GOALS.map((sample) => (
-                <button
-                  key={sample.title}
-                  type="button"
-                  onClick={() => handleSampleClick(sample)}
-                  className={cn(
-                    'group text-left rounded-xl border p-4 transition-all duration-200 active-press',
-                    'hover:scale-[1.02] hover:shadow-md',
-                    'bg-card border-border hover:border-border',
-                  )}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      'h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-200 group-hover:shadow-md bg-gradient-to-br',
-                      sample.gradient,
-                    )}>
-                      <div className="text-white">{sample.icon}</div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold leading-tight group-hover:text-foreground transition-colors">
-                        {sample.title}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">{sample.description}</p>
-                      {sample.targetValue && (
-                        <p className="text-[10px] text-muted-foreground/60 mt-1 tabular-nums">
-                          Цель: {Number(sample.targetValue).toLocaleString('ru-RU')} {sample.unit}
-                        </p>
-                      )}
-                    </div>
-                    <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0 mt-1 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </button>
+            <div className="flex gap-2">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={`tab-skel-${i}`} className="skeleton-shimmer h-9 w-24 rounded-lg" />
+              ))}
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={`goal-skel-${i}`} className="skeleton-shimmer h-32 rounded-xl" />
               ))}
             </div>
           </div>
-        </div>
-      ) : (
-        <>
-          {loaded && visibleOrder.map(sectionId => {
-            switch (sectionId) {
-              case 'stats':
-                return (
-                  <DashboardSection key={sectionId} id={sectionId} title="Статистика" icon={<span>📊</span>}>
-                    <GoalStats goals={goals} stats={stats} />
-                  </DashboardSection>
-                )
-              case 'quote':
-                return (
-                  <DashboardSection key={sectionId} id={sectionId} title="Мотивация" icon={<span>💬</span>}>
-                    <Card className="overflow-hidden relative card-hover">
-                      <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-                      <CardContent className="relative p-4">
-                        <div className="flex items-start gap-3">
-                          <div className="flex h-9 w-9 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
-                            <Quote className="h-4 w-4 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm text-foreground/90 italic leading-relaxed">
-                              &ldquo;{quote.text}&rdquo;
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
-                              <Sparkles className="h-3 w-3 text-amber-500" />
-                              — {quote.author}
-                            </p>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </DashboardSection>
-                )
-              default: return null
-            }
-          })}
-
-          {/* Motivational Progress Summary */}
-          {goals.length > 0 && (
-            <Card className="animate-slide-up overflow-hidden relative">
+        ) : goals.length === 0 ? (
+          /* ─── Enhanced Empty State with CSS Illustration ──────────────────── */
+          <div className="space-y-6 animate-slide-up">
+            <Card className="overflow-hidden relative">
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
-              <CardContent className="relative p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Общий прогресс</span>
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                    {stats.completedGoals} из {stats.totalGoals} целей
-                  </span>
+              <CardContent className="relative py-14 text-center px-4">
+                {/* CSS Illustration — abstract target/bullseye */}
+                <div className="relative mx-auto mb-6 w-32 h-32 sm:w-40 sm:h-40">
+                  {/* Outer glow */}
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/20 to-teal-400/20 blur-xl" />
+                  {/* Concentric rings */}
+                  <div className="absolute inset-0 rounded-full border-2 border-dashed border-emerald-200/40 dark:border-emerald-700/30" />
+                  <div className="absolute inset-4 rounded-full border-2 border-dashed border-emerald-300/30 dark:border-emerald-600/25" />
+                  <div className="absolute inset-8 rounded-full border-2 border-emerald-300/40 dark:border-emerald-500/30" />
+                  <div className="absolute inset-12 rounded-full border-2 border-emerald-400/50 dark:border-emerald-400/40" />
+                  {/* Center icon */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/25 float-animation">
+                      <Target className="h-10 w-10 text-white" />
+                    </div>
+                  </div>
+                  {/* Floating decorative elements */}
+                  <div className="absolute top-2 right-4 h-3 w-3 rounded-full bg-amber-400/60 particle-dot" />
+                  <div className="absolute bottom-4 left-2 h-2.5 w-2.5 rounded-full bg-violet-400/60 particle-dot" />
+                  <div className="absolute top-8 left-6 h-2 w-2 rounded-full bg-rose-400/50 particle-dot" />
+                  <div className="absolute bottom-8 right-6 h-3 w-3 rounded-full bg-blue-400/50 particle-dot" />
                 </div>
-                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
-                    style={{ width: `${stats.totalGoals > 0 ? Math.round((stats.completedGoals / stats.totalGoals) * 100) : 0}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1.5">
-                  {stats.totalGoals > 0
-                    ? `Выполнено ${Math.round((stats.completedGoals / stats.totalGoals) * 100)}% всех целей`
-                    : 'Пока нет целей'
-                  }
+
+                <h3 className="text-lg font-semibold mb-1.5">Нет целей</h3>
+                <p className="text-muted-foreground text-sm mb-1 max-w-xs mx-auto">
+                  Поставьте первую цель и начните двигаться к ней.
                 </p>
+                <p className="text-sm text-muted-foreground/70 italic mb-6 max-w-sm mx-auto">
+                  &ldquo;{dailyMotivationalPhrase}&rdquo;
+                </p>
+                <Button
+                  onClick={openAddDialog}
+                  size="lg"
+                  className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 transition-all active-press"
+                >
+                  <Plus className="h-5 w-5 mr-2" />Поставить цель
+                </Button>
               </CardContent>
             </Card>
-          )}
 
-          {/* Overdue Goals Attention Banner */}
-          {overdueGoals.length > 0 && (
-            <OverdueBanner overdueGoals={overdueGoals} />
-          )}
-
-          <div className="flex items-center gap-3 flex-wrap">
-            <FilterTabs
-              filterTab={filterTab}
-              setFilterTab={setFilterTab}
-              categoryFilter={categoryFilter}
-              setCategoryFilter={setCategoryFilter}
-              goals={goals}
-            />
-            <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-              <SelectTrigger className="w-[160px] h-9 text-sm">
-                <SelectValue placeholder="Сортировка" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="default">По умолчанию</SelectItem>
-                <SelectItem value="priority">По приоритету</SelectItem>
-                <SelectItem value="deadline">По дедлайну</SelectItem>
-                <SelectItem value="progress">По прогрессу</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {sortedGoals.length === 0 ? (
-            <Card className="animate-slide-up overflow-hidden relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-sky-500/5 pointer-events-none" />
-              <CardContent className="relative flex flex-col items-center py-4">
-                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-400/80 to-sky-400/80 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/15">
-                  <AlertCircle className="h-6 w-6 text-white" />
-                </div>
-                <p className="text-sm font-medium text-foreground/80">
-                  {searchQuery.trim()
-                    ? 'Ничего не найдено'
-                    : filterTab === 'active'
-                      ? 'Нет активных целей'
-                      : filterTab === 'completed'
-                        ? 'Нет завершённых целей'
-                        : 'Нет целей в этой категории'
-                  }
-                </p>
-                <p className="text-xs text-muted-foreground/60 mt-1 italic">
-                  &ldquo;{getMotivationalPhrase()}&rdquo;
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-children">
-              {sortedGoals.map((goal) => (
-                <GoalCard
-                  key={goal.id} goal={goal}
-                  onEdit={openEditDialog}
-                  onUpdateProgress={handleUpdateProgress}
-                  onComplete={handleComplete}
-                  onDelete={handleDelete}
-                />
-              ))}
+            {/* Sample Goal Suggestions */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <h3 className="text-sm font-semibold">Идеи для целей</h3>
+                <span className="text-xs text-muted-foreground">— нажмите, чтобы начать</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 stagger-children">
+                {SAMPLE_GOALS.map((sample) => (
+                  <button
+                    key={sample.title}
+                    type="button"
+                    onClick={() => handleSampleClick(sample)}
+                    className={cn(
+                      'group text-left rounded-xl border p-4 transition-all duration-200 active-press',
+                      'hover:scale-[1.02] hover:shadow-md',
+                      'bg-card border-border hover:border-border',
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        'h-10 w-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm transition-all duration-200 group-hover:shadow-md bg-gradient-to-br',
+                        sample.gradient,
+                      )}>
+                        <div className="text-white">{sample.icon}</div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold leading-tight group-hover:text-foreground transition-colors">
+                          {sample.title}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">{sample.description}</p>
+                        {sample.targetValue && (
+                          <p className="text-[10px] text-muted-foreground/60 mt-1 tabular-nums">
+                            Цель: {Number(sample.targetValue).toLocaleString('ru-RU')} {sample.unit}
+                          </p>
+                        )}
+                      </div>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground/40 shrink-0 mt-1 group-hover:text-muted-foreground group-hover:translate-x-0.5 transition-all" />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          )}
-        </>
-      )}
+          </div>
+        ) : (
+          <>
+            {loaded && visibleOrder.map(sectionId => {
+              switch (sectionId) {
+                case 'stats':
+                  return (
+                    <DashboardSection key={sectionId} id={sectionId} title="Статистика" icon={<span>📊</span>}>
+                      <GoalStats goals={goals} stats={stats} />
+                    </DashboardSection>
+                  )
+                case 'quote':
+                  return (
+                    <DashboardSection key={sectionId} id={sectionId} title="Мотивация" icon={<span>💬</span>}>
+                      <Card className="overflow-hidden relative card-hover">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+                        <CardContent className="relative p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 flex items-center justify-center shrink-0 shadow-sm">
+                              <Quote className="h-4 w-4 text-white" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm text-foreground/90 italic leading-relaxed">
+                                &ldquo;{quote.text}&rdquo;
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-1.5 flex items-center gap-1">
+                                <Sparkles className="h-3 w-3 text-amber-500" />
+                                — {quote.author}
+                              </p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </DashboardSection>
+                  )
+                default: return null
+              }
+            })}
+
+            {/* Motivational Progress Summary */}
+            {goals.length > 0 && (
+              <Card className="animate-slide-up overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-amber-500/5 pointer-events-none" />
+                <CardContent className="relative p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium">Общий прогресс</span>
+                    <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      {stats.completedGoals} из {stats.totalGoals} целей
+                    </span>
+                  </div>
+                  <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-700 ease-out"
+                      style={{ width: `${stats.totalGoals > 0 ? Math.round((stats.completedGoals / stats.totalGoals) * 100) : 0}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {stats.totalGoals > 0
+                      ? `Выполнено ${Math.round((stats.completedGoals / stats.totalGoals) * 100)}% всех целей`
+                      : 'Пока нет целей'
+                    }
+                  </p>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Overdue Goals Attention Banner */}
+            {overdueGoals.length > 0 && (
+              <OverdueBanner overdueGoals={overdueGoals} />
+            )}
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <FilterTabs
+                filterTab={filterTab}
+                setFilterTab={setFilterTab}
+                categoryFilter={categoryFilter}
+                setCategoryFilter={setCategoryFilter}
+                goals={goals}
+              />
+              <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+                <SelectTrigger className="w-[160px] h-9 text-sm">
+                  <SelectValue placeholder="Сортировка" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">По умолчанию</SelectItem>
+                  <SelectItem value="priority">По приоритету</SelectItem>
+                  <SelectItem value="deadline">По дедлайну</SelectItem>
+                  <SelectItem value="progress">По прогрессу</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {sortedGoals.length === 0 ? (
+              <Card className="animate-slide-up overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-violet-500/5 via-transparent to-sky-500/5 pointer-events-none" />
+                <CardContent className="relative flex flex-col items-center py-4">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-violet-400/80 to-sky-400/80 flex items-center justify-center mb-3 shadow-lg shadow-violet-500/15">
+                    <AlertCircle className="h-6 w-6 text-white" />
+                  </div>
+                  <p className="text-sm font-medium text-foreground/80">
+                    {searchQuery.trim()
+                      ? 'Ничего не найдено'
+                      : filterTab === 'active'
+                        ? 'Нет активных целей'
+                        : filterTab === 'completed'
+                          ? 'Нет завершённых целей'
+                          : 'Нет целей в этой категории'
+                    }
+                  </p>
+                  <p className="text-xs text-muted-foreground/60 mt-1 italic">
+                    &ldquo;{getMotivationalPhrase()}&rdquo;
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 stagger-children">
+                {sortedGoals.map((goal) => (
+                  <GoalCard
+                    key={goal.id} goal={goal}
+                    onEdit={openEditDialog}
+                    onUpdateProgress={handleUpdateProgress}
+                    onComplete={handleComplete}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )
+      }
 
       <SectionCustomizer open={customizerOpen} onOpenChange={setCustomizerOpen} sections={sectionDefs} config={config} onToggle={toggleVisible} onMove={moveSection} onReset={resetConfig} moduleTitle="Цели" />
-    </div>
+    </div >
   )
 }
 

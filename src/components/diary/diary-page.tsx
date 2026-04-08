@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { safeJson } from '@/lib/safe-fetch'
+import { formatDayBadge } from '@/lib/date-format'
 import {
   BookOpen,
   Plus,
@@ -10,7 +11,7 @@ import {
   CalendarDays,
   List,
 } from 'lucide-react'
-import { PageHeader } from '@/components/layout/page-header'
+import { ModuleHeader } from '@/components/layout/module-header'
 import { Card, CardContent } from '@/components/ui/card'
 import {
   Dialog,
@@ -41,7 +42,7 @@ import { WritingStatsWidget } from './writing-stats-widget'
 import { WritingPrompts } from './writing-prompts'
 import { WritingStreakBadge } from './writing-streak-badge'
 import { WritingStreakCard } from './writing-streak-card'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
 const emptyForm: EntryFormData = {
@@ -366,7 +367,7 @@ export default function DiaryPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <PageHeader
+      <ModuleHeader
         icon={BookOpen}
         title="Дневник"
         description="Записывайте мысли, отслеживайте настроение"
@@ -374,26 +375,25 @@ export default function DiaryPage() {
         badge={
           <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
             <CalendarDays className="h-3 w-3" />
-            {format(today, 'd MMMM, EEEE', { locale: ru })}
+            {formatDayBadge(today)}
           </Badge>
         }
-        actions={
-          <div className="flex items-center gap-2">
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <div className="flex items-center border rounded-xl overflow-hidden">
-              <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')} className="rounded-none px-3">
-                <CalendarDays className="h-4 w-4" />
-              </Button>
-              <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('list')} className="rounded-none px-3">
-                <List className="h-4 w-4" />
-              </Button>
-            </div>
-            <Button onClick={openNewEntryDialog} size="sm" className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Запись</span>
+        extraActions={
+          <div className="flex items-center border rounded-xl overflow-hidden">
+            <Button variant={viewMode === 'calendar' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('calendar')} className="rounded-none px-3">
+              <CalendarDays className="h-4 w-4" />
+            </Button>
+            <Button variant={viewMode === 'list' ? 'default' : 'ghost'} size="sm" onClick={() => setViewMode('list')} className="rounded-none px-3">
+              <List className="h-4 w-4" />
             </Button>
           </div>
         }
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Запись',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: openNewEntryDialog,
+        }}
         extra={
           !isLoading && entries.length > 0 && (
             <div className="mt-2 flex items-center gap-3">

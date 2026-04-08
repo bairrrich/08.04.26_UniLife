@@ -1,6 +1,6 @@
 'use client'
 
-import { Rss, Plus, TrendingUp, RefreshCw, Flame, User, BarChart3, PenLine } from 'lucide-react'
+import { Rss, Plus, TrendingUp, RefreshCw, Flame, User, BarChart3, PenLine, CalendarDays } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,8 +11,8 @@ import { FeedEmptyState } from './empty-state'
 import { useFeed } from './hooks'
 import { getTimeGroup, ENTITY_LABELS } from './constants'
 import { useState, useMemo } from 'react'
-import { PageHeader } from '@/components/layout/page-header'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { ModuleHeader } from '@/components/layout/module-header'
+import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 import { cn } from '@/lib/utils'
 
@@ -111,7 +111,7 @@ export default function FeedPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <PageHeader
+      <ModuleHeader
         icon={Rss}
         title="Лента"
         description={
@@ -121,20 +121,17 @@ export default function FeedPage() {
         }
         accent="pink"
         badge={
-          <Badge variant="secondary" className="text-[10px] h-5 px-1.5 font-normal tabular-nums">
-            {totalPosts}
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
+            {totalPosts} {totalPosts === 1 ? 'пост' : totalPosts < 5 ? 'поста' : 'постов'}
           </Badge>
         }
-        actions={
-          <>
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-              <PenLine className="h-4 w-4" />
-              <span className="hidden sm:inline">Написать пост</span>
-              <span className="sm:hidden">Пост</span>
-            </Button>
-          </>
-        }
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Написать пост',
+          icon: <PenLine className="h-4 w-4" />,
+          onClick: () => setDialogOpen(true),
+        }}
       />
 
       {/* Trending Topics Sidebar — desktop only */}

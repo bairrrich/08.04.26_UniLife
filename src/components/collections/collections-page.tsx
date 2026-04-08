@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Library, Plus, Search, LayoutGrid, List, SortAsc, Star, ChevronLeft, ChevronRight, CalendarDays } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,8 +24,8 @@ import { ItemCard } from './item-card'
 import { AddItemDialog } from './add-item-dialog'
 import { ItemDialog } from './item-dialog'
 import { cn } from '@/lib/utils'
-import { PageHeader } from '@/components/layout/page-header'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, ModuleEmptyState, type SectionDef } from '@/components/shared'
+import { ModuleHeader } from '@/components/layout/module-header'
+import { useSectionConfig, SectionCustomizer, ModuleEmptyState, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
 // Floating icons for empty state
@@ -127,24 +127,23 @@ export default function CollectionsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* Header */}
-      <PageHeader
+      <ModuleHeader
         icon={Library}
         title="Коллекции"
         description="Книги, фильмы, рецепты и полезные находки"
         accent="violet"
         badge={
-          <Badge variant="secondary" className="hidden text-[10px] font-normal sm:inline-flex">
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
             {activeType === 'all' ? 'Все' : (TYPE_LABELS[activeType as CollectionType] || activeType)}
           </Badge>
         }
-        actions={
-          <>
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
-            </Button>
-          </>
-        }
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Добавить',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: () => setDialogOpen(true),
+        }}
       />
       <AddItemDialog
         open={dialogOpen} onOpenChange={setDialogOpen}

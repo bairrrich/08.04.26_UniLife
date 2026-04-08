@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, useMemo, useCallback, useEffect } from 'react'
+import { formatDayBadge, formatMonthBadge } from '@/lib/date-format'
 import {
   CalendarClock,
+  CalendarDays,
   Plus,
   ChevronLeft,
   ChevronRight,
@@ -16,11 +18,12 @@ import {
   AlertCircle,
   Wallet,
 } from 'lucide-react'
-import { PageHeader } from '@/components/layout/page-header'
-import { ModuleEmptyState } from '@/components/shared'
+import { ModuleHeader } from '@/components/layout/module-header'
+import { ModuleEmptyState, useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
+import DashboardSection from '@/components/dashboard/dashboard-section'
 
 import { useShifts } from './hooks'
 import {
@@ -557,6 +560,21 @@ export function ShiftsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editShift, setEditShift] = useState<Shift | null>(null)
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+
+  // ─── Section Config ───────────────────────────────────────────────────
+  const shiftSections: SectionDef[] = useMemo(() => [
+    { id: 'stats', title: 'Статистика', icon: '📊', defaultVisible: true, defaultOrder: 0 },
+    { id: 'week-summary', title: 'Итоги недели', icon: '📅', defaultVisible: true, defaultOrder: 1 },
+    { id: 'streak', title: 'Серия', icon: '🔥', defaultVisible: true, defaultOrder: 2 },
+    { id: 'tips', title: 'Совет дня', icon: '💡', defaultVisible: true, defaultOrder: 3 },
+    { id: 'upcoming', title: 'Ближайшие смены', icon: '⏰', defaultVisible: true, defaultOrder: 4 },
+    { id: 'earnings-chart', title: 'График заработка', icon: '📈', defaultVisible: true, defaultOrder: 5 },
+    { id: 'calendar', title: 'Календарь', icon: '🗓️', defaultVisible: true, defaultOrder: 6 },
+    { id: 'shifts-list', title: 'Список смен', icon: '📋', defaultVisible: true, defaultOrder: 7 },
+  ], [])
+
+  const { loaded, config, visibleOrder, toggleVisible, moveSection, resetConfig } = useSectionConfig('shifts', shiftSections)
 
   // Calendar days
   const calendarDays = useMemo(() => getCalendarDays(month), [month])
@@ -660,22 +678,23 @@ export function ShiftsPage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <PageHeader
+      <ModuleHeader
         icon={CalendarClock}
         title="Смены"
         description="График работы и учёт часов"
         accent="sky"
         badge={
-          <Badge variant="secondary" className="text-xs font-medium">
-            {monthLabel}
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
+            {(() => { const [y, m] = month.split('-').map(Number); return formatMonthBadge(new Date(y, m - 1, 1)) })()}
           </Badge>
         }
-        actions={
-          <Button onClick={() => { setEditShift(null); setDialogOpen(true) }} size="sm" className="gap-1.5 shrink-0">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline">Добавить смену</span>
-          </Button>
-        }
+        primaryAction={{
+          label: 'Добавить смену',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: () => { setEditShift(null); setDialogOpen(true) },
+        }}
+        onCustomize={() => setCustomizerOpen(true)}
       />
 
       {/* Month Navigation */}
@@ -704,221 +723,178 @@ export function ShiftsPage() {
         </Button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
-        <StatCard
-          icon="🕐"
-          label="Всего часов"
-          value={`${stats.totalHours.toFixed(1)}ч`}
-          accent="sky"
-          loading={loading}
-        />
-        <StatCard
-          icon="💰"
-          label="Заработок"
-          value={formatMoney(stats.totalEarnings)}
-          accent="emerald"
-          loading={loading}
-        />
-        <StatCard
-          icon="📋"
-          label="Смен"
-          value={String(stats.totalShifts)}
-          accent="blue"
-          loading={loading}
-        />
-        <StatCard
-          icon="⏱️"
-          label="Средняя смена"
-          value={stats.avgHours > 0 ? `${stats.avgHours.toFixed(1)}ч` : '—'}
-          accent="amber"
-          loading={loading}
-        />
-      </div>
+      {/* Configurable Widget Sections */}
+      {loaded && visibleOrder.map(sectionId => {
+        switch (sectionId) {
+          case 'stats':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Статистика" icon="📊">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 stagger-children">
+                  <StatCard icon="🕐" label="Всего часов" value={`${stats.totalHours.toFixed(1)}ч`} accent="sky" loading={loading} />
+                  <StatCard icon="💰" label="Заработок" value={formatMoney(stats.totalEarnings)} accent="emerald" loading={loading} />
+                  <StatCard icon="📋" label="Смен" value={String(stats.totalShifts)} accent="blue" loading={loading} />
+                  <StatCard icon="⏱️" label="Средняя смена" value={stats.avgHours > 0 ? `${stats.avgHours.toFixed(1)}ч` : '—'} accent="amber" loading={loading} />
+                </div>
+              </DashboardSection>
+            )
+          case 'week-summary':
+            return !loading && shifts.length > 0 && (
+              <DashboardSection key={sectionId} id={sectionId} title="Итоги недели" icon="📅">
+                <WeeklySummaryBar shifts={shifts} />
+              </DashboardSection>
+            )
+          case 'streak':
+            return !loading && shifts.length > 0 && (
+              <DashboardSection key={sectionId} id={sectionId} title="Серия" icon="🔥">
+                <CurrentStreakBadge shifts={shifts} />
+              </DashboardSection>
+            )
+          case 'tips':
+            return !loading && shifts.length > 0 && (
+              <DashboardSection key={sectionId} id={sectionId} title="Совет дня" icon="💡">
+                <ShiftTipsCard />
+              </DashboardSection>
+            )
+          case 'upcoming':
+            return !loading && shifts.length > 0 && (
+              <DashboardSection key={sectionId} id={sectionId} title="Ближайшие смены" icon="⏰">
+                <UpcomingShifts shifts={shifts} />
+              </DashboardSection>
+            )
+          case 'earnings-chart':
+            return !loading && shifts.length > 0 && dailyEarnings.length > 0 && (
+              <DashboardSection key={sectionId} id={sectionId} title="График заработка" icon="📈">
+                <EarningsChart earnings={dailyEarnings} isLoading={loading} />
+              </DashboardSection>
+            )
+          case 'calendar':
+            return (
+              <DashboardSection key={sectionId} id={sectionId} title="Календарь" icon="🗓️">
+                <Card className="overflow-hidden">
+                  <div className="h-1 bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400" />
+                  <CardContent className="p-3 sm:p-4">
+                    {loading ? (
+                      <div className="skeleton-shimmer h-72 rounded-lg" />
+                    ) : (
+                      <>
+                        {/* Weekday headers */}
+                        <div className="grid grid-cols-7 mb-1">
+                          {WEEKDAYS.map((wd) => (
+                            <div
+                              key={wd}
+                              className="text-center text-[11px] font-medium text-muted-foreground py-1"
+                            >
+                              {wd}
+                            </div>
+                          ))}
+                        </div>
 
-      {/* Weekly Summary Bar */}
-      {!loading && shifts.length > 0 && (
-        <WeeklySummaryBar shifts={shifts} />
-      )}
+                        {/* Calendar grid */}
+                        <div className="grid grid-cols-7 gap-1">
+                          {calendarDays.map((day, i) => {
+                            const summary = getDaySummary(day.date)
+                            const isToday = day.date === todayStr
+                            const isSelected = day.date === selectedDate
 
-      {/* Shift Tips Card */}
-      {!loading && shifts.length > 0 && (
-        <ShiftTipsCard />
-      )}
-
-      {/* Current Streak Badge */}
-      {!loading && shifts.length > 0 && (
-        <CurrentStreakBadge shifts={shifts} />
-      )}
-
-      {/* Daily Earnings Chart */}
-      {!loading && shifts.length > 0 && dailyEarnings.length > 0 && (
-        <EarningsChart earnings={dailyEarnings} isLoading={loading} />
-      )}
-
-      {/* Calendar View */}
-      <Card className="overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-sky-400 via-cyan-400 to-blue-400" />
-        <CardContent className="p-3 sm:p-4">
-          {loading ? (
-            <div className="skeleton-shimmer h-72 rounded-lg" />
-          ) : (
-            <>
-              {/* Weekday headers */}
-              <div className="grid grid-cols-7 mb-1">
-                {WEEKDAYS.map((wd) => (
-                  <div
-                    key={wd}
-                    className="text-center text-[11px] font-medium text-muted-foreground py-1"
-                  >
-                    {wd}
-                  </div>
-                ))}
-              </div>
-
-              {/* Calendar grid */}
-              <div className="grid grid-cols-7 gap-1">
-                {calendarDays.map((day, i) => {
-                  const summary = getDaySummary(day.date)
-                  const isToday = day.date === todayStr
-                  const isSelected = day.date === selectedDate
-
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => {
-                        if (summary) {
-                          setSelectedDate(isSelected ? null : day.date)
-                        } else if (day.currentMonth) {
-                          // Click on empty day: open add dialog with pre-filled date
-                          setEditShift(null)
-                          setDialogOpen(true)
-                        }
-                      }}
-                      className={`
+                            return (
+                              <button
+                                key={i}
+                                type="button"
+                                onClick={() => {
+                                  if (summary) {
+                                    setSelectedDate(isSelected ? null : day.date)
+                                  } else if (day.currentMonth) {
+                                    // Click on empty day: open add dialog with pre-filled date
+                                    setEditShift(null)
+                                    setDialogOpen(true)
+                                  }
+                                }}
+                                className={`
                         relative flex flex-col items-center justify-center
                         rounded-lg py-1.5 sm:py-2 min-h-[40px] sm:min-h-[48px]
                         transition-all active-press
                         ${day.currentMonth
-                          ? 'text-foreground hover:bg-muted/60'
-                          : 'text-muted-foreground/40'
-                        }
+                                    ? 'text-foreground hover:bg-muted/60'
+                                    : 'text-muted-foreground/40'
+                                  }
                         ${isToday ? 'ring-2 ring-cyan-500/60 dark:ring-cyan-400/50 font-bold' : ''}
                         ${isSelected ? 'bg-cyan-50 dark:bg-cyan-950/40 ring-2 ring-cyan-500 dark:ring-cyan-400' : ''}
                         ${summary?.hasOvertime && day.currentMonth ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}
                       `}
-                    >
-                      <span className="text-xs sm:text-sm tabular-nums">{day.dayNum}</span>
-                      {summary && day.currentMonth && (
-                        <div className="flex items-center gap-0.5 mt-0.5">
-                          {summary.completed > 0 && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-                          )}
-                          {summary.scheduled > 0 && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400" />
-                          )}
-                          {summary.cancelled > 0 && (
-                            <span className="h-1.5 w-1.5 rounded-full bg-red-500 dark:bg-red-400" />
-                          )}
+                              >
+                                <span className="text-xs sm:text-sm tabular-nums">{day.dayNum}</span>
+                                {summary && day.currentMonth && (
+                                  <div className="flex items-center gap-0.5 mt-0.5">
+                                    {summary.completed > 0 && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
+                                    )}
+                                    {summary.scheduled > 0 && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-sky-500 dark:bg-sky-400" />
+                                    )}
+                                    {summary.cancelled > 0 && (
+                                      <span className="h-1.5 w-1.5 rounded-full bg-red-500 dark:bg-red-400" />
+                                    )}
+                                  </div>
+                                )}
+                              </button>
+                            )
+                          })}
                         </div>
-                      )}
-                    </button>
-                  )
-                })}
+
+                        {/* Legend */}
+                        <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Завершена
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> Запланирована
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Отменена
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </DashboardSection>
+            )
+          case 'shifts-list':
+            return selectedDate && selectedShifts.length > 0 ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-semibold">
+                    {formatDateLabel(selectedDate)}
+                  </h3>
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                    {selectedShifts.length} {pluralize(selectedShifts.length, 'смена', 'смены', 'смен')}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 ml-auto text-muted-foreground"
+                    onClick={() => setSelectedDate(null)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="space-y-2 stagger-children">
+                  {selectedShifts.map((shift) => (
+                    <ShiftCard
+                      key={shift.id}
+                      shift={shift}
+                      onEdit={openEditDialog}
+                      onDelete={handleDelete}
+                      onComplete={completeShift}
+                    />
+                  ))}
+                </div>
               </div>
-
-              {/* Legend */}
-              <div className="flex items-center justify-center gap-4 mt-3 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Завершена
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-sky-500" /> Запланирована
-                </span>
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-red-500" /> Отменена
-                </span>
-              </div>
-            </>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Upcoming Shifts */}
-      {!loading && shifts.length > 0 && (
-        <UpcomingShifts shifts={shifts} />
-      )}
-
-      {/* Shifts List */}
-      {selectedDate && selectedShifts.length > 0 ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">
-              {formatDateLabel(selectedDate)}
-            </h3>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              {selectedShifts.length} {pluralize(selectedShifts.length, 'смена', 'смены', 'смен')}
-            </Badge>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 ml-auto text-muted-foreground"
-              onClick={() => setSelectedDate(null)}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-          <div className="space-y-2 stagger-children">
-            {selectedShifts.map((shift) => (
-              <ShiftCard
-                key={shift.id}
-                shift={shift}
-                onEdit={openEditDialog}
-                onDelete={handleDelete}
-                onComplete={completeShift}
-              />
-            ))}
-          </div>
-        </div>
-      ) : shifts.length > 0 ? (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-sm font-semibold">Все смены</h3>
-            <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-              {shifts.length} {pluralize(shifts.length, 'смена', 'смены', 'смен')}
-            </Badge>
-          </div>
-          <div className="space-y-2 stagger-children">
-            {shifts
-                .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
-                .map((shift) => (
-                  <ShiftCard
-                    key={shift.id}
-                    shift={shift}
-                    onEdit={openEditDialog}
-                    onDelete={handleDelete}
-                    onComplete={completeShift}
-                  />
-                ))}
-          </div>
-        </div>
-      ) : loading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="skeleton-shimmer h-24 rounded-xl" />
-          ))}
-        </div>
-      ) : (
-        <ModuleEmptyState
-          icon={CalendarClock}
-          title="Нет смен"
-          description="Добавьте свою первую рабочую смену, чтобы начать отслеживать график"
-          accent="sky"
-          actionLabel="Добавить смену"
-          onAction={() => { setEditShift(null); setDialogOpen(true) }}
-        />
-      )}
+            ) : null
+          default:
+            return null
+        }
+      })}
 
       {/* Add Dialog */}
       <ShiftDialog
@@ -938,6 +914,18 @@ export function ShiftsPage() {
         onSubmit={handleEdit}
         title="Редактирование смены"
         submitLabel="Сохранить изменения"
+      />
+
+      {/* Section Customizer */}
+      <SectionCustomizer
+        open={customizerOpen}
+        onOpenChange={setCustomizerOpen}
+        sections={shiftSections}
+        config={config}
+        onToggle={toggleVisible}
+        onMove={moveSection}
+        onReset={resetConfig}
+        moduleTitle="Смены"
       />
     </div>
   )

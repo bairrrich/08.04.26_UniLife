@@ -1,14 +1,15 @@
 'use client'
 
 import { useState, useMemo, useSyncExternalStore } from 'react'
-import { Dumbbell, Plus, Clock, Sparkles } from 'lucide-react'
-import { PageHeader } from '@/components/layout/page-header'
+import { formatDayBadge } from '@/lib/date-format'
+import { Dumbbell, Plus, Clock, Sparkles, CalendarDays } from 'lucide-react'
+import { ModuleHeader } from '@/components/layout/module-header'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
 
-import { useSectionConfig, SectionCustomizer, CustomizeButton, ModuleEmptyState, type SectionDef } from '@/components/shared'
+import { useSectionConfig, SectionCustomizer, ModuleEmptyState, type SectionDef } from '@/components/shared'
 import { Card, CardContent } from '@/components/ui/card'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
@@ -62,7 +63,7 @@ export function WorkoutPage() {
   }
 
   const mounted = useSyncExternalStore(
-    () => () => {},
+    () => () => { },
     () => true,
     () => false,
   )
@@ -81,13 +82,7 @@ export function WorkoutPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      {/* Gradient header area */}
-      <div className="relative overflow-hidden rounded-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-red-500/8 via-rose-500/5 to-orange-400/8 dark:from-red-500/5 dark:via-rose-500/3 dark:to-orange-400/5 pointer-events-none" />
-        <div className="absolute -top-8 -right-8 h-24 w-24 rounded-full bg-red-400/10 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-rose-400/10 blur-2xl pointer-events-none" />
-        <div className="relative px-1 py-1">
-      <PageHeader
+      <ModuleHeader
         icon={Dumbbell}
         title="Тренировки"
         description={
@@ -101,17 +96,19 @@ export function WorkoutPage() {
           </>
         }
         accent="red"
-        actions={
-          <>
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <Button onClick={() => setDialogOpen(true)} size="sm" className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
-            </Button>
-          </>
+        badge={
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
+            {formatDayBadge(new Date())}
+          </Badge>
         }
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Добавить',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: () => setDialogOpen(true),
+        }}
       />
-        </div>
-      </div>
 
       {/* Motivational daily tip */}
       <Card className="overflow-hidden card-hover">
@@ -223,10 +220,10 @@ export function WorkoutPage() {
                 <span className="h-2 w-2 rounded-full shrink-0" style={{
                   backgroundColor: type === 'strength' ? '#f43f5e'
                     : type === 'cardio' ? '#a855f7'
-                    : type === 'hiit' ? '#f97316'
-                    : type === 'stretch' || type === 'flexibility' ? '#10b981'
-                    : type === 'calisthenics' ? '#06b6d4'
-                    : '#94a3b8',
+                      : type === 'hiit' ? '#f97316'
+                        : type === 'stretch' || type === 'flexibility' ? '#10b981'
+                          : type === 'calisthenics' ? '#06b6d4'
+                            : '#94a3b8',
                 }} />
                 <span className="text-xs text-muted-foreground">{config.label}</span>
                 <span className="text-[10px] tabular-nums font-semibold text-foreground">{typeCount}</span>

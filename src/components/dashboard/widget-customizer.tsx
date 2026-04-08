@@ -123,8 +123,8 @@ export default function WidgetCustomizer({
     const targetIdx = direction === 'up' ? idx - 1 : idx + 1
     if (targetIdx < 0 || targetIdx >= newOrder.length) return
 
-    // Swap
-    ;[newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]]
+      // Swap
+      ;[newOrder[idx], newOrder[targetIdx]] = [newOrder[targetIdx], newOrder[idx]]
 
     const newConfig: SavedWidgetConfig = { ...config, order: newOrder }
     setConfig(newConfig)
@@ -150,126 +150,132 @@ export default function WidgetCustomizer({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md rounded-xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <span className="text-xl">🧩</span>
-            Настроить виджеты
-          </DialogTitle>
-          <DialogDescription>
-            Включайте, выключайте и меняйте порядок секций на главной странице
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Search + count indicator */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
-            <Search className="text-muted-foreground absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
-            <Input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Поиск виджетов..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="pl-8"
-            />
+      <DialogContent className="sm:max-w-md p-0 overflow-hidden">
+        <div className="flex flex-col max-h-[80vh]">
+          {/* Header */}
+          <div className="px-6 pt-6 pb-3 shrink-0">
+            <DialogHeader className="p-0">
+              <DialogTitle className="flex items-center gap-2">
+                <span className="text-xl">🧩</span>
+                Настроить виджеты
+              </DialogTitle>
+              <DialogDescription>
+                Включайте, выключайте и меняйте порядок секций на главной странице
+              </DialogDescription>
+            </DialogHeader>
           </div>
-          <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">
-            {enabledCount} из {DEFAULT_SECTIONS.length} включено
-          </Badge>
-        </div>
 
-        {/* Widget list */}
-        <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
-          {filteredSections.length > 0 ? (
-            filteredSections.map((section) => {
-              const isVisible = config.visible[section.id] ?? true
-              return (
-                <div
-                  key={section.id}
-                  className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${
-                    isVisible
-                      ? 'border-border bg-background'
-                      : 'border-border/50 bg-muted/30 opacity-60'
-                  }`}
-                >
-                  {/* Drag handle (visual only) */}
-                  <div className="flex flex-col items-center gap-0.5 text-muted-foreground/40">
-                    <GripVertical className="h-4 w-4" />
-                  </div>
-
-                  {/* Emoji + Title */}
-                  <div className="flex min-w-0 flex-1 items-center gap-2.5">
-                    <span className="text-lg leading-none">{section.icon}</span>
-                    <span className="truncate text-sm font-medium">
-                      {section.title}
-                    </span>
-                  </div>
-
-                  {/* Reorder buttons */}
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => handleMove(section.id, 'up')}
-                      disabled={!canMoveUp(section.id)}
-                      className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                      aria-label="Переместить вверх"
-                    >
-                      <ChevronUp className="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleMove(section.id, 'down')}
-                      disabled={!canMoveDown(section.id)}
-                      className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
-                      aria-label="Переместить вниз"
-                    >
-                      <ChevronDown className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-
-                  {/* Toggle */}
-                  <Switch
-                    checked={isVisible}
-                    onCheckedChange={() => handleToggle(section.id)}
-                  />
-                </div>
-              )
-            })
-          ) : (
-            /* Empty state */
-            <div className="flex flex-col items-center gap-2 py-8 text-center">
-              <span className="text-3xl">🔍</span>
-              <p className="text-sm text-muted-foreground">
-                Ничего не найдено по запросу «{search}»
-              </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearch('')
-                  searchInputRef.current?.focus()
-                }}
-                className="mt-1 text-xs text-muted-foreground"
-              >
-                Очистить поиск
-              </Button>
+          {/* Search + count indicator */}
+          <div className="flex items-center gap-2 px-6 pb-3 shrink-0">
+            <div className="relative flex-1">
+              <Search className="text-muted-foreground absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2" />
+              <Input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Поиск виджетов..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                className="pl-8"
+              />
             </div>
-          )}
-        </div>
+            <Badge variant="secondary" className="shrink-0 text-xs tabular-nums">
+              {enabledCount} из {DEFAULT_SECTIONS.length} включено
+            </Badge>
+          </div>
 
-        {/* Reset button */}
-        <div className="sticky bottom-0 flex justify-center border-t bg-background/90 pb-1 pt-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleReset}
-            className="gap-2 text-muted-foreground"
-          >
-            <RotateCcw className="h-3.5 w-3.5" />
-            Сбросить настройки
-          </Button>
+          {/* Widget list */}
+          <div className="flex-1 overflow-y-auto px-6 min-h-0">
+            <div className="space-y-2">
+              {filteredSections.length > 0 ? (
+                filteredSections.map((section) => {
+                  const isVisible = config.visible[section.id] ?? true
+                  return (
+                    <div
+                      key={section.id}
+                      className={`flex items-center gap-3 rounded-xl border px-3 py-2.5 transition-colors ${isVisible
+                          ? 'border-border bg-background'
+                          : 'border-border/50 bg-muted/30 opacity-60'
+                        }`}
+                    >
+                      {/* Drag handle (visual only) */}
+                      <div className="flex flex-col items-center gap-0.5 text-muted-foreground/40">
+                        <GripVertical className="h-4 w-4" />
+                      </div>
+
+                      {/* Emoji + Title */}
+                      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                        <span className="text-lg leading-none">{section.icon}</span>
+                        <span className="truncate text-sm font-medium">
+                          {section.title}
+                        </span>
+                      </div>
+
+                      {/* Reorder buttons */}
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => handleMove(section.id, 'up')}
+                          disabled={!canMoveUp(section.id)}
+                          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                          aria-label="Переместить вверх"
+                        >
+                          <ChevronUp className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleMove(section.id, 'down')}
+                          disabled={!canMoveDown(section.id)}
+                          className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-20 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                          aria-label="Переместить вниз"
+                        >
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+
+                      {/* Toggle */}
+                      <Switch
+                        checked={isVisible}
+                        onCheckedChange={() => handleToggle(section.id)}
+                      />
+                    </div>
+                  )
+                })
+              ) : (
+                /* Empty state */
+                <div className="flex flex-col items-center gap-2 py-8 text-center">
+                  <span className="text-3xl">🔍</span>
+                  <p className="text-sm text-muted-foreground">
+                    Ничего не найдено по запросу «{search}»
+                  </p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearch('')
+                      searchInputRef.current?.focus()
+                    }}
+                    className="mt-1 text-xs text-muted-foreground"
+                  >
+                    Очистить поиск
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Reset button */}
+          <div className="flex justify-center border-t border-border/50 px-6 py-3 mt-3 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleReset}
+              className="gap-1.5 text-xs text-muted-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Сбросить
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

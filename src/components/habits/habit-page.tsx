@@ -1,16 +1,17 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
-import { Plus, Target, Calendar, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, Tag, Sparkles, TrendingUp, Zap, Rocket } from 'lucide-react'
-import { PageHeader } from '@/components/layout/page-header'
+import { formatDayBadge, formatMonthBadge } from '@/lib/date-format'
+import { Plus, Target, Calendar, CalendarDays, Flame, Eye, EyeOff, CheckCircle, Clock, Trophy, Archive, Tag, Sparkles, TrendingUp, Zap, Rocket } from 'lucide-react'
+import { ModuleHeader } from '@/components/layout/module-header'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { Separator } from '@/components/ui/separator'
-import { getTodayDateBadge, getMotivationalPhrase, getDayOfWeekSubtitle, HABIT_PRESETS, HABIT_CATEGORIES } from './constants'
+import { getMotivationalPhrase, getDayOfWeekSubtitle, HABIT_PRESETS, HABIT_CATEGORIES } from './constants'
 import { useHabits } from './hooks'
 import { HabitStats } from './habit-stats'
 import { WeeklyProgress } from './weekly-progress'
@@ -136,32 +137,32 @@ export default function HabitsPage() {
 
   return (
     <div className="space-y-6 animate-slide-up">
-      <PageHeader
+      <ModuleHeader
         icon={Target}
         title="Привычки"
         description={
-          <span className="flex items-center gap-2 flex-wrap">
-            <span>{getDayOfWeekSubtitle()}</span>
-            <Badge variant="secondary" className="text-[10px] gap-1 font-normal">
-              <Calendar className="h-3 w-3" />
-              {getTodayDateBadge()}
-            </Badge>
+          <>
+            {getDayOfWeekSubtitle()}
             {hasStreakFlame && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-500/15 to-amber-500/15 px-2 py-0.5 text-sm" role="img" aria-label="streak">
-                <Flame className="h-4 w-4 text-orange-500" />
+              <span className="ml-1 inline-flex items-center gap-0.5 text-sm" role="img" aria-label="streak">
+                <Flame className="h-3.5 w-3.5 text-orange-500" />
               </span>
             )}
-          </span>
-        }
-        accent="cyan"
-        actions={
-          <>
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <Button onClick={() => setAddForm(f => ({ ...f, dialogOpen: true }))} size="sm" className="gap-1.5 shrink-0">
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить привычку</span>
-            </Button>
           </>
         }
+        badge={
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
+            {formatDayBadge(new Date())}
+          </Badge>
+        }
+        accent="cyan"
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Добавить привычку',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: () => setAddForm(f => ({ ...f, dialogOpen: true })),
+        }}
       />
 
       {/* Habit Dialogs */}

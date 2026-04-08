@@ -46,8 +46,8 @@ import {
   AnimatedNumber,
 } from '@/components/ui/animated-number'
 import { RU_DAYS_SHORT, formatCurrency } from '@/lib/format'
-import { PageHeader } from '@/components/layout/page-header'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { ModuleHeader } from '@/components/layout/module-header'
+import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 import type { ChartConfig } from '@/components/ui/chart'
 
@@ -198,38 +198,29 @@ export default function AnalyticsPage() {
   return (
     <div className="animate-slide-up space-y-6">
       {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="relative">
-        <div className="absolute -top-20 -left-20 h-40 w-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="absolute -top-10 -right-10 h-32 w-32 rounded-full bg-amber-500/10 blur-3xl pointer-events-none" />
-        <PageHeader
-            icon={BarChart3}
-            title="Аналитика"
-            description="Полная статистика по всем модулям"
-            accent="teal"
-            badge={
-              <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
-                <CalendarDays className="h-2.5 w-2.5" />
-                {periodLabel}
-              </Badge>
-            }
-            actions={
-              <>
-                <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-                <Tabs
-                  value={period}
-                  onValueChange={(v) => setPeriod(v as Period)}
-                >
-                  <TabsList className="bg-muted/60">
-                    <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
-                    <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
-                    <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
-                    <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </>
-            }
-          />
-      </div>
+      <ModuleHeader
+        icon={BarChart3}
+        title="Аналитика"
+        description="Полная статистика по всем модулям"
+        accent="teal"
+        badge={
+          <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
+            <CalendarDays className="h-3 w-3" />
+            {periodLabel}
+          </Badge>
+        }
+        onCustomize={() => setCustomizerOpen(true)}
+        extraActions={
+          <Tabs value={period} onValueChange={(v) => setPeriod(v as Period)}>
+            <TabsList className="bg-muted/60">
+              <TabsTrigger value="7d" className="text-xs sm:text-sm">7 дней</TabsTrigger>
+              <TabsTrigger value="30d" className="text-xs sm:text-sm">30 дней</TabsTrigger>
+              <TabsTrigger value="3m" className="text-xs sm:text-sm">3 месяца</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs sm:text-sm">Всё время</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        }
+      />
 
       {/* ── Empty State ─────────────────────────────────────────────────── */}
       {!loading && !hasData && (

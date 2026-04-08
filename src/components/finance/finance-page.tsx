@@ -1,15 +1,16 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Wallet, Plus, Filter, Receipt, PiggyBank, RefreshCw, TrendingUp, Target } from 'lucide-react'
+import { formatMonthBadge } from '@/lib/date-format'
+import { Wallet, Plus, Filter, CalendarDays, Receipt, PiggyBank, RefreshCw, TrendingUp, Target } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { getCurrentMonthStr } from '@/lib/format'
-import { useSectionConfig, SectionCustomizer, CustomizeButton, type SectionDef } from '@/components/shared'
+import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
 
-import { PageHeader } from '@/components/layout/page-header'
+import { ModuleHeader } from '@/components/layout/module-header'
 
 import { SummaryCards } from './summary-cards'
 import { SavingsGoal } from './savings-goal'
@@ -80,25 +81,26 @@ export default function FinancePage() {
   return (
     <div className="space-y-6 animate-slide-up">
       {/* Header */}
-      <PageHeader
+      <ModuleHeader
         icon={Wallet}
         title="Финансы"
         description="Учёт доходов, расходов и инвестиций"
         accent="blue"
         badge={
           <Badge variant="secondary" className="hidden gap-1 text-[10px] font-normal sm:inline-flex">
-            <Filter className="h-3 w-3" />{monthLabel}
+            <CalendarDays className="h-3 w-3" />
+            {(() => { const [y, m] = month.split('-').map(Number); return formatMonthBadge(new Date(y, m - 1, 1)) })()}
           </Badge>
         }
-        actions={
-          <div className="flex items-center gap-2 shrink-0">
-            <CustomizeButton onClick={() => setCustomizerOpen(true)} />
-            <ExportButton transactions={transactions} monthLabel={monthLabel} />
-            <Button size="sm" className="gap-1.5 shrink-0" onClick={() => setShowNewDialog(true)}>
-              <Plus className="h-4 w-4" /><span className="hidden sm:inline">Добавить</span>
-            </Button>
-          </div>
+        extraActions={
+          <ExportButton transactions={transactions} monthLabel={monthLabel} />
         }
+        onCustomize={() => setCustomizerOpen(true)}
+        primaryAction={{
+          label: 'Добавить',
+          icon: <Plus className="h-4 w-4" />,
+          onClick: () => setShowNewDialog(true),
+        }}
       />
 
       <MonthNav
