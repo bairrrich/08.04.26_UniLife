@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { parseBody, DEMO_USER_ID } from '@/lib/api'
+import { publishActivityEvent } from '@/lib/activity'
+import { ACTIVITY_EVENT_TYPES, ACTIVITY_VISIBILITY_VALUES } from '@/lib/activity-types'
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
@@ -17,6 +19,9 @@ const createWorkoutSchema = z.object({
   date: z.string().min(1, 'Дата обязательна'),
   durationMin: z.number().optional(),
   note: z.string().optional(),
+  shareToFeed: z.boolean().optional(),
+  visibility: z.enum(ACTIVITY_VISIBILITY_VALUES).optional(),
+  caption: z.string().optional(),
   exercises: z.array(exerciseSchema).optional(),
 })
 
@@ -60,9 +65,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await parseBody(request, createWorkoutSchema)
-    if (!data) return
+    if (!data) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400 }
+      )
+    }
 
-    const { name, date, durationMin, note, exercises } = data
+    const { name, date, durationMin, note, exercises, shareToFeed, visibility, caption } = data
 
     const workout = await db.workout.create({
       data: {
@@ -86,6 +96,22 @@ export async function POST(request: NextRequest) {
         exercises: {
           orderBy: { order: 'asc' },
         },
+      },
+    })
+
+    await publishActivityEvent({
+      userId: DEMO_USER_ID,
+      type: ACTIVITY_EVENT_TYPES.WORKOUT_COMPLETED,
+      entityType: 'workout',
+      entityId: workout.id,
+      visibility: visibility ?? 'private',
+      shareToFeed: shareToFeed ?? false,
+      caption,
+      payload: {
+        name: workout.name,
+        date: workout.date.toISOString(),
+        durationMin: workout.durationMin,
+        exercisesCount: workout.exercises.length,
       },
     })
 

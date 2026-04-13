@@ -3,7 +3,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { toast } from 'sonner'
 import { safeJson } from '@/lib/safe-fetch'
-import type { EntityType, FeedPost, FeedComment, ReactionType, ReactionCounts } from './types'
+import type {
+  EntityType,
+  FeedPost,
+  FeedComment,
+  ReactionType,
+  ReactionCounts,
+  FeedEvent,
+} from './types'
 import { generateRandomId, getTimeGroup } from './constants'
 
 // ─── useFeed Hook ─────────────────────────────────────────────────────────────
@@ -473,5 +480,106 @@ export function useFeed() {
     updateCommentText,
     handleSubmit,
     handleDeletePost,
+  }
+}
+
+// ─── useFeedEvents Hook ──────────────────────────────────────────────────────
+
+interface FeedEventsResponse {
+  success: boolean
+  data: FeedEvent[]
+  nextCursor: string | null
+}
+
+export function useFeedEvents() {
+  const [events, setEvents] = useState<FeedEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [nextCursor, setNextCursor] = useState<string | null>(null)
+
+  const fetchEvents = useCallback(async (cursor?: string | null) => {
+    const query = new URLSearchParams({ limit: '20' })
+    if (cursor) query.set('cursor', cursor)
+
+    const res = await fetch(`/api/feed/events?${query.toString()}`)
+    const json = await safeJson<FeedEventsResponse>(res)
+    if (!json || !json.success) {
+      throw new Error('Failed to fetch feed events')
+    }
+
+    return json
+  }, [])
+
+  const refresh = useCallback(async () => {
+    setLoading(true)
+    try {
+      const json = await fetchEvents(null)
+      setEvents(json.data)
+      setNextCursor(json.nextCursor)
+    } catch (error) {
+      console.error('Failed to refresh feed events:', error)
+      toast.error('Не удалось загрузить события ленты')
+    } finally {
+      setLoading(false)
+    }
+  }, [fetchEvents])
+
+  const loadMore = useCallback(async () => {
+    if (!nextCursor) return
+    try {
+      const json = await fetchEvents(nextCursor)
+      setEvents((prev) => [...prev, ...json.data])
+      setNextCursor(json.nextCursor)
+    } catch (error) {
+      console.error('Failed to load more feed events:', error)
+      toast.error('Не удалось догрузить события')
+    }
+  }, [fetchEvents, nextCursor])
+
+  const shareEvent = useCallback(async (eventId: string, caption?: string, tags?: string[]) => {
+    const res = await fetch('/api/feed/events/share', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId, caption, tags }),
+    })
+
+    const json = await safeJson<{ success: boolean }>(res)
+    if (!res.ok || !json?.success) {
+      throw new Error('Failed to share event')
+    }
+
+    setEvents((prev) =>
+      prev.map((event) => (event.id === eventId ? { ...event, sharedInFeed: true } : event)),
+    )
+  }, [])
+
+  const unshareEvent = useCallback(async (eventId: string) => {
+    const res = await fetch('/api/feed/events/share', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ eventId }),
+    })
+
+    const json = await safeJson<{ success: boolean }>(res)
+    if (!res.ok || !json?.success) {
+      throw new Error('Failed to unshare event')
+    }
+
+    setEvents((prev) =>
+      prev.map((event) => (event.id === eventId ? { ...event, sharedInFeed: false, post: null } : event)),
+    )
+  }, [])
+
+  useEffect(() => {
+    refresh()
+  }, [refresh])
+
+  return {
+    events,
+    loading,
+    hasMore: Boolean(nextCursor),
+    refresh,
+    loadMore,
+    shareEvent,
+    unshareEvent,
   }
 }
