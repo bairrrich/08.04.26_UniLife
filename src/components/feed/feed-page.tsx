@@ -8,9 +8,10 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { PostCard } from './post-card'
 import { PostDialog } from './post-dialog'
 import { FeedEmptyState } from './empty-state'
-import { useFeed } from './hooks'
+import { useFeed, useFeedEvents } from './hooks'
 import { getTimeGroup, ENTITY_LABELS } from './constants'
 import { useState, useMemo } from 'react'
+import { toast } from 'sonner'
 import { ModuleHeader } from '@/components/layout/module-header'
 import { useSectionConfig, SectionCustomizer, type SectionDef } from '@/components/shared'
 import DashboardSection from '@/components/dashboard/dashboard-section'
@@ -32,7 +33,7 @@ type FeedFilter = 'all' | 'mine' | 'popular'
 
 export default function FeedPage() {
   const {
-    posts, loading, groupedPosts,
+    posts, loading,
     dialogOpen, setDialogOpen,
     formEntityType, setFormEntityType,
     formCaption, setFormCaption,
@@ -49,6 +50,37 @@ export default function FeedPage() {
 
   const [selectedHashtag, setSelectedHashtag] = useState<string | null>(null)
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('all')
+  const [eventActionLoading, setEventActionLoading] = useState<Set<string>>(new Set())
+  const {
+    events,
+    hasMore: hasMoreEvents,
+    loadMore: loadMoreEvents,
+    shareEvent,
+    unshareEvent,
+  } = useFeedEvents()
+
+  const handleToggleEventShare = async (eventId: string, sharedInFeed: boolean) => {
+    if (eventActionLoading.has(eventId)) return
+    setEventActionLoading((prev) => new Set(prev).add(eventId))
+    try {
+      if (sharedInFeed) {
+        await unshareEvent(eventId)
+        toast.success('Событие убрано из ленты')
+      } else {
+        await shareEvent(eventId)
+        toast.success('Событие опубликовано в ленте')
+      }
+    } catch (error) {
+      console.error('Failed to toggle event share:', error)
+      toast.error('Не удалось обновить публикацию события')
+    } finally {
+      setEventActionLoading((prev) => {
+        const next = new Set(prev)
+        next.delete(eventId)
+        return next
+      })
+    }
+  }
 
   // Section config for hideable/collapsible widgets
   const sectionDefs: SectionDef[] = useMemo(() => [
@@ -283,6 +315,51 @@ export default function FeedPage() {
         formTags={formTags} setFormTags={setFormTags}
         onSubmit={handleSubmit}
       />
+
+      {/* Events Projection */}
+      {!loading && events.length > 0 && (
+        <Card className="rounded-xl border">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">События активности</h3>
+              <Badge variant="secondary">{events.length}</Badge>
+            </div>
+            <div className="space-y-2">
+              {events.map((event) => (
+                <div
+                  key={event.id}
+                  className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 p-2.5"
+                >
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium truncate">{event.type}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {event.entityType} · {new Date(event.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={event.sharedInFeed ? 'secondary' : 'default'}
+                    className="h-7 text-xs"
+                    disabled={eventActionLoading.has(event.id)}
+                    onClick={() => handleToggleEventShare(event.id, event.sharedInFeed)}
+                  >
+                    {eventActionLoading.has(event.id)
+                      ? '...'
+                      : event.sharedInFeed
+                        ? 'Убрать'
+                        : 'Поделиться'}
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {hasMoreEvents && (
+              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={loadMoreEvents}>
+                Показать ещё события
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Feed */}
       <div className="space-y-4 stagger-children">

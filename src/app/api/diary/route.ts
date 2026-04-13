@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { parseBody, DEMO_USER_ID, safeParseJSON } from "@/lib/api";
+import { publishActivityEvent } from "@/lib/activity";
+import { ACTIVITY_EVENT_TYPES, ACTIVITY_VISIBILITY_VALUES } from "@/lib/activity-types";
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
@@ -12,6 +14,9 @@ const createDiarySchema = z.object({
   date: z.string().optional(),
   tags: z.array(z.string()).optional(),
   photos: z.array(z.string()).optional(),
+  shareToFeed: z.boolean().optional(),
+  visibility: z.enum(ACTIVITY_VISIBILITY_VALUES).optional(),
+  caption: z.string().optional(),
 });
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -143,9 +148,14 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await parseBody(request, createDiarySchema);
-    if (!data) return;
+    if (!data) {
+      return NextResponse.json(
+        { success: false, error: "Неверные данные запроса" },
+        { status: 400 }
+      );
+    }
 
-    const { content, title, mood, date, tags, photos } = data;
+    const { content, title, mood, date, tags, photos, shareToFeed, visibility, caption } = data;
 
     const entryDate = date ? new Date(date) : new Date();
     if (date && isNaN(entryDate.getTime())) {
@@ -164,6 +174,22 @@ export async function POST(request: NextRequest) {
         mood: mood ?? null,
         photos: JSON.stringify(photos ?? []),
         tags: JSON.stringify(tags ?? []),
+      },
+    });
+
+    await publishActivityEvent({
+      userId: DEMO_USER_ID,
+      type: ACTIVITY_EVENT_TYPES.DIARY_ENTRY_CREATED,
+      entityType: "diary",
+      entityId: entry.id,
+      visibility: visibility ?? "private",
+      shareToFeed: shareToFeed ?? false,
+      caption: caption ?? title ?? undefined,
+      tags,
+      payload: {
+        mood: entry.mood,
+        title: entry.title,
+        date: entry.date.toISOString(),
       },
     });
 

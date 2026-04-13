@@ -29,6 +29,7 @@ model User {
   waterLogs             WaterLog[]
   workouts              Workout[]
   collectionItems       CollectionItem[]
+  activityEvents        ActivityEvent[]
   posts                 Post[]
   likes                 Like[]
   comments              Comment[]
@@ -38,6 +39,25 @@ model User {
   nutritionGoals         NutritionGoal[]
   achievements           Achievement[]
   shifts                 Shift[]
+}
+
+model ActivityEvent {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  entityType String
+  entityId   String
+  visibility String   @default("private") // private | friends | public
+  payload    String   @default("{}") // JSON object
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@index([userId, createdAt])
 }
 
 // ============ DIARY ============
