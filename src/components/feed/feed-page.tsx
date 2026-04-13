@@ -33,7 +33,7 @@ type FeedFilter = 'all' | 'mine' | 'popular'
 
 export default function FeedPage() {
   const {
-    posts, loading, groupedPosts,
+    posts, loading,
     dialogOpen, setDialogOpen,
     formEntityType, setFormEntityType,
     formCaption, setFormCaption,

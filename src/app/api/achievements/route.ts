@@ -1,7 +1,7 @@
 import { db } from '@/lib/db'
 import { apiSuccess, apiServerError, DEMO_USER_ID } from '@/lib/api'
 import { getTodayStr, toDateStr, calculateStreak } from '@/lib/format'
-import type { PrismaClient } from '@prisma/client'
+import type { Prisma } from '@prisma/client'
 
 // ─── Achievement Definitions ──────────────────────────────────────────────────
 
@@ -286,7 +286,7 @@ export async function GET() {
     }
 
     // ── Persist newly earned achievements (atomic with final read) ──
-    const allPersisted = await db.$transaction(async (tx: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'>) => {
+    const allPersisted = await db.$transaction(async (tx: Prisma.TransactionClient) => {
       if (newlyEarned.length > 0) {
         // Use upsert per item to avoid skipDuplicates issues in Prisma 7
         await Promise.all(
