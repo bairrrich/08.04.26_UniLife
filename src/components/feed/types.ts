@@ -39,3 +39,26 @@ export interface FeedPost {
   comments: FeedComment[]
   _count: { likes: number }
 }
+
+export type ActivityVisibility = 'private' | 'friends' | 'public'
+
+export interface FeedEventPostProjection {
+  id: string
+  entityType: EntityType
+  entityId: string
+  caption: string | null
+  createdAt: string
+}
+
+export interface FeedEvent {
+  id: string
+  userId: string
+  type: string
+  entityType: EntityType
+  entityId: string
+  visibility: ActivityVisibility
+  payload: Record<string, unknown>
+  createdAt: string
+  sharedInFeed: boolean
+  post: FeedEventPostProjection | null
+}

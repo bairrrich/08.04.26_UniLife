@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { db } from '@/lib/db'
 import { parseBody, DEMO_USER_ID } from '@/lib/api'
+import { publishActivityEvent } from '@/lib/activity'
+import { ACTIVITY_VISIBILITY_VALUES, getFinanceTransactionEventType } from '@/lib/activity-types'
 
 // ─── Zod Schemas ──────────────────────────────────────────────────────────────
 
@@ -15,6 +17,9 @@ const createTransactionSchema = z.object({
   note: z.string().optional(),
   fromAccountId: z.string().optional(),
   toAccountId: z.string().optional(),
+  shareToFeed: z.boolean().optional(),
+  visibility: z.enum(ACTIVITY_VISIBILITY_VALUES).optional(),
+  caption: z.string().optional(),
 })
 
 // GET /api/finance — List transactions with category included
@@ -75,9 +80,41 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const data = await parseBody(request, createTransactionSchema)
-    if (!data) return
+    if (!data) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request body' },
+        { status: 400 },
+      )
+    }
 
-    const { type, amount, categoryId, subCategoryId, date, description, note, fromAccountId, toAccountId } = data
+    const {
+      type,
+      amount,
+      categoryId,
+      subCategoryId,
+      date,
+      description,
+      note,
+      fromAccountId,
+      toAccountId,
+      shareToFeed,
+      visibility,
+      caption,
+    } = data
+
+    if (!categoryId) {
+      return NextResponse.json(
+        { success: false, error: 'Category is required for all transactions' },
+        { status: 400 },
+      )
+    }
+
+    if (type === 'TRANSFER' && (!fromAccountId || !toAccountId)) {
+      return NextResponse.json(
+        { success: false, error: 'fromAccountId and toAccountId are required for transfers' },
+        { status: 400 },
+      )
+    }
 
     // Validate category exists when provided (business logic check)
     if (categoryId) {
@@ -96,7 +133,7 @@ export async function POST(request: NextRequest) {
         type,
         amount,
         currency: 'RUB',
-        categoryId: categoryId || '',
+        categoryId,
         subCategoryId: subCategoryId || null,
         date: new Date(date),
         description: description || null,
@@ -109,6 +146,23 @@ export async function POST(request: NextRequest) {
         subCategory: true,
         fromAccount: true,
         toAccount: true,
+      },
+    })
+
+    await publishActivityEvent({
+      userId: DEMO_USER_ID,
+      type: getFinanceTransactionEventType(type),
+      entityType: 'transaction',
+      entityId: transaction.id,
+      visibility: visibility ?? 'private',
+      shareToFeed: shareToFeed ?? false,
+      caption,
+      payload: {
+        amount: transaction.amount,
+        currency: transaction.currency,
+        transactionType: transaction.type,
+        date: transaction.date.toISOString(),
+        categoryId: transaction.categoryId,
       },
     })
 
